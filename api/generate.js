@@ -16,6 +16,17 @@ module.exports = async function handler(req, res) {
 
     const age = Number(child.age);
     const length = child.length || 'medium';
+    const language = child.language || 'en-GB';
+    const languageGuide = {
+      'en-GB': 'Write in natural British English. Use British spelling and vocabulary, such as colour, favourite, holiday, trousers, biscuit, torch and garden where natural.',
+      'en-US': 'Write in natural American English. Use American spelling and vocabulary, such as color, favorite, vacation, pants, cookie, flashlight and yard where natural.',
+      'es-ES': 'Escribe en español natural de España. Usa ortografía, vocabulario y expresiones habituales en España, sin latinoamericanismos innecesarios.',
+      'es-419': 'Escribe en español latinoamericano neutro y natural. Evita localismos muy específicos de un solo país y usa vocabulario ampliamente comprensible en Latinoamérica.',
+      'fr-FR': 'Écris en français naturel de France. Utilise l’orthographe, le vocabulaire et les expressions courantes en France.',
+      'de-DE': 'Schreibe in natürlichem Deutsch aus Deutschland. Verwende deutsche Rechtschreibung sowie in Deutschland übliche Wörter und Ausdrücke.',
+      'it-IT': 'Scrivi in italiano naturale d’Italia. Usa ortografia, vocabolario ed espressioni comuni in Italia.',
+      'pt-PT': 'Escreve em português natural de Portugal. Usa a ortografia, o vocabulário e as expressões habituais em Portugal, evitando brasileirismos.'
+    }[language] || 'Write in natural British English.';
     const lengthGuide = length === 'short'
       ? 'about 700-900 words'
       : length === 'long'
@@ -31,10 +42,12 @@ Interests: ${child.interests || 'imagination and exploring'}
 Things to avoid: ${child.dislikes || 'nothing specific'}
 Requested length: ${lengthGuide}
 Tone: ${child.tone || 'cosy and funny'}
+Language: ${language}
+Language guidance: ${languageGuide}
 Story values to weave naturally into the plot: ${(Array.isArray(child.values) && child.values.length ? child.values : ['Kindness', 'Curiosity']).join(', ')}
 
 MOONBEAM HOUSE STYLE
-Create an original classic British children's adventure feel. Use clear, elegant, highly readable prose; vivid but economical descriptions; lively dialogue; warmth; gentle humour; memorable characters; and a strong sense of curiosity and anticipation. Make familiar places feel as though they might contain a secret. Give the story a real beginning, middle and satisfying ending rather than a sequence of disconnected events.
+Create an original classic children's adventure feel. The selected language variant is part of the reading experience; write naturally for that audience rather than translating word-for-word from another language. Use clear, elegant, highly readable prose; vivid but economical descriptions; lively dialogue; warmth; gentle humour; memorable characters; and a strong sense of curiosity and anticipation. Make familiar places feel as though they might contain a secret. Give the story a real beginning, middle and satisfying ending rather than a sequence of disconnected events.
 
 The story should have:
 - a distinctive central character and at least one memorable companion;

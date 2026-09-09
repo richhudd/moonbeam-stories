@@ -9,7 +9,7 @@ let illustrationCache = new Map();
 renderLibrary(); $('generate').onclick=generateStory;
 
 async function generateStory(){
- const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,values:[...selected]};
+ const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language:$('language').value,values:[...selected]};
  if(!child.name){status.textContent='Give me a name or nickname first.';return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){status.textContent='Please choose an age from 3 to 12.';return}
  const button=$('generate');button.disabled=true;status.textContent='Writing tonight’s adventure…';
