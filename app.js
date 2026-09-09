@@ -57,14 +57,17 @@ function renderStory(s,image,child){
 
 function illustrationKey(book,index){return `${book.storyId}:${index}`}
 
-async function loadIllustration(index, prompt){
+async function loadIllustration(index, prompt, silent=false){
  const book=currentBook;
  if(!book || !prompt) return;
  const key=illustrationKey(book,index);
- if(illustrationCache.has(key)) return renderIllustrationIntoPage(index,illustrationCache.get(key));
+ if(illustrationCache.has(key)) {
+   if(!silent) renderIllustrationIntoPage(index,illustrationCache.get(key));
+   return;
+ }
  const frame=document.querySelector('.illustration-frame');
- if(!frame || book.currentPage!==index) return;
- frame.innerHTML='<div class="illustration-loading"><div class="spinner"></div><p>Painting this page…</p><small>Your story illustration is being created.</small></div>';
+ if(!silent && (!frame || book.currentPage!==index)) return;
+ if(!silent && frame) frame.innerHTML='<div class="illustration-loading"><div class="spinner"></div><p>Painting this page…</p><small>Moonbeam is creating the picture.</small></div>';
  try{
    const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
      prompt,
@@ -75,14 +78,32 @@ async function loadIllustration(index, prompt){
    if(!data?.image) throw new Error('The illustration service returned no image.');
    illustrationCache.set(key,data.image);
    if(currentBook===book && book.currentPage===index) renderIllustrationIntoPage(index,data.image);
+   return data.image;
  }catch(e){
    console.error('Moonbeam illustration error:',e);
-   if(currentBook===book && book.currentPage===index){
+   if(!silent && currentBook===book && book.currentPage===index){
      const f=document.querySelector('.illustration-frame');
      if(f)f.innerHTML=`<div class="illustration-error"><div class="moon">☾</div><p>We couldn't paint this page just now.</p><small>${escapeHtml(e?.message||String(e))}</small><button class="secondary retry-illustration" type="button">Try again</button></div>`;
-     const retry=document.querySelector('.retry-illustration'); if(retry)retry.onclick=()=>loadIllustration(index,prompt);
+     const retry=document.querySelector('.retry-illustration'); if(retry)retry.onclick=()=>loadIllustration(index,prompt,false);
    }
  }
+}
+
+function getIllustrationPrompt(index){
+ const book=currentBook; if(!book)return '';
+ const total=book.pages.length+2;
+ if(index===0)return `Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. ${book.pages[0]?.illustration_prompt||''}`;
+ if(index===total-1)return `Peaceful final scene for “${book.title}”, showing the characters safe, content and ready for bedtime. ${book.pages[book.pages.length-1]?.illustration_prompt||''}`;
+ return book.pages[index-1]?.illustration_prompt||'A charming children’s storybook scene';
+}
+
+// Start the current illustration immediately, while also quietly preparing the next
+// two pages. This makes page turning feel much faster without making the reader wait
+// for all the artwork before the book can open.
+function prefetchIllustrations(index){
+ const book=currentBook; if(!book)return;
+ const total=book.pages.length+2;
+ [index+1,index+2].filter(i=>i<total).forEach(i=>loadIllustration(i,getIllustrationPrompt(i),true));
 }
 
 function renderIllustrationIntoPage(index,image){
@@ -96,9 +117,10 @@ function renderBookPage(index){
  const clamped=Math.max(0,Math.min(index,total-1)); book.currentPage=clamped;
  const isOpening=clamped===0, isClosing=clamped===total-1;
  let text='', illustrationPrompt='', label='';
- if(isOpening){text=book.opening;label='The beginning';illustrationPrompt=`Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and the story world. ${book.pages[0]?.illustration_prompt||''}`;}
- else if(isClosing){text=book.closing;label='The end';illustrationPrompt=`Peaceful final scene for “${book.title}”, showing the characters safe, content and ready for bedtime. ${book.pages[book.pages.length-1]?.illustration_prompt||''}`;}
- else {const p=book.pages[clamped-1]||{};text=p.text||'';illustrationPrompt=p.illustration_prompt||'A charming children’s storybook scene';label=`Page ${clamped}`;}
+ if(isOpening){text=book.opening;label='The beginning';}
+ else if(isClosing){text=book.closing;label='The end';}
+ else {const p=book.pages[clamped-1]||{};text=p.text||'';label=`Page ${clamped}`;}
+ illustrationPrompt=getIllustrationPrompt(clamped);
  const bookEl=$('book');
  bookEl.innerHTML=`<div class="paper left-page">
    <div class="page-number">${isOpening?'☾':clamped}</div>
@@ -114,7 +136,8 @@ function renderBookPage(index){
  $('nextPage').disabled=clamped===total-1;
  $('nextPage').textContent=clamped===total-1?'The End':'Turn page ›';
  $('pageIndicator').textContent=`${clamped+1} / ${total}`;
- loadIllustration(clamped,illustrationPrompt);
+ loadIllustration(clamped,illustrationPrompt,false);
+ prefetchIllustrations(clamped);
 }
 
 $('story').addEventListener('click',e=>{
