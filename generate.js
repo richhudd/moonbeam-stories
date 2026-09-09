@@ -27,13 +27,16 @@ module.exports = async function handler(req, res) {
       'it-IT': 'Scrivi in italiano naturale d’Italia. Usa ortografia, vocabolario ed espressioni comuni in Italia.',
       'pt-PT': 'Escreve em português natural de Portugal. Usa a ortografia, o vocabulário e as expressões habituais em Portugal, evitando brasileirismos.'
     }[language] || 'Write in natural British English.';
+    // Real picture-book layout: length changes the NUMBER of spreads, not the amount of text crammed onto each spread.
+    // Opening + story pages + closing should all be visually similar in text density.
     const lengthConfig = length === 'short'
-      ? { words: 'about 650-850 words', pages: 4 }
+      ? { pages: 4, totalScreens: 6, totalWords: 'about 650-750 words' }
       : length === 'long'
-        ? { words: 'about 1500-1900 words', pages: 8 }
-        : { words: 'about 1000-1300 words', pages: 6 };
-    const lengthGuide = lengthConfig.words;
+        ? { pages: 8, totalScreens: 10, totalWords: 'about 1080-1250 words' }
+        : { pages: 6, totalScreens: 8, totalWords: 'about 860-1000 words' };
     const pageCount = lengthConfig.pages;
+    const lengthGuide = lengthConfig.totalWords;
+    const targetPerScreen = '105-125 words';
 
     const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original bedtime adventure story for one child.
 
@@ -71,7 +74,20 @@ OUTPUT
 Return JSON only, with exactly this shape:
 {"title":"string","opening":"string","character_bible":"string","pages":[...exactly ${pageCount} page objects...],"closing":"string"}
 
-The opening, exactly ${pageCount} story pages and closing must together form one continuous story of the requested length. The page count is mandatory: short = 4 story pages, medium = 6 story pages, long = 8 story pages. Do not use the same page count for different length choices. Add a concise character_bible describing the recurring characters' appearance, clothing, age range, colours and any distinctive features so an image model can keep them consistent. Each illustration_prompt should describe a charming, child-friendly storybook illustration for that specific scene and should refer to the character_bible details where relevant. Do not include text or lettering in illustrations.`;
+The opening, exactly ${pageCount} story pages and closing must together form one continuous story of the requested length. The page count is mandatory: short = 4 story pages, medium = 6 story pages, long = 8 story pages. Do not use the same page count for different length choices.
+
+REAL-BOOK PAGE BALANCE — MANDATORY
+The app displays ONE text page beside ONE equally sized illustration. Every displayed text page must therefore contain approximately the same amount of prose.
+- Write the opening at approximately ${targetPerScreen}.
+- Write EACH of the ${pageCount} page.text fields at approximately ${targetPerScreen}.
+- Write the closing at approximately 90-115 words.
+- Never make one page a few sentences while another is several long paragraphs.
+- Keep each displayed page self-contained enough to turn naturally, but do not add headings inside the prose.
+- Length must come from MORE OR FEWER PAGES, not by making long stories denser per page.
+- Short therefore has ${lengthConfig.totalScreens} displayed text pages, medium has 8, and long has 10.
+- Aim for ${lengthGuide} overall.
+
+Each pages array item MUST have exactly this shape: {"text":"string","illustration_prompt":"string"}. Add a concise character_bible describing the recurring characters' appearance, clothing, age range, colours and any distinctive features so an image model can keep them consistent. Each illustration_prompt should describe a charming, child-friendly storybook illustration for that specific scene and should refer to the character_bible details where relevant. Do not include text or lettering in illustrations.`;
 
     const r = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -114,7 +130,22 @@ The opening, exactly ${pageCount} story pages and closing must together form one
       return res.status(502).json({ error: `The story model returned ${Array.isArray(story.pages) ? story.pages.length : 0} story pages instead of the requested ${pageCount}. Please try again.` });
     }
 
-    return res.status(200).json({ story, image: null });
+    const wordCount = value => String(value || '').trim().split(/\s+/).filter(Boolean).length;
+    const textScreens = [story.opening, ...story.pages.map(p => p && p.text), story.closing];
+    const counts = textScreens.map(wordCount);
+    // Allow modest linguistic variation, but reject layouts that would visibly overfill or underfill a page.
+    const minWords = 75, maxWords = 145;
+    const badlyBalanced = counts.some(n => n < minWords || n > maxWords);
+    const spread = Math.max(...counts) - Math.min(...counts);
+    if (badlyBalanced || spread > 60) {
+      return res.status(502).json({
+        error: `The story text was not balanced evenly enough across the book pages. Please try again.`,
+        page_word_counts: counts,
+        requested_length: length
+      });
+    }
+
+    return res.status(200).json({ story, image: null, layout: { requestedLength: length, storyPages: pageCount, displayedTextPages: pageCount + 2, pageWordCounts: counts } });
   } catch (e) {
     console.error('generate error', e);
     return res.status(500).json({ error: String(e && e.message ? e.message : e) });

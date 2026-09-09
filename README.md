@@ -23,3 +23,11 @@ Story length now controls the actual number of story pages: Short = 4, Medium = 
 
 ## V16
 Adds a generated illustrated front cover with reliable HTML title typography, a Begin Story flow, cover navigation from the opening page, background prefetching of the first interior illustrations, and cover regeneration for saved stories.
+
+
+## V17
+- Fixes story-length selection persistence; locale refresh no longer resets the selector to Medium.
+- Short/Medium/Long now change page count, while each spread targets similar prose density.
+- Backend rejects badly unbalanced page text.
+- Desktop book spread uses a fixed 600px page height so text and illustration remain the same visual size without scrolling.
+- Small text-density adjustment handles minor generation variation without changing the book layout.
