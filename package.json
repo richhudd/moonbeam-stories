@@ -1,1 +1,1 @@
-{"name":"bedtime-story-mvp","version":"0.1.0","private":true,"scripts":{"start":"vercel dev"},"dependencies":{},"engines":{"node":">=20"}}
+{"name":"moonbeam-stories","version":"0.2.0","private":true,"engines":{"node":"24.x"},"scripts":{"start":"vercel dev"}}

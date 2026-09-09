@@ -1,1 +1,16 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17132d"><link rel="manifest" href="/manifest.webmanifest"><title>Moonbeam Stories</title><link rel="stylesheet" href="/styles.css"></head><body><main class="app"><header><div class="logo">☾</div><div><h1>Moonbeam Stories</h1><p>Make tonight's story just for them.</p></div></header><section class="card" id="setup"><h2>Who's tonight's story for?</h2><div class="grid"><label>Name or nickname<input id="name" placeholder="Milo"></label><label>Age<input id="age" type="number" min="3" max="12" value="7"></label><label>Interests<input id="interests" placeholder="dinosaurs, space, football"></label><label>Things to avoid<input id="dislikes" placeholder="too scary, spiders"></label></div><div class="row"><label>Story length<select id="length"><option>short</option><option selected>medium</option><option>long</option></select></label><label>Tone<select id="tone"><option selected>cosy and funny</option><option>magical</option><option>adventurous</option><option>calm and dreamy</option></select></label></div><h3>Story Values</h3><div class="chips" id="values"></div><button class="primary" id="generate">✨ Make Tonight's Story</button><p class="status" id="status"></p></section><section id="story" class="story hidden"></section><section class="card"><h2>Saved stories</h2><div id="library" class="library"><p class="muted">Your saved stories will appear here.</p></div></section></main><script src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17132d"><title>Moonbeam Stories</title><link rel="stylesheet" href="/styles.css">
+</head>
+<body><main class="app">
+<header><div class="logo">☾</div><div><h1>Moonbeam Stories</h1><p>Make tonight's story just for them.</p></div></header>
+<section class="card"><h2>Who's tonight's story for?</h2>
+<div class="grid"><label>Name or nickname<input id="name" placeholder="Milo"></label><label>Age<input id="age" type="number" min="3" max="12" value="7"></label><label>Interests<input id="interests" placeholder="dinosaurs, space, football"></label><label>Things to avoid<input id="dislikes" placeholder="too scary, spiders"></label></div>
+<div class="row"><label>Story length<select id="length"><option>short</option><option selected>medium</option><option>long</option></select></label><label>Tone<select id="tone"><option selected>cosy and funny</option><option>magical</option><option>adventurous</option><option>calm and dreamy</option></select></label></div>
+<h3>Story Values</h3><div class="chips" id="values"></div>
+<button class="primary" id="generate" type="button">✨ Make Tonight's Story</button><p class="status" id="status"></p>
+</section>
+<section id="story" class="story hidden"></section>
+<section class="card"><h2>Saved stories</h2><div id="library" class="library"><p class="muted">Your saved stories will appear here.</p></div></section>
+</main><script src="/app.js"></script></body></html>

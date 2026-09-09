@@ -1,11 +1,7 @@
-# Moonbeam Stories — MVP
+# Moonbeam Stories MVP
 
-Mobile-first personalised children's bedtime story app.
+Mobile-first personalised bedtime story app.
 
-## Deploy
-1. Create a GitHub repo and upload these files.
-2. Import the repo into Vercel.
-3. In Vercel Project Settings → Environment Variables, add `OPENAI_API_KEY`.
-4. Redeploy.
+Vercel: import this repository and add `OPENAI_API_KEY` to the Production environment. Redeploy after changing environment variables.
 
-The browser stores saved stories locally for this first MVP. Supabase can be added next for accounts, syncing and subscriptions.
+Health check: `/api/health`
