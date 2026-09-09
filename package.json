@@ -1,1 +1,1 @@
-{"name":"bedtime-story-mvp","version":"0.1.0","private":true,"scripts":{"start":"vercel dev"},"dependencies":{"openai":"^5.19.0"},"engines":{"node":">=20"}}
+{"name":"bedtime-story-mvp","version":"0.1.0","private":true,"scripts":{"start":"vercel dev"},"dependencies":{},"engines":{"node":">=20"}}
