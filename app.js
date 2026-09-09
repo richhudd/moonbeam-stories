@@ -13,8 +13,7 @@ async function generateStory(){
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){status.textContent='Please choose an age from 3 to 12.';return;}
  const button=$('generate'); button.disabled=true; status.textContent='Writing tonight’s adventure…';
  try{
-   const endpoint = new URL('/api/generate', window.location.origin).href;
-   const response = await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({child})});
+   const response = await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({child})});
    const raw = await response.text();
    let data; try { data=JSON.parse(raw); } catch { throw new Error(`The story service returned an unexpected response (${response.status}).`); }
    if(!response.ok) throw new Error(data.error || `Story service failed (${response.status}).`);
