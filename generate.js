@@ -27,11 +27,13 @@ module.exports = async function handler(req, res) {
       'it-IT': 'Scrivi in italiano naturale d’Italia. Usa ortografia, vocabolario ed espressioni comuni in Italia.',
       'pt-PT': 'Escreve em português natural de Portugal. Usa a ortografia, o vocabulário e as expressões habituais em Portugal, evitando brasileirismos.'
     }[language] || 'Write in natural British English.';
-    const lengthGuide = length === 'short'
-      ? 'about 700-900 words'
+    const lengthConfig = length === 'short'
+      ? { words: 'about 650-850 words', pages: 4 }
       : length === 'long'
-        ? 'about 1400-1800 words'
-        : 'about 1000-1300 words';
+        ? { words: 'about 1500-1900 words', pages: 8 }
+        : { words: 'about 1000-1300 words', pages: 6 };
+    const lengthGuide = lengthConfig.words;
+    const pageCount = lengthConfig.pages;
 
     const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original bedtime adventure story for one child.
 
@@ -67,9 +69,9 @@ No politics, religion, sexual content, graphic violence, horror, dangerous instr
 
 OUTPUT
 Return JSON only, with exactly this shape:
-{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"},{"text":"string","illustration_prompt":"string"},{"text":"string","illustration_prompt":"string"},{"text":"string","illustration_prompt":"string"},{"text":"string","illustration_prompt":"string"},{"text":"string","illustration_prompt":"string"}],"closing":"string"}
+{"title":"string","opening":"string","character_bible":"string","pages":[...exactly ${pageCount} page objects...],"closing":"string"}
 
-The opening, six pages and closing must together form one continuous story of the requested length. Add a concise character_bible describing the recurring characters' appearance, clothing, age range, colours and any distinctive features so an image model can keep them consistent. Each illustration_prompt should describe a charming, child-friendly storybook illustration for that specific scene and should refer to the character_bible details where relevant. Do not include text or lettering in illustrations.`;
+The opening, exactly ${pageCount} story pages and closing must together form one continuous story of the requested length. The page count is mandatory: short = 4 story pages, medium = 6 story pages, long = 8 story pages. Do not use the same page count for different length choices. Add a concise character_bible describing the recurring characters' appearance, clothing, age range, colours and any distinctive features so an image model can keep them consistent. Each illustration_prompt should describe a charming, child-friendly storybook illustration for that specific scene and should refer to the character_bible details where relevant. Do not include text or lettering in illustrations.`;
 
     const r = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -106,6 +108,10 @@ The opening, six pages and closing must together form one continuous story of th
     try { story = JSON.parse(output); }
     catch {
       return res.status(502).json({ error: 'OpenAI responded, but not in the required story format.', debug: output.slice(0, 500) });
+    }
+
+    if (!Array.isArray(story.pages) || story.pages.length !== pageCount) {
+      return res.status(502).json({ error: `The story model returned ${Array.isArray(story.pages) ? story.pages.length : 0} story pages instead of the requested ${pageCount}. Please try again.` });
     }
 
     return res.status(200).json({ story, image: null });
