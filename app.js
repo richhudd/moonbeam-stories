@@ -1,150 +1,73 @@
-const values = ['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience'];
-const selected = new Set(['Kindness','Curiosity']);
+const locales = {
+  'en-GB': {
+    title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
+  },
+  'en-US': {
+    title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (USA)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, soccer', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cozy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:"Writing tonight's adventure…", illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
+  },
+  'es-ES': {
+    title:'Historias Moonbeam', tagline:'Crea la historia de esta noche solo para ellos.', language:'Idioma', languageName:'Español (España)', chooseLanguage:'Elige tu idioma', childTitle:'¿Para quién es la historia de esta noche?', name:'Nombre o apodo', namePh:'Milo', age:'Edad', interests:'Intereses', interestsPh:'dinosaurios, espacio, fútbol', dislikes:'Cosas que evitar', dislikesPh:'demasiado miedo, arañas', storyPrefs:'Preferencias de la historia', length:'Duración', tone:'Tono', values:'Valores de la historia', generate:'✨ Crear la historia de esta noche', saved:'Historias guardadas', noSaved:'Tus historias guardadas aparecerán aquí.', short:'Corta', medium:'Mediana', long:'Larga', cosy:'Acogedora y divertida', magical:'Mágica', adventurous:'Aventurera', calm:'Tranquila y soñadora', previous:'‹ Anterior', turn:'Pasar página ›', end:'Fin', save:'♡ Guardar historia', savedBtn:'♥ Guardada', newStory:'↟ Nueva historia', painting:'Pintando esta página…', paintingSmall:'Moonbeam está creando la ilustración.', beginning:'El principio', page:'Página', errorName:'Escribe primero un nombre o apodo.', errorAge:'Elige una edad entre 3 y 12 años.', writing:'Escribiendo la aventura de esta noche…', illustrationNote:'Las ilustraciones se crean en segundo plano mientras lees.', valuesList:['Amabilidad','Valentía','Curiosidad','Independencia','Creatividad','Responsabilidad','Cooperación','Resiliencia']
+  },
+  'es-419': {
+    title:'Historias Moonbeam', tagline:'Crea la historia de esta noche solo para ellos.', language:'Idioma', languageName:'Español (Latinoamérica)', chooseLanguage:'Elige tu idioma', childTitle:'¿Para quién es la historia de esta noche?', name:'Nombre o apodo', namePh:'Milo', age:'Edad', interests:'Intereses', interestsPh:'dinosaurios, espacio, fútbol', dislikes:'Cosas que evitar', dislikesPh:'demasiado miedo, arañas', storyPrefs:'Preferencias de la historia', length:'Duración', tone:'Tono', values:'Valores de la historia', generate:'✨ Crear la historia de esta noche', saved:'Historias guardadas', noSaved:'Tus historias guardadas aparecerán aquí.', short:'Corta', medium:'Mediana', long:'Larga', cosy:'Acogedora y divertida', magical:'Mágica', adventurous:'Aventurera', calm:'Tranquila y soñadora', previous:'‹ Anterior', turn:'Pasar página ›', end:'Fin', save:'♡ Guardar historia', savedBtn:'♥ Guardada', newStory:'↟ Nueva historia', painting:'Creando esta ilustración…', paintingSmall:'Moonbeam está creando la imagen.', beginning:'El principio', page:'Página', errorName:'Escribe primero un nombre o apodo.', errorAge:'Elige una edad entre 3 y 12 años.', writing:'Escribiendo la aventura de esta noche…', illustrationNote:'Las ilustraciones se crean en segundo plano mientras lees.', valuesList:['Amabilidad','Valentía','Curiosidad','Independencia','Creatividad','Responsabilidad','Cooperación','Resiliencia']
+  },
+  'fr-FR': {
+    title:'Histoires Moonbeam', tagline:'Crée une histoire rien que pour lui ou elle ce soir.', language:'Langue', languageName:'Français (France)', chooseLanguage:'Choisissez votre langue', childTitle:"Pour qui est l'histoire de ce soir ?", name:'Prénom ou surnom', namePh:'Milo', age:'Âge', interests:'Centres d’intérêt', interestsPh:'dinosaures, espace, football', dislikes:'À éviter', dislikesPh:'trop effrayant, araignées', storyPrefs:'Préférences de l’histoire', length:'Longueur', tone:'Ton', values:'Valeurs de l’histoire', generate:"✨ Créer l’histoire de ce soir", saved:'Histoires enregistrées', noSaved:'Vos histoires enregistrées apparaîtront ici.', short:'Courte', medium:'Moyenne', long:'Longue', cosy:'Douce et amusante', magical:'Magique', adventurous:'Aventureuse', calm:'Calme et rêveuse', previous:'‹ Précédente', turn:'Tourner la page ›', end:'Fin', save:'♡ Enregistrer', savedBtn:'♥ Enregistrée', newStory:'↟ Nouvelle histoire', painting:'Illustration en cours…', paintingSmall:'Moonbeam crée l’image.', beginning:'Le début', page:'Page', errorName:'Indiquez d’abord un prénom ou un surnom.', errorAge:'Choisissez un âge de 3 à 12 ans.', writing:"L’aventure de ce soir s’écrit…", illustrationNote:'Les illustrations sont créées en arrière-plan pendant la lecture.', valuesList:['Gentillesse','Courage','Curiosité','Autonomie','Créativité','Responsabilité','Coopération','Résilience']
+  },
+  'de-DE': {
+    title:'Moonbeam Geschichten', tagline:'Eine Geschichte nur für sie – für heute Abend.', language:'Sprache', languageName:'Deutsch (Deutschland)', chooseLanguage:'Sprache auswählen', childTitle:'Für wen ist die Geschichte heute Abend?', name:'Name oder Spitzname', namePh:'Milo', age:'Alter', interests:'Interessen', interestsPh:'Dinosaurier, Weltraum, Fußball', dislikes:'Was vermieden werden soll', dislikesPh:'zu gruselig, Spinnen', storyPrefs:'Geschichten-Einstellungen', length:'Länge', tone:'Stimmung', values:'Werte der Geschichte', generate:'✨ Geschichte für heute Abend erstellen', saved:'Gespeicherte Geschichten', noSaved:'Hier erscheinen deine gespeicherten Geschichten.', short:'Kurz', medium:'Mittel', long:'Lang', cosy:'Gemütlich und lustig', magical:'Magisch', adventurous:'Abenteuerlich', calm:'Ruhig und verträumt', previous:'‹ Zurück', turn:'Seite umblättern ›', end:'Ende', save:'♡ Speichern', savedBtn:'♥ Gespeichert', newStory:'↟ Neue Geschichte', painting:'Diese Seite wird gemalt…', paintingSmall:'Moonbeam erstellt das Bild.', beginning:'Der Anfang', page:'Seite', errorName:'Bitte zuerst einen Namen oder Spitznamen eingeben.', errorAge:'Bitte ein Alter von 3 bis 12 wählen.', writing:'Das Abenteuer für heute Abend wird geschrieben…', illustrationNote:'Die Illustrationen werden während des Lesens im Hintergrund erstellt.', valuesList:['Freundlichkeit','Mut','Neugier','Selbstständigkeit','Kreativität','Verantwortung','Zusammenarbeit','Widerstandskraft']
+  },
+  'it-IT': {
+    title:'Storie Moonbeam', tagline:'Crea una storia della buonanotte tutta per loro.', language:'Lingua', languageName:'Italiano (Italia)', chooseLanguage:'Scegli la lingua', childTitle:'Per chi è la storia di stasera?', name:'Nome o soprannome', namePh:'Milo', age:'Età', interests:'Interessi', interestsPh:'dinosauri, spazio, calcio', dislikes:'Cose da evitare', dislikesPh:'troppo spaventoso, ragni', storyPrefs:'Preferenze della storia', length:'Lunghezza', tone:'Tono', values:'Valori della storia', generate:'✨ Crea la storia di stasera', saved:'Storie salvate', noSaved:'Le tue storie salvate appariranno qui.', short:'Breve', medium:'Media', long:'Lunga', cosy:'Dolce e divertente', magical:'Magica', adventurous:'Avventurosa', calm:'Calma e sognante', previous:'‹ Precedente', turn:'Gira pagina ›', end:'Fine', save:'♡ Salva storia', savedBtn:'♥ Salvata', newStory:'↟ Nuova storia', painting:'Sto dipingendo questa pagina…', paintingSmall:'Moonbeam sta creando l’illustrazione.', beginning:'L’inizio', page:'Pagina', errorName:'Inserisci prima un nome o un soprannome.', errorAge:'Scegli un’età da 3 a 12 anni.', writing:'Sto scrivendo l’avventura di stasera…', illustrationNote:'Le illustrazioni vengono create in background mentre leggi.', valuesList:['Gentilezza','Coraggio','Curiosità','Indipendenza','Creatività','Responsabilità','Collaborazione','Resilienza']
+  },
+  'pt-PT': {
+    title:'Histórias Moonbeam', tagline:'Cria uma história só para eles esta noite.', language:'Idioma', languageName:'Português (Portugal)', chooseLanguage:'Escolhe o idioma', childTitle:'Para quem é a história desta noite?', name:'Nome ou alcunha', namePh:'Milo', age:'Idade', interests:'Interesses', interestsPh:'dinossauros, espaço, futebol', dislikes:'Coisas a evitar', dislikesPh:'demasiado assustador, aranhas', storyPrefs:'Preferências da história', length:'Duração', tone:'Tom', values:'Valores da história', generate:'✨ Criar a história desta noite', saved:'Histórias guardadas', noSaved:'As tuas histórias guardadas aparecerão aqui.', short:'Curta', medium:'Média', long:'Longa', cosy:'Aconchegante e divertida', magical:'Mágica', adventurous:'Aventureira', calm:'Calma e sonhadora', previous:'‹ Anterior', turn:'Virar página ›', end:'Fim', save:'♡ Guardar história', savedBtn:'♥ Guardada', newStory:'↟ Nova história', painting:'A pintar esta página…', paintingSmall:'A Moonbeam está a criar a ilustração.', beginning:'O início', page:'Página', errorName:'Indica primeiro um nome ou alcunha.', errorAge:'Escolhe uma idade entre 3 e 12 anos.', writing:'A escrever a aventura desta noite…', illustrationNote:'As ilustrações são criadas em segundo plano enquanto lês.', valuesList:['Bondade','Coragem','Curiosidade','Independência','Criatividade','Responsabilidade','Cooperação','Resiliência']
+  }
+};
+
+const languageNames={ 'en-GB':'English (UK)','en-US':'English (USA)','es-ES':'Español (España)','es-419':'Español (Latinoamérica)','fr-FR':'Français (France)','de-DE':'Deutsch (Deutschland)','it-IT':'Italiano (Italia)','pt-PT':'Português (Portugal)' };
 const $ = id => document.getElementById(id);
-const status = $('status'); const valuesEl = $('values');
-values.forEach(v=>{const b=document.createElement('button');b.type='button';b.className='chip'+(selected.has(v)?' active':'');b.textContent=v;b.onclick=()=>{selected.has(v)?selected.delete(v):selected.add(v);b.classList.toggle('active')};valuesEl.appendChild(b)});
+let language=localStorage.getItem('moonbeamLanguage')||'en-GB';
+if(!locales[language]) language='en-GB';
+let selected = new Set();
 let saved=[]; try{saved=JSON.parse(localStorage.getItem('moonbeamStories')||'[]');if(!Array.isArray(saved))saved=[]}catch{saved=[]}
-let currentBook = null;
-let illustrationCache = new Map();
-renderLibrary(); $('generate').onclick=generateStory;
+let currentBook=null, illustrationCache=new Map();
+
+function t(){return locales[language]||locales['en-GB']}
+function applyLocale(){
+ const x=t(); document.documentElement.lang=language; document.title=x.title;
+ $('tagline').textContent=x.tagline; $('languageTitle').textContent=x.chooseLanguage; $('languageLabel').textContent=x.language;
+ $('childTitle').textContent=x.childTitle; $('nameLabel').textContent=x.name; $('name').placeholder=x.namePh; $('ageLabel').textContent=x.age;
+ $('interestsLabel').textContent=x.interests; $('interests').placeholder=x.interestsPh; $('dislikesLabel').textContent=x.dislikes; $('dislikes').placeholder=x.dislikesPh;
+ $('storyPrefs').textContent=x.storyPrefs; $('lengthLabel').textContent=x.length; $('toneLabel').textContent=x.tone; $('valuesTitle').textContent=x.values;
+ $('generate').textContent=x.generate; $('savedTitle').textContent=x.saved;
+ const opts=[['short',x.short],['medium',x.medium],['long',x.long]]; $('length').innerHTML=opts.map(([v,l])=>`<option value="${v}" ${v==='medium'?'selected':''}>${l}</option>`).join('');
+ const tones=[['cosy and funny',x.cosy],['magical',x.magical],['adventurous',x.adventurous],['calm and dreamy',x.calm]]; const old=$('tone').value||'cosy and funny'; $('tone').innerHTML=tones.map(([v,l])=>`<option value="${v}" ${v===old?'selected':''}>${l}</option>`).join('');
+ renderValues(); renderLibrary();
+}
+function renderValues(){const vals=t().valuesList; const old=selected.size?selected:new Set(['Kindness','Curiosity']); selected=new Set(); const defaults={'en-GB':['Kindness','Curiosity'],'en-US':['Kindness','Curiosity'],'es-ES':['Amabilidad','Curiosidad'],'es-419':['Amabilidad','Curiosidad'],'fr-FR':['Gentillesse','Curiosité'],'de-DE':['Freundlichkeit','Neugier'],'it-IT':['Gentilezza','Curiosità'],'pt-PT':['Bondade','Curiosidade']}; const chosen=old.size?old:defaults[language]; vals.forEach(v=>{if(chosen.has(v)||(!old.size&&defaults[language]?.includes(v)))selected.add(v)}); $('values').innerHTML=''; vals.forEach(v=>{const b=document.createElement('button');b.type='button';b.className='chip'+(selected.has(v)?' active':'');b.textContent=v;b.onclick=()=>{selected.has(v)?selected.delete(v):selected.add(v);b.classList.toggle('active')};$('values').appendChild(b)});}
+
+$('language').value=language;
+$('language').addEventListener('change',()=>{language=$('language').value;localStorage.setItem('moonbeamLanguage',language);selected=new Set();applyLocale();});
+applyLocale();
+$('generate').onclick=generateStory;
 
 async function generateStory(){
- const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language:$('language').value,values:[...selected]};
- if(!child.name){status.textContent='Give me a name or nickname first.';return}
- if(!Number.isFinite(child.age)||child.age<3||child.age>12){status.textContent='Please choose an age from 3 to 12.';return}
- const button=$('generate');button.disabled=true;status.textContent='Writing tonight’s adventure…';
- try{
-  const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({child})});
-  const raw=await response.text(); let data=null; try{data=JSON.parse(raw)}catch{}
-  if(!response.ok){let msg=data?.error; if(typeof msg!=='string')msg=JSON.stringify(msg||raw); throw new Error(msg||`Story service failed (${response.status})`)}
-  if(!data?.story)throw new Error('The story service did not return a story.');
-  renderStory(data.story,null,child);
- }catch(e){console.error('Moonbeam generation error:',e);status.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'}
- finally{button.disabled=false}
-}
+ const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language,languageName:languageNames[language],values:[...selected]};
+ if(!child.name){$('status').textContent=t().errorName;return}
+ if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
+ const button=$('generate');button.disabled=true;$('status').textContent=t().writing;
+ try{const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({child})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(!response.ok){throw new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`)}if(!data?.story)throw new Error('The story service did not return a story.');renderStory(data.story,null,child)}catch(e){console.error(e);$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'}finally{button.disabled=false}}
 
-function buildBook(s,image,child){
- const pages = Array.isArray(s.pages) ? s.pages : [];
- return {title:s.title||'Tonight’s Adventure', opening:s.opening||'', character_bible:s.character_bible||'', pages, closing:s.closing||'', image:image||null, child, storyId:Date.now()+'-'+Math.random().toString(36).slice(2)};
-}
-
-function renderStory(s,image,child){
- currentBook=buildBook(s,image,child);
- const el=$('story'); el.classList.remove('hidden');
- el.innerHTML=`<div class="book-shell">
-   <div class="book-cover-head"><span>MOONBEAM STORIES</span><span>Tonight’s adventure</span></div>
-   <div id="book" class="book"></div>
-   <div class="book-controls">
-     <button class="secondary" id="prevPage" type="button">‹ Previous</button>
-     <div class="page-indicator" id="pageIndicator"></div>
-     <button class="primary turn" id="nextPage" type="button">Turn page ›</button>
-   </div>
-   <p class="illustration-note" id="illustrationNote">Illustrations are created as you turn the pages.</p>
-   <div class="actions">
-     <button class="secondary" id="save" type="button">♡ Save story</button>
-     <button class="secondary" id="newStory" type="button">↟ New story</button>
-   </div>
- </div>`;
- renderBookPage(0);
- $('save').onclick=()=>{
-   const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
-   saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:currentBook.child,at:new Date().toISOString()});
-   saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();$('save').textContent='♥ Saved';
- };
- $('newStory').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
- el.scrollIntoView({behavior:'smooth'});
-}
-
+function buildBook(s,image,child){const pages=Array.isArray(s.pages)?s.pages:[];return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,storyId:Date.now()+'-'+Math.random().toString(36).slice(2)}}
+function renderStory(s,image,child){currentBook=buildBook(s,image,child);const el=$('story');el.classList.remove('hidden');el.innerHTML=`<div class="book-shell"><div class="book-cover-head"><span>${escapeHtml(t().title)}</span><span>${escapeHtml(t().childTitle.replace('?',''))}</span></div><div id="book" class="book"></div><div class="book-controls"><button class="secondary" id="prevPage" type="button">${escapeHtml(t().previous)}</button><div class="page-indicator" id="pageIndicator"></div><button class="primary turn" id="nextPage" type="button">${escapeHtml(t().turn)}</button></div><p class="illustration-note" id="illustrationNote">${escapeHtml(t().illustrationNote)}</p><div class="actions"><button class="secondary" id="save" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="newStory" type="button">${escapeHtml(t().newStory)}</button></div></div>`;renderBookPage(0);$('save').onclick=()=>{const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:currentBook.child,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();$('save').textContent=t().savedBtn};$('newStory').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});el.scrollIntoView({behavior:'smooth'})}
 function illustrationKey(book,index){return `${book.storyId}:${index}`}
-
-async function loadIllustration(index, prompt, silent=false){
- const book=currentBook;
- if(!book || !prompt) return;
- const key=illustrationKey(book,index);
- if(illustrationCache.has(key)) {
-   if(!silent) renderIllustrationIntoPage(index,illustrationCache.get(key));
-   return;
- }
- const frame=document.querySelector('.illustration-frame');
- if(!silent && (!frame || book.currentPage!==index)) return;
- if(!silent && frame) frame.innerHTML='<div class="illustration-loading"><div class="spinner"></div><p>Painting this page…</p><small>Moonbeam is creating the picture.</small></div>';
- try{
-   const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-     prompt,
-     style:`Classic premium children's storybook illustration. Consistent recurring characters: ${book.character_bible || 'Keep the main child character visually consistent across the book.'}`
-   })});
-   const raw=await response.text(); let data=null; try{data=JSON.parse(raw)}catch{}
-   if(!response.ok) throw new Error(data?.error || `Illustration service failed (${response.status})`);
-   if(!data?.image) throw new Error('The illustration service returned no image.');
-   illustrationCache.set(key,data.image);
-   if(currentBook===book && book.currentPage===index) renderIllustrationIntoPage(index,data.image);
-   return data.image;
- }catch(e){
-   console.error('Moonbeam illustration error:',e);
-   if(!silent && currentBook===book && book.currentPage===index){
-     const f=document.querySelector('.illustration-frame');
-     if(f)f.innerHTML=`<div class="illustration-error"><div class="moon">☾</div><p>We couldn't paint this page just now.</p><small>${escapeHtml(e?.message||String(e))}</small><button class="secondary retry-illustration" type="button">Try again</button></div>`;
-     const retry=document.querySelector('.retry-illustration'); if(retry)retry.onclick=()=>loadIllustration(index,prompt,false);
-   }
- }
-}
-
-function getIllustrationPrompt(index){
- const book=currentBook; if(!book)return '';
- const total=book.pages.length+2;
- if(index===0)return `Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. ${book.pages[0]?.illustration_prompt||''}`;
- if(index===total-1)return `Peaceful final scene for “${book.title}”, showing the characters safe, content and ready for bedtime. ${book.pages[book.pages.length-1]?.illustration_prompt||''}`;
- return book.pages[index-1]?.illustration_prompt||'A charming children’s storybook scene';
-}
-
-// Start the current illustration immediately, while also quietly preparing the next
-// two pages. This makes page turning feel much faster without making the reader wait
-// for all the artwork before the book can open.
-function prefetchIllustrations(index){
- const book=currentBook; if(!book)return;
- const total=book.pages.length+2;
- [index+1,index+2].filter(i=>i<total).forEach(i=>loadIllustration(i,getIllustrationPrompt(i),true));
-}
-
-function renderIllustrationIntoPage(index,image){
- if(!currentBook || currentBook.currentPage!==index)return;
- const frame=document.querySelector('.illustration-frame');
- if(frame)frame.innerHTML=`<img src="${escapeHtml(image)}" alt="Story illustration">`;
-}
-
-function renderBookPage(index){
- const book=currentBook; const total=book.pages.length+2;
- const clamped=Math.max(0,Math.min(index,total-1)); book.currentPage=clamped;
- const isOpening=clamped===0, isClosing=clamped===total-1;
- let text='', illustrationPrompt='', label='';
- if(isOpening){text=book.opening;label='The beginning';}
- else if(isClosing){text=book.closing;label='The end';}
- else {const p=book.pages[clamped-1]||{};text=p.text||'';label=`Page ${clamped}`;}
- illustrationPrompt=getIllustrationPrompt(clamped);
- const bookEl=$('book');
- bookEl.innerHTML=`<div class="paper left-page">
-   <div class="page-number">${isOpening?'☾':clamped}</div>
-   <div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text">${escapeHtml(text)}</div></div>
-   <div class="page-footer">Moonbeam Stories</div>
- </div>
- <div class="paper right-page">
-   <div class="page-number">${isClosing?'☾':(clamped+1)}</div>
-   <div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>Painting this page…</p><small>Turn the page and Moonbeam will create the picture.</small></div></div>
-   <div class="page-footer">✦</div>
- </div>`;
- $('prevPage').disabled=clamped===0;
- $('nextPage').disabled=clamped===total-1;
- $('nextPage').textContent=clamped===total-1?'The End':'Turn page ›';
- $('pageIndicator').textContent=`${clamped+1} / ${total}`;
- loadIllustration(clamped,illustrationPrompt,false);
- prefetchIllustrations(clamped);
-}
-
-$('story').addEventListener('click',e=>{
- if(e.target.id==='prevPage')renderBookPage((currentBook.currentPage||0)-1);
- if(e.target.id==='nextPage')renderBookPage((currentBook.currentPage||0)+1);
-});
-
-function renderLibrary(){const l=$('library');if(!saved.length){l.innerHTML='<p class="muted">Your saved stories will appear here.</p>';return}l.innerHTML=saved.map((x,i)=>`<button type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child.name)}</small></button>`).join('')}
+async function loadIllustration(index,prompt,silent=false){const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index);if(illustrationCache.has(key)){if(!silent)renderIllustrationIntoPage(index,illustrationCache.get(key));return}const frame=document.querySelector('.illustration-frame');if(!silent&&(!frame||book.currentPage!==index))return;if(!silent&&frame)frame.innerHTML=`<div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div>`;try{const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style:`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(!response.ok)throw new Error(data?.error||`Illustration service failed (${response.status})`);if(!data?.image)throw new Error('The illustration service returned no image.');illustrationCache.set(key,data.image);if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,data.image);return data.image}catch(e){console.error(e);if(!silent&&currentBook===book&&book.currentPage===index){const f=document.querySelector('.illustration-frame');if(f)f.innerHTML=`<div class="illustration-error"><div class="moon">☾</div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(e?.message||String(e))}</small><button class="secondary retry-illustration" type="button">${language.startsWith('es')?'Reintentar':'Try again'}</button></div>`;const retry=document.querySelector('.retry-illustration');if(retry)retry.onclick=()=>loadIllustration(index,prompt,false)}}}
+function getIllustrationPrompt(index){const book=currentBook;if(!book)return'';const total=book.pages.length+2;if(index===0)return`Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. ${book.pages[0]?.illustration_prompt||''}`;if(index===total-1)return`Peaceful final scene for “${book.title}”, showing the characters safe, content and ready for bedtime. ${book.pages[book.pages.length-1]?.illustration_prompt||''}`;return book.pages[index-1]?.illustration_prompt||'A charming children’s storybook scene'}
+function prefetchIllustrations(index){const book=currentBook;if(!book)return;const total=book.pages.length+2;[index+1,index+2].filter(i=>i<total).forEach(i=>loadIllustration(i,getIllustrationPrompt(i),true))}
+function renderIllustrationIntoPage(index,image){if(!currentBook||currentBook.currentPage!==index)return;const frame=document.querySelector('.illustration-frame');if(frame)frame.innerHTML=`<img src="${escapeHtml(image)}" alt="${escapeHtml(t().title)}">`}
+function renderBookPage(index){const book=currentBook,total=book.pages.length+2,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;const isOpening=clamped===0,isClosing=clamped===total-1;let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};const bookEl=$('book');bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text">${escapeHtml(text)}</div></div><div class="page-footer">${escapeHtml(t().title)}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div><div class="page-footer">✦</div></div>`;$('prevPage').disabled=clamped===0;$('nextPage').disabled=clamped===total-1;$('nextPage').textContent=clamped===total-1?t().end:t().turn;$('pageIndicator').textContent=`${clamped+1} / ${total}`;loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped)}
+$('story').addEventListener('click',e=>{if(e.target.id==='prevPage')renderBookPage((currentBook.currentPage||0)-1);if(e.target.id==='nextPage')renderBookPage((currentBook.currentPage||0)+1)});
+function renderLibrary(){const l=$('library');if(!saved.length){l.innerHTML=`<p class="muted">${escapeHtml(t().noSaved)}</p>`;return}l.innerHTML=saved.map((x,i)=>`<button type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button>`).join('')}
 window.openSaved=i=>{const x=saved[i];if(x)renderStory(x.story,x.image,x.child)};
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}

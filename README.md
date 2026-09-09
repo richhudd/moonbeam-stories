@@ -1,16 +1,17 @@
-# Moonbeam Stories
+# Moonbeam Stories V13
 
-Mobile-first MVP for personalised children's bedtime stories.
-
-## Deploying to Vercel
-- Put these files at the ROOT of the GitHub repository (not inside another folder).
-- Add `OPENAI_API_KEY` as a Vercel environment variable.
-- Redeploy.
-- Visit `/api/health` to verify the backend.
-
+Multilingual book-style bedtime story app.
 
 ## Languages
-Moonbeam Stories supports four language variants: English (UK), English (USA), Spanish (Spain), and Spanish (Latin America). Stories are written directly in the selected variant rather than translated after generation.
+- English (UK)
+- English (USA)
+- Español (España)
+- Español (Latinoamérica)
+- Français (France)
+- Deutsch (Deutschland)
+- Italiano (Italia)
+- Português (Portugal)
 
+The selected language is now the app locale: interface labels, child/story preference controls, values, status messages, book controls and story generation adapt to it. The choice persists in localStorage.
 
-V12 adds eight language/region options: English (UK), English (USA), Español (España), Español (Latinoamérica), Français (France), Deutsch (Deutschland), Italiano (Italia), and Português (Portugal). Stories are generated directly in the selected regional variety.
+Upload the contents of this folder to the root of the GitHub repository. No vercel.json is required.

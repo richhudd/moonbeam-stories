@@ -1,16 +1,11 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17132d"><title>Moonbeam Stories</title><link rel="stylesheet" href="/styles.css">
-</head>
+<html lang="en-GB">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17132d"><title>Moonbeam Stories</title><link rel="stylesheet" href="/styles.css"></head>
 <body><main class="app">
-<header><div class="logo">☾</div><div><h1>Moonbeam Stories</h1><p>Make tonight's story just for them.</p></div></header>
-<section class="card"><h2>Who's tonight's story for?</h2>
-<div class="grid"><label>Name or nickname<input id="name" placeholder="Milo"></label><label>Age<input id="age" type="number" min="3" max="12" value="7"></label><label>Interests<input id="interests" placeholder="dinosaurs, space, football"></label><label>Things to avoid<input id="dislikes" placeholder="too scary, spiders"></label></div>
-<div class="row"><label>Language<select id="language"><option value="en-GB" selected>English (UK)</option><option value="en-US">English (USA)</option><option value="es-ES">Español (España)</option><option value="es-419">Español (Latinoamérica)</option><option value="fr-FR">Français (France)</option><option value="de-DE">Deutsch (Deutschland)</option><option value="it-IT">Italiano (Italia)</option><option value="pt-PT">Português (Portugal)</option></select></label><label>Story length<select id="length"><option>short</option><option selected>medium</option><option>long</option></select></label><label>Tone<select id="tone"><option selected>cosy and funny</option><option>magical</option><option>adventurous</option><option>calm and dreamy</option></select></label></div>
-<h3>Story Values</h3><div class="chips" id="values"></div>
-<button class="primary" id="generate" type="button">✨ Make Tonight's Story</button><p class="status" id="status"></p>
-</section>
-<section id="story" class="story hidden"></section>
-<section class="card"><h2>Saved stories</h2><div id="library" class="library"><p class="muted">Your saved stories will appear here.</p></div></section>
+<header><div class="logo">☾</div><div><h1 id="taglineTitle">Moonbeam Stories</h1><p id="tagline">Make tonight's story just for them.</p></div></header>
+<section class="card language-card"><h2 id="languageTitle">Choose your language</h2><label id="languageLabel">Language<select id="language"><option value="en-GB">English (UK)</option><option value="en-US">English (USA)</option><option value="es-ES">Español (España)</option><option value="es-419">Español (Latinoamérica)</option><option value="fr-FR">Français (France)</option><option value="de-DE">Deutsch (Deutschland)</option><option value="it-IT">Italiano (Italia)</option><option value="pt-PT">Português (Portugal)</option></select></label></section>
+<section class="card"><h2 id="childTitle">Who's tonight's story for?</h2><div class="grid"><label><span id="nameLabel">Name or nickname</span><input id="name" placeholder="Milo"></label><label><span id="ageLabel">Age</span><input id="age" type="number" min="3" max="12" value="7"></label><label><span id="interestsLabel">Interests</span><input id="interests" placeholder="dinosaurs, space, football"></label><label><span id="dislikesLabel">Things to avoid</span><input id="dislikes" placeholder="too scary, spiders"></label></div>
+<h3 id="storyPrefs">Story preferences</h3><div class="row"><label><span id="lengthLabel">Story length</span><select id="length"></select></label><label><span id="toneLabel">Tone</span><select id="tone"></select></label></div>
+<h3 id="valuesTitle">Story Values</h3><div class="chips" id="values"></div><button class="primary" id="generate" type="button">✨ Make Tonight's Story</button><p class="status" id="status"></p></section>
+<section id="story" class="story hidden"></section><section class="card"><h2 id="savedTitle">Saved stories</h2><div id="library" class="library"></div></section>
 </main><script src="/app.js"></script></body></html>
