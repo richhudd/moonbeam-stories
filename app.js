@@ -62,7 +62,7 @@ async function requestIllustration(key,prompt,style,force=false,referenceImage=n
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
  if(!force&&illustrationInflight.has(key))return illustrationInflight.get(key);
- const task=(async()=>{let attempts=0;while(attempts<3){attempts++;const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style,referenceImage:referenceImage||null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
+ const task=(async()=>{let attempts=0;while(attempts<3){attempts++;const accessToken=await currentAccessToken();if(!accessToken)throw new Error('Sign in again to create illustrations.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:referenceImage||null,generationRunId})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
    if(referenceImage && data.usedReferencePhoto!==true) throw new Error('The child photo reference was not accepted by the illustration service.');
    illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
  illustrationInflight.set(key,task);try{return await task}finally{illustrationInflight.delete(key)}
@@ -85,9 +85,8 @@ function applyLocale(){
  $('tagline').textContent=x.tagline; $('languageTitle').textContent=x.chooseLanguage; $('languageLabel').textContent=x.language;
  $('childTitle').textContent=x.childTitle; $('nameLabel').textContent=x.name; $('name').placeholder=x.namePh; $('ageLabel').textContent=x.age;
  $('interestsLabel').textContent=x.interests; $('interests').placeholder=x.interestsPh; $('dislikesLabel').textContent=x.dislikes; $('dislikes').placeholder=x.dislikesPh;
- $('storyPrefs').textContent=x.storyPrefs; $('lengthLabel').textContent=x.length; $('toneLabel').textContent=x.tone; $('valuesTitle').textContent=x.values;
+ $('storyPrefs').textContent=x.storyPrefs; $('toneLabel').textContent=x.tone; $('valuesTitle').textContent=x.values;
  $('generate').textContent=x.generate; $('savedTitle').textContent=x.saved;
- const oldLength=$('length').value||localStorage.getItem('moonbeamLength')||'medium'; const opts=[['short',x.short],['medium',x.medium],['long',x.long]]; $('length').innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join(''); $('length').value=opts.some(([v])=>v===oldLength)?oldLength:'medium';
  const tones=[['cosy and funny',x.cosy],['magical',x.magical],['adventurous',x.adventurous],['calm and dreamy',x.calm]]; const old=$('tone').value||'cosy and funny'; $('tone').innerHTML=tones.map(([v,l])=>`<option value="${v}" ${v===old?'selected':''}>${l}</option>`).join('');
  renderValues(); renderLibrary();
 }
@@ -96,7 +95,6 @@ function renderValues(){const vals=t().valuesList; const old=selected.size?selec
 $('language').value=language;
 $('language').addEventListener('change',()=>{language=$('language').value;localStorage.setItem('moonbeamLanguage',language);selected=new Set();applyLocale();});
 applyLocale();
-$('length').addEventListener('change',()=>localStorage.setItem('moonbeamLength',$('length').value));
 $('generate').onclick=generateStory;
 $('signIn')?.addEventListener('click',signInParent);
 $('signUp')?.addEventListener('click',signUpParent);
@@ -126,7 +124,7 @@ async function applyAuthSession(session){
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('authSignedIn')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?'Cloud connected':'Not signed in';badge.classList.toggle('online',!!currentUser)}
  if($('signedInAs'))$('signedInAs').textContent=currentUser?`Signed in as ${currentUser.email}`:'';
- if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories()]);await loadCurrentChildPhoto()}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();await loadCurrentChildPhoto()}
+ if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto()}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
 }
 
 function showPasswordRecovery(){
@@ -198,17 +196,37 @@ async function deleteChildProfile(){
  if(!currentUser||!activeProfileId)return;if(!confirm('Delete this child profile? Saved stories will remain in your library.'))return;const oldPhotoKey=currentPhotoKey(activeProfileId);const {error}=await supabaseClient.from('child_profiles').delete().eq('id',activeProfileId);if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}await childPhotoDelete(oldPhotoKey);activeProfileId=null;await loadCloudProfiles();await selectCloudProfile();$('profileStatus').textContent='Profile deleted.'
 }
 async function loadCloudStories(){
- if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:{...(profile||{name:'',age:7,interests:'',dislikes:''}),profileId:row.child_id},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,at:row.created_at}});renderLibrary()
+ if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:{...(profile||{name:'',age:7,interests:'',dislikes:''}),profileId:row.child_id},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,generationRunId:row.generation_run_id||null,at:row.created_at}});renderLibrary()
 }
 async function saveCurrentStory(){
  if(!currentBook)return;const button=$('mobileSave')||$('save');if(button)button.disabled=true;
  try{
    const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
-   if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const {error}=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing});if(error)throw error;await loadCloudStories();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;return}
-   const savedChild={...(currentBook.child||{})};delete savedChild.referencePhoto;saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:savedChild,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;
+   if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const {error}=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing,generation_run_id:currentBook.generationRunId||null});if(error)throw error;await loadCloudStories();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;return}
+   const savedChild={...(currentBook.child||{})};delete savedChild.referencePhoto;saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:savedChild,generationRunId:currentBook.generationRunId||null,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;
  }catch(e){console.error(e);if(button)button.textContent=t().save;alert('The story could not be saved: '+(e.message||e))}finally{if(button)button.disabled=false}
 }
 async function deleteCloudStory(id){if(!currentUser)return;if(!confirm('Delete this saved story?'))return;const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
+
+let storyCreditBalance=null;
+function renderStoryCredits(balance=storyCreditBalance){
+ storyCreditBalance=Number.isFinite(Number(balance))?Number(balance):null;
+ const el=$('creditStatus');if(!el)return;
+ el.classList.toggle('empty',storyCreditBalance===0);
+ if(!currentUser){el.innerHTML='<strong>3 free stories</strong> when you create or sign in to your parent account.';return}
+ if(storyCreditBalance===null){el.textContent='Checking story credits…';return}
+ if(storyCreditBalance===0){el.innerHTML='<strong>No story credits remaining.</strong> Your saved stories are still free to reopen and read.';return}
+ el.innerHTML=`<strong>${storyCreditBalance} story credit${storyCreditBalance===1?'':'s'} remaining.</strong> One new story uses one credit.`;
+}
+async function loadStoryCredits(){
+ if(!currentUser||!supabaseClient){renderStoryCredits(null);return null}
+ const {data,error}=await supabaseClient.from('story_credits').select('balance').eq('user_id',currentUser.id).maybeSingle();
+ if(error){console.error('credit balance',error);renderStoryCredits(null);return null}
+ renderStoryCredits(data?.balance ?? 3);return storyCreditBalance;
+}
+async function currentAccessToken(){
+ const {data:{session}}=await supabaseClient.auth.getSession();return session?.access_token||'';
+}
 
 async function generateStory(){
  let resolvedReferencePhoto=null;
@@ -216,9 +234,11 @@ async function generateStory(){
    resolvedReferencePhoto=currentChildPhoto||await childPhotoGet(currentPhotoKey());
    if(resolvedReferencePhoto)currentChildPhoto=resolvedReferencePhoto;
  }
- const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:resolvedReferencePhoto};
+ const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:'standard',tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:resolvedReferencePhoto};
+ if(!currentUser){$('status').innerHTML='<span class="error">Sign in or create a parent account to make a story.</span>';if(isPhonePortrait())goSetupPage(0);return}
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
+ const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
  const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy');
  $('status').textContent='';button.disabled=true;button.classList.add('is-generating');
  if(preparingTitle)preparingTitle.textContent=language.startsWith('es')?'Preparando tu historia…':language.startsWith('fr')?'Préparation de votre histoire…':language.startsWith('de')?'Deine Geschichte wird vorbereitet…':language.startsWith('it')?'Preparazione della storia…':language.startsWith('pt')?'A preparar a tua história…':'Preparing your story…';
@@ -229,19 +249,21 @@ async function generateStory(){
  // with the following fetch and the parent never sees the waiting indicator.
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
-   const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({child})});
+   const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child})});
    const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}
    if(!response.ok){throw new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`)}
    if(!data?.story)throw new Error('The story service did not return a story.');
+   if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
+   child.generationRunId=data.generationRunId||null;
    renderStory(data.story,null,child)
  }catch(e){
-   console.error(e);$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
+   console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
  }finally{
    button.disabled=false;button.classList.remove('is-generating');if(preparing)preparing.classList.add('hidden')
  }
 }
 
-function buildBook(s,image,child){const pages=Array.isArray(s.pages)?s.pages:[];return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId:makeStoryCacheId(s,child),currentPage:-1,mobileSide:'text',readingMode:'self'}}
+function buildBook(s,image,child){const pages=Array.isArray(s.pages)?s.pages:[];return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId:makeStoryCacheId(s,child),currentPage:-1,mobileSide:'text',readingMode:'self'}}
 function renderStory(s,image,child){
  currentBook=buildBook(s,image,child);
  const el=$('story');el.classList.remove('hidden');
@@ -479,7 +501,7 @@ function splitNarrationSentences(text){const m=String(text||'').match(/[^.!?…]
 function renderNarrationText(text){return splitNarrationSentences(text).map((sentence,i)=>`<span class="narration-sentence" data-sentence="${i}">${escapeHtml(sentence)}</span>`).join(' ')}
 function currentPageText(){if(!currentBook)return'';const i=currentBook.currentPage,total=currentBook.pages.length+2;if(i===0)return currentBook.opening||'';if(i===total-1)return currentBook.closing||'';return currentBook.pages[i-1]?.text||''}
 function narrationKey(){return currentBook?`${currentBook.cacheId}:audio:${language}:${currentBook.currentPage}`:''}
-async function getNarration(text,key){if(narrationCache.has(key))return narrationCache.get(key);const r=await fetch('/api/narrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,language})});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok||!data.audio)throw new Error(data?.error||`Narration failed (${r.status})`);narrationCache.set(key,data.audio);return data.audio}
+async function getNarration(text,key){if(narrationCache.has(key))return narrationCache.get(key);const accessToken=await currentAccessToken();if(!accessToken)throw new Error('Sign in again to use narration.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure narration allowance.');const r=await fetch('/api/narrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({text,language,generationRunId})});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok||!data.audio)throw new Error(data?.error||`Narration failed (${r.status})`);narrationCache.set(key,data.audio);return data.audio}
 function clearNarrationHighlight(){document.querySelectorAll('.narration-sentence').forEach(x=>x.classList.remove('speaking'))}
 function stopNarration(){narrationRun++;if(narrationStartTimeout){clearTimeout(narrationStartTimeout);narrationStartTimeout=null}if(narrationTimer){clearInterval(narrationTimer);narrationTimer=null}for(const audio of activeNarrationAudios){try{audio.pause();audio.currentTime=0;audio.onended=null;audio.ontimeupdate=null}catch{}}activeNarrationAudios.clear();narrationAudio=null;clearNarrationHighlight();const b=$('narrationControl');if(b){b.textContent='▶';b.classList.remove('loading')}}
 function scheduleNarration(delay=120){if(narrationStartTimeout)clearTimeout(narrationStartTimeout);narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;startNarrationForCurrentPage()},delay)}
@@ -510,7 +532,7 @@ function renderLibrary(){
  if(!items.length){l.innerHTML=`<p class="muted">${escapeHtml(t().noSaved)}</p>${currentUser?'':'<p class="cloud-note">Sign in above to keep stories across devices.</p>'}`;return}
  if(currentUser){l.innerHTML=items.map((x,i)=>`<div class="library-item"><button class="library-open" type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button><button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">Delete</button></div>`).join('')}else{l.innerHTML=items.map((x,i)=>`<button type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button>`).join('')}
 }
-window.openSaved=async i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x){if(x.language&&locales[x.language]){language=x.language;$('language').value=language;localStorage.setItem('moonbeamLanguage',language);applyLocale()}const child={...(x.child||{})};if(!child.referencePhoto){child.referencePhoto=await childPhotoGet(currentPhotoKey(child.profileId||null))}renderStory(x.story,x.image||null,child)}};
+window.openSaved=async i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x){if(x.language&&locales[x.language]){language=x.language;$('language').value=language;localStorage.setItem('moonbeamLanguage',language);applyLocale()}const child={...(x.child||{})};child.generationRunId=x.generationRunId||child.generationRunId||null;if(!child.referencePhoto){child.referencePhoto=await childPhotoGet(currentPhotoKey(child.profileId||null))}renderStory(x.story,x.image||null,child)}};
 window.deleteSavedStory=id=>deleteCloudStory(id);
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 

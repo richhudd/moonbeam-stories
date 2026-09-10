@@ -77,3 +77,20 @@ No new Vercel variables are required if `SUPABASE_SERVICE_ROLE_KEY` and
 
 ## V49 desktop text clipping fix
 Desktop story text now checks the actual painted text bounds against the physical paper page with an 18px safety margin, shrinking only when necessary. This fixes final-line clipping caused by vertically centred flex layout/font metrics. No API, image, narration, mobile reader, or usage-tracking behaviour changed.
+
+## V50 — standard story length + 3 free story credits
+
+V50 removes the Short / Medium / Long selector. Every new story now uses one standard Moonbeam format: opening + 4 story pages + closing (6 reading spreads).
+
+It also adds the first real server-enforced credit system:
+- every account gets 3 free story credits;
+- one successful new story consumes one credit;
+- reopening saved stories consumes no credits;
+- image generation and narration do not separately consume credits;
+- the balance is stored in Supabase, not localStorage;
+- `/api/generate` now requires a valid signed-in Moonbeam session and reserves the credit server-side before calling OpenAI;
+- known OpenAI/story-format failures refund the reserved credit;
+- no payment checkout is included yet. This is the free-credit foundation we can connect to Stripe next.
+
+### Required before deploying V50
+Run `SUPABASE_V50_CREDITS.sql` once in Supabase SQL Editor. It creates the credit table/functions, backfills existing accounts with 3 credits, and gives future accounts 3 credits automatically.

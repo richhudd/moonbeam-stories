@@ -1,4 +1,5 @@
 const {logUsage,estimateGBP}=require('./_usage');
+const {verifyMoonbeamUser,consumeStoryCredit,refundStoryCredit,createGenerationRun}=require('./_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -16,7 +17,19 @@ module.exports = async function handler(req, res) {
     }
 
     const age = Number(child.age);
-    const length = child.length || 'medium';
+    const length = 'standard';
+
+    // V50: every new Moonbeam story has the same predictable length and cost.
+    const moonbeamUser = await verifyMoonbeamUser(req);
+    let creditsRemaining;
+    try { creditsRemaining = await consumeStoryCredit(moonbeamUser.id); }
+    catch (e) { return res.status(e.status || 500).json({ error: e.message, code: e.code || 'CREDIT_ERROR' }); }
+    let creditReserved = true;
+    const refundReservedCredit = async () => {
+      if (!creditReserved) return;
+      creditReserved = false;
+      await refundStoryCredit(moonbeamUser.id);
+    };
     const language = child.language || 'en-GB';
     const languageGuide = {
       'en-GB': 'Write in natural British English. Use British spelling and vocabulary, such as colour, favourite, holiday, trousers, biscuit, torch and garden where natural.',
@@ -28,14 +41,9 @@ module.exports = async function handler(req, res) {
       'it-IT': 'Scrivi in italiano naturale d’Italia. Usa ortografia, vocabolario ed espressioni comuni in Italia.',
       'pt-PT': 'Escreve em português natural de Portugal. Usa a ortografia, o vocabulário e as expressões habituais em Portugal, evitando brasileirismos.'
     }[language] || 'Write in natural British English.';
-    // Real picture-book layout: length changes the NUMBER of spreads, not the amount of text crammed onto each spread.
-    // Opening + story pages + closing should all be visually similar in text density.
-    const lengthConfig = length === 'short'
-      ? { pages: 4, totalScreens: 6, totalWords: 'about 650-750 words' }
-      : length === 'long'
-        ? { pages: 8, totalScreens: 10, totalWords: 'about 1080-1250 words' }
-        : { pages: 6, totalScreens: 8, totalWords: 'about 860-1000 words' };
-    const pageCount = lengthConfig.pages;
+    // Standard Moonbeam format: opening + 4 story pages + closing = 6 reading spreads.
+    const lengthConfig = { pages: 4, totalScreens: 6, totalWords: 'about 650-750 words' };
+    const pageCount = 4;
     const lengthGuide = lengthConfig.totalWords;
     const targetPerScreen = '105-125 words';
 
@@ -46,7 +54,7 @@ Name/nickname: ${String(child.name)}
 Age: ${age}
 Interests: ${child.interests || 'imagination and exploring'}
 Things to avoid: ${child.dislikes || 'nothing specific'}
-Requested length: ${lengthGuide}
+Standard Moonbeam length: ${lengthGuide}
 Tone: ${child.tone || 'cosy and funny'}
 Language: ${language}
 Language guidance: ${languageGuide}
@@ -75,7 +83,7 @@ OUTPUT
 Return JSON only, with exactly this shape:
 {"title":"string","opening":"string","character_bible":"string","pages":[...exactly ${pageCount} page objects...],"closing":"string"}
 
-The opening, exactly ${pageCount} story pages and closing must together form one continuous story of the requested length. The page count is mandatory: short = 4 story pages, medium = 6 story pages, long = 8 story pages. Do not use the same page count for different length choices.
+The opening, exactly ${pageCount} story pages and closing must together form one continuous story of the requested length. The page count is mandatory: exactly 4 story pages, plus the opening and closing, for 6 displayed reading spreads in total.
 
 REAL-BOOK PAGE BALANCE — MANDATORY
 The app displays ONE text page beside ONE equally sized illustration. Every displayed text page must therefore contain approximately the same amount of prose.
@@ -84,8 +92,7 @@ The app displays ONE text page beside ONE equally sized illustration. Every disp
 - Write the closing at approximately 90-115 words.
 - Never make one page a few sentences while another is several long paragraphs.
 - Keep each displayed page self-contained enough to turn naturally, but do not add headings inside the prose.
-- Length must come from MORE OR FEWER PAGES, not by making long stories denser per page.
-- Short therefore has ${lengthConfig.totalScreens} displayed text pages, medium has 8, and long has 10.
+- Use exactly ${lengthConfig.totalScreens} displayed text pages in total.
 - Aim for ${lengthGuide} overall.
 
 Each pages array item MUST have exactly this shape: {"text":"string","illustration_prompt":"string"}. Add a concise character_bible describing the recurring characters' appearance, clothing, age range, colours and any distinctive features so an image model can keep them consistent. Each illustration_prompt should describe a charming, child-friendly storybook illustration for that specific scene and should refer to the character_bible details where relevant. Do not include text or lettering in illustrations.`;
@@ -191,7 +198,7 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
       firstOutput = await callStoryModel(prompt);
       story = normaliseStory(parseStoryOutput(firstOutput));
     } catch (e) {
-      if (e.openaiStatus) return res.status(502).json({ error: e.message, openai_status: e.openaiStatus });
+      if (e.openaiStatus) { await refundReservedCredit(); return res.status(502).json({ error: e.message, openai_status: e.openaiStatus }); }
       throw e;
     }
 
@@ -203,12 +210,13 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
         const repairedOutput = await callStoryModel(repairInput, 5000);
         story = normaliseStory(parseStoryOutput(repairedOutput));
       } catch (e) {
-        if (e.openaiStatus) return res.status(502).json({ error: e.message, openai_status: e.openaiStatus });
+        if (e.openaiStatus) { await refundReservedCredit(); return res.status(502).json({ error: e.message, openai_status: e.openaiStatus }); }
         throw e;
       }
     }
 
     if (!story) {
+      await refundReservedCredit();
       return res.status(502).json({ error: 'Moonbeam could not finish this story correctly. Please tap Make Tonight’s Story again.' });
     }
 
@@ -285,8 +293,12 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
     const textScreens = [story.opening, ...story.pages.map(p => p && p.text), story.closing];
     const counts = textScreens.map(wordCount);
 
-    await logUsage({event_type:'story',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna'}});
+    const generationRunId = await createGenerationRun(moonbeamUser.id);
+    await logUsage({event_type:'story',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    creditReserved = false;
     return res.status(200).json({
+      creditsRemaining,
+      generationRunId,
       story,
       image: null,
       layout: {

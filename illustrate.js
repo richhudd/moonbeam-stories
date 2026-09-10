@@ -1,4 +1,5 @@
 const {logUsage,estimateGBP}=require('./_usage');
+const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('./_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -11,9 +12,16 @@ module.exports = async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const prompt = String(body.prompt || '').trim();
+    const generationRunId = String(body.generationRunId || '').trim();
     const style = String(body.style || '').trim();
     const referenceImage = typeof body.referenceImage === 'string' ? body.referenceImage : '';
     if (!prompt) return res.status(400).json({ error: 'An illustration prompt is required.' });
+    if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
+    const moonbeamUser = await verifyMoonbeamUser(req);
+    try { await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
+    catch(e){ return res.status(e.status||402).json({error:e.message,code:e.code||'GENERATION_LIMIT'}); }
+    let slotReserved=true;
+    const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(moonbeamUser.id,generationRunId,'image')}};
 
     const hasReference = /^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage);
     const identityDirection = hasReference
@@ -42,7 +50,7 @@ IMPORTANT
     let r;
     if (hasReference) {
       const match = referenceImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
-      if (!match) return res.status(400).json({ error: 'The child photo could not be read.' });
+      if (!match) { await refundSlot(); return res.status(400).json({ error: 'The child photo could not be read.' }); }
       const mime = match[1].toLowerCase();
       const bytes = Buffer.from(match[2], 'base64');
       const extension = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
@@ -79,15 +87,18 @@ IMPORTANT
     if (!r.ok) {
       const e = data && data.error;
       const message = typeof e === 'string' ? e : (e && (e.message || e.code || e.type)) || `OpenAI returned HTTP ${r.status}`;
+      await refundSlot();
       return res.status(502).json({ error: String(message), openai_status: r.status });
     }
 
     const item = Array.isArray(data.data) ? data.data[0] : null;
     if (!item || typeof item.b64_json !== 'string') {
+      await refundSlot();
       return res.status(502).json({ error: 'The image service returned no image.' });
     }
 
-    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasReference}),metadata:{reference:hasReference}});
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasReference}),metadata:{reference:hasReference,user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    slotReserved=false;
     return res.status(200).json({ image: `data:image/webp;base64,${item.b64_json}`, usedReferencePhoto: hasReference });
   } catch (e) {
     console.error('illustrate error', e);

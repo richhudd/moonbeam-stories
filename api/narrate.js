@@ -1,4 +1,5 @@
 const {logUsage,estimateGBP}=require('./_usage');
+const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('./_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -7,8 +8,13 @@ module.exports = async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const text = String(body.text || '').trim();
+    const generationRunId = String(body.generationRunId || '').trim();
     const language = String(body.language || 'en-GB');
     if (!text) return res.status(400).json({ error: 'Narration text is required.' });
+    if (!generationRunId) return res.status(400).json({ error: 'This saved story predates the secure narration allowance.' });
+    const moonbeamUser=await verifyMoonbeamUser(req);
+    try{await consumeGenerationSlot(moonbeamUser.id,generationRunId,'narration')}catch(e){return res.status(e.status||402).json({error:e.message,code:e.code||'GENERATION_LIMIT'})}
+    let slotReserved=true;const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(moonbeamUser.id,generationRunId,'narration')}};
     if (text.length > 4096) return res.status(400).json({ error: 'This page is too long to narrate.' });
     const narrationProfiles = {
       'en-GB': 'Speak in natural British English with a warm, neutral contemporary UK accent. Use British pronunciation throughout; do not drift into American pronunciation.',
@@ -44,10 +50,12 @@ module.exports = async function handler(req, res) {
     if (!r.ok) {
       const raw = await r.text(); let data={}; try{data=JSON.parse(raw)}catch{}
       const e=data?.error; const message=typeof e==='string'?e:(e?.message||e?.code||`OpenAI returned HTTP ${r.status}`);
+      await refundSlot();
       return res.status(502).json({ error:String(message), openai_status:r.status });
     }
     const bytes = Buffer.from(await r.arrayBuffer());
-    await logUsage({event_type:'narration',estimated_cost_gbp:estimateGBP('narration'),metadata:{model:'gpt-4o-mini-tts',characters:text.length}});
+    await logUsage({event_type:'narration',estimated_cost_gbp:estimateGBP('narration'),metadata:{model:'gpt-4o-mini-tts',characters:text.length,user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    slotReserved=false;
     return res.status(200).json({ audio:`data:audio/mpeg;base64,${bytes.toString('base64')}` });
   } catch (e) {
     console.error('narrate error', e);
