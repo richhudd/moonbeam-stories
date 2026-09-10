@@ -547,3 +547,42 @@
     pointer-events:none!important;
   }
 }
+
+
+/* V43 — deterministic iPhone cover painting.
+   A separate bitmap layer is the primary mobile cover surface; the <img> is
+   only a secondary/desktop path. */
+.cover-painted-bg{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  opacity:0;
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+}
+.cover-image{z-index:1}
+.cover-shade{z-index:2}
+.cover-copy{z-index:3}
+.cover-loading,.cover-error-box{z-index:6}
+
+@media(max-width:700px) and (orientation:portrait){
+  body.story-mode #coverView:not(.hidden),
+  body.story-mode #coverView:not(.hidden) .cover-art-wrap{
+    background:#17132d!important;
+  }
+  body.story-mode #coverView:not(.hidden) .cover-painted-bg{
+    display:block!important;
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    opacity:1;
+    transform:translateZ(0);
+    -webkit-transform:translateZ(0);
+  }
+  /* Do not depend on the problematic <img> layer on portrait iPhone. */
+  body.story-mode #coverView:not(.hidden) #coverImage{
+    display:none!important;
+  }
+}

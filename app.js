@@ -238,7 +238,7 @@ function buildBook(s,image,child){const pages=Array.isArray(s.pages)?s.pages:[];
 function renderStory(s,image,child){
  currentBook=buildBook(s,image,child);
  const el=$('story');el.classList.remove('hidden');if(isPhonePortrait())document.body.classList.add('story-mode');
- el.innerHTML=`<div class="book-shell"><div class="book-cover-head"><span>${escapeHtml(t().title)}</span><span>${escapeHtml(t().childTitle.replace('?',''))}</span></div><div id="coverView" class="story-cover"><div class="cover-art-wrap"><div id="coverLoading" class="cover-loading"><div class="spinner"></div><p>${escapeHtml(coverT().creating)}</p><small>${escapeHtml(coverT().creatingSmall)}</small></div><img id="coverImage" class="cover-image" alt="" hidden><div class="cover-shade"></div><div class="cover-copy"><div class="cover-kicker">${escapeHtml(coverT().kicker)}</div><h2>${escapeHtml(currentBook.title)}</h2><p>${escapeHtml(coverT().forChild(currentBook.child?.name||''))}</p></div><div id="coverError" class="cover-error-box" hidden><div class="moon">☾</div><p>${escapeHtml(coverT().failed)}</p><button class="secondary" id="retryCover" type="button">${escapeHtml(coverT().retry)}</button></div></div><div class="mobile-cover-hint">Swipe to begin ›</div><div class="cover-reading-choices"><button class="primary cover-begin" id="beginStory" type="button">📖 ${escapeHtml(language.startsWith('en')?'Read it myself':coverT().begin)}</button><button class="secondary cover-narrate" id="beginNarrated" type="button">🔊 ${escapeHtml(language.startsWith('en')?'Read to me':'Audio')}</button></div></div><div id="book" class="book hidden"></div><div id="bookControls" class="book-controls hidden"><button class="secondary" id="prevPage" type="button">${escapeHtml(t().previous)}</button><div class="page-indicator" id="pageIndicator"></div><button class="primary turn" id="nextPage" type="button">${escapeHtml(t().turn)}</button></div><p class="illustration-note hidden" id="illustrationNote">${escapeHtml(t().illustrationNote)}</p><div class="actions"><button class="secondary" id="save" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="newStory" type="button">${escapeHtml(t().newStory)}</button></div></div>`;
+ el.innerHTML=`<div class="book-shell"><div class="book-cover-head"><span>${escapeHtml(t().title)}</span><span>${escapeHtml(t().childTitle.replace('?',''))}</span></div><div id="coverView" class="story-cover"><div class="cover-art-wrap"><div id="coverPaintedBg" class="cover-painted-bg" aria-hidden="true"></div><div id="coverLoading" class="cover-loading"><div class="spinner"></div><p>${escapeHtml(coverT().creating)}</p><small>${escapeHtml(coverT().creatingSmall)}</small></div><img id="coverImage" class="cover-image" alt="" hidden><div class="cover-shade"></div><div class="cover-copy"><div class="cover-kicker">${escapeHtml(coverT().kicker)}</div><h2>${escapeHtml(currentBook.title)}</h2><p>${escapeHtml(coverT().forChild(currentBook.child?.name||''))}</p></div><div id="coverError" class="cover-error-box" hidden><div class="moon">☾</div><p>${escapeHtml(coverT().failed)}</p><button class="secondary" id="retryCover" type="button">${escapeHtml(coverT().retry)}</button></div></div><div class="mobile-cover-hint">Swipe to begin ›</div><div class="cover-reading-choices"><button class="primary cover-begin" id="beginStory" type="button">📖 ${escapeHtml(language.startsWith('en')?'Read it myself':coverT().begin)}</button><button class="secondary cover-narrate" id="beginNarrated" type="button">🔊 ${escapeHtml(language.startsWith('en')?'Read to me':'Audio')}</button></div></div><div id="book" class="book hidden"></div><div id="bookControls" class="book-controls hidden"><button class="secondary" id="prevPage" type="button">${escapeHtml(t().previous)}</button><div class="page-indicator" id="pageIndicator"></div><button class="primary turn" id="nextPage" type="button">${escapeHtml(t().turn)}</button></div><p class="illustration-note hidden" id="illustrationNote">${escapeHtml(t().illustrationNote)}</p><div class="actions"><button class="secondary" id="save" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="newStory" type="button">${escapeHtml(t().newStory)}</button></div></div>`;
  loadCoverIllustration(false);
  // Start the opening and next two illustrations immediately while the cover is on screen.
  prefetchIllustrations(-1,3);
@@ -252,33 +252,50 @@ function getCoverPrompt(book){
 }
 function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
 async function revealCoverImage(img,src){
- if(!img)return;
- const wrap=img.closest('.cover-art-wrap');
- // iOS Safari occasionally decodes a data-URL <img> correctly but fails to paint
- // its first frame until a later layout change. Paint the same bitmap as the
- // cover container background as a permanent fallback, then reveal the <img>.
+ const painted=$('coverPaintedBg');
+ const wrap=img?.closest('.cover-art-wrap')||painted?.closest('.cover-art-wrap');
+
+ // V43: on portrait iPhone the cover is painted primarily as a dedicated CSS
+ // background layer. This avoids WebKit's intermittent first-frame failure with
+ // data-URL <img> elements inside a full-screen absolutely positioned cover.
+ if(painted){
+   painted.style.backgroundImage=`url(${JSON.stringify(src)})`;
+   painted.style.backgroundSize='cover';
+   painted.style.backgroundPosition='center center';
+   painted.style.backgroundRepeat='no-repeat';
+   painted.style.opacity='1';
+   painted.hidden=false;
+ }
  if(wrap){
+   // Keep a second independent background fallback on the wrapper itself.
    wrap.style.backgroundImage=`url(${JSON.stringify(src)})`;
    wrap.style.backgroundSize='cover';
-   wrap.style.backgroundPosition='center';
+   wrap.style.backgroundPosition='center center';
    wrap.style.backgroundRepeat='no-repeat';
  }
- img.hidden=true;
- img.style.opacity='0';
- img.src=src;
- try{
-   if(typeof img.decode==='function')await img.decode();
-   else if(!img.complete)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true})});
- }catch(e){
-   if(!img.complete||!img.naturalWidth)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true})});
+
+ // Desktop and other browsers may continue to use the normal image element.
+ if(img){
+   img.hidden=false;
+   img.style.opacity='0';
+   img.src=src;
+   try{
+     if(typeof img.decode==='function')await img.decode();
+     else if(!img.complete)await new Promise((resolve,reject)=>{
+       img.addEventListener('load',resolve,{once:true});
+       img.addEventListener('error',reject,{once:true});
+     });
+   }catch(e){}
+   if(img.complete&&img.naturalWidth){
+     img.style.opacity='1';
+   }
  }
- img.hidden=false;
- void img.offsetWidth;
- if(wrap){wrap.style.webkitTransform='translateZ(0)';void wrap.offsetWidth}
+
+ // Force two actual layout/paint opportunities before dismissing the loader.
+ if(wrap){void wrap.offsetHeight}
+ if(painted){void painted.offsetHeight}
  await nextPaint();
- img.style.opacity='1';
- img.style.webkitTransform='translateZ(0)';
- void img.offsetWidth;
+ await new Promise(resolve=>setTimeout(resolve,40));
  await nextPaint();
 }
 async function loadCoverIllustration(force=false){
