@@ -159,3 +159,55 @@
   .mobile-cover-hint{display:block;position:absolute;z-index:25;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);color:white;background:#1118;border-radius:999px;padding:7px 12px;font:700 11px system-ui,-apple-system,sans-serif;white-space:nowrap;backdrop-filter:blur(6px)}
 }
 @media(min-width:701px), (orientation:landscape){.mobile-page-progress,.mobile-end-actions,.mobile-cover-hint{display:none!important}}
+
+/* V28 — iPhone setup fit: less chrome, controls always inside the usable viewport. */
+.basics-profile-actions{margin-top:18px}.basics-profile-actions .secondary{width:100%}.basics-profile-actions .profile-status{margin:6px 0 0}
+@media(max-width:700px) and (orientation:portrait){
+  /* Header should identify the app, not consume a whole row of the phone. */
+  header{flex:0 0 42px!important;height:42px;margin:0!important;padding:2px 14px 5px!important;gap:7px!important}
+  header .logo{font-size:24px!important;line-height:1}
+  header h1{font-size:17px!important;line-height:1.05}
+  header p{display:none!important}
+  .setup-nav{flex-basis:48px;padding-top:2px}
+  .setup-arrow{height:38px}
+
+  /* Use virtually all remaining height, with tighter top furniture. */
+  .setup-track{padding:0 8px 5px}
+  .setup-page{flex-basis:calc(100vw - 16px);width:calc(100vw - 16px);padding:18px 18px 14px;border-radius:21px}
+  .setup-page h2{font-size:25px;line-height:1.08;margin:22px 0 15px}
+  .setup-page h3{font-size:16px;margin:9px 0 6px}
+  .mobile-step-kicker{top:11px;right:15px;font-size:10px}
+  .mobile-comfort-copy{margin-top:14px;font-size:13px;line-height:1.35}
+
+  /* Page 3: save belongs with the child details it saves. */
+  [data-step="Basics"] .basic-grid{gap:14px!important}
+  [data-step="Basics"] .basic-grid input{min-height:55px;font-size:18px}
+  .basics-profile-actions{margin-top:16px}
+  .basics-profile-actions .secondary{min-height:48px;padding:12px;font-size:14px}
+  .basics-profile-actions .profile-status{font-size:11px;min-height:14px}
+
+  /* Page 5: photo controls are guaranteed a visible bottom zone. */
+  [data-step="Photo"]{display:flex;flex-direction:column}
+  [data-step="Photo"] h2{flex:0 0 auto;margin-bottom:10px;font-size:23px}
+  [data-step="Photo"] .child-photo-card{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:11px;margin:0}
+  [data-step="Photo"] .child-photo-copy{flex:0 0 auto}
+  [data-step="Photo"] .child-photo-copy h3{font-size:14px;margin:0 0 3px}
+  [data-step="Photo"] .child-photo-copy p{font-size:11px;line-height:1.25;margin:0 0 3px}
+  [data-step="Photo"] .photo-privacy{font-size:9px!important}
+  [data-step="Photo"] .child-photo-controls{flex:1;min-height:0;display:grid;grid-template-rows:minmax(90px,1fr) auto auto;gap:7px}
+  [data-step="Photo"] .child-photo-preview{min-height:90px;height:auto;max-height:none;width:100%}
+  [data-step="Photo"] .photo-buttons{display:flex;gap:7px;flex:0 0 auto}
+  [data-step="Photo"] .photo-buttons .secondary{min-height:42px;padding:9px 7px;font-size:12px;margin:0}
+  [data-step="Photo"] .photo-toggle{font-size:11px;line-height:1.2;min-height:24px}
+
+  /* Page 6: reserve a permanent bottom slot for Make Tonight's Story. */
+  [data-step="Story"]{display:flex;flex-direction:column}
+  [data-step="Story"] h2{flex:0 0 auto;margin-bottom:10px}
+  [data-step="Story"] .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+  [data-step="Story"] input,[data-step="Story"] select{min-height:48px;font-size:14px;padding-top:9px;padding-bottom:9px}
+  [data-step="Story"] #valuesTitle{margin:10px 0 5px}
+  [data-step="Story"] .chips{flex:1;align-content:flex-start;gap:6px;margin:0 0 8px;min-height:0}
+  [data-step="Story"] .chip{padding:7px 8px;font-size:11px}
+  [data-step="Story"] #generate{flex:0 0 auto;min-height:50px;padding:13px;font-size:15px;margin-top:auto}
+  [data-step="Story"] #status{flex:0 0 16px;min-height:16px;margin:3px 0 0;font-size:10px;line-height:1.2}
+}

@@ -1,16 +1,11 @@
-# Moonbeam Stories V27
+# Moonbeam Stories V28
 
-V27 refines the iPhone experience around a zero-scroll, full-screen reader.
+Mobile setup refinements based on iPhone testing:
 
-## Mobile changes
-- Setup expanded from 5 compressed panels to 7 swipe pages so each screen has more breathing room.
-- Story cover is full-screen on portrait phones; swipe left to begin.
-- Every story text page is a full-screen physical page.
-- Every illustration is a full-screen physical page with edge-to-edge artwork.
-- Previous/Next reader buttons are removed on portrait phones; navigation is by horizontal swipe only.
-- Save Story and New Story are removed from ordinary reading pages and appear only on the final illustration.
-- A tiny translucent page counter floats at the top without reserving layout space.
-- iPhone safe-area insets are respected.
-- Desktop/tablet two-page book layout and controls are unchanged.
-
-Deploy the contents of this folder to the existing Vercel project as before.
+- Moved **Save child profile** from setup page 2 to directly beneath Name/Age on page 3.
+- Kept saved-profile selection and delete controls on page 2.
+- Reduced the portrait-phone Moonbeam header to a compact 42px identity bar and hides the tagline.
+- Reworked page 5 so the child-photo preview flexes to available height while **Choose photo**, Remove and the photo toggle always remain visible.
+- Reworked page 6 so **Make Tonight's Story** occupies a reserved bottom slot and cannot be pushed below the usable viewport.
+- Tightened page-specific spacing rather than enabling vertical scrolling.
+- Retains V27 full-screen swipe story reader and all V25/V26 functionality.

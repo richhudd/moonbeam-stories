@@ -121,7 +121,7 @@ async function initSupabase(){
 function setAuthStatus(message,isError=false){const el=$('authStatus');if(!el)return;el.innerHTML=isError?`<span class="error">${escapeHtml(message)}</span>`:escapeHtml(message||'')}
 async function applyAuthSession(session){
  currentUser=session?.user||null;
- $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('authSignedIn')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);
+ $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('authSignedIn')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?'Cloud connected':'Not signed in';badge.classList.toggle('online',!!currentUser)}
  if($('signedInAs'))$('signedInAs').textContent=currentUser?`Signed in as ${currentUser.email}`:'';
  if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories()]);await loadCurrentChildPhoto()}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();await loadCurrentChildPhoto()}
@@ -186,7 +186,7 @@ async function loadCloudProfiles(){
 async function saveChildProfile(){
  if(!currentUser)return;const c=formChild();if(!c.name){$('profileStatus').textContent=t().errorName;return}if(c.age<3||c.age>12){$('profileStatus').textContent=t().errorAge;return}$('profileStatus').textContent='Saving…';
  let result;if(activeProfileId)result=await supabaseClient.from('child_profiles').update(c).eq('id',activeProfileId).select().single();else result=await supabaseClient.from('child_profiles').insert({...c,parent_id:currentUser.id}).select().single();
- if(result.error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(result.error.message)}</span>`;return}const wasNew=!activeProfileId;const draftKey=currentPhotoKey(null);activeProfileId=result.data.id;if(wasNew&&currentChildPhoto){await childPhotoPut(currentPhotoKey(activeProfileId),currentChildPhoto);await childPhotoDelete(draftKey)}await loadCloudProfiles();$('profileSelect').value=activeProfileId;$('deleteProfile').classList.remove('hidden');$('profileStatus').textContent='Child profile saved.';
+ if(result.error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(result.error.message)}</span>`;if($('profileStatusBasics'))$('profileStatusBasics').innerHTML=`<span class="error">${escapeHtml(result.error.message)}</span>`;return}const wasNew=!activeProfileId;const draftKey=currentPhotoKey(null);activeProfileId=result.data.id;if(wasNew&&currentChildPhoto){await childPhotoPut(currentPhotoKey(activeProfileId),currentChildPhoto);await childPhotoDelete(draftKey)}await loadCloudProfiles();$('profileSelect').value=activeProfileId;$('deleteProfile').classList.remove('hidden');$('profileStatus').textContent='Child profile saved.';if($('profileStatusBasics'))$('profileStatusBasics').textContent='Child profile saved.';
 }
 async function ensureCloudProfile(child){
  if(!currentUser)return null;if(activeProfileId&&cloudProfiles.some(p=>p.id===activeProfileId)){const {error}=await supabaseClient.from('child_profiles').update({name:child.name,age:child.age,interests:child.interests,dislikes:child.dislikes}).eq('id',activeProfileId);if(!error)return activeProfileId}
