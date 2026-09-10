@@ -34,7 +34,7 @@ IMPORTANT
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-image-2',
+        model: 'gpt-image-2.5-flare',
         prompt: finalPrompt,
         size: '1024x1024',
         quality: 'low',

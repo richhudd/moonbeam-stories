@@ -68,3 +68,13 @@ Adds a generated illustrated front cover with reliable HTML title typography, a 
 - Reduced cover-title typography so artwork remains the dominant visual.
 - Tighter title area, smaller kicker/subtitle, and responsive title cap on phones.
 - Long titles use balanced wrapping rather than oversized type.
+
+
+## V23 – faster illustrations
+- Switched illustration generation to `gpt-image-2.5-flare`, OpenAI's fast image-generation model.
+- Starts the cover plus the first three interior illustrations immediately.
+- Prefetches the next three illustrations as the reader advances.
+- Deduplicates simultaneous requests so the same page is never generated twice.
+- Retries temporary image-service/rate-limit responses automatically.
+- Adds persistent IndexedDB illustration caching using a stable story fingerprint, so reopening the same saved story on the same device reuses its cover and page images instead of regenerating them.
+- Keeps the existing low-quality 1024×1024 WebP setting for speed/cost; it does not double-generate draft and final images.
