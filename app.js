@@ -250,14 +250,47 @@ function getCoverPrompt(book){
  const first=book.pages[0]?.illustration_prompt||'';
  return `Front cover illustration for an original premium children's bedtime adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}. Interests: ${book.child?.interests||'imaginative adventures'}. Story world and character continuity: ${book.character_bible||'Keep the hero appealing and visually consistent with the interior illustrations.'} Opening: ${book.opening||''} Visual clue from the first scene: ${first}. Compose this specifically as a striking real children's BOOK COVER: one clear focal character, a strong sense of mystery or adventure, magical depth, warm inviting light, sophisticated hand-painted storybook look, expressive but reassuring. Keep the central and upper areas sufficiently calm and uncluttered for title typography that will be overlaid by the app. Absolutely no words, letters, captions, logos, signs or readable text anywhere in the image.`
 }
+function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
+async function revealCoverImage(img,src){
+ if(!img)return;
+ // Safari can paint a newly assigned data URL as a blank frame until another
+ // layout event occurs. Keep the loading layer up until the bitmap is decoded.
+ img.hidden=true;
+ img.style.opacity='0';
+ img.src=src;
+ try{
+   if(typeof img.decode==='function')await img.decode();
+   else if(!img.complete)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true})});
+ }catch(e){
+   // Some Safari versions reject decode() for an otherwise usable data URL.
+   if(!img.complete||!img.naturalWidth)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true})});
+ }
+ img.hidden=false;
+ // Force layout before revealing, then give WebKit two paint frames.
+ void img.offsetHeight;
+ await nextPaint();
+ img.style.opacity='1';
+ await nextPaint();
+}
 async function loadCoverIllustration(force=false){
  const book=currentBook;if(!book)return;
- const key=coverKey(book),img=$('coverImage'),loading=$('coverLoading'),error=$('coverError');
+ const key=coverKey(book),loading=$('coverLoading'),error=$('coverError');
  if(loading)loading.hidden=false;if(error)error.hidden=true;
- try{const image=await requestIllustration(key,getCoverPrompt(book),`Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);if(currentBook===book){const currentImg=$('coverImage');if(currentImg){currentImg.src=image;currentImg.hidden=false}if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if(currentBook===book){if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false}}
+ try{
+   const image=await requestIllustration(key,getCoverPrompt(book),`Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);
+   if(currentBook===book){
+     const currentImg=$('coverImage');
+     await revealCoverImage(currentImg,image);
+     if(currentBook===book){
+       if($('coverLoading'))$('coverLoading').hidden=true;
+       if($('coverError'))$('coverError').hidden=true;
+     }
+   }
+   return image;
+ }catch(e){console.error(e);if(currentBook===book){if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false}}
 }
-function showCover(){if(!currentBook)return;currentBook.currentPage=-1;const cover=$('coverView');if(cover){cover.classList.remove('hidden');cover.hidden=false}const book=$('book');if(book)book.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
-function beginStory(){if(!currentBook)return;currentBook.mobileSide='text';const cover=$('coverView');if(cover){cover.classList.add('hidden');cover.hidden=true}const book=$('book');if(book)book.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0)}
+function showCover(){if(!currentBook)return;currentBook.currentPage=-1;const cover=$('coverView');if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.display=''}const book=$('book');if(book)book.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
+function beginStory(){if(!currentBook)return;currentBook.mobileSide='text';const cover=$('coverView');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.display='none'}const book=$('book');if(book)book.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0)}
 function illustrationKey(book,index){return `${book.cacheId}:${index}`}
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index);
@@ -301,7 +334,7 @@ function renderBookPage(index){
  const isOpening=clamped===0,isClosing=clamped===total-1;let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';const bookEl=$('book');
  const endActions=isClosing?`<div class="mobile-end-actions"><button class="secondary" id="mobileSave" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="mobileNewStory" type="button">${escapeHtml(t().newStory)}</button></div>`:'';
- bookEl.innerHTML=`<div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div><div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${escapeHtml(text)}</div></div><div class="page-footer">${escapeHtml(t().title)}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div><div class="page-footer">✦</div>${endActions}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
+ bookEl.innerHTML=`<div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div><div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${escapeHtml(text)}</div></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${endActions}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  const prev=$('prevPage'),next=$('nextPage'),indicator=$('pageIndicator');if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=clamped===total-1;next.textContent=clamped===total-1?t().end:t().turn}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
  const mobileSave=$('mobileSave');if(mobileSave)mobileSave.onclick=saveCurrentStory;const mobileNew=$('mobileNewStory');if(mobileNew)mobileNew.onclick=()=>exitStoryToSetup();
  applyMobileSide();loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3)
