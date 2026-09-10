@@ -9,8 +9,18 @@ module.exports = async function handler(req, res) {
     const language = String(body.language || 'en-GB');
     if (!text) return res.status(400).json({ error: 'Narration text is required.' });
     if (text.length > 4096) return res.status(400).json({ error: 'This page is too long to narrate.' });
-    const languageNames = {'en-GB':'British English','en-US':'American English','es-ES':'Spanish from Spain','es-419':'Latin American Spanish','fr-FR':'French from France','de-DE':'German','it-IT':'Italian','pt-PT':'European Portuguese'};
-    const instructions = `Read this children's bedtime story page in ${languageNames[language] || 'the language of the text'}. Warm, gentle, expressive storybook narrator. Natural pacing, clear diction, subtle character expression, never theatrical or frightening. Suitable for a child listening at bedtime.`;
+    const narrationProfiles = {
+      'en-GB': 'Speak in natural British English with a warm, neutral contemporary UK accent. Use British pronunciation throughout; do not drift into American pronunciation.',
+      'en-US': 'Speak in natural American English with a warm, neutral contemporary US accent. Use American pronunciation throughout.',
+      'es-ES': 'Speak in European Spanish from Spain with a natural neutral Peninsular Spanish accent and pronunciation, including normal distinctions used in Spain where appropriate. Do not use a Latin American accent.',
+      'es-419': 'Speak in natural Latin American Spanish with a warm, broadly neutral Latin American accent. Do not use a Peninsular Spanish accent.',
+      'fr-FR': 'Speak in French from France with a natural, warm, neutral metropolitan French accent and pronunciation.',
+      'de-DE': 'Speak in German from Germany with a natural, warm, neutral Standard German accent and pronunciation.',
+      'it-IT': 'Speak in Italian from Italy with a natural, warm, neutral standard Italian accent and pronunciation.',
+      'pt-PT': 'Speak in European Portuguese from Portugal with a natural, warm, neutral Portuguese accent and pronunciation. Do not use Brazilian Portuguese pronunciation.'
+    };
+    const accentInstruction = narrationProfiles[language] || 'Speak naturally in the language and regional variety of the text.';
+    const instructions = `${accentInstruction} Read as a warm, gentle, expressive children's storybook narrator. Natural bedtime pacing, clear diction and subtle character expression. Never theatrical or frightening. Keep the selected regional accent consistent for the entire page.`;
     const r = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },

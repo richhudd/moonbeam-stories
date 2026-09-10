@@ -1,24 +1,24 @@
-# Moonbeam Stories V35
+# Moonbeam Stories V38
 
-Adds optional audiobook narration while retaining normal parent/child reading.
+V38 prevents repeated consecutive illustrations.
 
-## V35 changes
-- Cover now offers **Read it myself** and **Read to me**.
-- Read-it-myself keeps the existing silent swipe reader.
-- Read-to-me uses OpenAI `gpt-4o-mini-tts` through `/api/narrate`.
-- Illustration and story words remain visible while narration plays.
-- Current sentence receives gentle approximate highlighting during playback.
-- Narrated mode automatically advances to the next illustrated spread when a page finishes.
-- A small floating play/pause control sits over the illustration instead of consuming layout space.
-- Manual swiping still works; narration follows the newly selected page.
-- The next page's narration is prefetched in narrated mode to reduce waiting.
-- Existing V34 mobile illustration+text spread and all prior features are retained.
+- Every illustration prompt is now anchored to that page's actual story text and scene number.
+- Previous-page text is supplied only as continuity context with an explicit instruction not to re-illustrate it.
+- Prompts require a fresh composition, camera angle/action and scene-specific visual details on every page.
+- Illustration cache keys now include a V38 version and prompt hash, so older cached duplicates are not reused after deployment.
+- If the image service ever returns an exactly identical image for two consecutive pages, Moonbeam automatically regenerates the latter once with a stronger anti-duplicate instruction.
+- All V37 mobile cover/narration fixes are retained.
 
-Deploy the contents of this folder to Vercel. It uses the existing `OPENAI_API_KEY` environment variable.
 
-## V36
-- Fixes the V35 portrait-iPhone regression that could render story spreads blank.
-- Repairs malformed escaped-newline CSS introduced around the V34 mobile spread rules.
-- Keeps illustration + matching text visible together on each mobile swipe page.
-- Makes both cover choices (Read it myself / Read to me) fixed inside the iPhone safe viewport.
-- Desktop/tablet audiobook behaviour is unchanged.
+## V41
+- Moves the portrait-phone page counter out of the illustration and into a reserved strip below the text.
+- Mobile text fitting now reserves space for the counter so it cannot cover the final line.
+
+
+## V41
+- On portrait phones, the narration play/pause control is moved out of the illustration and into the reserved lower reader strip beside the page counter.
+- Illustrations are now kept completely free of reader controls and counters.
+
+
+## V41
+- Narration now follows the selected regional language: UK English uses a British accent, US English an American accent, Spain Spanish a Peninsular Spanish accent, Latin American Spanish a neutral Latin American accent, and equivalent regional guidance is used for French, German, Italian and European Portuguese.

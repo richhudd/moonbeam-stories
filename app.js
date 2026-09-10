@@ -253,8 +253,16 @@ function getCoverPrompt(book){
 function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
 async function revealCoverImage(img,src){
  if(!img)return;
- // Safari can paint a newly assigned data URL as a blank frame until another
- // layout event occurs. Keep the loading layer up until the bitmap is decoded.
+ const wrap=img.closest('.cover-art-wrap');
+ // iOS Safari occasionally decodes a data-URL <img> correctly but fails to paint
+ // its first frame until a later layout change. Paint the same bitmap as the
+ // cover container background as a permanent fallback, then reveal the <img>.
+ if(wrap){
+   wrap.style.backgroundImage=`url(${JSON.stringify(src)})`;
+   wrap.style.backgroundSize='cover';
+   wrap.style.backgroundPosition='center';
+   wrap.style.backgroundRepeat='no-repeat';
+ }
  img.hidden=true;
  img.style.opacity='0';
  img.src=src;
@@ -262,14 +270,15 @@ async function revealCoverImage(img,src){
    if(typeof img.decode==='function')await img.decode();
    else if(!img.complete)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true})});
  }catch(e){
-   // Some Safari versions reject decode() for an otherwise usable data URL.
    if(!img.complete||!img.naturalWidth)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true})});
  }
  img.hidden=false;
- // Force layout before revealing, then give WebKit two paint frames.
- void img.offsetHeight;
+ void img.offsetWidth;
+ if(wrap){wrap.style.webkitTransform='translateZ(0)';void wrap.offsetWidth}
  await nextPaint();
  img.style.opacity='1';
+ img.style.webkitTransform='translateZ(0)';
+ void img.offsetWidth;
  await nextPaint();
 }
 async function loadCoverIllustration(force=false){
@@ -290,14 +299,40 @@ async function loadCoverIllustration(force=false){
  }catch(e){console.error(e);if(currentBook===book){if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false}}
 }
 function showCover(){if(!currentBook)return;currentBook.currentPage=-1;const cover=$('coverView');if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.display=''}const book=$('book');if(book)book.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
-function beginStory(mode='self'){if(!currentBook)return;currentBook.readingMode=mode;currentBook.mobileSide='text';const cover=$('coverView');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.display='none'}const book=$('book');if(book)book.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0);if(mode==='narrated')setTimeout(()=>startNarrationForCurrentPage(),120)}
-function illustrationKey(book,index){return `${book.cacheId}:${index}`}
+function beginStory(mode='self'){if(!currentBook)return;currentBook.readingMode=mode;currentBook.mobileSide='text';const cover=$('coverView');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.display='none'}const book=$('book');if(book)book.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0);if(mode==='narrated')scheduleNarration(120)}
+function illustrationKey(book,index,prompt=''){return `v38:${book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
+function previousIllustrationKey(book,index){if(index<=0)return null;return illustrationKey(book,index-1,getIllustrationPrompt(index-1))}
 async function loadIllustration(index,prompt,silent=false,force=false){
- const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index);
+ const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index,prompt);
  const frame=document.querySelector('.illustration-frame');if(!silent&&(!frame||book.currentPage!==index))return;
  if(!silent&&frame&&!illustrationCache.has(key))frame.innerHTML=`<div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div>`;
- try{const image=await requestIllustration(key,prompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}catch(e){console.error(e);if(!silent&&currentBook===book&&book.currentPage===index){const f=document.querySelector('.illustration-frame');if(f)f.innerHTML=`<div class="illustration-error"><div class="moon">☾</div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(e?.message||String(e))}</small><button class="secondary retry-illustration" type="button">${language.startsWith('es')?'Reintentar':'Try again'}</button></div>`;const retry=document.querySelector('.retry-illustration');if(retry)retry.onclick=()=>loadIllustration(index,prompt,false,true)}}}
-function getIllustrationPrompt(index){const book=currentBook;if(!book)return'';const total=book.pages.length+2;if(index===0)return`Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. ${book.pages[0]?.illustration_prompt||''}`;if(index===total-1)return`Peaceful final scene for “${book.title}”, showing the characters safe, content and ready for bedtime. ${book.pages[book.pages.length-1]?.illustration_prompt||''}`;return book.pages[index-1]?.illustration_prompt||'A charming children’s storybook scene'}
+ try{
+   const prevKey=previousIllustrationKey(book,index);
+   const prevImage=prevKey?(illustrationCache.get(prevKey)||await persistentImageGet(prevKey)):null;
+   let image=await requestIllustration(key,prompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);
+   // An exact repeat should never appear on consecutive pages. If the image service ever
+   // returns identical artwork, regenerate this page once with a stronger scene-change cue.
+   if(index>0&&prevImage&&image===prevImage){
+     const distinctPrompt=`${prompt}
+
+CRITICAL SCENE CHANGE: This is the NEXT page of the book. Create a visibly different composition from the previous page: change camera angle, character pose/action, staging and background emphasis while remaining faithful to this page's events. Do not reuse the previous illustration.`;
+     image=await requestIllustration(key,distinctPrompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,true,book.child?.referencePhoto||null);
+   }
+   if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image
+ }catch(e){console.error(e);if(!silent&&currentBook===book&&book.currentPage===index){const f=document.querySelector('.illustration-frame');if(f)f.innerHTML=`<div class="illustration-error"><div class="moon">☾</div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(e?.message||String(e))}</small><button class="secondary retry-illustration" type="button">${language.startsWith('es')?'Reintentar':'Try again'}</button></div>`;const retry=document.querySelector('.retry-illustration');if(retry)retry.onclick=()=>loadIllustration(index,prompt,false,true)}}}
+function getIllustrationPrompt(index){
+ const book=currentBook;if(!book)return'';const total=book.pages.length+2;
+ const excerpt=(text,max=520)=>String(text||'').replace(/\s+/g,' ').trim().slice(0,max);
+ if(index===0)return`SCENE 1 OF ${total} — OPENING. Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. Depict a specific moment from this text: ${excerpt(book.opening)}. Story art direction: ${book.pages[0]?.illustration_prompt||''}. This must be visually distinct from all later scenes.`;
+ if(index===total-1)return`SCENE ${total} OF ${total} — CLOSING. Peaceful final scene for “${book.title}”, showing the characters safe, content and ready for bedtime. Depict a specific moment from this closing text: ${excerpt(book.closing)}. Story art direction: ${book.pages[book.pages.length-1]?.illustration_prompt||''}. Do not reuse the composition of the previous scene.`;
+ const page=book.pages[index-1]||{};
+ const previous=index===1?book.opening:(book.pages[index-2]?.text||'');
+ return `SCENE ${index+1} OF ${total}. Illustrate THIS page, not a generic recurring scene.
+CURRENT PAGE TEXT: ${excerpt(page.text)}
+SCENE DIRECTION: ${page.illustration_prompt||'A charming children’s storybook scene'}
+PREVIOUS PAGE CONTEXT (for continuity only; DO NOT re-illustrate it): ${excerpt(previous,260)}
+Make this composition clearly different from the previous page: advance the action, choose a fresh camera angle or framing, and show the distinctive event/location/object from the current page. Never repeat a previous illustration.`
+}
 function prefetchIllustrations(index,ahead=4){const book=currentBook;if(!book)return;const total=book.pages.length+2;for(let step=1;step<=ahead;step++){const i=index+step;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}}
 function isPhonePortrait(){return window.matchMedia('(max-width:700px) and (orientation:portrait)').matches}
 function mobilePhysicalPageNumber(){if(!currentBook)return 1;return currentBook.currentPage+1}
@@ -323,41 +358,45 @@ function fitMobileStoryText(){
  const content=document.querySelector('.left-page .page-content');
  const footer=document.querySelector('.left-page .page-footer');
  if(!content)return;
- const footerReserve=0;
+ const progress=document.querySelector('.left-page .mobile-page-progress');
+ const footerReserve=(progress?.offsetHeight||0)+8;
  const available=Math.max(0,content.clientHeight-footerReserve);
  while(el.scrollHeight>available&&size>12.2){size-=0.3;line=Math.max(1.28,line-0.008);el.style.fontSize=size+'px';el.style.lineHeight=line}
 }
 function renderIllustrationIntoPage(index,image){if(!currentBook||currentBook.currentPage!==index)return;const frame=document.querySelector('.illustration-frame');if(frame)frame.innerHTML=`<img src="${escapeHtml(image)}" alt="${escapeHtml(t().title)}">`}
 
 const narrationCache=new Map();
-let narrationAudio=null,narrationRun=0,narrationTimer=null;
+let narrationAudio=null,narrationRun=0,narrationTimer=null,narrationStartTimeout=null;
+const activeNarrationAudios=new Set();
 function splitNarrationSentences(text){const m=String(text||'').match(/[^.!?…]+(?:[.!?…]+[”’\"']?|$)/g);return (m&&m.length?m:[String(text||'')]).map(x=>x.trim()).filter(Boolean)}
 function renderNarrationText(text){return splitNarrationSentences(text).map((sentence,i)=>`<span class="narration-sentence" data-sentence="${i}">${escapeHtml(sentence)}</span>`).join(' ')}
 function currentPageText(){if(!currentBook)return'';const i=currentBook.currentPage,total=currentBook.pages.length+2;if(i===0)return currentBook.opening||'';if(i===total-1)return currentBook.closing||'';return currentBook.pages[i-1]?.text||''}
 function narrationKey(){return currentBook?`${currentBook.cacheId}:audio:${language}:${currentBook.currentPage}`:''}
 async function getNarration(text,key){if(narrationCache.has(key))return narrationCache.get(key);const r=await fetch('/api/narrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,language})});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok||!data.audio)throw new Error(data?.error||`Narration failed (${r.status})`);narrationCache.set(key,data.audio);return data.audio}
 function clearNarrationHighlight(){document.querySelectorAll('.narration-sentence').forEach(x=>x.classList.remove('speaking'))}
-function stopNarration(){narrationRun++;if(narrationTimer){clearInterval(narrationTimer);narrationTimer=null}if(narrationAudio){narrationAudio.pause();narrationAudio.onended=null;narrationAudio.ontimeupdate=null;narrationAudio=null}clearNarrationHighlight();const b=$('narrationControl');if(b)b.textContent='▶'}
+function stopNarration(){narrationRun++;if(narrationStartTimeout){clearTimeout(narrationStartTimeout);narrationStartTimeout=null}if(narrationTimer){clearInterval(narrationTimer);narrationTimer=null}for(const audio of activeNarrationAudios){try{audio.pause();audio.currentTime=0;audio.onended=null;audio.ontimeupdate=null}catch{}}activeNarrationAudios.clear();narrationAudio=null;clearNarrationHighlight();const b=$('narrationControl');if(b){b.textContent='▶';b.classList.remove('loading')}}
+function scheduleNarration(delay=120){if(narrationStartTimeout)clearTimeout(narrationStartTimeout);narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;startNarrationForCurrentPage()},delay)}
 function updateNarrationHighlight(audio){const spans=[...document.querySelectorAll('.narration-sentence')];if(!spans.length||!isFinite(audio.duration)||audio.duration<=0)return;const weights=spans.map(s=>Math.max(1,s.textContent.trim().length)),total=weights.reduce((a,b)=>a+b,0);let target=(audio.currentTime/audio.duration)*total,acc=0,idx=0;for(let i=0;i<weights.length;i++){acc+=weights[i];if(target<=acc){idx=i;break}}spans.forEach((s,i)=>s.classList.toggle('speaking',i===idx))}
-async function startNarrationForCurrentPage(){if(!currentBook||currentBook.currentPage<0)return;const run=++narrationRun,text=currentPageText(),key=narrationKey(),button=$('narrationControl');if(button){button.textContent='…';button.classList.add('loading')}try{const src=await getNarration(text,key);if(run!==narrationRun||!currentBook)return;const audio=new Audio(src);narrationAudio=audio;if(button){button.textContent='⏸';button.classList.remove('loading')}audio.ontimeupdate=()=>updateNarrationHighlight(audio);audio.onended=()=>{if(run!==narrationRun)return;clearNarrationHighlight();narrationAudio=null;if(button)button.textContent='▶';if(currentBook?.readingMode==='narrated'&&currentBook.currentPage<currentBook.pages.length+1)setTimeout(()=>goNextBookPage(true),500)};await audio.play()}catch(e){console.error(e);if(button){button.textContent='▶';button.classList.remove('loading');button.title=e?.message||'Narration unavailable'}}}
+async function startNarrationForCurrentPage(){if(!currentBook||currentBook.currentPage<0)return;for(const a of activeNarrationAudios){try{a.pause();a.currentTime=0}catch{}}activeNarrationAudios.clear();narrationAudio=null;const pageAtStart=currentBook.currentPage,run=++narrationRun,text=currentPageText(),key=narrationKey(),button=$('narrationControl');if(button){button.textContent='…';button.classList.add('loading')}try{const src=await getNarration(text,key);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;const audio=new Audio(src);activeNarrationAudios.add(audio);narrationAudio=audio;if(button){button.textContent='⏸';button.classList.remove('loading')}audio.ontimeupdate=()=>{if(currentBook?.currentPage===pageAtStart)updateNarrationHighlight(audio)};audio.onended=()=>{activeNarrationAudios.delete(audio);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;clearNarrationHighlight();if(narrationAudio===audio)narrationAudio=null;if(button)button.textContent='▶';if(currentBook.readingMode==='narrated'&&pageAtStart<currentBook.pages.length+1){narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;goNextBookPage(true)},500)}};await audio.play()}catch(e){console.error(e);if(button){button.textContent='▶';button.classList.remove('loading');button.title=e?.message||'Narration unavailable'}}}
 function toggleNarration(){if(!currentBook)return;if(narrationAudio&&!narrationAudio.paused){narrationAudio.pause();const b=$('narrationControl');if(b)b.textContent='▶';return}if(narrationAudio&&narrationAudio.paused){narrationAudio.play();const b=$('narrationControl');if(b)b.textContent='⏸';return}startNarrationForCurrentPage()}
 function renderBookPage(index){
  const book=currentBook,total=book.pages.length+2,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;if(!isPhonePortrait())book.mobileSide='text';
  const isOpening=clamped===0,isClosing=clamped===total-1;let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';const bookEl=$('book');
  const endActions=isClosing?`<div class="mobile-end-actions"><button class="secondary" id="mobileSave" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="mobileNewStory" type="button">${escapeHtml(t().newStory)}</button></div>`:'';
- bookEl.innerHTML=`<div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div><div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${renderNarrationText(text)}</div></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${endActions}<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button></div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
+ bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${endActions}<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button></div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  const prev=$('prevPage'),next=$('nextPage'),indicator=$('pageIndicator');if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=clamped===total-1;next.textContent=clamped===total-1?t().end:t().turn}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
  const mobileSave=$('mobileSave');if(mobileSave)mobileSave.onclick=saveCurrentStory;const mobileNew=$('mobileNewStory');if(mobileNew)mobileNew.onclick=()=>exitStoryToSetup();const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
  applyMobileSide();loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3);if(book.readingMode==='narrated'&&clamped<total-1){const nextText=clamped+1===total-1?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
 }
 function exitStoryToSetup(){stopNarration();document.body.classList.remove('story-mode');$('story')?.classList.add('hidden');goSetupPage(2)}
-function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+2;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated')setTimeout(()=>startNarrationForCurrentPage(),120)}}
-function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated')setTimeout(()=>startNarrationForCurrentPage(),120)}}
-$('story').addEventListener('click',e=>{if(e.target.id==='beginStory')beginStory('self');if(e.target.id==='beginNarrated')beginStory('narrated');if(e.target.id==='retryCover')loadCoverIllustration(true);if(e.target.id==='prevPage'||e.target.classList.contains('mobile-turn-left'))goPreviousBookPage();if(e.target.id==='nextPage'||e.target.classList.contains('mobile-turn-right'))goNextBookPage()});
+function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+2;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated')scheduleNarration(120)}}
+function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated')scheduleNarration(120)}}
+let lastStorySwipeAt=0;
+$('story').addEventListener('click',e=>{if(Date.now()-lastStorySwipeAt<500&&(e.target.classList.contains('mobile-turn-left')||e.target.classList.contains('mobile-turn-right')))return;if(e.target.id==='beginStory')beginStory('self');if(e.target.id==='beginNarrated')beginStory('narrated');if(e.target.id==='retryCover')loadCoverIllustration(true);if(e.target.id==='prevPage'||e.target.classList.contains('mobile-turn-left'))goPreviousBookPage();if(e.target.id==='nextPage'||e.target.classList.contains('mobile-turn-right'))goNextBookPage()});
 let storyTouchX=null,storyTouchY=null;
 $('story').addEventListener('touchstart',e=>{const t=e.changedTouches?.[0];if(!t)return;storyTouchX=t.clientX;storyTouchY=t.clientY},{passive:true});
-$('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
+$('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){lastStorySwipeAt=Date.now();stopNarration();if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
 window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0){if(!isPhonePortrait())currentBook.mobileSide='text';applyMobileSide()}});
 function renderLibrary(){
  const l=$('library');if(!l)return;const items=currentUser?cloudStories:saved;

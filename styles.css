@@ -455,3 +455,95 @@
     border-radius:50%!important;
   }
 }
+
+/* V37 — iPhone cover paint + single-source narration safeguards. */
+@media(max-width:700px) and (orientation:portrait){
+  body.story-mode .cover-art-wrap{
+    background-size:cover!important;
+    background-position:center!important;
+    background-repeat:no-repeat!important;
+    -webkit-transform:translateZ(0);
+    transform:translateZ(0);
+    -webkit-backface-visibility:hidden;
+    backface-visibility:hidden;
+  }
+  body.story-mode .cover-image{
+    -webkit-transform:translateZ(0);
+    transform:translateZ(0);
+    -webkit-backface-visibility:hidden;
+    backface-visibility:hidden;
+  }
+}
+
+
+/* V39 — mobile page counter belongs to the text page, never over the artwork. */
+@media(max-width:700px) and (orientation:portrait){
+  body.story-mode #book.show-mobile-spread .left-page{
+    display:grid!important;
+    grid-template-rows:minmax(0,1fr) auto!important;
+    padding:14px 22px max(10px,calc(env(safe-area-inset-bottom) + 6px))!important;
+  }
+  body.story-mode #book.show-mobile-spread .left-page .page-content{
+    grid-row:1!important;
+    height:100%!important;
+    min-height:0!important;
+    padding-bottom:4px!important;
+  }
+  body.story-mode #book.show-mobile-spread .left-page .mobile-page-progress{
+    grid-row:2!important;
+    display:block!important;
+    position:static!important;
+    transform:none!important;
+    left:auto!important;
+    top:auto!important;
+    width:max-content!important;
+    max-width:100%!important;
+    margin:5px auto 0!important;
+    padding:3px 8px!important;
+    border-radius:999px!important;
+    background:transparent!important;
+    color:#9a8d79!important;
+    box-shadow:none!important;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    font:700 10px system-ui,-apple-system,sans-serif!important;
+    line-height:1.2!important;
+    pointer-events:none!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page .mobile-page-progress{display:none!important;}
+}
+
+
+/* V40 — mobile narration controls never obscure artwork.
+   The play/pause control lives in the reserved footer strip beneath the text. */
+@media(max-width:700px) and (orientation:portrait){
+  body.story-mode #book.show-mobile-spread .narration-control{
+    display:grid!important;
+    place-items:center!important;
+    position:absolute!important;
+    z-index:35!important;
+    right:14px!important;
+    top:auto!important;
+    bottom:max(8px,env(safe-area-inset-bottom))!important;
+    width:38px!important;
+    height:38px!important;
+    border-radius:50%!important;
+    box-shadow:0 2px 8px rgba(30,25,20,.16)!important;
+  }
+
+  /* Keep the illustration itself clear of all reader chrome. */
+  body.story-mode #book.show-mobile-spread .right-page,
+  body.story-mode #book.show-mobile-spread .illustration-wrap{
+    overflow:hidden!important;
+  }
+
+  body.story-mode #book.show-mobile-spread .mobile-page-progress{
+    left:50%!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:max(13px,calc(env(safe-area-inset-bottom) + 5px))!important;
+    transform:translateX(-50%)!important;
+    z-index:34!important;
+    pointer-events:none!important;
+  }
+}

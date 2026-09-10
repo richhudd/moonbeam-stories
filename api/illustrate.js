@@ -35,6 +35,7 @@ IMPORTANT
 - Do not make it photorealistic, 3D-rendered or cartoonishly plastic.
 - Compose the scene as a beautiful book illustration with clear focal characters and readable silhouettes.
 - Keep character appearance consistent with the description in the scene and, when supplied, the attached identity reference.
+- Every page in a story must be a genuinely new illustration. If the scene prompt identifies a page/scene number or previous-page context, use that information to advance the visual action and avoid repeating the previous composition, pose, camera angle or background staging.
 - Square composition suitable for the right-hand page of a children's book.`;
 
     let r;
