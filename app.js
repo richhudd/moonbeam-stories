@@ -107,6 +107,11 @@ $('deleteProfile')?.addEventListener('click',deleteChildProfile);
 $('chooseChildPhoto')?.addEventListener('click',()=>$('childPhotoInput')?.click());
 $('childPhotoInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)chooseChildPhoto(f);e.target.value=''});
 $('removeChildPhoto')?.addEventListener('click',removeChildPhoto);
+$('buyCredits')?.addEventListener('click',openCreditShop);
+$('closeCreditShop')?.addEventListener('click',closeCreditShop);
+$('creditShop')?.addEventListener('click',e=>{if(e.target===$('creditShop'))closeCreditShop()});
+document.querySelectorAll('[data-buy-credits]').forEach(b=>b.addEventListener('click',()=>startCreditCheckout(Number(b.dataset.buyCredits),b)));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('creditShop')?.classList.contains('hidden'))closeCreditShop()});
 initSupabase();
 
 async function initSupabase(){
@@ -124,7 +129,7 @@ async function applyAuthSession(session){
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('authSignedIn')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?'Cloud connected':'Not signed in';badge.classList.toggle('online',!!currentUser)}
  if($('signedInAs'))$('signedInAs').textContent=currentUser?`Signed in as ${currentUser.email}`:'';
- if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto()}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
+ if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
 }
 
 function showPasswordRecovery(){
@@ -213,6 +218,7 @@ function renderStoryCredits(balance=storyCreditBalance){
  storyCreditBalance=Number.isFinite(Number(balance))?Number(balance):null;
  const el=$('creditStatus');if(!el)return;
  el.classList.toggle('empty',storyCreditBalance===0);
+ const buy=$('buyCredits');if(buy)buy.classList.toggle('hidden',!currentUser);
  if(!currentUser){el.innerHTML='<strong>3 free stories</strong> when you create or sign in to your parent account.';return}
  if(storyCreditBalance===null){el.textContent='Checking story credits…';return}
  if(storyCreditBalance===0){el.innerHTML='<strong>No story credits remaining.</strong> Your saved stories are still free to reopen and read.';return}
@@ -235,6 +241,7 @@ async function claimIntroTrialIfEligible(){
  }catch(e){console.warn('trial claim',e);return null}
 }
 async function loadStoryCredits(){
+ $('buyCredits')?.classList.toggle('hidden',!currentUser);
  if(!currentUser||!supabaseClient){renderStoryCredits(null);return null}
  let {data,error}=await supabaseClient.from('story_credits').select('balance,lifetime_granted').eq('user_id',currentUser.id).maybeSingle();
  if(!error && Number(data?.lifetime_granted||0)===0){
@@ -251,6 +258,61 @@ async function loadStoryCredits(){
 }
 async function currentAccessToken(){
  const {data:{session}}=await supabaseClient.auth.getSession();return session?.access_token||'';
+}
+
+function showCheckoutNotice(message,kind=''){
+ const el=$('checkoutNotice');if(!el)return;
+ el.textContent=message||'';el.classList.toggle('hidden',!message);el.classList.toggle('success',kind==='success');el.classList.toggle('error',kind==='error');
+}
+function openCreditShop(){
+ if(!currentUser){setAuthStatus('Sign in or create your parent account before buying story credits.',true);if(isPhonePortrait())goSetupPage(0);return}
+ $('creditShop')?.classList.remove('hidden');document.body.classList.add('credit-shop-open');if($('checkoutStatus'))$('checkoutStatus').textContent='';
+}
+function closeCreditShop(){$('creditShop')?.classList.add('hidden');document.body.classList.remove('credit-shop-open')}
+async function startCreditCheckout(credits,button){
+ if(!currentUser){closeCreditShop();openCreditShop();return}
+ const token=await currentAccessToken();if(!token){if($('checkoutStatus'))$('checkoutStatus').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
+ const buttons=[...document.querySelectorAll('[data-buy-credits]')];buttons.forEach(b=>b.disabled=true);
+ if($('checkoutStatus'))$('checkoutStatus').textContent='Opening secure checkout…';
+ try{
+   const r=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({credits:Number(credits)})});
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok||!data.url)throw new Error(data.error||'Could not start checkout.');
+   location.href=data.url;
+ }catch(e){
+   console.error('checkout',e);if($('checkoutStatus'))$('checkoutStatus').innerHTML=`<span class="error">${escapeHtml(e.message||String(e))}</span>`;buttons.forEach(b=>b.disabled=false);
+ }
+}
+async function handleCheckoutReturn(){
+ const params=new URLSearchParams(location.search);const state=params.get('checkout');
+ if(!state)return;
+ if(isPhonePortrait())goSetupPage(5,true);
+ if(state==='cancelled'){
+   showCheckoutNotice('Payment cancelled. No story credits were charged.');
+   history.replaceState({},document.title,location.pathname);
+   return;
+ }
+ if(state!=='success')return;
+ const sessionId=params.get('session_id')||'';
+ if(!currentUser){showCheckoutNotice('Payment received. Sign in to the account that made the purchase to confirm your credits.');return}
+ if(!sessionId){showCheckoutNotice('Payment completed, but Moonbeam could not read the checkout reference. Your payment is still protected.', 'error');return}
+ showCheckoutNotice('Payment received — confirming your new story credits…');
+ try{
+   const token=await currentAccessToken();
+   const r=await fetch(`/api/checkout-status?session_id=${encodeURIComponent(sessionId)}`,{headers:{'Authorization':`Bearer ${token}`}});
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok)throw new Error(data.error||'Could not confirm payment.');
+   if(data.paid){
+     if(Number.isFinite(Number(data.balance)))renderStoryCredits(Number(data.balance));else await loadStoryCredits();
+     showCheckoutNotice(`${Number(data.credits)||'Your'} new story credits have been added. Enjoy your next adventure!`,'success');
+     history.replaceState({},document.title,location.pathname);
+   }else{
+     showCheckoutNotice('Stripe is still confirming the payment. Your credits will appear as soon as it completes.');
+     setTimeout(()=>handleCheckoutReturn(),1800);
+   }
+ }catch(e){
+   console.error('checkout return',e);showCheckoutNotice('Your payment may have succeeded, but Moonbeam could not confirm it yet. Refresh this page in a moment; credits are granted server-side and cannot be lost.','error');
+ }
 }
 
 async function generateStory(){

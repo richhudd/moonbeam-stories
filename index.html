@@ -23,11 +23,27 @@
 
     <section class="card setup-page" data-step="Photo"><div class="mobile-step-kicker">5 of 7</div><h2>Make the pictures look like them</h2><div class="child-photo-card" id="childPhotoCard"><div class="child-photo-copy"><h3>Your child's photo <span class="optional-pill">Optional</span></h3><p>Use a clear photo so the illustrated child looks like them.</p><p class="photo-privacy">Kept on this device and sent only when an illustration is created.</p></div><div class="child-photo-controls"><div class="child-photo-preview" id="childPhotoPreview"><span>☾</span><small>No photo selected</small></div><div class="photo-buttons"><input id="childPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="secondary" id="chooseChildPhoto" type="button">Choose photo</button><button class="secondary danger-lite hidden" id="removeChildPhoto" type="button">Remove photo</button></div><label class="photo-toggle"><input id="useChildPhoto" type="checkbox" checked> <span>Use this photo for illustrations</span></label><p class="status photo-status" id="photoStatus"></p></div></div></section>
 
-    <section class="card setup-page" data-step="Story"><div class="mobile-step-kicker">6 of 7</div><h2 id="storyPrefs">Story preferences</h2><div class="row"><label><span id="toneLabel">Tone</span><select id="tone"></select></label></div><div id="creditStatus" class="credit-status" aria-live="polite"></div><h3 id="valuesTitle">Story Values</h3><div class="chips" id="values"></div><button class="primary" id="generate" type="button"><span class="generate-label">✨ Make Tonight's Story</span></button><div id="storyPreparing" class="story-preparing hidden" role="status" aria-live="polite"><div class="hourglass" aria-hidden="true"><div class="hourglass-glass"><span class="hourglass-sand top"></span><span class="hourglass-stream"></span><span class="hourglass-sand bottom"></span></div></div><strong id="preparingTitle">Preparing your story…</strong><small id="preparingCopy">Moonbeam is writing tonight's adventure. This can take a little while.</small></div><p class="status" id="status"></p></section>
+    <section class="card setup-page" data-step="Story"><div class="mobile-step-kicker">6 of 7</div><h2 id="storyPrefs">Story preferences</h2><div class="row"><label><span id="toneLabel">Tone</span><select id="tone"></select></label></div><div id="creditStatus" class="credit-status" aria-live="polite"></div><button class="secondary buy-credits-button hidden" id="buyCredits" type="button">＋ Buy story credits</button><div id="checkoutNotice" class="checkout-notice hidden" role="status" aria-live="polite"></div><h3 id="valuesTitle">Story Values</h3><div class="chips" id="values"></div><button class="primary" id="generate" type="button"><span class="generate-label">✨ Make Tonight's Story</span></button><div id="storyPreparing" class="story-preparing hidden" role="status" aria-live="polite"><div class="hourglass" aria-hidden="true"><div class="hourglass-glass"><span class="hourglass-sand top"></span><span class="hourglass-stream"></span><span class="hourglass-sand bottom"></span></div></div><strong id="preparingTitle">Preparing your story…</strong><small id="preparingCopy">Moonbeam is writing tonight's adventure. This can take a little while.</small></div><p class="status" id="status"></p></section>
 
     <section class="card setup-page" data-step="Library"><div class="mobile-step-kicker">7 of 7</div><h2 id="savedTitle">Saved stories</h2><div id="library" class="library"></div></section>
   </div>
   <nav class="setup-nav" aria-label="Setup pages"><button class="setup-arrow" id="setupPrev" type="button" aria-label="Previous setup page">‹</button><div class="setup-dots" id="setupDots" aria-hidden="true"></div><button class="setup-arrow" id="setupNext" type="button" aria-label="Next setup page">›</button></nav>
 </div>
 <section id="story" class="story hidden"></section>
+
+<div class="credit-shop-backdrop hidden" id="creditShop" role="dialog" aria-modal="true" aria-labelledby="creditShopTitle">
+  <div class="credit-shop-card">
+    <button class="credit-shop-close" id="closeCreditShop" type="button" aria-label="Close">×</button>
+    <div class="credit-shop-kicker">Moonbeam Stories</div>
+    <h2 id="creditShopTitle">Add story credits</h2>
+    <p class="credit-shop-copy">Credits never expire. One credit creates one new personalised story. Saved stories remain free to reopen.</p>
+    <div class="credit-pack-grid">
+      <button class="credit-pack" type="button" data-buy-credits="10"><strong>10 stories</strong><span>£9.99</span><small>about £1.00 each</small></button>
+      <button class="credit-pack featured" type="button" data-buy-credits="25"><em>Most popular</em><strong>25 stories</strong><span>£19.99</span><small>about 80p each</small></button>
+      <button class="credit-pack" type="button" data-buy-credits="50"><strong>50 stories</strong><span>£34.99</span><small>about 70p each</small></button>
+    </div>
+    <p class="credit-shop-secure">Secure payment handled by Stripe.</p>
+    <p class="status" id="checkoutStatus"></p>
+  </div>
+</div>
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/app.js"></script></body></html>

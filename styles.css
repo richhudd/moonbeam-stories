@@ -654,3 +654,33 @@
 /* V50 — simple prepaid story-credit status */
 .credit-status{margin:.7rem 0 .85rem;padding:.7rem .85rem;border:1px solid rgba(73,61,102,.18);border-radius:14px;background:rgba(255,255,255,.55);font-size:.94rem;line-height:1.3}
 .credit-status strong{font-weight:750}.credit-status.empty{border-color:rgba(150,55,55,.25)}
+
+/* V53 — prepaid Stripe credit shop */
+.buy-credits-button{margin:-.15rem 0 .85rem;width:auto;min-width:180px}
+.checkout-notice{margin:.65rem 0;padding:.72rem .85rem;border-radius:14px;background:rgba(75,47,160,.08);border:1px solid rgba(75,47,160,.18);font-size:.92rem;line-height:1.35}
+.checkout-notice.success{background:rgba(35,125,75,.09);border-color:rgba(35,125,75,.22)}
+.checkout-notice.error{background:rgba(165,55,55,.08);border-color:rgba(165,55,55,.22)}
+.credit-shop-backdrop{position:fixed;inset:0;z-index:300;background:rgba(19,15,37,.68);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:grid;place-items:center;padding:20px}
+.credit-shop-backdrop.hidden{display:none!important}
+.credit-shop-card{position:relative;width:min(760px,100%);max-height:calc(100dvh - 40px);overflow:auto;background:#fbf9ff;border:1px solid rgba(62,44,105,.18);border-radius:24px;padding:30px;box-shadow:0 24px 80px rgba(17,10,36,.34);color:#2d2845}
+.credit-shop-close{position:absolute;right:16px;top:12px;border:0;background:transparent;font-size:2rem;line-height:1;color:#625b77;cursor:pointer;padding:4px 10px}
+.credit-shop-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;font-weight:800;color:#6540c5;margin-bottom:7px}
+.credit-shop-card h2{margin:.1rem 0 .45rem;font-size:1.9rem}
+.credit-shop-copy{margin:0 36px 22px 0;color:#625d72;line-height:1.45}
+.credit-pack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.credit-pack{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-align:left;padding:22px 18px 18px;border-radius:18px;border:1px solid rgba(79,57,130,.2);background:white;color:#2d2845;cursor:pointer;min-height:150px;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.credit-pack:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(54,34,99,.12);border-color:rgba(93,57,188,.45)}
+.credit-pack:disabled{opacity:.6;cursor:wait;transform:none}
+.credit-pack strong{font-size:1.08rem}.credit-pack span{font-size:1.65rem;font-weight:850;color:#5735b8}.credit-pack small{color:#6e687b}
+.credit-pack.featured{border:2px solid #6540c5;padding:21px 17px 17px}
+.credit-pack em{position:absolute;right:10px;top:9px;font-style:normal;font-size:.68rem;font-weight:800;background:#eee8ff;color:#5735b8;border-radius:999px;padding:4px 7px}
+.credit-shop-secure{text-align:center;color:#77717f;font-size:.82rem;margin:18px 0 0}
+@media(max-width:700px){
+  .credit-shop-backdrop{padding:12px;align-items:end}
+  .credit-shop-card{width:100%;max-height:92dvh;border-radius:22px 22px 16px 16px;padding:24px 18px 20px}
+  .credit-shop-card h2{font-size:1.55rem}.credit-shop-copy{margin-right:26px}
+  .credit-pack-grid{grid-template-columns:1fr;gap:9px}
+  .credit-pack{min-height:0;display:grid;grid-template-columns:1fr auto;grid-template-areas:'name price' 'detail price';align-items:center;padding:15px 16px;gap:3px 12px}
+  .credit-pack.featured{padding:14px 15px 14px}
+  .credit-pack strong{grid-area:name}.credit-pack span{grid-area:price;font-size:1.4rem}.credit-pack small{grid-area:detail}.credit-pack em{position:static;grid-column:1/-1;width:max-content;margin-bottom:2px}
+}

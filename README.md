@@ -1,3 +1,53 @@
+# Moonbeam Stories V53 — Stripe prepaid story credits
+
+V53 builds directly on the working V52 release. It keeps the 3-credit verified introductory trial and adds secure prepaid Stripe Checkout packs:
+
+- 10 story credits — £9.99
+- 25 story credits — £19.99
+- 50 story credits — £34.99
+- one credit = one newly generated story
+- saved stories remain free to reopen
+- credits do not expire in Moonbeam
+
+## DEPLOYMENT ORDER — IMPORTANT
+
+### 1. Supabase FIRST
+Open `SUPABASE_V53_PAYMENTS.sql`, copy the entire file into Supabase SQL Editor, and Run it once. It does **not** reset existing balances or V52 trial claims.
+
+The SQL adds an idempotent purchase ledger and the server-only `fulfill_story_credit_purchase` RPC. A Stripe Checkout Session can therefore grant credits only once, even if Stripe retries a webhook or the success page checks the payment again. It also hardens `consume_story_credit` so a missing credit row starts at zero rather than accidentally recreating the introductory allowance.
+
+### 2. Stripe test-mode secrets in Vercel
+Add these Vercel environment variables for Production/Preview as appropriate:
+
+- `STRIPE_SECRET_KEY` — Stripe secret API key (`sk_test_...` while testing)
+- `STRIPE_WEBHOOK_SECRET` — webhook endpoint signing secret (`whsec_...`)
+- `MOONBEAM_SITE_URL` — optional; defaults to `https://www.moonbeamstories.co.uk`
+
+Never put either Stripe secret in `index.html`, `app.js`, GitHub source, or Supabase client settings.
+
+### 3. Stripe webhook
+In Stripe, create a webhook endpoint pointing to:
+
+`https://www.moonbeamstories.co.uk/api/stripe-webhook`
+
+Subscribe it to:
+
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+
+Copy that endpoint's signing secret into Vercel as `STRIPE_WEBHOOK_SECRET`.
+
+### 4. Deploy V53
+Upload/deploy the whole V53 project after the SQL and environment variables are in place. No `vercel.json` is required.
+
+## Security model
+
+Pricing is hard-coded server-side and validated again inside Postgres. The browser can request only one of the three fixed packs. Credits are added only after Stripe reports a Checkout Session as paid. Fulfilment uses the Stripe Checkout Session ID as a unique idempotency key, so refreshes, webhook retries, and duplicate callbacks cannot award the same purchase twice.
+
+The checkout success page also asks the backend to retrieve the Checkout Session directly from Stripe. This makes the balance update promptly after return while the signed Stripe webhook remains the reliable server-to-server fulfilment route.
+
+---
+
 # Moonbeam Stories V49
 
 ## V48 desktop story-page fitting fix
