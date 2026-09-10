@@ -1,11 +1,8 @@
-# Moonbeam Stories V28
+# Moonbeam Stories V29
 
-Mobile setup refinements based on iPhone testing:
+V29 builds on V28 with two reliability/feedback improvements:
 
-- Moved **Save child profile** from setup page 2 to directly beneath Name/Age on page 3.
-- Kept saved-profile selection and delete controls on page 2.
-- Reduced the portrait-phone Moonbeam header to a compact 42px identity bar and hides the tagline.
-- Reworked page 5 so the child-photo preview flexes to available height while **Choose photo**, Remove and the photo toggle always remain visible.
-- Reworked page 6 so **Make Tonight's Story** occupies a reserved bottom slot and cannot be pushed below the usable viewport.
-- Tightened page-specific spacing rather than enabling vertical scrolling.
-- Retains V27 full-screen swipe story reader and all V25/V26 functionality.
+- Story generation now tolerates model output wrapped in extra text/code fences, extracts balanced JSON, normalises the story shape, and automatically asks the model to repair malformed/truncated output before showing an error.
+- Tapping **Make Tonight's Story** now replaces the button with an animated hourglass panel and a clear “Preparing your story…” message until generation completes or fails. The loading copy is adapted for all supported language families.
+
+All V28 mobile layout, full-screen swipe reader, Supabase profiles/saved stories, child-photo reference, and illustration-prefetch/cache behaviour remain in place.

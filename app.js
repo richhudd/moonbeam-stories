@@ -212,8 +212,23 @@ async function generateStory(){
  const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:($('useChildPhoto')?.checked&&currentChildPhoto)?currentChildPhoto:null};
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
- const button=$('generate');button.disabled=true;$('status').textContent=t().writing;
- try{const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({child})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(!response.ok){throw new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`)}if(!data?.story)throw new Error('The story service did not return a story.');renderStory(data.story,null,child)}catch(e){console.error(e);$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'}finally{button.disabled=false}}
+ const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy');
+ $('status').textContent='';button.disabled=true;button.classList.add('is-generating');
+ if(preparingTitle)preparingTitle.textContent=language.startsWith('es')?'Preparando tu historia…':language.startsWith('fr')?'Préparation de votre histoire…':language.startsWith('de')?'Deine Geschichte wird vorbereitet…':language.startsWith('it')?'Preparazione della storia…':language.startsWith('pt')?'A preparar a tua história…':'Preparing your story…';
+ if(preparingCopy)preparingCopy.textContent=language.startsWith('es')?'Moonbeam está escribiendo la aventura de esta noche. Puede tardar un poco.':language.startsWith('fr')?'Moonbeam écrit l’aventure de ce soir. Cela peut prendre un petit moment.':language.startsWith('de')?'Moonbeam schreibt das heutige Abenteuer. Das kann einen kleinen Moment dauern.':language.startsWith('it')?'Moonbeam sta scrivendo l’avventura di stasera. Potrebbe volerci un momento.':language.startsWith('pt')?'A Moonbeam está a escrever a aventura desta noite. Pode demorar um pouco.':"Moonbeam is writing tonight's adventure. This can take a little while.";
+ if(preparing)preparing.classList.remove('hidden');
+ try{
+   const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({child})});
+   const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}
+   if(!response.ok){throw new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`)}
+   if(!data?.story)throw new Error('The story service did not return a story.');
+   renderStory(data.story,null,child)
+ }catch(e){
+   console.error(e);$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
+ }finally{
+   button.disabled=false;button.classList.remove('is-generating');if(preparing)preparing.classList.add('hidden')
+ }
+}
 
 function buildBook(s,image,child){const pages=Array.isArray(s.pages)?s.pages:[];return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId:makeStoryCacheId(s,child),currentPage:-1,mobileSide:'text'}}
 function renderStory(s,image,child){

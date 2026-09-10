@@ -89,41 +89,126 @@ The app displays ONE text page beside ONE equally sized illustration. Every disp
 
 Each pages array item MUST have exactly this shape: {"text":"string","illustration_prompt":"string"}. Add a concise character_bible describing the recurring characters' appearance, clothing, age range, colours and any distinctive features so an image model can keep them consistent. Each illustration_prompt should describe a charming, child-friendly storybook illustration for that specific scene and should refer to the character_bible details where relevant. Do not include text or lettering in illustrations.`;
 
-    const r = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-5.6-luna',
-        input: prompt,
-        max_output_tokens: 5000
-      })
-    });
-
-    const raw = await r.text();
-    let data;
-    try { data = JSON.parse(raw); } catch { data = {}; }
-
-    if (!r.ok) {
-      const e = data && data.error;
-      const message = typeof e === 'string' ? e : (e && (e.message || e.code || e.type)) || `OpenAI returned HTTP ${r.status}`;
-      return res.status(502).json({ error: String(message), openai_status: r.status });
+    async function callStoryModel(input, maxOutputTokens = 5000) {
+      const r = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-5.6-luna', input, max_output_tokens: maxOutputTokens })
+      });
+      const raw = await r.text();
+      let data;
+      try { data = JSON.parse(raw); } catch { data = {}; }
+      if (!r.ok) {
+        const e = data && data.error;
+        const message = typeof e === 'string' ? e : (e && (e.message || e.code || e.type)) || `OpenAI returned HTTP ${r.status}`;
+        const error = new Error(String(message));
+        error.openaiStatus = r.status;
+        throw error;
+      }
+      let output = typeof data.output_text === 'string' ? data.output_text : '';
+      if (!output && Array.isArray(data.output)) {
+        for (const item of data.output) {
+          if (!Array.isArray(item.content)) continue;
+          for (const part of item.content) {
+            if (typeof part.text === 'string') output += part.text;
+            else if (typeof part.output_text === 'string') output += part.output_text;
+          }
+        }
+      }
+      return String(output || '').trim();
     }
 
-    let output = typeof data.output_text === 'string' ? data.output_text : '';
-    if (!output && Array.isArray(data.output)) {
-      for (const item of data.output) {
-        if (Array.isArray(item.content)) {
-          for (const part of item.content) if (typeof part.text === 'string') output += part.text;
+    function candidateJsonStrings(text) {
+      const clean = String(text || '').trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '');
+      const candidates = [];
+      if (clean) candidates.push(clean);
+
+      // Extract the first balanced JSON object even if the model surrounded it with prose.
+      let start = -1, depth = 0, inString = false, escaped = false;
+      for (let i = 0; i < clean.length; i++) {
+        const ch = clean[i];
+        if (inString) {
+          if (escaped) escaped = false;
+          else if (ch === '\\') escaped = true;
+          else if (ch === '"') inString = false;
+          continue;
         }
+        if (ch === '"') { inString = true; continue; }
+        if (ch === '{') {
+          if (depth === 0) start = i;
+          depth++;
+        } else if (ch === '}' && depth > 0) {
+          depth--;
+          if (depth === 0 && start >= 0) {
+            candidates.push(clean.slice(start, i + 1));
+            break;
+          }
+        }
+      }
+      return [...new Set(candidates.filter(Boolean))];
+    }
+
+    function parseStoryOutput(text) {
+      for (const candidate of candidateJsonStrings(text)) {
+        for (const version of [candidate, candidate.replace(/,\s*([}\]])/g, '$1')]) {
+          try {
+            const parsed = JSON.parse(version);
+            const story = parsed && parsed.story && typeof parsed.story === 'object' ? parsed.story : parsed;
+            if (story && typeof story === 'object') return story;
+          } catch {}
+        }
+      }
+      return null;
+    }
+
+    function normaliseStory(story) {
+      if (!story || typeof story !== 'object') return null;
+      const pages = Array.isArray(story.pages) ? story.pages.map(p => ({
+        text: typeof p?.text === 'string' ? p.text.trim() : '',
+        illustration_prompt: typeof p?.illustration_prompt === 'string' && p.illustration_prompt.trim()
+          ? p.illustration_prompt.trim()
+          : 'A charming children’s storybook illustration matching this part of the adventure.'
+      })).filter(p => p.text) : [];
+      const normal = {
+        title: typeof story.title === 'string' ? story.title.trim() : '',
+        opening: typeof story.opening === 'string' ? story.opening.trim() : '',
+        character_bible: typeof story.character_bible === 'string' && story.character_bible.trim()
+          ? story.character_bible.trim()
+          : `Keep ${String(child.name)} visually consistent throughout the book, age ${age}, with the same hair, facial features and clothing unless the story explicitly changes clothing.`,
+        pages,
+        closing: typeof story.closing === 'string' ? story.closing.trim() : ''
+      };
+      if (!normal.title || !normal.opening || !normal.closing || !normal.pages.length) return null;
+      return normal;
+    }
+
+    let firstOutput = '';
+    let story = null;
+    try {
+      firstOutput = await callStoryModel(prompt);
+      story = normaliseStory(parseStoryOutput(firstOutput));
+    } catch (e) {
+      if (e.openaiStatus) return res.status(502).json({ error: e.message, openai_status: e.openaiStatus });
+      throw e;
+    }
+
+    // If the model produced almost-JSON, ask it to repair its own output once rather than
+    // showing the reader a formatting error. This also catches missing required fields.
+    if (!story) {
+      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible. Ensure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
+      try {
+        const repairedOutput = await callStoryModel(repairInput, 5000);
+        story = normaliseStory(parseStoryOutput(repairedOutput));
+      } catch (e) {
+        if (e.openaiStatus) return res.status(502).json({ error: e.message, openai_status: e.openaiStatus });
+        throw e;
       }
     }
 
-    output = output.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-
-    let story;
-    try { story = JSON.parse(output); }
-    catch {
-      return res.status(502).json({ error: 'OpenAI responded, but not in the required story format.', debug: output.slice(0, 500) });
+    if (!story) {
+      return res.status(502).json({ error: 'Moonbeam could not finish this story correctly. Please tap Make Tonight’s Story again.' });
     }
 
     const wordCount = value => String(value || '').trim().split(/\s+/).filter(Boolean).length;

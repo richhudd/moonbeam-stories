@@ -211,3 +211,39 @@
   [data-step="Story"] #generate{flex:0 0 auto;min-height:50px;padding:13px;font-size:15px;margin-top:auto}
   [data-step="Story"] #status{flex:0 0 16px;min-height:16px;margin:3px 0 0;font-size:10px;line-height:1.2}
 }
+
+/* V29 — unmistakable story-generation feedback */
+.story-preparing{
+  margin-top:auto;
+  min-height:118px;
+  border:1px solid rgba(95,63,198,.18);
+  border-radius:22px;
+  background:linear-gradient(180deg,rgba(250,248,255,.98),rgba(243,239,255,.98));
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:5px;
+  padding:14px 18px;
+}
+.story-preparing.hidden{display:none!important}
+.story-preparing strong{font-size:17px;line-height:1.2;color:#292441}
+.story-preparing small{max-width:310px;font-size:12px;line-height:1.35;color:#6d6684}
+.hourglass{height:42px;display:grid;place-items:center}
+.hourglass span{display:block;font-size:34px;line-height:1;transform-origin:50% 50%;animation:moonbeam-hourglass 1.35s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes moonbeam-hourglass{
+  0%,35%{transform:rotate(0deg) scale(1)}
+  50%{transform:rotate(180deg) scale(1.08)}
+  85%,100%{transform:rotate(180deg) scale(1)}
+}
+#generate.is-generating{display:none!important}
+@media (prefers-reduced-motion:reduce){.hourglass span{animation:none}}
+
+@media(max-width:700px) and (orientation:portrait){
+  [data-step="Story"] .story-preparing{flex:0 0 auto;min-height:116px;margin-top:auto;padding:12px 14px;border-radius:20px}
+  [data-step="Story"] .story-preparing strong{font-size:16px}
+  [data-step="Story"] .story-preparing small{font-size:11px}
+  [data-step="Story"] .hourglass{height:38px}
+  [data-step="Story"] .hourglass span{font-size:31px}
+}
