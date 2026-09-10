@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
 
     const hasReference = /^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage);
     const identityDirection = hasReference
-      ? `\nIDENTITY REFERENCE\nAn attached photograph shows the real child who is the main hero. Preserve the child's recognisable identity across the illustration: face shape, eyes, nose, smile, hair colour, hair texture, approximate skin tone and age. Translate the child naturally into the storybook painting style rather than making the result photographic. Do not copy the photograph's background, clothing or pose unless the scene calls for them. The child should clearly look like the same person in every illustration.`
+      ? `\nIDENTITY REFERENCE\nAn attached photograph shows the real child who is the main hero. Preserve the child's recognisable identity across the illustration: face shape, eyes, nose, smile, hair colour, hair texture, approximate skin tone and age. Translate the child naturally into the storybook painting style rather than making the result photographic. Do not copy the photograph's background, clothing or pose unless the scene calls for them. Identity preservation is a primary requirement: the illustrated child must be recognisably the same real child, not merely a generic child of similar age or hair colour. The child should clearly look like the same person in every illustration.`
       : '';
 
     const finalPrompt = `Create a single full-page illustration for a premium children's bedtime storybook.
@@ -46,7 +46,7 @@ IMPORTANT
       const bytes = Buffer.from(match[2], 'base64');
       const extension = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
       const form = new FormData();
-      form.append('model', 'gpt-image-2.5-flare');
+      form.append('model', 'gpt-image-2.5-sunburst');
       form.append('prompt', finalPrompt);
       form.append('image', new Blob([bytes], { type: mime }), `child-reference.${extension}`);
       form.append('size', '1024x1024');

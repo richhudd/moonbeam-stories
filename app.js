@@ -62,7 +62,9 @@ async function requestIllustration(key,prompt,style,force=false,referenceImage=n
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
  if(!force&&illustrationInflight.has(key))return illustrationInflight.get(key);
- const task=(async()=>{let attempts=0;while(attempts<3){attempts++;const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style,referenceImage:referenceImage||null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
+ const task=(async()=>{let attempts=0;while(attempts<3){attempts++;const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style,referenceImage:referenceImage||null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
+   if(referenceImage && data.usedReferencePhoto!==true) throw new Error('The child photo reference was not accepted by the illustration service.');
+   illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
  illustrationInflight.set(key,task);try{return await task}finally{illustrationInflight.delete(key)}
 }
 const coverLocales={
@@ -209,7 +211,12 @@ async function saveCurrentStory(){
 async function deleteCloudStory(id){if(!currentUser)return;if(!confirm('Delete this saved story?'))return;const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
 
 async function generateStory(){
- const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:($('useChildPhoto')?.checked&&currentChildPhoto)?currentChildPhoto:null};
+ let resolvedReferencePhoto=null;
+ if($('useChildPhoto')?.checked){
+   resolvedReferencePhoto=currentChildPhoto||await childPhotoGet(currentPhotoKey());
+   if(resolvedReferencePhoto)currentChildPhoto=resolvedReferencePhoto;
+ }
+ const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:resolvedReferencePhoto};
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
  const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy');
@@ -245,57 +252,64 @@ function renderStory(s,image,child){
  $('save').onclick=saveCurrentStory;
  $('newStory').onclick=()=>exitStoryToSetup();
 }
-function coverKey(book){return `${book.cacheId}:cover`}
+function coverKey(book){return `v44:${book.cacheId}:cover`}
 function getCoverPrompt(book){
  const first=book.pages[0]?.illustration_prompt||'';
  return `Front cover illustration for an original premium children's bedtime adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}. Interests: ${book.child?.interests||'imaginative adventures'}. Story world and character continuity: ${book.character_bible||'Keep the hero appealing and visually consistent with the interior illustrations.'} Opening: ${book.opening||''} Visual clue from the first scene: ${first}. Compose this specifically as a striking real children's BOOK COVER: one clear focal character, a strong sense of mystery or adventure, magical depth, warm inviting light, sophisticated hand-painted storybook look, expressive but reassuring. Keep the central and upper areas sufficiently calm and uncluttered for title typography that will be overlaid by the app. Absolutely no words, letters, captions, logos, signs or readable text anywhere in the image.`
 }
 function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
+function dataUrlToBlobUrl(dataUrl){
+ try{
+   const match=String(dataUrl||'').match(/^data:([^;]+);base64,(.+)$/);
+   if(!match)return dataUrl;
+   const binary=atob(match[2]);
+   const bytes=new Uint8Array(binary.length);
+   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+   return URL.createObjectURL(new Blob([bytes],{type:match[1]}));
+ }catch{return dataUrl}
+}
 async function revealCoverImage(img,src){
  const painted=$('coverPaintedBg');
  const wrap=img?.closest('.cover-art-wrap')||painted?.closest('.cover-art-wrap');
+ if(!img)return;
 
- // V43: on portrait iPhone the cover is painted primarily as a dedicated CSS
- // background layer. This avoids WebKit's intermittent first-frame failure with
- // data-URL <img> elements inside a full-screen absolutely positioned cover.
- if(painted){
-   painted.style.backgroundImage=`url(${JSON.stringify(src)})`;
-   painted.style.backgroundSize='cover';
-   painted.style.backgroundPosition='center center';
-   painted.style.backgroundRepeat='no-repeat';
-   painted.style.opacity='1';
-   painted.hidden=false;
+ // V44: Safari is much more reliable painting a short blob: URL than a very
+ // large base64 data URL inside a full-screen transformed cover.
+ const displaySrc=dataUrlToBlobUrl(src);
+ if(currentBook?.coverObjectUrl && currentBook.coverObjectUrl!==displaySrc && String(currentBook.coverObjectUrl).startsWith('blob:')){
+   try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}
  }
+ if(currentBook && String(displaySrc).startsWith('blob:')) currentBook.coverObjectUrl=displaySrc;
+
+ img.hidden=false;
+ img.style.display='block';
+ img.style.opacity='0';
+ img.src=displaySrc;
+
+ try{
+   if(!img.complete)await new Promise((resolve,reject)=>{
+     img.addEventListener('load',resolve,{once:true});
+     img.addEventListener('error',reject,{once:true});
+   });
+   if(typeof img.decode==='function')await img.decode().catch(()=>{});
+ }catch(e){}
+
+ if(!img.naturalWidth)throw new Error('The cover illustration could not be displayed.');
+ img.style.opacity='1';
+
+ // Keep the same blob image as a background fallback, but the <img> is now
+ // the primary mobile rendering path.
  if(wrap){
-   // Keep a second independent background fallback on the wrapper itself.
-   wrap.style.backgroundImage=`url(${JSON.stringify(src)})`;
+   wrap.style.backgroundImage=`url("${displaySrc}")`;
    wrap.style.backgroundSize='cover';
    wrap.style.backgroundPosition='center center';
    wrap.style.backgroundRepeat='no-repeat';
  }
-
- // Desktop and other browsers may continue to use the normal image element.
- if(img){
-   img.hidden=false;
-   img.style.opacity='0';
-   img.src=src;
-   try{
-     if(typeof img.decode==='function')await img.decode();
-     else if(!img.complete)await new Promise((resolve,reject)=>{
-       img.addEventListener('load',resolve,{once:true});
-       img.addEventListener('error',reject,{once:true});
-     });
-   }catch(e){}
-   if(img.complete&&img.naturalWidth){
-     img.style.opacity='1';
-   }
+ if(painted){
+   painted.style.backgroundImage=`url("${displaySrc}")`;
+   painted.style.opacity='1';
  }
-
- // Force two actual layout/paint opportunities before dismissing the loader.
- if(wrap){void wrap.offsetHeight}
- if(painted){void painted.offsetHeight}
- await nextPaint();
- await new Promise(resolve=>setTimeout(resolve,40));
+ void img.offsetHeight;
  await nextPaint();
 }
 async function loadCoverIllustration(force=false){
@@ -317,7 +331,7 @@ async function loadCoverIllustration(force=false){
 }
 function showCover(){if(!currentBook)return;currentBook.currentPage=-1;const cover=$('coverView');if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.display=''}const book=$('book');if(book)book.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
 function beginStory(mode='self'){if(!currentBook)return;currentBook.readingMode=mode;currentBook.mobileSide='text';const cover=$('coverView');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.display='none'}const book=$('book');if(book)book.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0);if(mode==='narrated')scheduleNarration(120)}
-function illustrationKey(book,index,prompt=''){return `v38:${book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
+function illustrationKey(book,index,prompt=''){return `v44:${book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
 function previousIllustrationKey(book,index){if(index<=0)return null;return illustrationKey(book,index-1,getIllustrationPrompt(index-1))}
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index,prompt);
