@@ -218,9 +218,34 @@ function renderStoryCredits(balance=storyCreditBalance){
  if(storyCreditBalance===0){el.innerHTML='<strong>No story credits remaining.</strong> Your saved stories are still free to reopen and read.';return}
  el.innerHTML=`<strong>${storyCreditBalance} story credit${storyCreditBalance===1?'':'s'} remaining.</strong> One new story uses one credit.`;
 }
+function moonbeamDeviceId(){
+ let id=localStorage.getItem('moonbeamDeviceId');
+ if(!id){id=(globalThis.crypto?.randomUUID?.()||('mb-'+Date.now()+'-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)));localStorage.setItem('moonbeamDeviceId',id)}
+ return id;
+}
+async function claimIntroTrialIfEligible(){
+ if(!currentUser||!supabaseClient)return null;
+ const token=await currentAccessToken();if(!token)return null;
+ try{
+   const r=await fetch('/api/claim-trial',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({deviceId:moonbeamDeviceId()})});
+   const data=await r.json().catch(()=>({}));
+   if(r.ok)return data;
+   if(data?.code==='EMAIL_NOT_VERIFIED')return data;
+   console.warn('trial claim',data);return data;
+ }catch(e){console.warn('trial claim',e);return null}
+}
 async function loadStoryCredits(){
  if(!currentUser||!supabaseClient){renderStoryCredits(null);return null}
- const {data,error}=await supabaseClient.from('story_credits').select('balance').eq('user_id',currentUser.id).maybeSingle();
+ let {data,error}=await supabaseClient.from('story_credits').select('balance,lifetime_granted').eq('user_id',currentUser.id).maybeSingle();
+ if(!error && Number(data?.lifetime_granted||0)===0){
+   const claim=await claimIntroTrialIfEligible();
+   const refreshed=await supabaseClient.from('story_credits').select('balance,lifetime_granted').eq('user_id',currentUser.id).maybeSingle();data=refreshed.data;error=refreshed.error;
+   if(!error && Number(data?.balance||0)===0 && claim?.reason==='device_used'){
+     const el=$('creditStatus');if(el)el.innerHTML='<strong>This device has already enjoyed its 3 free Moonbeam stories.</strong> Your saved stories are still free to read; add story credits to create new adventures.';
+     storyCreditBalance=0;return 0;
+   }
+ }
+
  if(error){console.error('credit balance',error);renderStoryCredits(null);return null}
  renderStoryCredits(data?.balance ?? 3);return storyCreditBalance;
 }

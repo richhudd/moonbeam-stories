@@ -94,3 +94,7 @@ It also adds the first real server-enforced credit system:
 
 ### Required before deploying V50
 Run `SUPABASE_V50_CREDITS.sql` once in Supabase SQL Editor. It creates the credit table/functions, backfills existing accounts with 3 credits, and gives future accounts 3 credits automatically.
+
+## V52 — stricter introductory-trial abuse protection
+Before deploying V52, run `SUPABASE_V52_TRIAL_ABUSE.sql` once in Supabase SQL Editor.
+New accounts now start with zero credits until a verified-email account claims the introductory trial. The server grants three free credits only once per browser/device installation, with a light network guard (maximum one introductory-trial claim from the same network hash in any rolling 30-day period). Existing accounts that already received V50 credits are unchanged. Device/network identifiers are HMAC-hashed server-side before storage; raw IP addresses and raw device IDs are not stored. This is designed to deter casual repeat-account abuse, not to provide perfect hardware identity.

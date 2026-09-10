@@ -47,4 +47,4 @@ async function consumeGenerationSlot(userId, runId, kind) {
   return true;
 }
 async function refundGenerationSlot(userId, runId, kind) { try { return await rpc('refund_generation_slot',{p_user_id:userId,p_run_id:runId,p_kind:kind}); } catch(e){ console.error('slot refund failed',e); return null; } }
-module.exports={verifyMoonbeamUser,consumeStoryCredit,refundStoryCredit,createGenerationRun,consumeGenerationSlot,refundGenerationSlot};
+module.exports={verifyMoonbeamUser,rpc,consumeStoryCredit,refundStoryCredit,createGenerationRun,consumeGenerationSlot,refundGenerationSlot};
