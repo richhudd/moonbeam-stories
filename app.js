@@ -37,23 +37,32 @@ let selected = new Set();
 let saved=[]; try{saved=JSON.parse(localStorage.getItem('moonbeamStories')||'[]');if(!Array.isArray(saved))saved=[]}catch{saved=[]}
 let currentBook=null, illustrationCache=new Map();
 const illustrationInflight=new Map();
-const IMAGE_DB_NAME='moonbeam-illustrations-v1', IMAGE_STORE='images', IMAGE_CACHE_LIMIT=160;
-let imageDbPromise=null, imageWrites=0;
+const IMAGE_DB_NAME='moonbeam-illustrations-v1', IMAGE_STORE='images', CHILD_PHOTO_STORE='childPhotos', IMAGE_CACHE_LIMIT=160;
+let imageDbPromise=null, imageWrites=0, currentChildPhoto=null;
 function openImageDb(){
  if(!('indexedDB' in window))return Promise.resolve(null);
  if(imageDbPromise)return imageDbPromise;
- imageDbPromise=new Promise(resolve=>{try{const req=indexedDB.open(IMAGE_DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(IMAGE_STORE))db.createObjectStore(IMAGE_STORE,{keyPath:'key'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>resolve(null)}catch{resolve(null)}});return imageDbPromise
+ imageDbPromise=new Promise(resolve=>{try{const req=indexedDB.open(IMAGE_DB_NAME,2);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(IMAGE_STORE))db.createObjectStore(IMAGE_STORE,{keyPath:'key'});if(!db.objectStoreNames.contains(CHILD_PHOTO_STORE))db.createObjectStore(CHILD_PHOTO_STORE,{keyPath:'key'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>resolve(null)}catch{resolve(null)}});return imageDbPromise
 }
 async function persistentImageGet(key){const db=await openImageDb();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).get(key);req.onsuccess=()=>resolve(req.result?.image||null);req.onerror=()=>resolve(null)}catch{resolve(null)}})}
 async function persistentImagePut(key,image){const db=await openImageDb();if(!db||!image)return;try{await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite');tx.objectStore(IMAGE_STORE).put({key,image,at:Date.now()});tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()});imageWrites++;if(imageWrites%12===0)pruneImageCache()}catch{}}
+async function childPhotoGet(key){const db=await openImageDb();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(CHILD_PHOTO_STORE,'readonly'),req=tx.objectStore(CHILD_PHOTO_STORE).get(key);req.onsuccess=()=>resolve(req.result?.image||null);req.onerror=()=>resolve(null)}catch{resolve(null)}})}
+async function childPhotoPut(key,image){const db=await openImageDb();if(!db||!image)return;try{await new Promise(resolve=>{const tx=db.transaction(CHILD_PHOTO_STORE,'readwrite');tx.objectStore(CHILD_PHOTO_STORE).put({key,image,at:Date.now()});tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
+async function childPhotoDelete(key){const db=await openImageDb();if(!db)return;try{await new Promise(resolve=>{const tx=db.transaction(CHILD_PHOTO_STORE,'readwrite');tx.objectStore(CHILD_PHOTO_STORE).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
+function currentPhotoKey(profileId=activeProfileId){return `child-photo:${currentUser?.id||'guest'}:${profileId||'draft'}`}
+function renderChildPhoto(){const preview=$('childPhotoPreview'),remove=$('removeChildPhoto'),toggle=$('useChildPhoto');if(!preview)return;if(currentChildPhoto){preview.innerHTML=`<img src="${currentChildPhoto}" alt="Child photo preview">`;remove?.classList.remove('hidden');if(toggle)toggle.disabled=false}else{preview.innerHTML='<span>☾</span><small>No photo selected</small>';remove?.classList.add('hidden');if(toggle){toggle.checked=true;toggle.disabled=true}}}
+async function loadCurrentChildPhoto(){currentChildPhoto=await childPhotoGet(currentPhotoKey());renderChildPhoto()}
+function resizeChildPhoto(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('Could not read that photo.'));reader.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error('That image format could not be opened.'));img.onload=()=>{const max=768,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',0.84))};img.src=reader.result};reader.readAsDataURL(file)})}
+async function chooseChildPhoto(file){if(!file)return;const status=$('photoStatus');try{if(!/^image\/(jpeg|png|webp)$/i.test(file.type))throw new Error('Please choose a JPG, PNG or WebP photo.');if(status)status.textContent='Preparing photo…';const image=await resizeChildPhoto(file);currentChildPhoto=image;await childPhotoPut(currentPhotoKey(),image);if($('useChildPhoto'))$('useChildPhoto').checked=true;renderChildPhoto();if(status)status.textContent='Photo ready for illustrations.'}catch(e){if(status)status.innerHTML=`<span class="error">${escapeHtml(e.message||e)}</span>`}}
+async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());currentChildPhoto=null;renderChildPhoto();if($('photoStatus'))$('photoStatus').textContent='Photo removed.'}
 async function pruneImageCache(){const db=await openImageDb();if(!db)return;try{const rows=await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([])});if(rows.length<=IMAGE_CACHE_LIMIT)return;rows.sort((a,b)=>(b.at||0)-(a.at||0));const remove=rows.slice(IMAGE_CACHE_LIMIT);await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite'),store=tx.objectStore(IMAGE_STORE);remove.forEach(r=>store.delete(r.key));tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 function stableHash(value){let h=2166136261>>>0;for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
-function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'']),c:s.closing||'',n:child?.name||'',a:child?.age||''}))}
-async function requestIllustration(key,prompt,style,force=false){
+function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'']),c:s.closing||'',n:child?.name||'',a:child?.age||'',r:child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
+async function requestIllustration(key,prompt,style,force=false,referenceImage=null){
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
  if(!force&&illustrationInflight.has(key))return illustrationInflight.get(key);
- const task=(async()=>{let attempts=0;while(attempts<3){attempts++;const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
+ const task=(async()=>{let attempts=0;while(attempts<3){attempts++;const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style,referenceImage:referenceImage||null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
  illustrationInflight.set(key,task);try{return await task}finally{illustrationInflight.delete(key)}
 }
 const coverLocales={
@@ -95,6 +104,9 @@ $('saveNewPassword')?.addEventListener('click',saveNewPassword);
 $('profileSelect')?.addEventListener('change',selectCloudProfile);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
 $('deleteProfile')?.addEventListener('click',deleteChildProfile);
+$('chooseChildPhoto')?.addEventListener('click',()=>$('childPhotoInput')?.click());
+$('childPhotoInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)chooseChildPhoto(f);e.target.value=''});
+$('removeChildPhoto')?.addEventListener('click',removeChildPhoto);
 initSupabase();
 
 async function initSupabase(){
@@ -112,7 +124,7 @@ async function applyAuthSession(session){
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('authSignedIn')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?'Cloud connected':'Not signed in';badge.classList.toggle('online',!!currentUser)}
  if($('signedInAs'))$('signedInAs').textContent=currentUser?`Signed in as ${currentUser.email}`:'';
- if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories()])}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary()}
+ if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories()]);await loadCurrentChildPhoto()}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();await loadCurrentChildPhoto()}
 }
 
 function showPasswordRecovery(){
@@ -163,10 +175,10 @@ function formChild(){return{name:$('name').value.trim(),age:Number($('age').valu
 function renderProfileSelect(){
  const sel=$('profileSelect');if(!sel)return;sel.innerHTML='<option value="">New child</option>'+cloudProfiles.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}${p.age?` — ${p.age}`:''}</option>`).join('');sel.value=activeProfileId||'';$('deleteProfile')?.classList.toggle('hidden',!activeProfileId)
 }
-function selectCloudProfile(){
+async function selectCloudProfile(){
  activeProfileId=$('profileSelect').value||null;$('deleteProfile')?.classList.toggle('hidden',!activeProfileId);$('profileStatus').textContent='';
- if(!activeProfileId){$('name').value='';$('age').value=7;$('interests').value='';$('dislikes').value='';return}
- const p=cloudProfiles.find(x=>x.id===activeProfileId);if(!p)return;$('name').value=p.name||'';$('age').value=p.age||7;$('interests').value=p.interests||'';$('dislikes').value=p.dislikes||'';
+ if(!activeProfileId){$('name').value='';$('age').value=7;$('interests').value='';$('dislikes').value='';await loadCurrentChildPhoto();return}
+ const p=cloudProfiles.find(x=>x.id===activeProfileId);if(!p)return;$('name').value=p.name||'';$('age').value=p.age||7;$('interests').value=p.interests||'';$('dislikes').value=p.dislikes||'';await loadCurrentChildPhoto();
 }
 async function loadCloudProfiles(){
  if(!currentUser)return;const {data,error}=await supabaseClient.from('child_profiles').select('id,name,age,interests,dislikes,created_at').order('created_at',{ascending:true});if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}cloudProfiles=data||[];if(activeProfileId&&!cloudProfiles.some(p=>p.id===activeProfileId))activeProfileId=null;renderProfileSelect()
@@ -174,30 +186,30 @@ async function loadCloudProfiles(){
 async function saveChildProfile(){
  if(!currentUser)return;const c=formChild();if(!c.name){$('profileStatus').textContent=t().errorName;return}if(c.age<3||c.age>12){$('profileStatus').textContent=t().errorAge;return}$('profileStatus').textContent='Saving…';
  let result;if(activeProfileId)result=await supabaseClient.from('child_profiles').update(c).eq('id',activeProfileId).select().single();else result=await supabaseClient.from('child_profiles').insert({...c,parent_id:currentUser.id}).select().single();
- if(result.error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(result.error.message)}</span>`;return}activeProfileId=result.data.id;await loadCloudProfiles();$('profileSelect').value=activeProfileId;$('deleteProfile').classList.remove('hidden');$('profileStatus').textContent='Child profile saved.';
+ if(result.error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(result.error.message)}</span>`;return}const wasNew=!activeProfileId;const draftKey=currentPhotoKey(null);activeProfileId=result.data.id;if(wasNew&&currentChildPhoto){await childPhotoPut(currentPhotoKey(activeProfileId),currentChildPhoto);await childPhotoDelete(draftKey)}await loadCloudProfiles();$('profileSelect').value=activeProfileId;$('deleteProfile').classList.remove('hidden');$('profileStatus').textContent='Child profile saved.';
 }
 async function ensureCloudProfile(child){
  if(!currentUser)return null;if(activeProfileId&&cloudProfiles.some(p=>p.id===activeProfileId)){const {error}=await supabaseClient.from('child_profiles').update({name:child.name,age:child.age,interests:child.interests,dislikes:child.dislikes}).eq('id',activeProfileId);if(!error)return activeProfileId}
- const {data,error}=await supabaseClient.from('child_profiles').insert({parent_id:currentUser.id,name:child.name,age:child.age,interests:child.interests,dislikes:child.dislikes}).select('id').single();if(error)throw error;activeProfileId=data.id;await loadCloudProfiles();return data.id
+ const draftKey=currentPhotoKey(null);const {data,error}=await supabaseClient.from('child_profiles').insert({parent_id:currentUser.id,name:child.name,age:child.age,interests:child.interests,dislikes:child.dislikes}).select('id').single();if(error)throw error;activeProfileId=data.id;if(currentChildPhoto){await childPhotoPut(currentPhotoKey(activeProfileId),currentChildPhoto);await childPhotoDelete(draftKey)}await loadCloudProfiles();return data.id
 }
 async function deleteChildProfile(){
- if(!currentUser||!activeProfileId)return;if(!confirm('Delete this child profile? Saved stories will remain in your library.'))return;const {error}=await supabaseClient.from('child_profiles').delete().eq('id',activeProfileId);if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}activeProfileId=null;await loadCloudProfiles();selectCloudProfile();$('profileStatus').textContent='Profile deleted.'
+ if(!currentUser||!activeProfileId)return;if(!confirm('Delete this child profile? Saved stories will remain in your library.'))return;const oldPhotoKey=currentPhotoKey(activeProfileId);const {error}=await supabaseClient.from('child_profiles').delete().eq('id',activeProfileId);if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}await childPhotoDelete(oldPhotoKey);activeProfileId=null;await loadCloudProfiles();await selectCloudProfile();$('profileStatus').textContent='Profile deleted.'
 }
 async function loadCloudStories(){
- if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:profile||{name:'',age:7,interests:'',dislikes:''},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,at:row.created_at}});renderLibrary()
+ if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:{...(profile||{name:'',age:7,interests:'',dislikes:''}),profileId:row.child_id},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,at:row.created_at}});renderLibrary()
 }
 async function saveCurrentStory(){
  if(!currentBook)return;const button=$('save');button.disabled=true;
  try{
    const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
    if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const {error}=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing});if(error)throw error;await loadCloudStories();button.textContent=t().savedBtn;return}
-   saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:currentBook.child,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();button.textContent=t().savedBtn;
+   const savedChild={...(currentBook.child||{})};delete savedChild.referencePhoto;saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:savedChild,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();button.textContent=t().savedBtn;
  }catch(e){console.error(e);button.textContent=t().save;alert('The story could not be saved: '+(e.message||e))}finally{button.disabled=false}
 }
 async function deleteCloudStory(id){if(!currentUser)return;if(!confirm('Delete this saved story?'))return;const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
 
 async function generateStory(){
- const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language,languageName:languageNames[language],values:[...selected]};
+ const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:($('useChildPhoto')?.checked&&currentChildPhoto)?currentChildPhoto:null};
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
  const button=$('generate');button.disabled=true;$('status').textContent=t().writing;
@@ -224,7 +236,7 @@ async function loadCoverIllustration(force=false){
  const book=currentBook;if(!book)return;
  const key=coverKey(book),img=$('coverImage'),loading=$('coverLoading'),error=$('coverError');
  if(loading)loading.hidden=false;if(error)error.hidden=true;
- try{const image=await requestIllustration(key,getCoverPrompt(book),`Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force);if(currentBook===book){const currentImg=$('coverImage');if(currentImg){currentImg.src=image;currentImg.hidden=false}if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if(currentBook===book){if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false}}
+ try{const image=await requestIllustration(key,getCoverPrompt(book),`Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);if(currentBook===book){const currentImg=$('coverImage');if(currentImg){currentImg.src=image;currentImg.hidden=false}if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if(currentBook===book){if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false}}
 }
 function showCover(){if(!currentBook)return;currentBook.currentPage=-1;$('coverView')?.classList.remove('hidden');$('book')?.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
 function beginStory(){if(!currentBook)return;currentBook.mobileSide='text';$('coverView')?.classList.add('hidden');$('book')?.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0);setTimeout(()=>{$('book')?.scrollIntoView({behavior:'smooth',block:'center'})},80)}
@@ -233,7 +245,7 @@ async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index);
  const frame=document.querySelector('.illustration-frame');if(!silent&&(!frame||book.currentPage!==index))return;
  if(!silent&&frame&&!illustrationCache.has(key))frame.innerHTML=`<div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div>`;
- try{const image=await requestIllustration(key,prompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force);if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}catch(e){console.error(e);if(!silent&&currentBook===book&&book.currentPage===index){const f=document.querySelector('.illustration-frame');if(f)f.innerHTML=`<div class="illustration-error"><div class="moon">☾</div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(e?.message||String(e))}</small><button class="secondary retry-illustration" type="button">${language.startsWith('es')?'Reintentar':'Try again'}</button></div>`;const retry=document.querySelector('.retry-illustration');if(retry)retry.onclick=()=>loadIllustration(index,prompt,false,true)}}}
+ try{const image=await requestIllustration(key,prompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}catch(e){console.error(e);if(!silent&&currentBook===book&&book.currentPage===index){const f=document.querySelector('.illustration-frame');if(f)f.innerHTML=`<div class="illustration-error"><div class="moon">☾</div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(e?.message||String(e))}</small><button class="secondary retry-illustration" type="button">${language.startsWith('es')?'Reintentar':'Try again'}</button></div>`;const retry=document.querySelector('.retry-illustration');if(retry)retry.onclick=()=>loadIllustration(index,prompt,false,true)}}}
 function getIllustrationPrompt(index){const book=currentBook;if(!book)return'';const total=book.pages.length+2;if(index===0)return`Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. ${book.pages[0]?.illustration_prompt||''}`;if(index===total-1)return`Peaceful final scene for “${book.title}”, showing the characters safe, content and ready for bedtime. ${book.pages[book.pages.length-1]?.illustration_prompt||''}`;return book.pages[index-1]?.illustration_prompt||'A charming children’s storybook scene'}
 function prefetchIllustrations(index,ahead=4){const book=currentBook;if(!book)return;const total=book.pages.length+2;for(let step=1;step<=ahead;step++){const i=index+step;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}}
 function isPhonePortrait(){return window.matchMedia('(max-width:700px) and (orientation:portrait)').matches}
@@ -278,6 +290,6 @@ function renderLibrary(){
  if(!items.length){l.innerHTML=`<p class="muted">${escapeHtml(t().noSaved)}</p>${currentUser?'':'<p class="cloud-note">Sign in above to keep stories across devices.</p>'}`;return}
  if(currentUser){l.innerHTML=items.map((x,i)=>`<div class="library-item"><button class="library-open" type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button><button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">Delete</button></div>`).join('')}else{l.innerHTML=items.map((x,i)=>`<button type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button>`).join('')}
 }
-window.openSaved=i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x){if(x.language&&locales[x.language]){language=x.language;$('language').value=language;localStorage.setItem('moonbeamLanguage',language);applyLocale()}renderStory(x.story,x.image||null,x.child)}};
+window.openSaved=async i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x){if(x.language&&locales[x.language]){language=x.language;$('language').value=language;localStorage.setItem('moonbeamLanguage',language);applyLocale()}const child={...(x.child||{})};if(!child.referencePhoto){child.referencePhoto=await childPhotoGet(currentPhotoKey(child.profileId||null))}renderStory(x.story,x.image||null,child)}};
 window.deleteSavedStory=id=>deleteCloudStory(id);
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}

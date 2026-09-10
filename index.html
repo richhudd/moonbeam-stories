@@ -23,6 +23,23 @@
 <section class="card language-card"><h2 id="languageTitle">Choose your language</h2><label><span id="languageLabel">Language</span><select id="language" aria-label="Language"><option value="en-GB">English (UK)</option><option value="en-US">English (USA)</option><option value="es-ES">Español (España)</option><option value="es-419">Español (Latinoamérica)</option><option value="fr-FR">Français (France)</option><option value="de-DE">Deutsch (Deutschland)</option><option value="it-IT">Italiano (Italia)</option><option value="pt-PT">Português (Portugal)</option></select></label></section>
 <section class="card"><h2 id="childTitle">Who's tonight's story for?</h2>
 <div id="profileTools" class="profile-tools hidden"><label><span>Saved child profile</span><select id="profileSelect"><option value="">New child</option></select></label><div class="profile-buttons"><button class="secondary" id="saveProfile" type="button">Save child profile</button><button class="secondary danger-lite hidden" id="deleteProfile" type="button">Delete profile</button></div><p class="status profile-status" id="profileStatus"></p></div><div class="grid"><label><span id="nameLabel">Name or nickname</span><input id="name" placeholder="Milo"></label><label><span id="ageLabel">Age</span><input id="age" type="number" min="3" max="12" value="7"></label><label><span id="interestsLabel">Interests</span><input id="interests" placeholder="dinosaurs, space, football"></label><label><span id="dislikesLabel">Things to avoid</span><input id="dislikes" placeholder="too scary, spiders"></label></div>
+<div class="child-photo-card" id="childPhotoCard">
+  <div class="child-photo-copy">
+    <h3>Your child's photo <span class="optional-pill">Optional</span></h3>
+    <p>Upload a clear photo and Moonbeam will use it as the visual reference for the child in every illustration.</p>
+    <p class="photo-privacy">The photo stays on this device and is sent only when an illustration is being created. It is not saved in your Moonbeam cloud account.</p>
+  </div>
+  <div class="child-photo-controls">
+    <div class="child-photo-preview" id="childPhotoPreview"><span>☾</span><small>No photo selected</small></div>
+    <div class="photo-buttons">
+      <input id="childPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      <button class="secondary" id="chooseChildPhoto" type="button">Choose photo</button>
+      <button class="secondary danger-lite hidden" id="removeChildPhoto" type="button">Remove photo</button>
+    </div>
+    <label class="photo-toggle"><input id="useChildPhoto" type="checkbox" checked> <span>Use this photo for illustrations</span></label>
+    <p class="status photo-status" id="photoStatus"></p>
+  </div>
+</div>
 <h3 id="storyPrefs">Story preferences</h3><div class="row"><label><span id="lengthLabel">Story length</span><select id="length"></select></label><label><span id="toneLabel">Tone</span><select id="tone"></select></label></div>
 <h3 id="valuesTitle">Story Values</h3><div class="chips" id="values"></div><button class="primary" id="generate" type="button">✨ Make Tonight's Story</button><p class="status" id="status"></p></section>
 <section id="story" class="story hidden"></section><section class="card"><h2 id="savedTitle">Saved stories</h2><div id="library" class="library"></div></section>
