@@ -40,3 +40,19 @@ Adds a generated illustrated front cover with reliable HTML title typography, a 
 - Existing local/browser story saving remains available when signed out.
 - Supabase project uses the public Project URL and publishable key in the browser; no database password or service-role key is included.
 - For confirmation emails, configure Supabase Authentication URL settings with https://www.moonbeamstories.co.uk as the Site URL and allowed redirect URL.
+
+## V20
+- Phone portrait reader redesigned as a true single-page book.
+- Text and illustration no longer stack vertically on phones.
+- Each spread becomes two physical mobile pages: text, then its matching illustration.
+- Swipe left/right or tap the page edges to turn pages.
+- Mobile text automatically reduces slightly when necessary to fit the page without scrolling.
+- Desktop/tablet two-page spread remains unchanged.
+- Landscape phones retain the wider spread behaviour.
+- Supabase accounts, cloud profiles and saved stories from V18 are unchanged.
+
+
+## V20
+- Reduced cover-title typography so artwork remains the dominant visual.
+- Tighter title area, smaller kicker/subtitle, and responsive title cap on phones.
+- Long titles use balanced wrapping rather than oversized type.
