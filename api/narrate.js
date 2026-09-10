@@ -20,11 +20,25 @@ module.exports = async function handler(req, res) {
       'pt-PT': 'Speak in European Portuguese from Portugal with a natural, warm, neutral Portuguese accent and pronunciation. Do not use Brazilian Portuguese pronunciation.'
     };
     const accentInstruction = narrationProfiles[language] || 'Speak naturally in the language and regional variety of the text.';
-    const instructions = `${accentInstruction} Read as a warm, gentle, expressive children's storybook narrator. Natural bedtime pacing, clear diction and subtle character expression. Never theatrical or frightening. Keep the selected regional accent consistent for the entire page.`;
+
+    // V42: don't rely on accent prompting alone. Start each locale from a
+    // deliberately selected built-in voice, then reinforce the regional accent.
+    const voiceProfiles = {
+      'en-GB': 'fable',
+      'en-US': 'marin',
+      'es-ES': 'cedar',
+      'es-419': 'coral',
+      'fr-FR': 'shimmer',
+      'de-DE': 'onyx',
+      'it-IT': 'nova',
+      'pt-PT': 'sage'
+    };
+    const voice = voiceProfiles[language] || 'marin';
+    const instructions = `${accentInstruction} Read as a warm, gentle, expressive children's storybook narrator. Natural bedtime pacing, clear diction and subtle character expression. Never theatrical or frightening. Keep the selected regional accent consistent for the entire page. Do not imitate any real person.`;
     const r = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: 'marin', input: text, instructions, response_format: 'mp3', speed: 0.96 })
+      body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice, input: text, instructions, response_format: 'mp3', speed: 0.96 })
     });
     if (!r.ok) {
       const raw = await r.text(); let data={}; try{data=JSON.parse(raw)}catch{}

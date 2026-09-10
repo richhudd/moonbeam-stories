@@ -10,15 +10,22 @@ V38 prevents repeated consecutive illustrations.
 - All V37 mobile cover/narration fixes are retained.
 
 
-## V41
+## V42
 - Moves the portrait-phone page counter out of the illustration and into a reserved strip below the text.
 - Mobile text fitting now reserves space for the counter so it cannot cover the final line.
 
 
-## V41
+## V42
 - On portrait phones, the narration play/pause control is moved out of the illustration and into the reserved lower reader strip beside the page counter.
 - Illustrations are now kept completely free of reader controls and counters.
 
 
-## V41
+## V42
 - Narration now follows the selected regional language: UK English uses a British accent, US English an American accent, Spain Spanish a Peninsular Spanish accent, Latin American Spanish a neutral Latin American accent, and equivalent regional guidance is used for French, German, Italian and European Portuguese.
+
+
+## V42
+- Regional narration now changes the underlying OpenAI built-in voice as well as the accent instruction.
+- UK English uses `fable` rather than the US-oriented `marin` used previously.
+- Other language regions also have their own base voice selection.
+- Narration still explicitly reinforces the selected regional pronunciation.
