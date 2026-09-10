@@ -126,26 +126,91 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
       return res.status(502).json({ error: 'OpenAI responded, but not in the required story format.', debug: output.slice(0, 500) });
     }
 
-    if (!Array.isArray(story.pages) || story.pages.length !== pageCount) {
-      return res.status(502).json({ error: `The story model returned ${Array.isArray(story.pages) ? story.pages.length : 0} story pages instead of the requested ${pageCount}. Please try again.` });
+    const wordCount = value => String(value || '').trim().split(/\s+/).filter(Boolean).length;
+
+    // Models occasionally return one page too many/few even when the prompt is explicit.
+    // Never expose that implementation detail to the reader. Reflow the story prose locally
+    // into the exact requested number of pages while keeping sentence order and plot intact.
+    function splitIntoSentences(text) {
+      const clean = String(text || '').replace(/\s+/g, ' ').trim();
+      if (!clean) return [];
+      const matches = clean.match(/[^.!?…]+(?:[.!?…]+[\"'’”)]*|$)/g);
+      return (matches || [clean]).map(x => x.trim()).filter(Boolean);
     }
 
-    const wordCount = value => String(value || '').trim().split(/\s+/).filter(Boolean).length;
+    function rebalancePages(pages, wanted) {
+      const source = Array.isArray(pages) ? pages.filter(Boolean) : [];
+      const allText = source.map(p => String(p.text || '').trim()).filter(Boolean).join(' ');
+      const sentences = splitIntoSentences(allText);
+      if (!sentences.length) return source.slice(0, wanted);
+
+      const totalWords = sentences.reduce((n, x) => n + wordCount(x), 0);
+      const target = Math.max(1, Math.round(totalWords / wanted));
+      const buckets = [];
+      let si = 0;
+
+      for (let pageIndex = 0; pageIndex < wanted; pageIndex++) {
+        const remainingPages = wanted - pageIndex;
+        const remainingSentences = sentences.length - si;
+        const bucket = [];
+        let words = 0;
+
+        while (si < sentences.length) {
+          const sentence = sentences[si];
+          const sw = wordCount(sentence);
+          // Leave at least one sentence for each remaining page where possible.
+          if (bucket.length && words + sw > target && remainingSentences > remainingPages - 1) break;
+          bucket.push(sentence);
+          words += sw;
+          si++;
+          if (si >= sentences.length) break;
+          if (words >= target && (sentences.length - si) >= (remainingPages - 1)) break;
+        }
+
+        // Last page receives anything left over.
+        if (pageIndex === wanted - 1 && si < sentences.length) {
+          bucket.push(...sentences.slice(si));
+          si = sentences.length;
+        }
+
+        const sourceIndex = source.length
+          ? Math.min(source.length - 1, Math.floor((pageIndex + 0.5) * source.length / wanted))
+          : 0;
+        const prompt = source[sourceIndex] && source[sourceIndex].illustration_prompt
+          ? source[sourceIndex].illustration_prompt
+          : 'A charming children’s storybook illustration matching this part of the adventure.';
+        buckets.push({ text: bucket.join(' ').trim(), illustration_prompt: prompt });
+      }
+      return buckets;
+    }
+
+    if (!Array.isArray(story.pages)) story.pages = [];
+    const originalPageCount = story.pages.length;
+    const originalCounts = story.pages.map(p => wordCount(p && p.text));
+    const needsReflow = story.pages.length !== pageCount || originalCounts.some(n => n < 75 || n > 145);
+    if (needsReflow) story.pages = rebalancePages(story.pages, pageCount);
+
+    // Defensive fallback for malformed model output: guarantee exactly the selected count.
+    while (story.pages.length < pageCount) {
+      story.pages.push({ text: '', illustration_prompt: 'A charming children’s storybook illustration matching this part of the adventure.' });
+    }
+    if (story.pages.length > pageCount) story.pages = story.pages.slice(0, pageCount);
+
     const textScreens = [story.opening, ...story.pages.map(p => p && p.text), story.closing];
     const counts = textScreens.map(wordCount);
-    // Allow modest linguistic variation, but reject layouts that would visibly overfill or underfill a page.
-    const minWords = 75, maxWords = 145;
-    const badlyBalanced = counts.some(n => n < minWords || n > maxWords);
-    const spread = Math.max(...counts) - Math.min(...counts);
-    if (badlyBalanced || spread > 60) {
-      return res.status(502).json({
-        error: `The story text was not balanced evenly enough across the book pages. Please try again.`,
-        page_word_counts: counts,
-        requested_length: length
-      });
-    }
 
-    return res.status(200).json({ story, image: null, layout: { requestedLength: length, storyPages: pageCount, displayedTextPages: pageCount + 2, pageWordCounts: counts } });
+    return res.status(200).json({
+      story,
+      image: null,
+      layout: {
+        requestedLength: length,
+        storyPages: pageCount,
+        displayedTextPages: pageCount + 2,
+        pageWordCounts: counts,
+        automaticallyReflowed: needsReflow,
+        originalStoryPages: originalPageCount
+      }
+    });
   } catch (e) {
     console.error('generate error', e);
     return res.status(500).json({ error: String(e && e.message ? e.message : e) });

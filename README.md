@@ -1,3 +1,9 @@
+# Moonbeam Stories V21
+
+V21 improves story-generation reliability. If the model returns a different number of story pages than requested, or uneven page lengths, the server automatically reflows the prose into the exact selected number of pages rather than showing an error to the reader.
+
+All V20 features remain, including mobile single-page reading, swipe/tap page turns, Supabase accounts/cloud saves, balanced book layout, and smaller cover typography.
+
 # Moonbeam Stories V14
 
 Multilingual book-style bedtime story app.
