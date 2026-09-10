@@ -15,3 +15,10 @@ Adds optional audiobook narration while retaining normal parent/child reading.
 - Existing V34 mobile illustration+text spread and all prior features are retained.
 
 Deploy the contents of this folder to Vercel. It uses the existing `OPENAI_API_KEY` environment variable.
+
+## V36
+- Fixes the V35 portrait-iPhone regression that could render story spreads blank.
+- Repairs malformed escaped-newline CSS introduced around the V34 mobile spread rules.
+- Keeps illustration + matching text visible together on each mobile swipe page.
+- Makes both cover choices (Read it myself / Read to me) fixed inside the iPhone safe viewport.
+- Desktop/tablet audiobook behaviour is unchanged.

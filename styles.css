@@ -264,7 +264,33 @@
   body.story-mode #coverView:not(.hidden){display:flex!important}
   body.story-mode .book .page-footer{display:none!important}
 }
-\n\n/* V34 — phone story spreads: matching illustration + text visible together, one swipe per spread. */\n@media(max-width:700px) and (orientation:portrait){\n  body.story-mode .book.show-mobile-spread{display:grid!important;grid-template-columns:1fr;grid-template-rows:42dvh 1fr;height:100dvh!important;background:#fffdf8;}\n  body.story-mode .book.show-mobile-spread .right-page,\n  body.story-mode .book.show-mobile-spread .left-page{display:block!important;position:relative!important;inset:auto!important;width:100%!important;height:auto!important;min-height:0!important;}\n  body.story-mode .book.show-mobile-spread .right-page{grid-row:1;padding:0!important;background:#111;overflow:hidden;}\n  body.story-mode .book.show-mobile-spread .left-page{grid-row:2;padding:18px 24px max(20px,calc(env(safe-area-inset-bottom) + 12px))!important;background:linear-gradient(90deg,#fffdf8,#faf6ec);overflow:hidden;}\n  body.story-mode .book.show-mobile-spread .illustration-frame,\n  body.story-mode .book.show-mobile-spread .illustration-frame img,\n  body.story-mode .book.show-mobile-spread .illustration-loading,\n  body.story-mode .book.show-mobile-spread .illustration-error,\n  body.story-mode .book.show-mobile-spread .illustration-placeholder{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;border-radius:0!important;}\n  body.story-mode .book.show-mobile-spread .illustration-frame img{object-fit:cover!important;}\n  body.story-mode .book.show-mobile-spread .page-content{height:100%!important;max-width:620px;margin:0 auto;justify-content:center;overflow:hidden;}\n  body.story-mode .book.show-mobile-spread .chapter-label{font-size:10px;margin:0 0 8px;letter-spacing:.12em;flex:0 0 auto;}\n  body.story-mode .book.show-mobile-spread .story-text,\n  body.story-mode .book.show-mobile-spread .story-text.compact-text,\n  body.story-mode .book.show-mobile-spread .story-text.roomy-text{font-size:18px;line-height:1.42;max-height:none;overflow:visible;}\n  body.story-mode .book.show-mobile-spread .page-number{display:none!important;}\n  body.story-mode .book.show-mobile-spread .page-footer{display:none!important;}\n  body.story-mode .book.show-mobile-spread .mobile-page-progress{top:max(10px,env(safe-area-inset-top));}\n  body.story-mode .book.show-mobile-spread .mobile-end-actions{bottom:max(10px,calc(env(safe-area-inset-bottom) + 6px));left:12px;right:12px;padding:8px;gap:8px;}\n  body.story-mode .book.show-mobile-spread .mobile-end-actions button{min-height:42px;padding:9px 7px;font-size:13px;}\n}\n
+
+
+/* V34 — phone story spreads: matching illustration + text visible together, one swipe per spread. */
+@media(max-width:700px) and (orientation:portrait){
+  body.story-mode .book.show-mobile-spread{display:grid!important;grid-template-columns:1fr;grid-template-rows:42dvh 1fr;height:100dvh!important;background:#fffdf8;}
+  body.story-mode .book.show-mobile-spread .right-page,
+  body.story-mode .book.show-mobile-spread .left-page{display:block!important;position:relative!important;inset:auto!important;width:100%!important;height:auto!important;min-height:0!important;}
+  body.story-mode .book.show-mobile-spread .right-page{grid-row:1;padding:0!important;background:#111;overflow:hidden;}
+  body.story-mode .book.show-mobile-spread .left-page{grid-row:2;padding:18px 24px max(20px,calc(env(safe-area-inset-bottom) + 12px))!important;background:linear-gradient(90deg,#fffdf8,#faf6ec);overflow:hidden;}
+  body.story-mode .book.show-mobile-spread .illustration-frame,
+  body.story-mode .book.show-mobile-spread .illustration-frame img,
+  body.story-mode .book.show-mobile-spread .illustration-loading,
+  body.story-mode .book.show-mobile-spread .illustration-error,
+  body.story-mode .book.show-mobile-spread .illustration-placeholder{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;border-radius:0!important;}
+  body.story-mode .book.show-mobile-spread .illustration-frame img{object-fit:cover!important;}
+  body.story-mode .book.show-mobile-spread .page-content{height:100%!important;max-width:620px;margin:0 auto;justify-content:center;overflow:hidden;}
+  body.story-mode .book.show-mobile-spread .chapter-label{font-size:10px;margin:0 0 8px;letter-spacing:.12em;flex:0 0 auto;}
+  body.story-mode .book.show-mobile-spread .story-text,
+  body.story-mode .book.show-mobile-spread .story-text.compact-text,
+  body.story-mode .book.show-mobile-spread .story-text.roomy-text{font-size:18px;line-height:1.42;max-height:none;overflow:visible;}
+  body.story-mode .book.show-mobile-spread .page-number{display:none!important;}
+  body.story-mode .book.show-mobile-spread .page-footer{display:none!important;}
+  body.story-mode .book.show-mobile-spread .mobile-page-progress{top:max(10px,env(safe-area-inset-top));}
+  body.story-mode .book.show-mobile-spread .mobile-end-actions{bottom:max(10px,calc(env(safe-area-inset-bottom) + 6px));left:12px;right:12px;padding:8px;gap:8px;}
+  body.story-mode .book.show-mobile-spread .mobile-end-actions button{min-height:42px;padding:9px 7px;font-size:13px;}
+}
+
 /* V35 — optional narrated audiobook mode. Words stay visible; audio controls float over art. */
 .cover-reading-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .cover-reading-choices .cover-begin,.cover-reading-choices .cover-narrate{margin:0;width:100%}
@@ -277,4 +303,155 @@
   body.story-mode .narration-control{right:12px;bottom:12px;width:42px;height:42px;font-size:16px}
   .cover-reading-choices{grid-template-columns:1fr;gap:8px;margin-top:10px}
   .cover-reading-choices button{min-height:44px;padding:10px 12px}
+}
+
+
+/* V36 — repair V35 portrait-phone regression.
+   Keep the working desktop audiobook reader untouched. */
+@media(max-width:700px) and (orientation:portrait){
+  /* Cover: both reading choices must remain inside the safe viewport. */
+  body.story-mode #coverView:not(.hidden){
+    display:block!important;
+    position:absolute!important;
+    inset:0!important;
+    width:100vw!important;
+    height:100dvh!important;
+    overflow:hidden!important;
+  }
+  body.story-mode .story-cover .cover-art-wrap{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+  }
+  body.story-mode .cover-reading-choices{
+    position:absolute!important;
+    z-index:40!important;
+    left:14px!important;
+    right:14px!important;
+    bottom:max(14px,calc(env(safe-area-inset-bottom) + 8px))!important;
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:8px!important;
+    margin:0!important;
+    padding:8px!important;
+    border-radius:17px!important;
+    background:rgba(20,16,38,.70)!important;
+    -webkit-backdrop-filter:blur(10px);
+    backdrop-filter:blur(10px);
+  }
+  body.story-mode .cover-reading-choices .cover-begin,
+  body.story-mode .cover-reading-choices .cover-narrate{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:46px!important;
+    margin:0!important;
+    padding:10px 7px!important;
+    font-size:13px!important;
+    line-height:1.15!important;
+  }
+  body.story-mode .cover-reading-choices .cover-narrate{
+    background:rgba(255,255,255,.94)!important;
+  }
+  body.story-mode .cover-copy{
+    bottom:max(92px,calc(env(safe-area-inset-bottom) + 84px))!important;
+    left:10%!important;
+    right:10%!important;
+  }
+  body.story-mode .mobile-cover-hint{display:none!important;}
+
+  /* Story: one visible spread = picture above + matching text below. */
+  body.story-mode #book:not(.hidden).show-mobile-spread{
+    display:grid!important;
+    position:absolute!important;
+    inset:0!important;
+    width:100vw!important;
+    height:100dvh!important;
+    grid-template-columns:1fr!important;
+    grid-template-rows:minmax(220px,42dvh) minmax(0,1fr)!important;
+    overflow:hidden!important;
+    background:#fffdf8!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page,
+  body.story-mode #book.show-mobile-spread .left-page{
+    display:block!important;
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    border:0!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page{
+    grid-row:1!important;
+    padding:0!important;
+    overflow:hidden!important;
+    background:#17132d!important;
+  }
+  body.story-mode #book.show-mobile-spread .left-page{
+    grid-row:2!important;
+    padding:14px 22px max(16px,calc(env(safe-area-inset-bottom) + 10px))!important;
+    overflow:hidden!important;
+    background:linear-gradient(90deg,#fffdf8,#faf6ec)!important;
+  }
+  body.story-mode #book.show-mobile-spread .illustration-frame,
+  body.story-mode #book.show-mobile-spread .illustration-frame img,
+  body.story-mode #book.show-mobile-spread .illustration-loading,
+  body.story-mode #book.show-mobile-spread .illustration-error,
+  body.story-mode #book.show-mobile-spread .illustration-placeholder{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    border-radius:0!important;
+  }
+  body.story-mode #book.show-mobile-spread .illustration-frame img{
+    object-fit:cover!important;
+  }
+  body.story-mode #book.show-mobile-spread .page-content{
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:center!important;
+    height:100%!important;
+    min-height:0!important;
+    max-width:620px!important;
+    margin:0 auto!important;
+    overflow:hidden!important;
+  }
+  body.story-mode #book.show-mobile-spread .chapter-label{
+    flex:0 0 auto!important;
+    margin:0 0 7px!important;
+    font-size:10px!important;
+    line-height:1.15!important;
+  }
+  body.story-mode #book.show-mobile-spread .story-text,
+  body.story-mode #book.show-mobile-spread .story-text.compact-text,
+  body.story-mode #book.show-mobile-spread .story-text.roomy-text{
+    display:block!important;
+    margin:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    font-size:18px;
+    line-height:1.40;
+  }
+  body.story-mode #book.show-mobile-spread .page-number,
+  body.story-mode #book.show-mobile-spread .page-footer{display:none!important;}
+  body.story-mode #book.show-mobile-spread .mobile-page-progress{
+    display:block!important;
+    top:max(8px,env(safe-area-inset-top))!important;
+  }
+  body.story-mode #book.show-mobile-spread .narration-control{
+    display:grid!important;
+    place-items:center!important;
+    position:absolute!important;
+    z-index:35!important;
+    right:12px!important;
+    bottom:12px!important;
+    width:44px!important;
+    height:44px!important;
+    border-radius:50%!important;
+  }
 }
