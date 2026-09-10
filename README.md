@@ -1,23 +1,17 @@
-Moonbeam Stories V34
+# Moonbeam Stories V35
 
-Mobile reader update: each phone swipe now shows the matching illustration and text together on one full-screen spread. Illustration occupies the upper portion, text the lower portion, with automatic text fitting and no vertical scrolling. Swipe left/right moves one complete story spread at a time.
+Adds optional audiobook narration while retaining normal parent/child reading.
 
-Moonbeam Stories V33
+## V35 changes
+- Cover now offers **Read it myself** and **Read to me**.
+- Read-it-myself keeps the existing silent swipe reader.
+- Read-to-me uses OpenAI `gpt-4o-mini-tts` through `/api/narrate`.
+- Illustration and story words remain visible while narration plays.
+- Current sentence receives gentle approximate highlighting during playback.
+- Narrated mode automatically advances to the next illustrated spread when a page finishes.
+- A small floating play/pause control sits over the illustration instead of consuming layout space.
+- Manual swiping still works; narration follows the newly selected page.
+- The next page's narration is prefetched in narrated mode to reduce waiting.
+- Existing V34 mobile illustration+text spread and all prior features are retained.
 
-Fixes the persistent title/footer regression in the portrait mobile reader. The cover is forcibly removed from the layout once the story begins, and reader page footers are removed so no Moonbeam/story title can obscure text or illustrations.
-
-# Moonbeam Stories V31
-
-Based on V30.
-
-## V31 change
-- Replaces the small inline loading state with an unmistakable full-screen animated hourglass overlay while a story is being generated.
-- Forces two browser animation frames before starting the OpenAI request so iOS Safari paints the loading state immediately instead of coalescing it with the fetch.
-- The overlay remains until the story succeeds or fails, then closes automatically.
-- Retains V30 cover/title isolation and all earlier mobile reader changes.
-
-
-## V33 cover-first-paint fix
-- The front-cover loading layer now remains visible until Safari has actually decoded the generated cover bitmap.
-- The cover image is explicitly laid out and painted across two animation frames before the loading layer is removed.
-- Prevents the initial blank/white cover that only appeared after swiping away and back.
+Deploy the contents of this folder to Vercel. It uses the existing `OPENAI_API_KEY` environment variable.
