@@ -130,7 +130,7 @@ async function applyAuthSession(session){
 function showPasswordRecovery(){
  const panel=$('passwordRecovery');if(!panel)return;
  panel.classList.remove('hidden');
- $('accountCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+ if(isPhonePortrait())goSetupPage(0);
  if($('recoveryStatus'))$('recoveryStatus').textContent='Reset link verified. Choose your new password.';
 }
 async function sendPasswordReset(){
@@ -218,14 +218,13 @@ async function generateStory(){
 function buildBook(s,image,child){const pages=Array.isArray(s.pages)?s.pages:[];return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId:makeStoryCacheId(s,child),currentPage:-1,mobileSide:'text'}}
 function renderStory(s,image,child){
  currentBook=buildBook(s,image,child);
- const el=$('story');el.classList.remove('hidden');
+ const el=$('story');el.classList.remove('hidden');if(isPhonePortrait())document.body.classList.add('story-mode');
  el.innerHTML=`<div class="book-shell"><div class="book-cover-head"><span>${escapeHtml(t().title)}</span><span>${escapeHtml(t().childTitle.replace('?',''))}</span></div><div id="coverView" class="story-cover"><div class="cover-art-wrap"><div id="coverLoading" class="cover-loading"><div class="spinner"></div><p>${escapeHtml(coverT().creating)}</p><small>${escapeHtml(coverT().creatingSmall)}</small></div><img id="coverImage" class="cover-image" alt="" hidden><div class="cover-shade"></div><div class="cover-copy"><div class="cover-kicker">${escapeHtml(coverT().kicker)}</div><h2>${escapeHtml(currentBook.title)}</h2><p>${escapeHtml(coverT().forChild(currentBook.child?.name||''))}</p></div><div id="coverError" class="cover-error-box" hidden><div class="moon">☾</div><p>${escapeHtml(coverT().failed)}</p><button class="secondary" id="retryCover" type="button">${escapeHtml(coverT().retry)}</button></div></div><button class="primary cover-begin" id="beginStory" type="button">${escapeHtml(coverT().begin)}</button></div><div id="book" class="book hidden"></div><div id="bookControls" class="book-controls hidden"><button class="secondary" id="prevPage" type="button">${escapeHtml(t().previous)}</button><div class="page-indicator" id="pageIndicator"></div><button class="primary turn" id="nextPage" type="button">${escapeHtml(t().turn)}</button></div><p class="illustration-note hidden" id="illustrationNote">${escapeHtml(t().illustrationNote)}</p><div class="actions"><button class="secondary" id="save" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="newStory" type="button">${escapeHtml(t().newStory)}</button></div></div>`;
  loadCoverIllustration(false);
  // Start the opening and next two illustrations immediately while the cover is on screen.
  prefetchIllustrations(-1,3);
  $('save').onclick=saveCurrentStory;
- $('newStory').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
- el.scrollIntoView({behavior:'smooth'});
+ $('newStory').onclick=()=>{document.body.classList.remove('story-mode');el.classList.add('hidden');goSetupPage(1)};
 }
 function coverKey(book){return `${book.cacheId}:cover`}
 function getCoverPrompt(book){
@@ -239,7 +238,7 @@ async function loadCoverIllustration(force=false){
  try{const image=await requestIllustration(key,getCoverPrompt(book),`Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);if(currentBook===book){const currentImg=$('coverImage');if(currentImg){currentImg.src=image;currentImg.hidden=false}if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if(currentBook===book){if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false}}
 }
 function showCover(){if(!currentBook)return;currentBook.currentPage=-1;$('coverView')?.classList.remove('hidden');$('book')?.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
-function beginStory(){if(!currentBook)return;currentBook.mobileSide='text';$('coverView')?.classList.add('hidden');$('book')?.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0);setTimeout(()=>{$('book')?.scrollIntoView({behavior:'smooth',block:'center'})},80)}
+function beginStory(){if(!currentBook)return;currentBook.mobileSide='text';$('coverView')?.classList.add('hidden');$('book')?.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0)}
 function illustrationKey(book,index){return `${book.cacheId}:${index}`}
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index);
@@ -293,3 +292,30 @@ function renderLibrary(){
 window.openSaved=async i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x){if(x.language&&locales[x.language]){language=x.language;$('language').value=language;localStorage.setItem('moonbeamLanguage',language);applyLocale()}const child={...(x.child||{})};if(!child.referencePhoto){child.referencePhoto=await childPhotoGet(currentPhotoKey(child.profileId||null))}renderStory(x.story,x.image||null,child)}};
 window.deleteSavedStory=id=>deleteCloudStory(id);
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+
+// V26 — swipe-page setup navigation for portrait phones.
+let setupPageIndex=0;
+function setupPages(){return [...document.querySelectorAll('#setupTrack .setup-page')]}
+function updateSetupNav(){
+ if(!isPhonePortrait())return;
+ const pages=setupPages(),prev=$('setupPrev'),next=$('setupNext'),dots=$('setupDots');
+ if(prev)prev.disabled=setupPageIndex<=0;if(next)next.disabled=setupPageIndex>=pages.length-1;
+ if(dots){dots.innerHTML=pages.map((_,i)=>`<button class="setup-dot${i===setupPageIndex?' active':''}" type="button" data-setup-index="${i}" tabindex="-1"></button>`).join('')}
+}
+function goSetupPage(index,instant=false){
+ const track=$('setupTrack'),pages=setupPages();if(!track||!pages.length)return;
+ setupPageIndex=Math.max(0,Math.min(Number(index)||0,pages.length-1));
+ const left=pages[setupPageIndex].offsetLeft-track.offsetLeft;
+ track.scrollTo({left,behavior:instant?'auto':'smooth'});updateSetupNav();
+}
+function initSetupDeck(){
+ const track=$('setupTrack');if(!track)return;
+ $('setupPrev')?.addEventListener('click',()=>goSetupPage(setupPageIndex-1));
+ $('setupNext')?.addEventListener('click',()=>goSetupPage(setupPageIndex+1));
+ $('setupDots')?.addEventListener('click',e=>{const b=e.target.closest('[data-setup-index]');if(b)goSetupPage(Number(b.dataset.setupIndex))});
+ let raf=null;track.addEventListener('scroll',()=>{if(!isPhonePortrait())return;cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{const pages=setupPages(),center=track.scrollLeft+track.clientWidth/2;let best=0,dist=Infinity;pages.forEach((p,i)=>{const d=Math.abs((p.offsetLeft-track.offsetLeft+p.offsetWidth/2)-center);if(d<dist){dist=d;best=i}});if(best!==setupPageIndex){setupPageIndex=best;updateSetupNav()}})},{passive:true});
+ updateSetupNav();
+}
+initSetupDeck();
+window.addEventListener('orientationchange',()=>setTimeout(()=>{document.body.classList.toggle('story-mode',!!currentBook&&!$('story')?.classList.contains('hidden')&&isPhonePortrait());goSetupPage(setupPageIndex,true)},120));

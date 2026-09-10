@@ -1,3 +1,7 @@
+# Moonbeam Stories V26
+
+V26 replaces the portrait-phone setup form with a five-page horizontal swipe deck. There is no vertical page scrolling on phone portrait. Story reading also becomes a fixed full-screen experience so the cover/book remains within the viewport. Desktop/tablet layout remains conventional.
+
 # Moonbeam Stories V25
 
 V25 adds optional child-photo character matching to the V24 build.

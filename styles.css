@@ -62,3 +62,48 @@
 
 .child-photo-card{margin:18px 0 6px;padding:18px;border:1px solid #ddd4ef;border-radius:18px;background:linear-gradient(135deg,#fbf9ff,#f5f0ff);display:grid;grid-template-columns:1.3fr .9fr;gap:18px;align-items:center}.child-photo-copy h3{margin:0 0 8px}.child-photo-copy p{margin:0 0 8px;color:#665f73;font-size:14px;line-height:1.5}.photo-privacy{font-size:12px!important;color:#81778e!important}.optional-pill{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;background:#ebe4fa;color:#65528e;font:700 10px system-ui,-apple-system,Segoe UI,sans-serif;text-transform:uppercase;letter-spacing:.06em;vertical-align:middle}.child-photo-controls{display:flex;flex-direction:column;gap:9px}.child-photo-preview{height:150px;border:1px dashed #b9aed3;border-radius:14px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#8c80a5}.child-photo-preview span{font-size:42px;line-height:1}.child-photo-preview small{margin-top:5px}.child-photo-preview img{width:100%;height:100%;object-fit:cover}.photo-buttons{display:flex;gap:8px}.photo-buttons .secondary{padding:10px;font-size:13px}.photo-toggle{display:flex;align-items:center;gap:8px;font-weight:650;color:#493c67}.photo-toggle input{width:auto;margin:0;padding:0;accent-color:#5c3bbf}.photo-status{margin:0;min-height:18px;font-size:12px}.book-photo-badge{display:inline-flex;align-items:center;gap:6px;background:#ede7fa;color:#55447c;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:750;margin-top:8px}
 @media(max-width:700px){.child-photo-card{grid-template-columns:1fr}.child-photo-preview{height:190px}}
+
+/* V26 — phone setup is a true swipe deck: no vertical page scrolling. */
+.setup-nav,.mobile-step-kicker,.mobile-page-hint{display:none}
+.language-inline{margin-top:18px;padding-top:16px;border-top:1px solid #ece7f5}.language-inline h3{margin:0 0 8px}.language-inline label{display:block}
+@media(max-width:700px) and (orientation:portrait){
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{min-height:100dvh}
+  .app{height:100dvh;max-width:none;padding:max(10px,env(safe-area-inset-top)) 0 max(6px,env(safe-area-inset-bottom));overflow:hidden;display:flex;flex-direction:column}
+  header{flex:0 0 64px;margin:0;padding:4px 18px 8px;gap:10px;align-items:center}
+  header .logo{font-size:34px} header h1{font-size:22px} header p{font-size:12px;margin:2px 0 0;opacity:.8}
+  .setup-shell{min-height:0;flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .setup-track{min-height:0;flex:1;display:flex;gap:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x;padding:0 10px 8px}
+  .setup-track::-webkit-scrollbar{display:none}
+  .setup-page{position:relative;flex:0 0 calc(100vw - 20px);width:calc(100vw - 20px);height:100%;max-height:100%;margin:0;padding:18px 18px 14px;border-radius:22px;box-shadow:0 10px 30px #0002;overflow:hidden;scroll-snap-align:start;scroll-snap-stop:always}
+  .setup-page h2{font-size:25px;line-height:1.12;margin:20px 0 14px}.setup-page h3{font-size:16px;margin:12px 0 8px}
+  .mobile-step-kicker{display:block;position:absolute;right:18px;top:15px;color:#8b80a2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+  .mobile-page-hint{display:block;position:absolute;left:0;right:0;bottom:17px;text-align:center;color:#8b80a2;font-size:12px;font-weight:700}
+  .setup-page .grid{grid-template-columns:1fr;gap:10px}.setup-page .row{flex-direction:column;gap:10px;margin-top:4px}
+  .setup-page input,.setup-page select{min-height:46px;padding:10px 38px 10px 12px;margin-top:4px}
+  .setup-page label{font-size:13px}
+  .account-card .account-head{display:block}.account-copy{display:none}.account-card h2{margin-top:18px;margin-bottom:6px}.account-badge{margin:0 0 8px;font-size:11px}
+  .auth-row{gap:8px!important}.auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.auth-actions .primary,.auth-actions .secondary{padding:11px 8px;min-height:44px}.auth-link{margin-top:8px;font-size:12px}
+  .language-inline{margin-top:10px;padding-top:10px}.language-inline h3{font-size:14px;margin:0 0 5px}.language-inline select{min-height:44px}
+  .password-recovery{position:absolute;inset:48px 14px 14px;z-index:20;margin:0;padding:14px;overflow:hidden}.password-recovery .muted{font-size:12px;margin:4px 0}.password-recovery label{margin-top:8px}.password-recovery .primary{margin-top:10px}
+  .profile-tools{padding:12px!important;margin-bottom:10px!important}.profile-tools label span{font-size:12px}.profile-buttons{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:8px}.profile-buttons .secondary{padding:10px 8px;font-size:12px}.profile-status{margin:4px 0 0;min-height:16px;font-size:11px}
+  .basic-grid{gap:13px!important}.basic-grid input{font-size:18px;min-height:54px}
+  .about-grid{gap:8px!important}.about-grid input{min-height:46px}
+  .child-photo-card{display:grid;grid-template-columns:1fr 132px;gap:12px;margin:12px 0 0;padding:12px;border-radius:15px;align-items:start}.child-photo-copy h3{font-size:14px;margin:0 0 5px}.child-photo-copy p{font-size:12px;line-height:1.35;margin:0 0 5px}.photo-privacy{font-size:10px!important}.child-photo-controls{gap:6px}.child-photo-preview{height:116px}.child-photo-preview span{font-size:30px}.child-photo-preview small{font-size:9px}.photo-buttons{display:block}.photo-buttons .secondary{width:100%;padding:8px 6px;font-size:11px;margin-bottom:5px}.photo-toggle{font-size:10px;line-height:1.2;gap:5px}.photo-status{display:none}
+  .chips{gap:6px;margin:8px 0 14px}.chip{padding:7px 9px;font-size:12px}.setup-page #generate{padding:14px;font-size:15px}.setup-page #status{margin:8px 0 0;font-size:12px;min-height:18px}
+  .library{max-height:calc(100% - 70px);overflow:hidden}.library button{padding:12px 4px;font-size:14px}.library-item{min-height:46px}
+  .setup-nav{flex:0 0 54px;display:grid;grid-template-columns:54px 1fr 54px;align-items:center;gap:8px;padding:4px 14px calc(4px + env(safe-area-inset-bottom));background:transparent}
+  .setup-arrow{height:42px;border:1px solid #ffffff38;border-radius:14px;background:#ffffff18;color:#fff;font-size:28px;line-height:1;cursor:pointer}.setup-arrow:disabled{opacity:.25}
+  .setup-dots{display:flex;justify-content:center;gap:7px}.setup-dot{width:7px;height:7px;border:0;border-radius:50%;background:#ffffff55;padding:0}.setup-dot.active{width:18px;border-radius:999px;background:#fff}
+  body.story-mode header,body.story-mode .setup-shell{display:none}
+  body.story-mode .app{padding:0;height:100dvh}
+  body.story-mode #story{display:block!important;position:fixed;inset:0;z-index:50;margin:0;padding:8px;background:#ded3bf;border-radius:0;overflow:hidden}
+  body.story-mode .book-shell{height:100%;display:flex;flex-direction:column;padding:8px;overflow:hidden}
+  body.story-mode .book-cover-head{flex:0 0 auto}
+  body.story-mode .story-cover{height:auto;max-height:none;flex:1;min-height:0;display:flex;flex-direction:column}
+  body.story-mode .story-cover .cover-art-wrap{flex:1;min-height:0;height:auto}
+  body.story-mode .cover-begin{flex:0 0 auto}
+  body.story-mode .book{flex:1;min-height:0;height:auto!important;max-height:none}
+  body.story-mode .book-controls{flex:0 0 auto}
+  body.story-mode .book-shell>.actions{flex:0 0 auto}
+}
