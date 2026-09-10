@@ -152,3 +152,32 @@ Run `SUPABASE_V50_CREDITS.sql` once in Supabase SQL Editor. It creates the credi
 ## V52 — stricter introductory-trial abuse protection
 Before deploying V52, run `SUPABASE_V52_TRIAL_ABUSE.sql` once in Supabase SQL Editor.
 New accounts now start with zero credits until a verified-email account claims the introductory trial. The server grants three free credits only once per browser/device installation, with a light network guard (maximum one introductory-trial claim from the same network hash in any rolling 30-day period). Existing accounts that already received V50 credits are unchanged. Device/network identifiers are HMAC-hashed server-side before storage; raw IP addresses and raw device IDs are not stored. This is designed to deter casual repeat-account abuse, not to provide perfect hardware identity.
+
+## V55 — inbound support/privacy email forwarding
+
+V55 adds `api/resend-inbound.js` for Resend's `email.received` webhook. It forwards only the two public Moonbeam addresses:
+
+- `support@moonbeamstories.co.uk`
+- `privacy@moonbeamstories.co.uk`
+
+All other addresses received at the root domain are deliberately ignored by the webhook (they remain visible in Resend's Receiving dashboard according to Resend retention).
+
+### Vercel environment variables required for V55
+
+Add these to **Production** before redeploying:
+
+- `RESEND_API_KEY` — a Resend API key with permission to read/forward received email and send via the verified `mail.moonbeamstories.co.uk` sending domain.
+- `RESEND_WEBHOOK_SECRET` — the signing secret (`whsec_...`) for the Resend webhook pointing at `https://www.moonbeamstories.co.uk/api/resend-inbound` and listening to `email.received`.
+- `SUPPORT_FORWARD_TO` — the existing mailbox that should receive forwarded support messages.
+- `PRIVACY_FORWARD_TO` — optional. If omitted, privacy mail goes to `SUPPORT_FORWARD_TO` too.
+- `RESEND_FORWARD_FROM` — optional. Defaults to `Moonbeam Stories <noreply@mail.moonbeamstories.co.uk>`.
+
+### Resend webhook
+
+Create one webhook endpoint:
+
+`https://www.moonbeamstories.co.uk/api/resend-inbound`
+
+Select only the `email.received` event. Copy its signing secret into `RESEND_WEBHOOK_SECRET`, then redeploy Production so Vercel picks up the variables.
+
+No Supabase SQL changes are required for V55.
