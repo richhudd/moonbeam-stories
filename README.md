@@ -1,4 +1,4 @@
-# Moonbeam Stories V48
+# Moonbeam Stories V49
 
 ## V48 desktop story-page fitting fix
 - Desktop story text is now measured against the actual rendered page height after every page turn.
@@ -73,3 +73,7 @@ V47 fixes this:
 No new SQL is required if `SUPABASE_V46_USAGE.sql` was already run.
 No new Vercel variables are required if `SUPABASE_SERVICE_ROLE_KEY` and
 `MOONBEAM_DEVELOPER_EMAIL` are already set.
+
+
+## V49 desktop text clipping fix
+Desktop story text now checks the actual painted text bounds against the physical paper page with an 18px safety margin, shrinking only when necessary. This fixes final-line clipping caused by vertically centred flex layout/font metrics. No API, image, narration, mobile reader, or usage-tracking behaviour changed.

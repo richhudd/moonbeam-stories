@@ -444,22 +444,27 @@ function fitDesktopStoryText(){
  if(window.matchMedia('(max-width:700px)').matches)return;
  const content=document.querySelector('.left-page .page-content');
  const el=document.querySelector('.left-page .story-text');
- const label=document.querySelector('.left-page .chapter-label');
  if(!content||!el)return;
- // V48: fit against the page's real rendered height rather than word-count guesses.
- // This prevents Safari/desktop font metrics from clipping the final line.
+ // V49: measure the actual painted bottom edge, not just scrollHeight.
+ // The page content is vertically centred, so a passage can otherwise fit by height
+ // yet still have its last line clipped by the physical paper edge in Safari.
  el.style.fontSize='';el.style.lineHeight='';el.style.maxHeight='none';
  const computed=getComputedStyle(el);
  let size=parseFloat(computed.fontSize)||18;
  let linePx=parseFloat(computed.lineHeight);
  let lineRatio=Number.isFinite(linePx)&&size?linePx/size:1.55;
- const labelStyle=label?getComputedStyle(label):null;
- const labelHeight=(label?.offsetHeight||0)+(labelStyle?parseFloat(labelStyle.marginBottom)||0:0);
- const available=Math.max(0,content.clientHeight-labelHeight-10);
  let guard=0;
- while(el.scrollHeight>available&&size>13.2&&guard<30){
+ const safety=18;
+ const overflows=()=>{
+   const paper=document.querySelector('.left-page');
+   if(!paper)return false;
+   const er=el.getBoundingClientRect();
+   const pr=paper.getBoundingClientRect();
+   return er.bottom>pr.bottom-safety || er.top<pr.top+safety || el.scrollHeight>el.clientHeight+1;
+ };
+ while(overflows()&&size>12.5&&guard<40){
    size-=0.25;
-   lineRatio=Math.max(1.34,lineRatio-0.004);
+   lineRatio=Math.max(1.32,lineRatio-0.004);
    el.style.fontSize=size+'px';
    el.style.lineHeight=lineRatio;
    guard++;
