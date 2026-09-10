@@ -1,3 +1,7 @@
+# Moonbeam Stories V54
+
+V54 launch/legal release. Adds Privacy Policy, Terms of Service and Refund Policy pages; persistent legal links; purchase-dialog legal acknowledgement; and Stripe Checkout acknowledgement text. No Supabase SQL changes are required for V54.
+
 # Moonbeam Stories V53 — Stripe prepaid story credits
 
 V53 builds directly on the working V52 release. It keeps the 3-credit verified introductory trial and adds secure prepaid Stripe Checkout packs:

@@ -33,6 +33,7 @@ module.exports = async function handler(req, res) {
     form.set('metadata[moonbeam_credits]', String(pack.credits));
     form.set('payment_intent_data[metadata][moonbeam_user_id]', user.id);
     form.set('payment_intent_data[metadata][moonbeam_credits]', String(pack.credits));
+    form.set('custom_text[submit][message]', 'By paying, you agree to Moonbeam Stories Terms and acknowledge the Refund and Privacy Policies available on moonbeamstories.co.uk.');
 
     const session = await stripeRequest('/v1/checkout/sessions', {
       method: 'POST',
