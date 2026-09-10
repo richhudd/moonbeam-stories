@@ -1,3 +1,7 @@
+Moonbeam Stories V34
+
+Mobile reader update: each phone swipe now shows the matching illustration and text together on one full-screen spread. Illustration occupies the upper portion, text the lower portion, with automatic text fitting and no vertical scrolling. Swipe left/right moves one complete story spread at a time.
+
 Moonbeam Stories V33
 
 Fixes the persistent title/footer regression in the portrait mobile reader. The cover is forcibly removed from the layout once the story begins, and reader page footers are removed so no Moonbeam/story title can obscure text or illustrations.

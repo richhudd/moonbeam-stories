@@ -300,33 +300,32 @@ async function loadIllustration(index,prompt,silent=false,force=false){
 function getIllustrationPrompt(index){const book=currentBook;if(!book)return'';const total=book.pages.length+2;if(index===0)return`Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. ${book.pages[0]?.illustration_prompt||''}`;if(index===total-1)return`Peaceful final scene for “${book.title}”, showing the characters safe, content and ready for bedtime. ${book.pages[book.pages.length-1]?.illustration_prompt||''}`;return book.pages[index-1]?.illustration_prompt||'A charming children’s storybook scene'}
 function prefetchIllustrations(index,ahead=4){const book=currentBook;if(!book)return;const total=book.pages.length+2;for(let step=1;step<=ahead;step++){const i=index+step;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}}
 function isPhonePortrait(){return window.matchMedia('(max-width:700px) and (orientation:portrait)').matches}
-function mobilePhysicalPageNumber(){if(!currentBook)return 1;return currentBook.currentPage*2+(currentBook.mobileSide==='image'?2:1)}
-function mobilePhysicalTotal(){return currentBook?(currentBook.pages.length+2)*2:0}
+function mobilePhysicalPageNumber(){if(!currentBook)return 1;return currentBook.currentPage+1}
+function mobilePhysicalTotal(){return currentBook?currentBook.pages.length+2:0}
 function applyMobileSide(){
  const bookEl=$('book');if(!bookEl||!currentBook)return;
- bookEl.classList.toggle('show-mobile-image',isPhonePortrait()&&currentBook.mobileSide==='image');
- bookEl.classList.toggle('show-mobile-text',isPhonePortrait()&&currentBook.mobileSide!=='image');
+ bookEl.classList.toggle('show-mobile-image',false);
+ bookEl.classList.toggle('show-mobile-text',false);
+ bookEl.classList.toggle('show-mobile-spread',isPhonePortrait());
  if(isPhonePortrait()){
    const indicator=$('pageIndicator');if(indicator)indicator.textContent=`${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}`;
    const prev=$('prevPage'),next=$('nextPage');
-   if(prev)prev.textContent=(currentBook.currentPage===0&&currentBook.mobileSide==='text')?coverT().cover:t().previous;
-   if(next){next.disabled=currentBook.currentPage===currentBook.pages.length+1&&currentBook.mobileSide==='image';next.textContent=next.disabled?t().end:t().turn}
+   if(prev)prev.textContent=currentBook.currentPage===0?coverT().cover:t().previous;
+   if(next){next.disabled=currentBook.currentPage===currentBook.pages.length+1;next.textContent=next.disabled?t().end:t().turn}
    const progress=document.querySelector('.mobile-page-progress');if(progress)progress.textContent=`${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}`;
    requestAnimationFrame(fitMobileStoryText);
  }
 }
 function fitMobileStoryText(){
- if(!isPhonePortrait())return;const el=document.querySelector('.left-page .story-text');if(!el||currentBook?.mobileSide==='image')return;
+ if(!isPhonePortrait())return;const el=document.querySelector('.left-page .story-text');if(!el)return;
  el.style.fontSize='';el.style.lineHeight='';
  let size=18;let line=1.52;el.style.fontSize=size+'px';el.style.lineHeight=line;
  const content=document.querySelector('.left-page .page-content');
  const footer=document.querySelector('.left-page .page-footer');
  if(!content)return;
- // Keep a real-book footer safety zone. Different iPhone font metrics can otherwise
- // place the final baseline underneath the Moonbeam Stories footer.
- const footerReserve=(footer?.offsetHeight||16)+14;
+ const footerReserve=0;
  const available=Math.max(0,content.clientHeight-footerReserve);
- while(el.scrollHeight>available&&size>12.8){size-=0.35;line=Math.max(1.32,line-0.01);el.style.fontSize=size+'px';el.style.lineHeight=line}
+ while(el.scrollHeight>available&&size>12.2){size-=0.3;line=Math.max(1.28,line-0.008);el.style.fontSize=size+'px';el.style.lineHeight=line}
 }
 function renderIllustrationIntoPage(index,image){if(!currentBook||currentBook.currentPage!==index)return;const frame=document.querySelector('.illustration-frame');if(frame)frame.innerHTML=`<img src="${escapeHtml(image)}" alt="${escapeHtml(t().title)}">`}
 function renderBookPage(index){
@@ -340,8 +339,8 @@ function renderBookPage(index){
  applyMobileSide();loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3)
 }
 function exitStoryToSetup(){document.body.classList.remove('story-mode');$('story')?.classList.add('hidden');goSetupPage(2)}
-function goNextBookPage(){if(!currentBook)return;const total=currentBook.pages.length+2;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory();return}if(isPhonePortrait()){if(currentBook.mobileSide==='text'){currentBook.mobileSide='image';applyMobileSide()}else if(currentBook.currentPage<total-1){currentBook.mobileSide='text';renderBookPage(currentBook.currentPage+1)}}else if(currentBook.currentPage<total-1)renderBookPage(currentBook.currentPage+1)}
-function goPreviousBookPage(){if(!currentBook)return;if(isPhonePortrait()){if(currentBook.mobileSide==='image'){currentBook.mobileSide='text';applyMobileSide()}else if(currentBook.currentPage===0)showCover();else{currentBook.mobileSide='image';renderBookPage(currentBook.currentPage-1);currentBook.mobileSide='image';applyMobileSide()}}else{if(currentBook.currentPage===0)showCover();else renderBookPage(currentBook.currentPage-1)}}
+function goNextBookPage(){if(!currentBook)return;const total=currentBook.pages.length+2;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory();return}if(currentBook.currentPage<total-1)renderBookPage(currentBook.currentPage+1)}
+function goPreviousBookPage(){if(!currentBook)return;if(currentBook.currentPage===0)showCover();else renderBookPage(currentBook.currentPage-1)}
 $('story').addEventListener('click',e=>{if(e.target.id==='beginStory')beginStory();if(e.target.id==='retryCover')loadCoverIllustration(true);if(e.target.id==='prevPage'||e.target.classList.contains('mobile-turn-left'))goPreviousBookPage();if(e.target.id==='nextPage'||e.target.classList.contains('mobile-turn-right'))goNextBookPage()});
 let storyTouchX=null,storyTouchY=null;
 $('story').addEventListener('touchstart',e=>{const t=e.changedTouches?.[0];if(!t)return;storyTouchX=t.clientX;storyTouchY=t.clientY},{passive:true});
