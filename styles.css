@@ -247,3 +247,13 @@
   [data-step="Story"] .hourglass{height:38px}
   [data-step="Story"] .hourglass span{font-size:31px}
 }
+
+
+/* V30 — cover/title isolation. The story title layer must exist ONLY on the front cover. */
+[hidden]{display:none!important}
+@media(max-width:700px) and (orientation:portrait){
+  body.story-mode #coverView.hidden,
+  body.story-mode #coverView[hidden]{display:none!important;visibility:hidden!important;pointer-events:none!important}
+  body.story-mode #coverView.hidden .cover-copy,
+  body.story-mode #coverView[hidden] .cover-copy{display:none!important}
+}

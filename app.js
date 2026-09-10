@@ -252,8 +252,8 @@ async function loadCoverIllustration(force=false){
  if(loading)loading.hidden=false;if(error)error.hidden=true;
  try{const image=await requestIllustration(key,getCoverPrompt(book),`Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);if(currentBook===book){const currentImg=$('coverImage');if(currentImg){currentImg.src=image;currentImg.hidden=false}if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if(currentBook===book){if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false}}
 }
-function showCover(){if(!currentBook)return;currentBook.currentPage=-1;$('coverView')?.classList.remove('hidden');$('book')?.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
-function beginStory(){if(!currentBook)return;currentBook.mobileSide='text';$('coverView')?.classList.add('hidden');$('book')?.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0)}
+function showCover(){if(!currentBook)return;currentBook.currentPage=-1;const cover=$('coverView');if(cover){cover.classList.remove('hidden');cover.hidden=false}const book=$('book');if(book)book.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
+function beginStory(){if(!currentBook)return;currentBook.mobileSide='text';const cover=$('coverView');if(cover){cover.classList.add('hidden');cover.hidden=true}const book=$('book');if(book)book.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0)}
 function illustrationKey(book,index){return `${book.cacheId}:${index}`}
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index);
