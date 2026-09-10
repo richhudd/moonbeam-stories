@@ -27,6 +27,10 @@ const locales = {
 
 const languageNames={ 'en-GB':'English (UK)','en-US':'English (USA)','es-ES':'Español (España)','es-419':'Español (Latinoamérica)','fr-FR':'Français (France)','de-DE':'Deutsch (Deutschland)','it-IT':'Italiano (Italia)','pt-PT':'Português (Portugal)' };
 const $ = id => document.getElementById(id);
+const SUPABASE_URL='https://quwjfjojeibaxnnpykaf.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q';
+const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+let currentUser=null, cloudProfiles=[], activeProfileId=null, cloudStories=[];
 let language=localStorage.getItem('moonbeamLanguage')||'en-GB';
 if(!locales[language]) language='en-GB';
 let selected = new Set();
@@ -63,6 +67,78 @@ $('language').addEventListener('change',()=>{language=$('language').value;localS
 applyLocale();
 $('length').addEventListener('change',()=>localStorage.setItem('moonbeamLength',$('length').value));
 $('generate').onclick=generateStory;
+$('signIn')?.addEventListener('click',signInParent);
+$('signUp')?.addEventListener('click',signUpParent);
+$('signOut')?.addEventListener('click',signOutParent);
+$('profileSelect')?.addEventListener('change',selectCloudProfile);
+$('saveProfile')?.addEventListener('click',saveChildProfile);
+$('deleteProfile')?.addEventListener('click',deleteChildProfile);
+initSupabase();
+
+async function initSupabase(){
+ if(!supabaseClient){$('authStatus').textContent='Account service could not load.';return}
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ await applyAuthSession(session);
+ supabaseClient.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>applyAuthSession(session),0)});
+}
+function setAuthStatus(message,isError=false){const el=$('authStatus');if(!el)return;el.innerHTML=isError?`<span class="error">${escapeHtml(message)}</span>`:escapeHtml(message||'')}
+async function applyAuthSession(session){
+ currentUser=session?.user||null;
+ $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('authSignedIn')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);
+ const badge=$('accountBadge');if(badge){badge.textContent=currentUser?'Cloud connected':'Not signed in';badge.classList.toggle('online',!!currentUser)}
+ if($('signedInAs'))$('signedInAs').textContent=currentUser?`Signed in as ${currentUser.email}`:'';
+ if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories()])}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary()}
+}
+async function signUpParent(){
+ const email=$('authEmail').value.trim(),password=$('authPassword').value;
+ if(!email||password.length<6){setAuthStatus('Enter your email and a password of at least 6 characters.',true);return}
+ setAuthStatus('Creating your account…');
+ const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.origin}});
+ if(error){setAuthStatus(error.message,true);return}
+ if(data.session)setAuthStatus('Account created and signed in.');else setAuthStatus('Account created. Check your email to confirm it, then return here and sign in.');
+}
+async function signInParent(){
+ const email=$('authEmail').value.trim(),password=$('authPassword').value;
+ if(!email||!password){setAuthStatus('Enter your email and password.',true);return}
+ setAuthStatus('Signing in…');const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)setAuthStatus(error.message,true);else setAuthStatus('');
+}
+async function signOutParent(){await supabaseClient.auth.signOut();setAuthStatus('Signed out.')}
+function formChild(){return{name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim()}}
+function renderProfileSelect(){
+ const sel=$('profileSelect');if(!sel)return;sel.innerHTML='<option value="">New child</option>'+cloudProfiles.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}${p.age?` — ${p.age}`:''}</option>`).join('');sel.value=activeProfileId||'';$('deleteProfile')?.classList.toggle('hidden',!activeProfileId)
+}
+function selectCloudProfile(){
+ activeProfileId=$('profileSelect').value||null;$('deleteProfile')?.classList.toggle('hidden',!activeProfileId);$('profileStatus').textContent='';
+ if(!activeProfileId){$('name').value='';$('age').value=7;$('interests').value='';$('dislikes').value='';return}
+ const p=cloudProfiles.find(x=>x.id===activeProfileId);if(!p)return;$('name').value=p.name||'';$('age').value=p.age||7;$('interests').value=p.interests||'';$('dislikes').value=p.dislikes||'';
+}
+async function loadCloudProfiles(){
+ if(!currentUser)return;const {data,error}=await supabaseClient.from('child_profiles').select('id,name,age,interests,dislikes,created_at').order('created_at',{ascending:true});if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}cloudProfiles=data||[];if(activeProfileId&&!cloudProfiles.some(p=>p.id===activeProfileId))activeProfileId=null;renderProfileSelect()
+}
+async function saveChildProfile(){
+ if(!currentUser)return;const c=formChild();if(!c.name){$('profileStatus').textContent=t().errorName;return}if(c.age<3||c.age>12){$('profileStatus').textContent=t().errorAge;return}$('profileStatus').textContent='Saving…';
+ let result;if(activeProfileId)result=await supabaseClient.from('child_profiles').update(c).eq('id',activeProfileId).select().single();else result=await supabaseClient.from('child_profiles').insert({...c,parent_id:currentUser.id}).select().single();
+ if(result.error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(result.error.message)}</span>`;return}activeProfileId=result.data.id;await loadCloudProfiles();$('profileSelect').value=activeProfileId;$('deleteProfile').classList.remove('hidden');$('profileStatus').textContent='Child profile saved.';
+}
+async function ensureCloudProfile(child){
+ if(!currentUser)return null;if(activeProfileId&&cloudProfiles.some(p=>p.id===activeProfileId)){const {error}=await supabaseClient.from('child_profiles').update({name:child.name,age:child.age,interests:child.interests,dislikes:child.dislikes}).eq('id',activeProfileId);if(!error)return activeProfileId}
+ const {data,error}=await supabaseClient.from('child_profiles').insert({parent_id:currentUser.id,name:child.name,age:child.age,interests:child.interests,dislikes:child.dislikes}).select('id').single();if(error)throw error;activeProfileId=data.id;await loadCloudProfiles();return data.id
+}
+async function deleteChildProfile(){
+ if(!currentUser||!activeProfileId)return;if(!confirm('Delete this child profile? Saved stories will remain in your library.'))return;const {error}=await supabaseClient.from('child_profiles').delete().eq('id',activeProfileId);if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}activeProfileId=null;await loadCloudProfiles();selectCloudProfile();$('profileStatus').textContent='Profile deleted.'
+}
+async function loadCloudStories(){
+ if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:profile||{name:'',age:7,interests:'',dislikes:''},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,at:row.created_at}});renderLibrary()
+}
+async function saveCurrentStory(){
+ if(!currentBook)return;const button=$('save');button.disabled=true;
+ try{
+   const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
+   if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const {error}=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing});if(error)throw error;await loadCloudStories();button.textContent=t().savedBtn;return}
+   saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:currentBook.child,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();button.textContent=t().savedBtn;
+ }catch(e){console.error(e);button.textContent=t().save;alert('The story could not be saved: '+(e.message||e))}finally{button.disabled=false}
+}
+async function deleteCloudStory(id){if(!currentUser)return;if(!confirm('Delete this saved story?'))return;const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
 
 async function generateStory(){
  const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:$('length').value,tone:$('tone').value,language,languageName:languageNames[language],values:[...selected]};
@@ -78,7 +154,7 @@ function renderStory(s,image,child){
  el.innerHTML=`<div class="book-shell"><div class="book-cover-head"><span>${escapeHtml(t().title)}</span><span>${escapeHtml(t().childTitle.replace('?',''))}</span></div><div id="coverView" class="story-cover"><div class="cover-art-wrap"><div id="coverLoading" class="cover-loading"><div class="spinner"></div><p>${escapeHtml(coverT().creating)}</p><small>${escapeHtml(coverT().creatingSmall)}</small></div><img id="coverImage" class="cover-image" alt="" hidden><div class="cover-shade"></div><div class="cover-copy"><div class="cover-kicker">${escapeHtml(coverT().kicker)}</div><h2>${escapeHtml(currentBook.title)}</h2><p>${escapeHtml(coverT().forChild(currentBook.child?.name||''))}</p></div><div id="coverError" class="cover-error-box" hidden><div class="moon">☾</div><p>${escapeHtml(coverT().failed)}</p><button class="secondary" id="retryCover" type="button">${escapeHtml(coverT().retry)}</button></div></div><button class="primary cover-begin" id="beginStory" type="button">${escapeHtml(coverT().begin)}</button></div><div id="book" class="book hidden"></div><div id="bookControls" class="book-controls hidden"><button class="secondary" id="prevPage" type="button">${escapeHtml(t().previous)}</button><div class="page-indicator" id="pageIndicator"></div><button class="primary turn" id="nextPage" type="button">${escapeHtml(t().turn)}</button></div><p class="illustration-note hidden" id="illustrationNote">${escapeHtml(t().illustrationNote)}</p><div class="actions"><button class="secondary" id="save" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="newStory" type="button">${escapeHtml(t().newStory)}</button></div></div>`;
  loadCoverIllustration(false);
  prefetchIllustrations(-1);
- $('save').onclick=()=>{const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:currentBook.child,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();$('save').textContent=t().savedBtn};
+ $('save').onclick=saveCurrentStory;
  $('newStory').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
  el.scrollIntoView({behavior:'smooth'});
 }
@@ -103,6 +179,11 @@ function prefetchIllustrations(index){const book=currentBook;if(!book)return;con
 function renderIllustrationIntoPage(index,image){if(!currentBook||currentBook.currentPage!==index)return;const frame=document.querySelector('.illustration-frame');if(frame)frame.innerHTML=`<img src="${escapeHtml(image)}" alt="${escapeHtml(t().title)}">`}
 function renderBookPage(index){const book=currentBook,total=book.pages.length+2,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;const isOpening=clamped===0,isClosing=clamped===total-1;let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';const bookEl=$('book');bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${escapeHtml(text)}</div></div><div class="page-footer">${escapeHtml(t().title)}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div><div class="page-footer">✦</div></div>`;$('prevPage').disabled=false;$('prevPage').textContent=isOpening?coverT().cover:t().previous;$('nextPage').disabled=clamped===total-1;$('nextPage').textContent=clamped===total-1?t().end:t().turn;$('pageIndicator').textContent=`${clamped+1} / ${total}`;loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped)}
 $('story').addEventListener('click',e=>{if(e.target.id==='beginStory')beginStory();if(e.target.id==='retryCover')loadCoverIllustration(true);if(e.target.id==='prevPage'){if((currentBook?.currentPage??0)===0)showCover();else renderBookPage((currentBook.currentPage||0)-1)}if(e.target.id==='nextPage')renderBookPage((currentBook.currentPage||0)+1)});
-function renderLibrary(){const l=$('library');if(!saved.length){l.innerHTML=`<p class="muted">${escapeHtml(t().noSaved)}</p>`;return}l.innerHTML=saved.map((x,i)=>`<button type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button>`).join('')}
-window.openSaved=i=>{const x=saved[i];if(x)renderStory(x.story,x.image,x.child)};
+function renderLibrary(){
+ const l=$('library');if(!l)return;const items=currentUser?cloudStories:saved;
+ if(!items.length){l.innerHTML=`<p class="muted">${escapeHtml(t().noSaved)}</p>${currentUser?'':'<p class="cloud-note">Sign in above to keep stories across devices.</p>'}`;return}
+ if(currentUser){l.innerHTML=items.map((x,i)=>`<div class="library-item"><button class="library-open" type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button><button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">Delete</button></div>`).join('')}else{l.innerHTML=items.map((x,i)=>`<button type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button>`).join('')}
+}
+window.openSaved=i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x){if(x.language&&locales[x.language]){language=x.language;$('language').value=language;localStorage.setItem('moonbeamLanguage',language);applyLocale()}renderStory(x.story,x.image||null,x.child)}};
+window.deleteSavedStory=id=>deleteCloudStory(id);
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}

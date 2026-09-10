@@ -31,3 +31,12 @@ Adds a generated illustrated front cover with reliable HTML title typography, a 
 - Backend rejects badly unbalanced page text.
 - Desktop book spread uses a fixed 600px page height so text and illustration remain the same visual size without scrolling.
 - Small text-density adjustment handles minor generation variation without changing the book layout.
+
+
+## V18
+- Supabase parent email/password authentication.
+- Cloud child profiles protected by Row Level Security.
+- Cloud saved story library protected by Row Level Security.
+- Existing local/browser story saving remains available when signed out.
+- Supabase project uses the public Project URL and publishable key in the browser; no database password or service-role key is included.
+- For confirmation emails, configure Supabase Authentication URL settings with https://www.moonbeamstories.co.uk as the Site URL and allowed redirect URL.
