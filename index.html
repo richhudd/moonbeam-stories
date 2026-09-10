@@ -7,50 +7,25 @@
 <div class="setup-shell" id="setupShell">
   <div class="setup-track" id="setupTrack">
     <section class="card account-card setup-page" id="accountCard" data-step="Account">
-      <div class="mobile-step-kicker">1 of 5</div>
+      <div class="mobile-step-kicker">1 of 7</div>
       <div class="account-head"><div><h2 id="accountTitle">Parent account</h2><p class="muted account-copy" id="accountCopy">Sign in to keep child profiles and stories safely available on your other devices.</p></div><div id="accountBadge" class="account-badge">Not signed in</div></div>
-      <div id="authSignedOut">
-        <div class="row auth-row"><label><span>Email</span><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></label><label><span>Password</span><input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"></label></div>
-        <div class="auth-actions"><button class="primary small-primary" id="signIn" type="button">Sign in</button><button class="secondary" id="signUp" type="button">Create account</button></div><button class="auth-link" id="forgotPassword" type="button">Forgot password?</button>
-      </div>
-      <div id="authSignedIn" class="hidden"><p id="signedInAs" class="signed-in-as"></p><button class="secondary sign-out" id="signOut" type="button">Sign out</button></div>
-      <p class="status" id="authStatus"></p>
-      <div id="passwordRecovery" class="password-recovery hidden" aria-live="polite">
-        <h3>Choose a new password</h3>
-        <p class="muted">Enter a new password for your Moonbeam Stories account.</p>
-        <label><span>New password</span><input id="newPassword" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters"></label>
-        <label><span>Confirm new password</span><input id="confirmNewPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat your new password"></label>
-        <button class="primary small-primary" id="saveNewPassword" type="button">Save new password</button>
-        <p class="status" id="recoveryStatus"></p>
-      </div>
+      <div id="authSignedOut"><div class="row auth-row"><label><span>Email</span><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></label><label><span>Password</span><input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"></label></div><div class="auth-actions"><button class="primary small-primary" id="signIn" type="button">Sign in</button><button class="secondary" id="signUp" type="button">Create account</button></div><button class="auth-link" id="forgotPassword" type="button">Forgot password?</button></div>
+      <div id="authSignedIn" class="hidden"><p id="signedInAs" class="signed-in-as"></p><button class="secondary sign-out" id="signOut" type="button">Sign out</button></div><p class="status" id="authStatus"></p>
+      <div id="passwordRecovery" class="password-recovery hidden" aria-live="polite"><h3>Choose a new password</h3><p class="muted">Enter a new password for your Moonbeam Stories account.</p><label><span>New password</span><input id="newPassword" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters"></label><label><span>Confirm new password</span><input id="confirmNewPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Repeat your new password"></label><button class="primary small-primary" id="saveNewPassword" type="button">Save new password</button><p class="status" id="recoveryStatus"></p></div>
       <div class="language-inline"><h3 id="languageTitle">Choose your language</h3><label><span id="languageLabel">Language</span><select id="language" aria-label="Language"><option value="en-GB">English (UK)</option><option value="en-US">English (USA)</option><option value="es-ES">Español (España)</option><option value="es-419">Español (Latinoamérica)</option><option value="fr-FR">Français (France)</option><option value="de-DE">Deutsch (Deutschland)</option><option value="it-IT">Italiano (Italia)</option><option value="pt-PT">Português (Portugal)</option></select></label></div>
     </section>
 
-    <section class="card setup-page" data-step="Child">
-      <div class="mobile-step-kicker">2 of 5</div><h2 id="childTitle">Who's tonight's story for?</h2>
-      <div id="profileTools" class="profile-tools hidden"><label><span>Saved child profile</span><select id="profileSelect"><option value="">New child</option></select></label><div class="profile-buttons"><button class="secondary" id="saveProfile" type="button">Save child profile</button><button class="secondary danger-lite hidden" id="deleteProfile" type="button">Delete profile</button></div><p class="status profile-status" id="profileStatus"></p></div>
-      <div class="grid basic-grid"><label><span id="nameLabel">Name or nickname</span><input id="name" placeholder="Milo"></label><label><span id="ageLabel">Age</span><input id="age" type="number" min="3" max="12" value="7"></label></div>
-      <div class="mobile-page-hint">Swipe left to continue ›</div>
-    </section>
+    <section class="card setup-page" data-step="Profile"><div class="mobile-step-kicker">2 of 7</div><h2 id="childTitle">Who's tonight's story for?</h2><div id="profileTools" class="profile-tools hidden"><label><span>Saved child profile</span><select id="profileSelect"><option value="">New child</option></select></label><div class="profile-buttons"><button class="secondary" id="saveProfile" type="button">Save child profile</button><button class="secondary danger-lite hidden" id="deleteProfile" type="button">Delete profile</button></div><p class="status profile-status" id="profileStatus"></p></div><p class="mobile-comfort-copy">Choose a saved child, or swipe on to enter a new one.</p></section>
 
-    <section class="card setup-page" data-step="About">
-      <div class="mobile-step-kicker">3 of 5</div><h2>Make it personal</h2>
-      <div class="grid about-grid"><label><span id="interestsLabel">Interests</span><input id="interests" placeholder="dinosaurs, space, football"></label><label><span id="dislikesLabel">Things to avoid</span><input id="dislikes" placeholder="too scary, spiders"></label></div>
-      <div class="child-photo-card" id="childPhotoCard">
-        <div class="child-photo-copy"><h3>Your child's photo <span class="optional-pill">Optional</span></h3><p>Use a clear photo so the illustrated child looks like them.</p><p class="photo-privacy">Kept on this device and sent only when an illustration is created.</p></div>
-        <div class="child-photo-controls"><div class="child-photo-preview" id="childPhotoPreview"><span>☾</span><small>No photo selected</small></div><div class="photo-buttons"><input id="childPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="secondary" id="chooseChildPhoto" type="button">Choose photo</button><button class="secondary danger-lite hidden" id="removeChildPhoto" type="button">Remove photo</button></div><label class="photo-toggle"><input id="useChildPhoto" type="checkbox" checked> <span>Use this photo for illustrations</span></label><p class="status photo-status" id="photoStatus"></p></div>
-      </div>
-    </section>
+    <section class="card setup-page" data-step="Basics"><div class="mobile-step-kicker">3 of 7</div><h2>About your child</h2><div class="grid basic-grid"><label><span id="nameLabel">Name or nickname</span><input id="name" placeholder="Milo"></label><label><span id="ageLabel">Age</span><input id="age" type="number" min="3" max="12" value="7"></label></div></section>
 
-    <section class="card setup-page" data-step="Story">
-      <div class="mobile-step-kicker">4 of 5</div><h2 id="storyPrefs">Story preferences</h2>
-      <div class="row"><label><span id="lengthLabel">Story length</span><select id="length"></select></label><label><span id="toneLabel">Tone</span><select id="tone"></select></label></div>
-      <h3 id="valuesTitle">Story Values</h3><div class="chips" id="values"></div><button class="primary" id="generate" type="button">✨ Make Tonight's Story</button><p class="status" id="status"></p>
-    </section>
+    <section class="card setup-page" data-step="Interests"><div class="mobile-step-kicker">4 of 7</div><h2>What do they love?</h2><div class="grid about-grid"><label><span id="interestsLabel">Interests</span><input id="interests" placeholder="dinosaurs, space, football"></label><label><span id="dislikesLabel">Things to avoid</span><input id="dislikes" placeholder="too scary, spiders"></label></div><p class="mobile-comfort-copy">A few words are enough — Moonbeam will do the rest.</p></section>
 
-    <section class="card setup-page" data-step="Library">
-      <div class="mobile-step-kicker">5 of 5</div><h2 id="savedTitle">Saved stories</h2><div id="library" class="library"></div>
-    </section>
+    <section class="card setup-page" data-step="Photo"><div class="mobile-step-kicker">5 of 7</div><h2>Make the pictures look like them</h2><div class="child-photo-card" id="childPhotoCard"><div class="child-photo-copy"><h3>Your child's photo <span class="optional-pill">Optional</span></h3><p>Use a clear photo so the illustrated child looks like them.</p><p class="photo-privacy">Kept on this device and sent only when an illustration is created.</p></div><div class="child-photo-controls"><div class="child-photo-preview" id="childPhotoPreview"><span>☾</span><small>No photo selected</small></div><div class="photo-buttons"><input id="childPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="secondary" id="chooseChildPhoto" type="button">Choose photo</button><button class="secondary danger-lite hidden" id="removeChildPhoto" type="button">Remove photo</button></div><label class="photo-toggle"><input id="useChildPhoto" type="checkbox" checked> <span>Use this photo for illustrations</span></label><p class="status photo-status" id="photoStatus"></p></div></div></section>
+
+    <section class="card setup-page" data-step="Story"><div class="mobile-step-kicker">6 of 7</div><h2 id="storyPrefs">Story preferences</h2><div class="row"><label><span id="lengthLabel">Story length</span><select id="length"></select></label><label><span id="toneLabel">Tone</span><select id="tone"></select></label></div><h3 id="valuesTitle">Story Values</h3><div class="chips" id="values"></div><button class="primary" id="generate" type="button">✨ Make Tonight's Story</button><p class="status" id="status"></p></section>
+
+    <section class="card setup-page" data-step="Library"><div class="mobile-step-kicker">7 of 7</div><h2 id="savedTitle">Saved stories</h2><div id="library" class="library"></div></section>
   </div>
   <nav class="setup-nav" aria-label="Setup pages"><button class="setup-arrow" id="setupPrev" type="button" aria-label="Previous setup page">‹</button><div class="setup-dots" id="setupDots" aria-hidden="true"></div><button class="setup-arrow" id="setupNext" type="button" aria-label="Next setup page">›</button></nav>
 </div>

@@ -107,3 +107,55 @@
   body.story-mode .book-controls{flex:0 0 auto}
   body.story-mode .book-shell>.actions{flex:0 0 auto}
 }
+
+/* V27 — comfortable phone setup + true full-screen swipe reader. */
+.mobile-comfort-copy{display:none}
+@media(max-width:700px) and (orientation:portrait){
+  /* Setup: more pages, fewer compressed controls per page. */
+  header{flex-basis:70px;padding:6px 20px 10px}
+  .setup-track{padding:0 12px 8px}
+  .setup-page{flex-basis:calc(100vw - 24px);width:calc(100vw - 24px);padding:24px 22px 20px;border-radius:24px}
+  .setup-page h2{font-size:28px;margin:28px 0 22px}
+  .setup-page h3{font-size:18px}
+  .setup-page input,.setup-page select{min-height:56px;padding:13px 42px 13px 15px;font-size:17px;border-radius:16px}
+  .setup-page label{font-size:15px}
+  .basic-grid{gap:22px!important}.basic-grid input{font-size:20px;min-height:62px}
+  .about-grid{gap:20px!important}.about-grid input{min-height:62px;font-size:18px}
+  .mobile-comfort-copy{display:block;margin:22px 0 0;color:#756b88;font-size:15px;line-height:1.5}
+  .profile-tools{padding:18px!important}.profile-buttons{grid-template-columns:1fr;gap:10px}.profile-buttons .secondary{font-size:14px;padding:13px 10px}
+  .child-photo-card{display:flex;flex-direction:column;gap:14px;padding:16px;margin-top:8px}.child-photo-preview{height:min(38dvh,280px);width:100%}.photo-buttons{display:flex;gap:8px}.photo-buttons .secondary{margin:0;font-size:13px;padding:11px}.photo-toggle{font-size:13px}
+  .chips{gap:9px;margin:12px 0 22px}.chip{padding:10px 12px;font-size:14px}.setup-page #generate{padding:17px;font-size:17px}
+
+  /* Reader occupies the entire safe viewport. No persistent chrome. */
+  body.story-mode #story{inset:0;padding:0;background:#f6f0e4}
+  body.story-mode .book-shell{height:100dvh;width:100vw;padding:0;display:block;position:relative;background:#f6f0e4}
+  body.story-mode .book-cover-head,
+  body.story-mode .book-controls,
+  body.story-mode .illustration-note,
+  body.story-mode .book-shell>.actions{display:none!important}
+  body.story-mode .book{position:absolute;inset:0;width:100vw;height:100dvh!important;max-height:none!important;min-height:0!important;border-radius:0;box-shadow:none;background:#fffdf7;touch-action:pan-x;overflow:hidden}
+  body.story-mode .paper{inset:0;width:100vw;height:100dvh;padding:max(44px,calc(env(safe-area-inset-top) + 28px)) 30px max(44px,calc(env(safe-area-inset-bottom) + 30px));border-radius:0}
+  body.story-mode .left-page{background:linear-gradient(90deg,#fffdf8,#faf6ec)}
+  body.story-mode .right-page{padding:0;background:#111}
+  body.story-mode .page-content{height:100%;max-width:600px;margin:0 auto;justify-content:center}
+  body.story-mode .story-text,body.story-mode .story-text.compact-text,body.story-mode .story-text.roomy-text{font-size:clamp(19px,5.2vw,23px);line-height:1.56}
+  body.story-mode .chapter-label{font-size:11px;margin-bottom:18px;letter-spacing:.13em}
+  body.story-mode .illustration-frame,body.story-mode .illustration-frame img,body.story-mode .illustration-loading,body.story-mode .illustration-error,body.story-mode .illustration-placeholder{position:absolute;inset:0;width:100%;height:100%;border-radius:0;min-height:0}
+  body.story-mode .illustration-frame img{object-fit:cover}
+  body.story-mode .page-number{top:max(16px,env(safe-area-inset-top));z-index:8;background:#fff9;padding:4px 8px;border-radius:999px;font-size:10px}
+  body.story-mode .left-page .page-number{left:18px}body.story-mode .right-page .page-number{right:18px;color:#222}
+  body.story-mode .page-footer{bottom:max(12px,env(safe-area-inset-bottom));z-index:8;font-size:9px;opacity:.5}
+  body.story-mode .mobile-turn-zone{display:none!important}
+  .mobile-page-progress{display:block;position:absolute;z-index:30;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);padding:5px 9px;border-radius:999px;background:#1118;color:white;font:700 10px system-ui,-apple-system,sans-serif;pointer-events:none;backdrop-filter:blur(6px)}
+  .mobile-end-actions{position:absolute;z-index:20;left:18px;right:18px;bottom:max(18px,calc(env(safe-area-inset-bottom) + 10px));display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;border-radius:18px;background:#fffdf2e8;backdrop-filter:blur(12px);box-shadow:0 8px 28px #0005}
+  .mobile-end-actions button{min-height:48px;padding:12px 8px;font-size:14px}
+
+  /* Cover is also full-screen. Swipe left to begin. */
+  body.story-mode .story-cover{position:absolute;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;border-radius:0;background:#17132d}
+  body.story-mode .story-cover .cover-art-wrap{position:absolute;inset:0;width:100%;height:100%}
+  body.story-mode .story-cover .cover-art-wrap img{width:100%;height:100%;object-fit:cover}
+  body.story-mode .cover-begin{display:none!important}
+  body.story-mode .cover-copy{bottom:max(48px,calc(env(safe-area-inset-bottom) + 30px))}
+  .mobile-cover-hint{display:block;position:absolute;z-index:25;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);color:white;background:#1118;border-radius:999px;padding:7px 12px;font:700 11px system-ui,-apple-system,sans-serif;white-space:nowrap;backdrop-filter:blur(6px)}
+}
+@media(min-width:701px), (orientation:landscape){.mobile-page-progress,.mobile-end-actions,.mobile-cover-hint{display:none!important}}
