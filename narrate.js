@@ -1,3 +1,4 @@
+const {logUsage,estimateGBP}=require('./_usage');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -46,6 +47,7 @@ module.exports = async function handler(req, res) {
       return res.status(502).json({ error:String(message), openai_status:r.status });
     }
     const bytes = Buffer.from(await r.arrayBuffer());
+    await logUsage({event_type:'narration',estimated_cost_gbp:estimateGBP('narration'),metadata:{model:'gpt-4o-mini-tts',characters:text.length}});
     return res.status(200).json({ audio:`data:audio/mpeg;base64,${bytes.toString('base64')}` });
   } catch (e) {
     console.error('narrate error', e);

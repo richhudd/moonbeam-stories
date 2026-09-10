@@ -10,33 +10,33 @@ V38 prevents repeated consecutive illustrations.
 - All V37 mobile cover/narration fixes are retained.
 
 
-## V45
+## V46
 - Moves the portrait-phone page counter out of the illustration and into a reserved strip below the text.
 - Mobile text fitting now reserves space for the counter so it cannot cover the final line.
 
 
-## V45
+## V46
 - On portrait phones, the narration play/pause control is moved out of the illustration and into the reserved lower reader strip beside the page counter.
 - Illustrations are now kept completely free of reader controls and counters.
 
 
-## V45
+## V46
 - Narration now follows the selected regional language: UK English uses a British accent, US English an American accent, Spain Spanish a Peninsular Spanish accent, Latin American Spanish a neutral Latin American accent, and equivalent regional guidance is used for French, German, Italian and European Portuguese.
 
 
-## V45
+## V46
 - Regional narration now changes the underlying OpenAI built-in voice as well as the accent instruction.
 - UK English uses `fable` rather than the US-oriented `marin` used previously.
 - Other language regions also have their own base voice selection.
 - Narration still explicitly reinforces the selected regional pronunciation.
 
-## V45
+## V46
 - Reworked the mobile cover rendering rather than adding another image repaint workaround.
 - Portrait phones now paint the generated cover into a dedicated full-screen CSS background layer.
 - The normal `<img>` cover remains available for desktop, but mobile no longer depends on Safari painting that element correctly on its first frame.
 - The cover loading overlay is dismissed only after the background layer has had multiple paint frames.
 
-## V45
+## V46
 - Restores and hardens child-photo identity references for cover and interior illustrations.
 - When a photo is enabled, Moonbeam reloads it from local IndexedDB immediately before story generation if necessary.
 - Reference-photo illustrations now use GPT-Image-2.5 Sunburst, which OpenAI positions for precise image editing, while non-photo generations remain on Flare for speed.
@@ -44,10 +44,13 @@ V38 prevents repeated consecutive illustrations.
 - The illustration endpoint confirms whether a reference photo was actually used; Moonbeam treats a dropped reference as an error instead of silently generating a generic child.
 - Reworked mobile cover again: the generated base64 image is converted to a Blob URL and displayed through a real full-screen `<img>`, avoiding iPhone Safari's unreliable first paint of very large data URLs/CSS backgrounds.
 
-## V45
+## V46
 - Mobile cover architecture changed completely.
 - Portrait phones now obtain their initial cover artwork from the exact same opening-page illustration pipeline that successfully creates the interior child-photo illustrations.
 - The story title, Moonbeam kicker and child subtitle remain HTML overlays, so the opening artwork functions as a proper front cover immediately.
 - A dedicated cover composition is still requested afterward and replaces the fallback if successful.
 - If the dedicated cover request fails, the working illustrated fallback remains visible; mobile can no longer drop into a blank-cover state just because the separate cover request failed.
 - Cover is explicitly fixed to the phone viewport with deterministic layer stacking.
+
+## V46
+Run SUPABASE_V46_USAGE.sql. Add SUPABASE_SERVICE_ROLE_KEY and MOONBEAM_DEVELOPER_EMAIL in Vercel. Optional GBP estimates: MOONBEAM_COST_STORY_GBP, MOONBEAM_COST_IMAGE_GBP, MOONBEAM_COST_REFERENCE_IMAGE_GBP, MOONBEAM_COST_NARRATION_GBP. Then visit /usage.html while signed in as developer.

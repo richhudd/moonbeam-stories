@@ -648,3 +648,5 @@
   body.story-mode #coverView:not(.hidden) .cover-loading,
   body.story-mode #coverView:not(.hidden) .cover-error-box{z-index:6!important}
 }
+
+.usage-page{max-width:900px;margin:40px auto;padding:20px}.usage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}.usage-grid div{padding:16px;border:1px solid #bbb;border-radius:14px}.usage-grid b,.usage-grid span{display:block}.usage-grid b{font-size:1.5rem}

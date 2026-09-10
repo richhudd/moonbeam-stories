@@ -1,3 +1,4 @@
+const {logUsage,estimateGBP}=require('./_usage');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -86,6 +87,7 @@ IMPORTANT
       return res.status(502).json({ error: 'The image service returned no image.' });
     }
 
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasReference}),metadata:{reference:hasReference}});
     return res.status(200).json({ image: `data:image/webp;base64,${item.b64_json}`, usedReferencePhoto: hasReference });
   } catch (e) {
     console.error('illustrate error', e);

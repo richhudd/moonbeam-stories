@@ -1,3 +1,4 @@
+const {logUsage,estimateGBP}=require('./_usage');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -284,6 +285,7 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
     const textScreens = [story.opening, ...story.pages.map(p => p && p.text), story.closing];
     const counts = textScreens.map(wordCount);
 
+    await logUsage({event_type:'story',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna'}});
     return res.status(200).json({
       story,
       image: null,
