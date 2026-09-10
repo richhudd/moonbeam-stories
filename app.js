@@ -244,7 +244,8 @@ async function generateStory(){
 function buildBook(s,image,child){const pages=Array.isArray(s.pages)?s.pages:[];return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId:makeStoryCacheId(s,child),currentPage:-1,mobileSide:'text',readingMode:'self'}}
 function renderStory(s,image,child){
  currentBook=buildBook(s,image,child);
- const el=$('story');el.classList.remove('hidden');if(isPhonePortrait())document.body.classList.add('story-mode');
+ const el=$('story');el.classList.remove('hidden');
+ document.body.classList.toggle('story-mode',isPhonePortrait());
  el.innerHTML=`<div class="book-shell"><div class="book-cover-head"><span>${escapeHtml(t().title)}</span><span>${escapeHtml(t().childTitle.replace('?',''))}</span></div><div id="coverView" class="story-cover"><div class="cover-art-wrap"><div id="coverPaintedBg" class="cover-painted-bg" aria-hidden="true"></div><div id="coverLoading" class="cover-loading"><div class="spinner"></div><p>${escapeHtml(coverT().creating)}</p><small>${escapeHtml(coverT().creatingSmall)}</small></div><img id="coverImage" class="cover-image" alt="" hidden><div class="cover-shade"></div><div class="cover-copy"><div class="cover-kicker">${escapeHtml(coverT().kicker)}</div><h2>${escapeHtml(currentBook.title)}</h2><p>${escapeHtml(coverT().forChild(currentBook.child?.name||''))}</p></div><div id="coverError" class="cover-error-box" hidden><div class="moon">☾</div><p>${escapeHtml(coverT().failed)}</p><button class="secondary" id="retryCover" type="button">${escapeHtml(coverT().retry)}</button></div></div><div class="mobile-cover-hint">Swipe to begin ›</div><div class="cover-reading-choices"><button class="primary cover-begin" id="beginStory" type="button">📖 ${escapeHtml(language.startsWith('en')?'Read it myself':coverT().begin)}</button><button class="secondary cover-narrate" id="beginNarrated" type="button">🔊 ${escapeHtml(language.startsWith('en')?'Read to me':'Audio')}</button></div></div><div id="book" class="book hidden"></div><div id="bookControls" class="book-controls hidden"><button class="secondary" id="prevPage" type="button">${escapeHtml(t().previous)}</button><div class="page-indicator" id="pageIndicator"></div><button class="primary turn" id="nextPage" type="button">${escapeHtml(t().turn)}</button></div><p class="illustration-note hidden" id="illustrationNote">${escapeHtml(t().illustrationNote)}</p><div class="actions"><button class="secondary" id="save" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="newStory" type="button">${escapeHtml(t().newStory)}</button></div></div>`;
  loadCoverIllustration(false);
  // Start the opening and next two illustrations immediately while the cover is on screen.
@@ -252,7 +253,7 @@ function renderStory(s,image,child){
  $('save').onclick=saveCurrentStory;
  $('newStory').onclick=()=>exitStoryToSetup();
 }
-function coverKey(book){return `v44:${book.cacheId}:cover`}
+function coverKey(book){return `v45:${book.cacheId}:cover`}
 function getCoverPrompt(book){
  const first=book.pages[0]?.illustration_prompt||'';
  return `Front cover illustration for an original premium children's bedtime adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}. Interests: ${book.child?.interests||'imaginative adventures'}. Story world and character continuity: ${book.character_bible||'Keep the hero appealing and visually consistent with the interior illustrations.'} Opening: ${book.opening||''} Visual clue from the first scene: ${first}. Compose this specifically as a striking real children's BOOK COVER: one clear focal character, a strong sense of mystery or adventure, magical depth, warm inviting light, sophisticated hand-painted storybook look, expressive but reassuring. Keep the central and upper areas sufficiently calm and uncluttered for title typography that will be overlaid by the app. Absolutely no words, letters, captions, logos, signs or readable text anywhere in the image.`
@@ -314,24 +315,69 @@ async function revealCoverImage(img,src){
 }
 async function loadCoverIllustration(force=false){
  const book=currentBook;if(!book)return;
- const key=coverKey(book),loading=$('coverLoading'),error=$('coverError');
- if(loading)loading.hidden=false;if(error)error.hidden=true;
- try{
-   const image=await requestIllustration(key,getCoverPrompt(book),`Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);
-   if(currentBook===book){
-     const currentImg=$('coverImage');
-     await revealCoverImage(currentImg,image);
+ const loading=$('coverLoading'),error=$('coverError');
+ if(loading)loading.hidden=false;
+ if(error)error.hidden=true;
+
+ let fallbackShown=false;
+
+ // V45: the phone cover no longer depends on the special cover-image request.
+ // The normal opening-page illustration pipeline is already proven to work
+ // with child-photo references, so use that artwork as an immediate front-cover
+ // fallback. Title/kicker remain HTML overlays, making it a genuine book cover.
+ if(isPhonePortrait()){
+   try{
+     const openingPrompt=getIllustrationPrompt(0);
+     const openingKey=illustrationKey(book,0,openingPrompt);
+     const openingImage=await requestIllustration(
+       openingKey,
+       openingPrompt,
+       `Premium children's storybook illustration suitable for a front-cover crop. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,
+       false,
+       book.child?.referencePhoto||null
+     );
      if(currentBook===book){
+       await revealCoverImage($('coverImage'),openingImage);
+       fallbackShown=true;
        if($('coverLoading'))$('coverLoading').hidden=true;
        if($('coverError'))$('coverError').hidden=true;
      }
+   }catch(e){
+     console.error('Mobile cover fallback failed',e);
+   }
+ }
+
+ // Request a specially composed cover as an enhancement. If this request fails
+ // after the fallback is visible, keep the working fallback instead of replacing
+ // the cover with an error/blank state.
+ try{
+   const key=coverKey(book);
+   const image=await requestIllustration(
+     key,
+     getCoverPrompt(book),
+     `Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,
+     force,
+     book.child?.referencePhoto||null
+   );
+   if(currentBook===book){
+     await revealCoverImage($('coverImage'),image);
+     if($('coverLoading'))$('coverLoading').hidden=true;
+     if($('coverError'))$('coverError').hidden=true;
    }
    return image;
- }catch(e){console.error(e);if(currentBook===book){if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false}}
+ }catch(e){
+   console.error('Dedicated cover failed',e);
+   if(currentBook===book){
+     if($('coverLoading'))$('coverLoading').hidden=true;
+     // Only show an error if there is genuinely no artwork to use.
+     if(!fallbackShown && $('coverError'))$('coverError').hidden=false;
+   }
+   return null;
+ }
 }
 function showCover(){if(!currentBook)return;currentBook.currentPage=-1;const cover=$('coverView');if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.display=''}const book=$('book');if(book)book.classList.add('hidden');$('bookControls')?.classList.add('hidden');$('illustrationNote')?.classList.add('hidden')}
 function beginStory(mode='self'){if(!currentBook)return;currentBook.readingMode=mode;currentBook.mobileSide='text';const cover=$('coverView');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.display='none'}const book=$('book');if(book)book.classList.remove('hidden');$('bookControls')?.classList.remove('hidden');$('illustrationNote')?.classList.remove('hidden');renderBookPage(0);if(mode==='narrated')scheduleNarration(120)}
-function illustrationKey(book,index,prompt=''){return `v44:${book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
+function illustrationKey(book,index,prompt=''){return `v45:${book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
 function previousIllustrationKey(book,index){if(index<=0)return null;return illustrationKey(book,index-1,getIllustrationPrompt(index-1))}
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index,prompt);

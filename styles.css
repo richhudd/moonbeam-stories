@@ -606,3 +606,45 @@
     z-index:0!important;
   }
 }
+
+
+/* V45 — mobile cover is guaranteed by the normal story illustration pipeline. */
+@media(max-width:700px) and (orientation:portrait){
+  body.story-mode #coverView:not(.hidden){
+    display:block!important;
+    position:fixed!important;
+    inset:0!important;
+    width:100vw!important;
+    height:100dvh!important;
+    z-index:80!important;
+    overflow:hidden!important;
+    background:#17132d!important;
+  }
+  body.story-mode #coverView:not(.hidden) .cover-art-wrap{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:100dvh!important;
+    overflow:hidden!important;
+  }
+  body.story-mode #coverView:not(.hidden) #coverImage{
+    display:block!important;
+    visibility:visible!important;
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:100%!important;
+    min-height:100%!important;
+    object-fit:cover!important;
+    opacity:1!important;
+    z-index:1!important;
+  }
+  body.story-mode #coverView:not(.hidden) .cover-shade{z-index:2!important}
+  body.story-mode #coverView:not(.hidden) .cover-copy{z-index:3!important}
+  body.story-mode #coverView:not(.hidden) .cover-reading-choices,
+  body.story-mode #coverView:not(.hidden) .mobile-cover-hint{z-index:5!important}
+  body.story-mode #coverView:not(.hidden) .cover-loading,
+  body.story-mode #coverView:not(.hidden) .cover-error-box{z-index:6!important}
+}
