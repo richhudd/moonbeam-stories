@@ -217,6 +217,10 @@ async function generateStory(){
  if(preparingTitle)preparingTitle.textContent=language.startsWith('es')?'Preparando tu historia…':language.startsWith('fr')?'Préparation de votre histoire…':language.startsWith('de')?'Deine Geschichte wird vorbereitet…':language.startsWith('it')?'Preparazione della storia…':language.startsWith('pt')?'A preparar a tua história…':'Preparing your story…';
  if(preparingCopy)preparingCopy.textContent=language.startsWith('es')?'Moonbeam está escribiendo la aventura de esta noche. Puede tardar un poco.':language.startsWith('fr')?'Moonbeam écrit l’aventure de ce soir. Cela peut prendre un petit moment.':language.startsWith('de')?'Moonbeam schreibt das heutige Abenteuer. Das kann einen kleinen Moment dauern.':language.startsWith('it')?'Moonbeam sta scrivendo l’avventura di stasera. Potrebbe volerci un momento.':language.startsWith('pt')?'A Moonbeam está a escrever a aventura desta noite. Pode demorar um pouco.':"Moonbeam is writing tonight's adventure. This can take a little while.";
  if(preparing)preparing.classList.remove('hidden');
+ // Force the loading state to paint on iOS Safari before any network work begins.
+ // Two animation frames are intentional: Safari can otherwise coalesce the DOM update
+ // with the following fetch and the parent never sees the waiting indicator.
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({child})});
    const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}
