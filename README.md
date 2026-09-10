@@ -1,3 +1,10 @@
+# Moonbeam Stories V48
+
+## V48 desktop story-page fitting fix
+- Desktop story text is now measured against the actual rendered page height after every page turn.
+- If a page would clip its final line, the text is reduced in small increments until the complete page fits with a safety margin.
+- The existing phone illustration+text layout and photo-linked illustration pipeline are unchanged.
+
 # Moonbeam Stories V38
 
 V38 prevents repeated consecutive illustrations.

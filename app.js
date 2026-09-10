@@ -440,6 +440,31 @@ function fitMobileStoryText(){
  const available=Math.max(0,content.clientHeight-footerReserve);
  while(el.scrollHeight>available&&size>12.2){size-=0.3;line=Math.max(1.28,line-0.008);el.style.fontSize=size+'px';el.style.lineHeight=line}
 }
+function fitDesktopStoryText(){
+ if(window.matchMedia('(max-width:700px)').matches)return;
+ const content=document.querySelector('.left-page .page-content');
+ const el=document.querySelector('.left-page .story-text');
+ const label=document.querySelector('.left-page .chapter-label');
+ if(!content||!el)return;
+ // V48: fit against the page's real rendered height rather than word-count guesses.
+ // This prevents Safari/desktop font metrics from clipping the final line.
+ el.style.fontSize='';el.style.lineHeight='';el.style.maxHeight='none';
+ const computed=getComputedStyle(el);
+ let size=parseFloat(computed.fontSize)||18;
+ let linePx=parseFloat(computed.lineHeight);
+ let lineRatio=Number.isFinite(linePx)&&size?linePx/size:1.55;
+ const labelStyle=label?getComputedStyle(label):null;
+ const labelHeight=(label?.offsetHeight||0)+(labelStyle?parseFloat(labelStyle.marginBottom)||0:0);
+ const available=Math.max(0,content.clientHeight-labelHeight-10);
+ let guard=0;
+ while(el.scrollHeight>available&&size>13.2&&guard<30){
+   size-=0.25;
+   lineRatio=Math.max(1.34,lineRatio-0.004);
+   el.style.fontSize=size+'px';
+   el.style.lineHeight=lineRatio;
+   guard++;
+ }
+}
 function renderIllustrationIntoPage(index,image){if(!currentBook||currentBook.currentPage!==index)return;const frame=document.querySelector('.illustration-frame');if(frame)frame.innerHTML=`<img src="${escapeHtml(image)}" alt="${escapeHtml(t().title)}">`}
 
 const narrationCache=new Map();
@@ -464,7 +489,7 @@ function renderBookPage(index){
  bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${endActions}<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button></div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  const prev=$('prevPage'),next=$('nextPage'),indicator=$('pageIndicator');if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=clamped===total-1;next.textContent=clamped===total-1?t().end:t().turn}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
  const mobileSave=$('mobileSave');if(mobileSave)mobileSave.onclick=saveCurrentStory;const mobileNew=$('mobileNewStory');if(mobileNew)mobileNew.onclick=()=>exitStoryToSetup();const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
- applyMobileSide();loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3);if(book.readingMode==='narrated'&&clamped<total-1){const nextText=clamped+1===total-1?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
+ applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3);if(book.readingMode==='narrated'&&clamped<total-1){const nextText=clamped+1===total-1?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
 }
 function exitStoryToSetup(){stopNarration();document.body.classList.remove('story-mode');$('story')?.classList.add('hidden');goSetupPage(2)}
 function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+2;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated')scheduleNarration(120)}}
@@ -474,7 +499,7 @@ $('story').addEventListener('click',e=>{if(Date.now()-lastStorySwipeAt<500&&(e.t
 let storyTouchX=null,storyTouchY=null;
 $('story').addEventListener('touchstart',e=>{const t=e.changedTouches?.[0];if(!t)return;storyTouchX=t.clientX;storyTouchY=t.clientY},{passive:true});
 $('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){lastStorySwipeAt=Date.now();stopNarration();if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
-window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0){if(!isPhonePortrait())currentBook.mobileSide='text';applyMobileSide()}});
+window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0){if(!isPhonePortrait())currentBook.mobileSide='text';applyMobileSide();requestAnimationFrame(fitDesktopStoryText)}});
 function renderLibrary(){
  const l=$('library');if(!l)return;const items=currentUser?cloudStories:saved;
  if(!items.length){l.innerHTML=`<p class="muted">${escapeHtml(t().noSaved)}</p>${currentUser?'':'<p class="cloud-note">Sign in above to keep stories across devices.</p>'}`;return}
