@@ -70,7 +70,7 @@ Adds a generated illustrated front cover with reliable HTML title typography, a 
 - Long titles use balanced wrapping rather than oversized type.
 
 
-## V23 – faster illustrations
+## V24 – faster illustrations
 - Switched illustration generation to `gpt-image-2.5-flare`, OpenAI's fast image-generation model.
 - Starts the cover plus the first three interior illustrations immediately.
 - Prefetches the next three illustrations as the reader advances.
@@ -78,3 +78,7 @@ Adds a generated illustrated front cover with reliable HTML title typography, a 
 - Retries temporary image-service/rate-limit responses automatically.
 - Adds persistent IndexedDB illustration caching using a stable story fingerprint, so reopening the same saved story on the same device reuses its cover and page images instead of regenerating them.
 - Keeps the existing low-quality 1024×1024 WebP setting for speed/cost; it does not double-generate draft and final images.
+
+
+## V24
+Adds a complete Supabase password recovery flow: Forgot password email, recovery-link detection, and in-app new-password form.

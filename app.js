@@ -90,6 +90,8 @@ $('generate').onclick=generateStory;
 $('signIn')?.addEventListener('click',signInParent);
 $('signUp')?.addEventListener('click',signUpParent);
 $('signOut')?.addEventListener('click',signOutParent);
+$('forgotPassword')?.addEventListener('click',sendPasswordReset);
+$('saveNewPassword')?.addEventListener('click',saveNewPassword);
 $('profileSelect')?.addEventListener('change',selectCloudProfile);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
 $('deleteProfile')?.addEventListener('click',deleteChildProfile);
@@ -99,7 +101,10 @@ async function initSupabase(){
  if(!supabaseClient){$('authStatus').textContent='Account service could not load.';return}
  const {data:{session}}=await supabaseClient.auth.getSession();
  await applyAuthSession(session);
- supabaseClient.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>applyAuthSession(session),0)});
+ supabaseClient.auth.onAuthStateChange((event,session)=>{
+   if(event==='PASSWORD_RECOVERY') setTimeout(()=>showPasswordRecovery(),0);
+   setTimeout(()=>applyAuthSession(session),0)
+ });
 }
 function setAuthStatus(message,isError=false){const el=$('authStatus');if(!el)return;el.innerHTML=isError?`<span class="error">${escapeHtml(message)}</span>`:escapeHtml(message||'')}
 async function applyAuthSession(session){
@@ -109,6 +114,37 @@ async function applyAuthSession(session){
  if($('signedInAs'))$('signedInAs').textContent=currentUser?`Signed in as ${currentUser.email}`:'';
  if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories()])}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary()}
 }
+
+function showPasswordRecovery(){
+ const panel=$('passwordRecovery');if(!panel)return;
+ panel.classList.remove('hidden');
+ $('accountCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+ if($('recoveryStatus'))$('recoveryStatus').textContent='Reset link verified. Choose your new password.';
+}
+async function sendPasswordReset(){
+ if(!supabaseClient){setAuthStatus('Account service could not load.',true);return}
+ const email=$('authEmail')?.value.trim();
+ if(!email){setAuthStatus('Enter your email address first, then tap Forgot password.',true);$('authEmail')?.focus();return}
+ setAuthStatus('Sending password reset email…');
+ const redirectTo=location.origin + location.pathname;
+ const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo});
+ if(error){setAuthStatus(error.message,true);return}
+ setAuthStatus('Password reset email sent. Check your inbox and open the link to choose a new password.');
+}
+async function saveNewPassword(){
+ if(!supabaseClient)return;
+ const password=$('newPassword')?.value||'',confirm=$('confirmNewPassword')?.value||'';
+ const status=$('recoveryStatus');
+ if(password.length<6){if(status)status.innerHTML='<span class="error">Use a password of at least 6 characters.</span>';return}
+ if(password!==confirm){if(status)status.innerHTML='<span class="error">The two passwords do not match.</span>';return}
+ if(status)status.textContent='Saving your new password…';
+ const {error}=await supabaseClient.auth.updateUser({password});
+ if(error){if(status)status.innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}
+ if(status)status.textContent='Password changed successfully. You are signed in.';
+ if($('newPassword'))$('newPassword').value='';if($('confirmNewPassword'))$('confirmNewPassword').value='';
+ setTimeout(()=>{$('passwordRecovery')?.classList.add('hidden');setAuthStatus('Password changed successfully.');history.replaceState({},document.title,location.pathname)},1300);
+}
+
 async function signUpParent(){
  const email=$('authEmail').value.trim(),password=$('authPassword').value;
  if(!email||password.length<6){setAuthStatus('Enter your email and a password of at least 6 characters.',true);return}

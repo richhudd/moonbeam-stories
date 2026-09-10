@@ -52,3 +52,10 @@
   .cover-art-wrap{height:100%;aspect-ratio:auto}
   .cover-begin{margin:10px auto 2px;padding:13px}
 }
+
+/* V24 — password recovery */
+.auth-link{display:inline-block;margin-top:12px;padding:0;border:0;background:transparent;color:#5d4a83;text-decoration:underline;text-underline-offset:3px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.password-recovery{margin-top:18px;padding:16px;border:1px solid #d8ccf2;border-radius:14px;background:#fbf9ff}
+.password-recovery h3{margin:0 0 6px}
+.password-recovery label{display:block;margin-top:12px}
+.password-recovery .primary{margin-top:14px;width:100%}
