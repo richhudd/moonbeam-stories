@@ -1,3 +1,9 @@
+# Moonbeam Stories V22
+
+V22 fixes occasional mobile text/footer collisions. The mobile reader now reserves a dedicated footer safety zone and the text-fitting calculation measures only the usable space above the footer, with extra tolerance for differing iPhone font metrics. The final line can no longer sit underneath the "Moonbeam Stories" footer.
+
+All V21 features remain unchanged.
+
 # Moonbeam Stories V21
 
 V21 improves story-generation reliability. If the model returns a different number of story pages than requested, or uneven page lengths, the server automatically reflows the prose into the exact selected number of pages rather than showing an error to the reader.

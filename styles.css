@@ -26,20 +26,20 @@
   .book-shell{padding:9px;border-radius:14px;max-width:100%;overflow:hidden}
   .book-cover-head{padding:0 5px 7px;font-size:8px}
   .book{position:relative;display:block;height:min(72svh,620px);min-height:430px;max-height:620px;overflow:hidden;border-radius:7px;background:#fffdf7;box-shadow:0 12px 30px #0004;touch-action:pan-y}
-  .paper{position:absolute;inset:0;width:100%;height:100%;min-height:0;padding:42px 28px 38px;overflow:hidden;border:0!important}
+  .paper{position:absolute;inset:0;width:100%;height:100%;min-height:0;padding:42px 28px 56px;overflow:hidden;border:0!important}
   .left-page,.right-page{display:none}
   .book.show-mobile-text .left-page{display:block}
   .book.show-mobile-image .right-page{display:block}
   .left-page{background:linear-gradient(to right,#fffdf7 0%,#fbf8ee 97%,#eee5d5 100%)}
   .right-page{background:#f7f1e5;padding:17px}
-  .page-content{height:100%;justify-content:center;overflow:hidden}
+  .page-content{height:calc(100% - 8px);justify-content:center;overflow:hidden}
   .chapter-label{font-size:10px;margin-bottom:11px}
   .story-text,.story-text.compact-text,.story-text.roomy-text{font-size:18px;line-height:1.52;max-height:none;overflow:visible}
   .illustration-frame{width:100%;height:100%;min-height:0}
   .illustration-frame img{width:100%;height:100%;object-fit:cover;border-radius:5px}
   .illustration-loading,.illustration-error,.illustration-placeholder{width:100%;height:100%;min-height:0;border-radius:5px}
   .page-number{top:16px}.left-page .page-number{left:19px}.right-page .page-number{right:19px}
-  .page-footer{bottom:13px;font-size:10px}
+  .page-footer{bottom:15px;font-size:10px;height:16px;line-height:16px;pointer-events:none}
   .mobile-turn-zone{display:block;position:absolute;z-index:6;top:0;bottom:0;width:18%;border:0;background:transparent;padding:0;opacity:0}
   .mobile-turn-left{left:0}.mobile-turn-right{right:0}
   .book-controls{grid-template-columns:1fr auto 1fr;gap:8px;padding-top:10px}

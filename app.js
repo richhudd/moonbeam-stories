@@ -196,7 +196,13 @@ function fitMobileStoryText(){
  el.style.fontSize='';el.style.lineHeight='';
  let size=18;let line=1.52;el.style.fontSize=size+'px';el.style.lineHeight=line;
  const content=document.querySelector('.left-page .page-content');
- while(content&&content.scrollHeight>content.clientHeight&&size>13.2){size-=0.4;line=Math.max(1.34,line-0.012);el.style.fontSize=size+'px';el.style.lineHeight=line}
+ const footer=document.querySelector('.left-page .page-footer');
+ if(!content)return;
+ // Keep a real-book footer safety zone. Different iPhone font metrics can otherwise
+ // place the final baseline underneath the Moonbeam Stories footer.
+ const footerReserve=(footer?.offsetHeight||16)+14;
+ const available=Math.max(0,content.clientHeight-footerReserve);
+ while(el.scrollHeight>available&&size>12.8){size-=0.35;line=Math.max(1.32,line-0.01);el.style.fontSize=size+'px';el.style.lineHeight=line}
 }
 function renderIllustrationIntoPage(index,image){if(!currentBook||currentBook.currentPage!==index)return;const frame=document.querySelector('.illustration-frame');if(frame)frame.innerHTML=`<img src="${escapeHtml(image)}" alt="${escapeHtml(t().title)}">`}
 function renderBookPage(index){const book=currentBook,total=book.pages.length+2,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;if(!isPhonePortrait())book.mobileSide='text';const isOpening=clamped===0,isClosing=clamped===total-1;let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';const bookEl=$('book');bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${escapeHtml(text)}</div></div><div class="page-footer">${escapeHtml(t().title)}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div><div class="page-footer">✦</div></div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;$('prevPage').disabled=false;$('prevPage').textContent=isOpening?coverT().cover:t().previous;$('nextPage').disabled=clamped===total-1;$('nextPage').textContent=clamped===total-1?t().end:t().turn;$('pageIndicator').textContent=`${clamped+1} / ${total}`;applyMobileSide();loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped)}
