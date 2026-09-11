@@ -307,3 +307,18 @@ Nine-locale localisation foundation, globe selector, Brazilian Portuguese, Polis
 - Each translated text version is stored on the saved story and reused on subsequent opens; the AI translation call is therefore made only once per story/language combination.
 - Adds `SUPABASE_V67_SAVED_TRANSLATIONS.sql`. Run this SQL before deploying the V67 code.
 - No Stripe or Vercel environment-variable changes are required.
+
+## V68 — corrective reader/navigation release + complete cloud-saved books
+- Supersedes the incomplete V66/V67 UI implementation while retaining V67 translation support.
+- Makes desktop setup navigation unmistakable: large translucent edge controls on the far left/right, with Back from the first setup screen returning to the Moonbeam homepage.
+- Uses an explicit desktop story-mode state so the reader takes over the full browser viewport rather than depending only on CSS relational selectors.
+- Keeps Save Story / New Story for the closing spread and keeps narration controls out of Read it myself mode.
+- Keeps Saved Stories beneath Make Tonight's Story and preserves portrait-phone swipe architecture.
+- Reworks the desktop page turn into a longer 3D sweep with a lifted/curved outside corner, moving shadow and spine crossing.
+- Retains the nine-locale dynamic story-credit balance patch introduced in V65.
+- Saved-story replay is now hard-separated from generation: opening a cloud-saved story does not load the child reference photo and the saved-story illustration/cover loaders never call the illustration API.
+- A newly cloud-saved story now uploads its exact finished cover plus all six finished story illustrations to the private `saved-story-art` Supabase Storage bucket. The database stores only private object paths in `saved_stories.saved_assets`.
+- Complete saved books therefore reopen with the same artwork on another signed-in device and remain intact if the source child photo is later removed.
+- Saved stories remain Read it myself only, so replay cannot call TTS. Translation remains the only optional AI action from the saved library; each translated language is stored and reused.
+- Older saved stories created before V68 are not silently regenerated. If they have no cloud-saved artwork, Moonbeam reports the missing saved image instead of spending image-generation allowance.
+- Run `SUPABASE_V68_COMPLETE_SAVED_BOOKS.sql` in Supabase before deploying V68. No Stripe or Vercel environment-variable changes are required.
