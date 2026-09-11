@@ -520,3 +520,11 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Cover and book are now explicit mutually exclusive reader states using class, hidden attribute, inline display protection, and a defensive CSS rule.
 - Returning to the cover also tears down narration immediately and hides book navigation controls before revealing the cover.
 - Starting from the cover cleanly restores the book and controls. No API, Supabase, Stripe, or environment-variable changes are required.
+
+
+## V90 RC1
+- Mobile landing page is a true one-screen layout: no scrolling and the primary CTA remains visible, including short phone viewports.
+- Reader close (×) now returns to the public homepage without signing the parent out; New Story has a separate route back to child setup.
+- Story-credit reservation is refunded from the outer generation failure path until generation has positively committed.
+- Production health endpoint no longer exposes configuration details.
+- Release-candidate hardening only; saved stories remain intentionally read-only/no re-narration.

@@ -9,6 +9,8 @@ module.exports = async function handler(req, res) {
   const apiKey = String(process.env.OPENAI_API_KEY || '').trim().replace(/^['"]|['"]$/g, '');
   if (!apiKey) return res.status(500).json({ error: 'OPENAI_API_KEY is not configured in Vercel.' });
 
+  let reservedUserId=null, reservedBatchId=null, creditReserved=false;
+  const refundOuterReservation=async()=>{if(!creditReserved||!reservedUserId)return;creditReserved=false;try{await refundReservedStoryCredit(reservedUserId,reservedBatchId)}catch(refundError){console.error('credit refund error',refundError)}};
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const child = body.child || {};
@@ -21,14 +23,14 @@ module.exports = async function handler(req, res) {
 
     // V50: every new Moonbeam story has the same predictable length and cost.
     const moonbeamUser = await verifyMoonbeamUser(req);
-    let creditsRemaining, reservedBatchId;
+    let creditsRemaining;
     try {
       const reservation = await reserveStoryCredit(moonbeamUser.id);
-      creditsRemaining = reservation.remaining; reservedBatchId = reservation.batchId;
+      creditsRemaining = reservation.remaining; reservedBatchId = reservation.batchId; reservedUserId=moonbeamUser.id;
     } catch (e) {
       return res.status(e.status || 500).json({ error: e.message, code: e.code || 'CREDIT_ERROR', batchId: e.batchId || null });
     }
-    let creditReserved = true;
+    creditReserved = true;
     const refundReservedCredit = async () => {
       if (!creditReserved) return;
       creditReserved = false;
@@ -317,6 +319,7 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
     });
   } catch (e) {
     console.error('generate error', e);
+    await refundOuterReservation();
     return res.status(500).json({ error: String(e && e.message ? e.message : e) });
   }
 };

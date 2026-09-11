@@ -474,7 +474,7 @@ function renderStory(s,image,child,options={}){
  const beginSelf=$('beginStory'),beginNarrated=$('beginNarrated'),storyExit=$('storyExit'),prevPage=$('prevPage'),nextPage=$('nextPage');
  if(beginSelf)beginSelf.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();beginStory('self')});
  if(beginNarrated)beginNarrated.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();beginStory('narrated')});
- if(storyExit)storyExit.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();exitStoryToSetup()});
+ if(storyExit)storyExit.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();exitStoryHome()});
  // V85: explicit page controls. Navigation is immediate; no animation state or timer.
  if(prevPage)prevPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goPreviousBookPage()});
  if(nextPage)nextPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goNextBookPage()});
@@ -482,7 +482,7 @@ function renderStory(s,image,child,options={}){
  // Start the opening and next two illustrations immediately while the cover is on screen.
  prefetchIllustrations(-1,3);
  $('save').onclick=saveCurrentStory;
- $('newStory').onclick=()=>exitStoryToSetup();
+ $('newStory').onclick=()=>startNewStory();
 }
 function coverKey(book){return `v45:${book.visualCacheId||book.cacheId}:cover`}
 function getCoverPrompt(book){
@@ -729,7 +729,7 @@ function renderBookPage(index){
    const saveButton=book.isSaved?'':`<button class="secondary end-save" id="endSave" type="button">${escapeHtml(t().save)}</button>`;
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div><div class="end-actions">${saveButton}<button class="secondary end-new-story" id="endNewStory" type="button">${escapeHtml(t().newStory)}</button></div></div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
-   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const en=$('endNewStory');if(en)en.onclick=()=>exitStoryToSetup();
+   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const en=$('endNewStory');if(en)en.onclick=()=>startNewStory();
    applyMobileSide();return;
  }
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
@@ -740,7 +740,9 @@ function renderBookPage(index){
  applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
 }
-function exitStoryToSetup(){stopNarration();document.body.classList.remove('story-mode','desktop-story-mode');$('story')?.classList.add('hidden');goSetupPage(5)}
+function closeReader(){stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode');$('story')?.classList.add('hidden')}
+function exitStoryHome(){closeReader();showMoonbeamLanding()}
+function startNewStory(){closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');goSetupPage(currentUser?1:0,true)}
 function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+3;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 let lastStorySwipeAt=0;
