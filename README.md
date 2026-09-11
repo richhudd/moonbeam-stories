@@ -528,3 +528,11 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Story-credit reservation is refunded from the outer generation failure path until generation has positively committed.
 - Production health endpoint no longer exposes configuration details.
 - Release-candidate hardening only; saved stories remain intentionally read-only/no re-narration.
+
+
+## V91 — mobile homepage hero redesign
+- Mobile-only homepage redesign; desktop homepage is unchanged.
+- The transformation artwork now receives the flexible majority of the available mobile viewport instead of being capped at 22–29dvh.
+- Mobile copy, spacing, and controls compress before the hero artwork does, keeping the CTA visible without scrolling.
+- Extra-short phones hide the kicker and tighten copy/spacing while preserving the artwork as the dominant element.
+- Retains all V90 RC1 hardening changes.
