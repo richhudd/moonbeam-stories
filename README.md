@@ -462,3 +462,11 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Existing page-turn animation retained and checked against the fullscreen book geometry.
 - Mobile rules and behaviour are unchanged.
 - No Supabase migration required.
+
+## V83 — explicit Back / Next story navigation
+- Retires the desktop edge-arrow navigation in favour of clearly labelled **Back** and **Next / Turn page** buttons overlaid at the bottom of every open story spread.
+- The first spread's Back button returns to the cover; later Back buttons return to the previous spread.
+- The Next button advances through the story using the existing physical page-turn animation and disappears on the final spread, where the existing end-of-story actions remain available.
+- Back and Next now have direct click handlers, so desktop page navigation no longer depends on invisible edge hit-zones or delegated click handling.
+- The persistent top-left close control remains available as an escape route from the reader.
+- Fullscreen cover/spread layout from V82 is retained. No Supabase, API, Stripe or environment-variable changes are required.
