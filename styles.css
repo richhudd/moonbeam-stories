@@ -1324,3 +1324,72 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode .book-controls:not(.hidden) button:disabled{opacity:.45!important;}
   body.story-mode .book-controls .page-indicator{min-width:42px!important;align-self:center!important;font-size:10px!important;}
 }
+
+/* V101 — clean portrait-mobile reader geometry.
+   The live book has three independent physical regions: image, text, navigation.
+   JS measures the navigation boundary; no content padding is used to guess around it. */
+@media (max-width:700px) and (orientation:portrait){
+  body.story-mode #book.show-mobile-spread{
+    --mobile-book-height:calc(100dvh - 86px);
+    --mobile-art-height:46dvh;
+    position:fixed!important;
+    inset:0 auto auto 0!important;
+    width:100vw!important;
+    height:var(--mobile-book-height)!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    grid-template-rows:var(--mobile-art-height) minmax(0,1fr)!important;
+    overflow:hidden!important;
+    background:#fffdf8!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page{
+    grid-row:1!important;
+    position:relative!important;
+    width:100%!important;height:100%!important;min-height:0!important;
+    padding:max(6px,env(safe-area-inset-top)) 14px 6px!important;
+    margin:0!important;border:0!important;overflow:hidden!important;
+    background:#f6f0e4!important;
+  }
+  body.story-mode #book.show-mobile-spread .illustration-frame,
+  body.story-mode #book.show-mobile-spread .illustration-loading,
+  body.story-mode #book.show-mobile-spread .illustration-error,
+  body.story-mode #book.show-mobile-spread .illustration-placeholder{
+    position:relative!important;inset:auto!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+    margin:0!important;border-radius:10px!important;overflow:hidden!important;
+  }
+  body.story-mode #book.show-mobile-spread .illustration-frame img{
+    position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+    min-height:0!important;max-height:none!important;margin:0!important;
+    object-fit:cover!important;border-radius:10px!important;
+  }
+  body.story-mode #book.show-mobile-spread .left-page{
+    grid-row:2!important;
+    position:relative!important;inset:auto!important;
+    width:100%!important;height:100%!important;min-height:0!important;
+    padding:10px 20px 8px!important;margin:0!important;border:0!important;
+    overflow:hidden!important;background:linear-gradient(90deg,#fffdf8,#faf6ec)!important;
+  }
+  body.story-mode #book.show-mobile-spread .page-content{
+    position:relative!important;inset:auto!important;
+    display:block!important;width:100%!important;height:100%!important;min-height:0!important;max-width:620px!important;
+    margin:0 auto!important;padding:0!important;
+    overflow-x:hidden!important;overflow-y:hidden;
+  }
+  body.story-mode #book.show-mobile-spread .chapter-label{
+    display:block!important;position:static!important;margin:0 0 5px!important;padding:0!important;
+    font-size:9px!important;line-height:1.1!important;
+  }
+  body.story-mode #book.show-mobile-spread .story-text,
+  body.story-mode #book.show-mobile-spread .story-text.compact-text,
+  body.story-mode #book.show-mobile-spread .story-text.roomy-text{
+    display:block!important;position:static!important;inset:auto!important;
+    width:auto!important;height:auto!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:0!important;transform:none!important;
+    overflow:visible!important;font-size:18px;line-height:1.42;
+  }
+  body.story-mode #book.show-mobile-spread .page-number,
+  body.story-mode #book.show-mobile-spread .page-footer,
+  body.story-mode #book.show-mobile-spread .mobile-turn-zone{display:none!important;}
+}

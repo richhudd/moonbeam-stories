@@ -595,3 +595,7 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Adds a one-rendered-line safety margin to the mobile text-fit test so Safari cannot accept a page with a partially painted final line.
 - Retains the single page counter in the fixed navigation bar and the prominent mobile illustration layout.
 - Corrects the build metadata and cache references to V100.
+
+
+## V101
+Rebuilt the portrait-mobile live reader around measured physical boundaries: the book ends above the fixed navigation, with separate image and text regions. Removed guessed bottom padding from the active V101 layout; text fitting now measures only the dedicated text region and falls back to internal text scrolling rather than clipping. Desktop and saved-story translation behavior are unchanged.

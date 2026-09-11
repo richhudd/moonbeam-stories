@@ -655,69 +655,75 @@ function applyMobileSide(){
    const prev=$('prevPage'),next=$('nextPage');
    if(prev)prev.textContent=currentBook.currentPage===0?coverT().cover:t().previous;
    if(next){next.disabled=currentBook.currentPage===currentBook.pages.length+2;next.textContent=next.disabled?t().end:t().turn}
-   requestAnimationFrame(fitMobileStoryText);
+   requestAnimationFrame(()=>{fitMobileStoryText();requestAnimationFrame(fitMobileStoryText)});
  }
 }
 function fitMobileStoryText(){
  if(!isPhonePortrait())return;
  const bookEl=$('book');
+ const controls=$('bookControls');
  const content=document.querySelector('.left-page .page-content');
  const text=document.querySelector('.left-page .story-text');
- if(!bookEl||!content||!text)return;
+ if(!bookEl||!controls||!content||!text)return;
 
- // V99: one authoritative mobile fit pass. Measure the complete passage itself;
- // never infer fit from a child whose height/overflow has already been constrained.
- const vh=Math.max(1,window.visualViewport?.height||window.innerHeight||document.documentElement.clientHeight||700);
- const maxArt=Math.min(Math.round(vh*0.49),430);
- const minArt=Math.max(205,Math.min(Math.round(vh*0.30),270));
+ // V101: mobile reader starts from physical boundaries, not inherited page heights.
+ // The book ends exactly above the fixed navigation. The image and text share only that space.
+ const vv=window.visualViewport;
+ const viewportH=Math.max(1,vv?.height||window.innerHeight||document.documentElement.clientHeight||700);
+ const nav=controls.getBoundingClientRect();
+ const navTop=Math.min(viewportH,Math.max(120,nav.top));
+ const bookH=Math.max(260,Math.floor(navTop-4));
+ bookEl.style.setProperty('--mobile-book-height',bookH+'px');
+
+ const maxArt=Math.min(430,Math.round(bookH*0.49));
+ const minArt=Math.min(maxArt,Math.max(190,Math.round(bookH*0.27)));
  let art=maxArt;
  let size=18;
  let line=1.42;
-
  bookEl.style.setProperty('--mobile-art-height',art+'px');
+
+ // Reset all values from a previous page before measuring this one.
+ content.scrollTop=0;
+ content.style.overflowY='hidden';
  text.style.fontSize=size+'px';
  text.style.lineHeight=String(line);
  text.style.maxHeight='none';
  text.style.overflow='visible';
- content.style.overflowY='hidden';
 
- const overflows=()=>{
+ const fits=()=>{
    const cr=content.getBoundingClientRect();
    const tr=text.getBoundingClientRect();
    const label=document.querySelector('.left-page .chapter-label');
    const lr=label?.getBoundingClientRect();
-   const bottom=Math.max(tr.bottom,lr?.bottom||0);
-   // V100: Safari can paint the final glyphs below the nominal text box.
-   // Require one full rendered line of clearance before declaring a page fitted.
-   const cs=getComputedStyle(text);
-   const linePx=parseFloat(cs.lineHeight)||(parseFloat(cs.fontSize)||18)*1.42;
-   const safety=Math.ceil(linePx);
-   return bottom>cr.bottom-safety || content.scrollHeight>content.clientHeight-safety;
+   const top=Math.min(tr.top,lr?.top??tr.top);
+   const bottom=Math.max(tr.bottom,lr?.bottom??tr.bottom);
+   // Small real-pixel tolerance only. We measure painted bounds inside a dedicated text zone.
+   return top>=cr.top-1 && bottom<=cr.bottom-3 && content.scrollHeight<=content.clientHeight+1;
  };
 
- // Keep artwork as large as possible. Compact typography gently first.
+ // Preserve the large illustration. Typography gives first, within a comfortable range.
  let guard=0;
- while(overflows()&&size>14.5&&guard++<20){
+ while(!fits()&&size>14.5&&guard++<20){
    size-=0.25;
    line=Math.max(1.30,line-0.008);
    text.style.fontSize=size+'px';
    text.style.lineHeight=String(line);
  }
- // Then surrender only the artwork height actually required by a long page.
+ // If a page is genuinely long, give only as much image height as is necessary.
  guard=0;
- while(overflows()&&art>minArt&&guard++<40){
-   art=Math.max(minArt,art-8);
+ while(!fits()&&art>minArt&&guard++<40){
+   art=Math.max(minArt,art-6);
    bookEl.style.setProperty('--mobile-art-height',art+'px');
  }
- // Absolute invariant: no story text may be silently clipped.
- // If an unusually long generated page still exceeds the viewport, the text pane scrolls.
- if(overflows()){
+ // Never clip. A pathological long page scrolls inside the text zone only.
+ if(!fits()){
    content.style.overflowY='auto';
    content.style.webkitOverflowScrolling='touch';
- } else {
+ }else{
    content.style.overflowY='hidden';
  }
 }
+
 function fitDesktopStoryText(){
  if(window.matchMedia('(max-width:700px)').matches)return;
  const content=document.querySelector('.left-page .page-content');
