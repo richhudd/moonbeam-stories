@@ -1,3 +1,55 @@
+# Moonbeam Stories V57
+
+V57 includes all V56 refund-protection work plus revised UK consumer/refund wording and an explicit immediate-digital-supply acknowledgement before Stripe Checkout.
+
+## Deploy in this order
+
+1. **Supabase first:** run the whole `SUPABASE_V57_REFUNDS.sql` file once in the Supabase SQL Editor. Do not run the old V56 migration separately.
+2. Upload/deploy the contents of this `moonbeam-v57` folder to GitHub/Vercel. No new Vercel environment variables are required.
+3. In Stripe Workbench → Webhooks → Moonbeam Stories Payments, keep `checkout.session.completed` and add `charge.refunded`. Keep the existing webhook URL and signing secret.
+4. For the already-refunded £9.99 test payment, replay its `charge.refunded` event after V57 is deployed if Stripe permits it; otherwise adjust that old test purchase separately.
+
+### V57 legal/purchase changes
+
+- Removes the voluntary promise to refund unused credits just because a customer changes their mind.
+- Preserves statutory cancellation/refund rights.
+- States that a successful story is not normally refundable merely for subjective creative preference.
+- Makes automatic credit restoration the normal remedy for failed generation.
+- Adds an unticked acknowledgement box before checkout.
+- Server rejects checkout unless that acknowledgement was explicitly supplied.
+- Stores acknowledgement/version in Stripe Checkout and PaymentIntent metadata.
+
+# Moonbeam Stories V56 — automatic Stripe refund credit reversal
+
+V56 adds refund reconciliation to the live Stripe credit system. A successful Stripe refund now revokes the corresponding Moonbeam credits through the signed Stripe webhook. Full refunds target the whole credit pack; partial refunds revoke credits proportionally. The visible credit balance is never allowed below zero, and the purchase ledger records both the intended revocation and how many credits could actually be removed if some were already spent.
+
+## DEPLOYMENT ORDER — IMPORTANT
+
+### 1. Supabase FIRST
+Run the entire `SUPABASE_V56_REFUNDS.sql` file once in Supabase SQL Editor. It is additive and does not reset existing balances, trial claims, saved stories, or purchases.
+
+### 2. Deploy V56
+Upload/deploy the complete V56 project to GitHub/Vercel. No new Vercel environment variables are required.
+
+### 3. Add one Stripe webhook event
+In Stripe Workbench → Webhooks → `Moonbeam Stories Payments`, edit the event destination and keep the existing `checkout.session.completed` event. Add:
+
+- `charge.refunded`
+
+If `checkout.session.async_payment_succeeded` is already enabled, keep it; otherwise it is optional for the card-only flow currently in use. Do not replace or roll the signing secret.
+
+### Refund behaviour
+- Full refund: all credits from that pack are targeted for revocation.
+- Partial refund: credits are targeted proportionally to the cumulative refunded amount.
+- Duplicate/retried Stripe events are idempotent because Stripe's cumulative `amount_refunded` is compared with the purchase ledger.
+- Out-of-order stale events cannot restore credits.
+- Moonbeam never makes the visible balance negative. If refunded credits have already been spent, the ledger records the unrecoverable amount rather than taking unrelated future credits below zero.
+
+### Existing test refund
+The £9.99 refund performed before V56 was deployed will not be processed automatically unless its `charge.refunded` event is replayed/sent to the Moonbeam webhook after V56 is live. If Stripe allows that event to be resent from Workbench, replay it after deployment; otherwise make one fresh live test purchase/refund or adjust the test balance manually in Supabase.
+
+---
+
 # Moonbeam Stories V54
 
 V54 launch/legal release. Adds Privacy Policy, Terms of Service and Refund Policy pages; persistent legal links; purchase-dialog legal acknowledgement; and Stripe Checkout acknowledgement text. No Supabase SQL changes are required for V54.

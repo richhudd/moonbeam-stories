@@ -68,6 +68,23 @@ async function fulfillPaidSession(session, eventId = '') {
   });
 }
 
+
+async function applyRefundedCharge(charge, eventId = '') {
+  if (!charge || charge.object !== 'charge') throw new Error('Invalid Stripe Charge.');
+  const paymentIntentId = String(charge.payment_intent || '').trim();
+  const amountRefunded = Number(charge.amount_refunded);
+  const currency = String(charge.currency || '').toLowerCase();
+  if (!paymentIntentId || !Number.isInteger(amountRefunded) || amountRefunded < 0 || !currency) {
+    throw new Error('Stripe refund metadata was incomplete.');
+  }
+  return rpc('apply_story_credit_refund', {
+    p_payment_intent_id: paymentIntentId,
+    p_amount_refunded: amountRefunded,
+    p_currency: currency,
+    p_event_id: String(eventId || '')
+  });
+}
+
 function verifyStripeSignature(rawBody, signatureHeader, toleranceSeconds = 300) {
   if (!STRIPE_WEBHOOK_SECRET) throw new Error('Stripe webhook secret is not configured.');
   const parts = String(signatureHeader || '').split(',').map(x => x.trim());
@@ -99,5 +116,5 @@ async function readRawBody(req) {
 module.exports = {
   PACKS, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
   stripeRequest, packForCredits, packFromSession,
-  fulfillPaidSession, verifyStripeSignature, readRawBody
+  fulfillPaidSession, applyRefundedCharge, verifyStripeSignature, readRawBody
 };

@@ -271,11 +271,13 @@ function openCreditShop(){
 function closeCreditShop(){$('creditShop')?.classList.add('hidden');document.body.classList.remove('credit-shop-open')}
 async function startCreditCheckout(credits,button){
  if(!currentUser){closeCreditShop();openCreditShop();return}
+ const consent=$('digitalSupplyConsent');
+ if(!consent?.checked){if($('checkoutStatus'))$('checkoutStatus').innerHTML='<span class="error">Please tick the box to request immediate digital supply before continuing.</span>';return}
  const token=await currentAccessToken();if(!token){if($('checkoutStatus'))$('checkoutStatus').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
  const buttons=[...document.querySelectorAll('[data-buy-credits]')];buttons.forEach(b=>b.disabled=true);
  if($('checkoutStatus'))$('checkoutStatus').textContent='Opening secure checkout…';
  try{
-   const r=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({credits:Number(credits)})});
+   const r=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({credits:Number(credits),digital_supply_consent:true})});
    const data=await r.json().catch(()=>({}));
    if(!r.ok||!data.url)throw new Error(data.error||'Could not start checkout.');
    location.href=data.url;

@@ -1,4 +1,4 @@
-const { fulfillPaidSession, verifyStripeSignature, readRawBody } = require('./_stripe');
+const { fulfillPaidSession, applyRefundedCharge, verifyStripeSignature, readRawBody } = require('./_stripe');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control','no-store');
@@ -11,7 +11,11 @@ module.exports = async function handler(req, res) {
     if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
       const session = event.data?.object;
       if (session?.payment_status === 'paid') await fulfillPaidSession(session, event.id);
+    } else if (event.type === 'charge.refunded') {
+      const charge = event.data?.object;
+      await applyRefundedCharge(charge, event.id);
     }
+
     return res.status(200).json({received:true});
   } catch (e) {
     console.error('stripe-webhook', e);
