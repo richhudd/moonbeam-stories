@@ -142,7 +142,7 @@ async function applyAuthSession(session){
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('authSignedIn')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
  if($('signedInAs'))$('signedInAs').textContent=currentUser?`${t().signedInAs||'Signed in as'} ${currentUser.email}`:'';
- if(currentUser){setAuthStatus('');await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}}else{cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
+ if(currentUser){setAuthStatus('');updateSetupNav();await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}}else{updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
 }
 
 function showPasswordRecovery(){
@@ -750,7 +750,8 @@ function ensureSetupCardNav(){
    if(!nav){nav=document.createElement('div');nav.className='setup-card-nav';nav.innerHTML='<button class="secondary setup-card-back" type="button"></button><button class="primary setup-card-enter" type="button"></button>';page.appendChild(nav)}
    const back=nav.querySelector('.setup-card-back'),enter=nav.querySelector('.setup-card-enter');
    back.textContent=backLabel; enter.textContent=enterLabel;
-   enter.classList.toggle('hidden',i===pages.length-1);
+   enter.classList.toggle('hidden',i===pages.length-1 || (i===0&&!currentUser));
+   enter.disabled=(i===0&&!currentUser);
  })
 }
 function updateSetupNav(){
@@ -760,7 +761,10 @@ function updateSetupNav(){
 }
 function goSetupPage(index,instant=false){
  const track=$('setupTrack'),pages=setupPages();if(!track||!pages.length)return;
- setupPageIndex=Math.max(0,Math.min(Number(index)||0,pages.length-1));
+ let requested=Math.max(0,Math.min(Number(index)||0,pages.length-1));
+ // V74: the account page is a hard authentication gate. No click, dot, key or swipe may bypass it.
+ if(!currentUser && setupPageIndex===0 && requested>0){requested=0;const status=$('authStatus');if(status)status.textContent='Sign in or create an account to continue.';}
+ setupPageIndex=requested;
  if(!isPhonePortrait() && innerWidth>700){
    pages.forEach((page,i)=>{page.classList.toggle('setup-current',i===setupPageIndex);page.setAttribute('aria-hidden',i===setupPageIndex?'false':'true')});
    track.scrollLeft=0;
@@ -782,8 +786,8 @@ function initSetupDeck(){
      goSetupPage(setupPageIndex+1);return
    }
  });
- $('setupDots')?.addEventListener('click',e=>{const b=e.target.closest('[data-setup-index]');if(b)goSetupPage(Number(b.dataset.setupIndex))});
- let raf=null;track.addEventListener('scroll',()=>{if(!isPhonePortrait())return;cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{const pages=setupPages(),center=track.scrollLeft+track.clientWidth/2;let best=0,dist=Infinity;pages.forEach((p,i)=>{const d=Math.abs((p.offsetLeft-track.offsetLeft+p.offsetWidth/2)-center);if(d<dist){dist=d;best=i}});if(best!==setupPageIndex){setupPageIndex=best;updateSetupNav()}})},{passive:true});
+ $('setupDots')?.addEventListener('click',e=>{const b=e.target.closest('[data-setup-index]');if(!b)return;const target=Number(b.dataset.setupIndex);if(!currentUser&&setupPageIndex===0&&target>0){setAuthStatus('Sign in or create an account to continue.',true);goSetupPage(0,true);return}goSetupPage(target)});
+ let raf=null;track.addEventListener('scroll',()=>{if(!isPhonePortrait())return;cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{const pages=setupPages(),center=track.scrollLeft+track.clientWidth/2;let best=0,dist=Infinity;pages.forEach((p,i)=>{const d=Math.abs((p.offsetLeft-track.offsetLeft+p.offsetWidth/2)-center);if(d<dist){dist=d;best=i}});if(best!==setupPageIndex){if(!currentUser&&setupPageIndex===0&&best>0){goSetupPage(0,true);return}setupPageIndex=best;updateSetupNav()}})},{passive:true});
  updateSetupNav();
 }
 initSetupDeck();

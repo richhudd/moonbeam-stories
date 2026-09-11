@@ -385,3 +385,16 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 - Story-reader page controls and mobile story navigation are unchanged.
 - Retains the V71 single-homepage fix and V72 Homepage → Account routing.
 - No Supabase migration is required for V73.
+
+
+## V74 — hard authentication gate
+- The Account/Login page is now a hard gate: signed-out users cannot navigate forward by Enter, setup dots, keyboard arrows, or mobile swipe.
+- The Enter button is hidden while signed out and appears after authentication succeeds.
+- Back navigation to the public homepage remains available.
+- No Supabase schema changes are required.
+
+## V75 — centred equal-size setup buttons
+- Back and Enter are now exactly the same size on each setup page.
+- The navigation pair is centred together at the bottom of the white setup card.
+- On the signed-out Account page, the single Back button remains centred while Enter stays hidden behind the V74 authentication gate.
+- No navigation logic, story-reader controls, authentication rules, or database schema were changed.
