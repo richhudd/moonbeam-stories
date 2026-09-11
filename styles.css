@@ -1193,3 +1193,51 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     padding-bottom:max(112px,calc(env(safe-area-inset-bottom) + 102px))!important;
   }
 }
+
+
+/* V95 — mobile Story Preferences must be ordinary document flow: values, create, library, back. */
+@media (max-width:700px){
+  body.product-active:not(.desktop-story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    display:block!important;
+    height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    padding-bottom:max(36px,calc(env(safe-area-inset-bottom) + 28px))!important;
+  }
+  .setup-page[data-step="Story"] #valuesTitle{display:block!important;margin:18px 0 8px!important;}
+  .setup-page[data-step="Story"] #values{
+    display:flex!important;
+    flex:none!important;
+    flex-wrap:wrap!important;
+    min-height:0!important;
+    height:auto!important;
+    margin:0 0 18px!important;
+    overflow:visible!important;
+  }
+  .setup-page[data-step="Story"] #generate{
+    display:block!important;
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    float:none!important;
+    clear:both!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:50px!important;
+    margin:0 0 14px!important;
+    padding:13px 14px!important;
+  }
+  .setup-page[data-step="Story"] #status{display:block!important;min-height:16px!important;margin:0 0 8px!important;}
+  .setup-page[data-step="Story"] .story-library-inline{display:block!important;position:static!important;margin-top:12px!important;overflow:visible!important;}
+  .setup-page[data-step="Story"]>.setup-card-nav{
+    display:flex!important;
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    float:none!important;
+    clear:both!important;
+    margin:22px 0 8px!important;
+    padding:0!important;
+  }
+}
