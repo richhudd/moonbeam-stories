@@ -1325,13 +1325,12 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode .book-controls .page-indicator{min-width:42px!important;align-self:center!important;font-size:10px!important;}
 }
 
-/* V101 — clean portrait-mobile reader geometry.
-   The live book has three independent physical regions: image, text, navigation.
-   JS measures the navigation boundary; no content padding is used to guess around it. */
+/* V105 — authoritative portrait-mobile reader.
+   The usable area above the fixed navigation is split exactly in half:
+   fixed artwork above, independently scrollable prose below. */
 @media (max-width:700px) and (orientation:portrait){
   body.story-mode #book.show-mobile-spread{
-    --mobile-book-height:calc(100dvh - 86px);
-    --mobile-art-height:46dvh;
+    --mobile-book-height:calc(100dvh - 58px);
     position:fixed!important;
     inset:0 auto auto 0!important;
     width:100vw!important;
@@ -1339,7 +1338,7 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     min-height:0!important;
     display:grid!important;
     grid-template-columns:1fr!important;
-    grid-template-rows:var(--mobile-art-height) minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr) minmax(0,1fr)!important;
     overflow:hidden!important;
     background:#fffdf8!important;
   }
@@ -1347,6 +1346,7 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     grid-row:1!important;
     position:relative!important;
     width:100%!important;height:100%!important;min-height:0!important;
+    box-sizing:border-box!important;
     padding:max(6px,env(safe-area-inset-top)) 14px 6px!important;
     margin:0!important;border:0!important;overflow:hidden!important;
     background:#f6f0e4!important;
@@ -1357,7 +1357,7 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode #book.show-mobile-spread .illustration-placeholder{
     position:relative!important;inset:auto!important;
     width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
-    margin:0!important;border-radius:10px!important;overflow:hidden!important;
+    box-sizing:border-box!important;margin:0!important;border-radius:10px!important;overflow:hidden!important;
   }
   body.story-mode #book.show-mobile-spread .illustration-frame img{
     position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
@@ -1368,43 +1368,30 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     grid-row:2!important;
     position:relative!important;inset:auto!important;
     width:100%!important;height:100%!important;min-height:0!important;
-    padding:10px 20px 8px!important;margin:0!important;border:0!important;
+    box-sizing:border-box!important;
+    padding:8px 20px 6px!important;margin:0!important;border:0!important;
     overflow:hidden!important;background:linear-gradient(90deg,#fffdf8,#faf6ec)!important;
   }
   body.story-mode #book.show-mobile-spread .page-content{
     position:relative!important;inset:auto!important;
     display:block!important;width:100%!important;height:100%!important;min-height:0!important;max-width:620px!important;
-    margin:0 auto!important;padding:0!important;
-    overflow-x:hidden!important;overflow-y:hidden;
+    box-sizing:border-box!important;margin:0 auto!important;padding:0 2px 12px 0!important;
+    overflow-x:hidden!important;overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important;
+    touch-action:pan-y!important;
   }
-  body.story-mode #book.show-mobile-spread .chapter-label{
-    display:block!important;position:static!important;margin:0 0 5px!important;padding:0!important;
-    font-size:9px!important;line-height:1.1!important;
-  }
+  body.story-mode #book.show-mobile-spread .chapter-label,
+  body.story-mode #book.show-mobile-spread .page-number,
+  body.story-mode #book.show-mobile-spread .page-footer,
+  body.story-mode #book.show-mobile-spread .mobile-turn-zone{display:none!important;}
   body.story-mode #book.show-mobile-spread .story-text,
   body.story-mode #book.show-mobile-spread .story-text.compact-text,
   body.story-mode #book.show-mobile-spread .story-text.roomy-text{
     display:block!important;position:static!important;inset:auto!important;
     width:auto!important;height:auto!important;min-height:0!important;max-height:none!important;
-    margin:0!important;padding:0!important;transform:none!important;
-    overflow:visible!important;font-size:18px;line-height:1.42;
+    margin:0!important;padding:0 0 8px!important;transform:none!important;
+    overflow:visible!important;font-size:18px!important;line-height:1.42!important;
   }
-  body.story-mode #book.show-mobile-spread .page-number,
-  body.story-mode #book.show-mobile-spread .page-footer,
-  body.story-mode #book.show-mobile-spread .mobile-turn-zone{display:none!important;}
-}
-
-
-/* V102 — mobile story pages do not repeat Page 1/Page 2/etc above the prose.
-   Position remains visible only in the fixed Previous | n / total | Turn page controls. */
-@media (max-width:700px) and (orientation:portrait){
-  body.story-mode #book.show-mobile-spread .chapter-label{display:none!important;}
-}
-
-
-/* V103 — portrait-mobile navigation is deliberately slim to return vertical space to story text.
-   V101 measures the live top edge of this bar, so every pixel recovered here becomes book/text space. */
-@media (max-width:700px) and (orientation:portrait){
   body.story-mode .book-controls:not(.hidden){
     left:8px!important;right:8px!important;bottom:max(4px,env(safe-area-inset-bottom))!important;
     gap:5px!important;padding:4px!important;border-radius:13px!important;
@@ -1412,17 +1399,14 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode .book-controls:not(.hidden) button,
   body.story-mode .book-controls:not(.hidden) .secondary,
   body.story-mode .book-controls:not(.hidden) .turn{
+    position:static!important;inset:auto!important;top:auto!important;left:auto!important;right:auto!important;bottom:auto!important;
+    transform:none!important;display:block!important;width:100%!important;max-width:none!important;min-width:0!important;
     min-height:38px!important;height:38px!important;padding:4px 6px!important;
     font-size:11px!important;line-height:1.05!important;border-radius:10px!important;
+    overflow:visible!important;pointer-events:auto!important;border:1px solid rgba(83,64,110,.18)!important;box-shadow:none!important;
   }
-  body.story-mode .book-controls .page-indicator{
-    min-width:36px!important;font-size:10px!important;line-height:1!important;
-  }
-}
-
-
-/* V104 — reserve one extra line of portrait-mobile text on every story page.
-   The illustration is deliberately 28px shorter; navigation, typography and desktop are unchanged. */
-@media (max-width:700px) and (orientation:portrait){
-  body.story-mode #book.show-mobile-spread{--mobile-art-height:calc(46dvh - 28px);}
+  body.story-mode .book-controls:not(.hidden) .turn{color:white!important;}
+  body.story-mode .book-controls:not(.hidden) button:after{content:none!important;display:none!important;}
+  body.story-mode .book-controls:not(.hidden) button:disabled{opacity:.45!important;}
+  body.story-mode .book-controls .page-indicator{min-width:36px!important;font-size:10px!important;line-height:1!important;align-self:center!important;}
 }

@@ -1,3 +1,7 @@
+# V105 — fixed 50/50 mobile reader with scrollable prose
+
+V105 replaces the portrait-mobile fitting/shrinking system with a deterministic reader: the usable area above the fixed navigation is split exactly 50/50. The illustration stays fixed in the upper half; the lower text pane scrolls independently whenever prose exceeds its visible height. Mobile page/chapter labels remain removed. Desktop and saved-story translation are unchanged.
+
 # V104 — one extra mobile text line
 
 V104 is a portrait-mobile-only reader adjustment based on V103.

@@ -666,8 +666,8 @@ function fitMobileStoryText(){
  const text=document.querySelector('.left-page .story-text');
  if(!bookEl||!controls||!content||!text)return;
 
- // V101: mobile reader starts from physical boundaries, not inherited page heights.
- // The book ends exactly above the fixed navigation. The image and text share only that space.
+ // V105: deterministic portrait reader. The usable viewport above the fixed
+ // navigation is split exactly 50/50 between artwork and a scrollable text pane.
  const vv=window.visualViewport;
  const viewportH=Math.max(1,vv?.height||window.innerHeight||document.documentElement.clientHeight||700);
  const nav=controls.getBoundingClientRect();
@@ -675,55 +675,15 @@ function fitMobileStoryText(){
  const bookH=Math.max(260,Math.floor(navTop-4));
  bookEl.style.setProperty('--mobile-book-height',bookH+'px');
 
- // V104: reserve one additional mobile text line on every page by taking it from artwork, not typography.
- const mobileTextLineReserve=28;
- const maxArt=Math.max(190,Math.min(430,Math.round(bookH*0.49))-mobileTextLineReserve);
- const minArt=Math.min(maxArt,Math.max(190,Math.round(bookH*0.27)));
- let art=maxArt;
- let size=18;
- let line=1.42;
- bookEl.style.setProperty('--mobile-art-height',art+'px');
-
- // Reset all values from a previous page before measuring this one.
+ // Each page starts at the beginning of its prose. The pane itself owns overflow;
+ // no text-height fitting, font shrinking or artwork shrinking is performed.
  content.scrollTop=0;
- content.style.overflowY='hidden';
- text.style.fontSize=size+'px';
- text.style.lineHeight=String(line);
- text.style.maxHeight='none';
- text.style.overflow='visible';
-
- const fits=()=>{
-   const cr=content.getBoundingClientRect();
-   const tr=text.getBoundingClientRect();
-   const label=document.querySelector('.left-page .chapter-label');
-   const lr=label?.getBoundingClientRect();
-   const top=Math.min(tr.top,lr?.top??tr.top);
-   const bottom=Math.max(tr.bottom,lr?.bottom??tr.bottom);
-   // Small real-pixel tolerance only. We measure painted bounds inside a dedicated text zone.
-   return top>=cr.top-1 && bottom<=cr.bottom-3 && content.scrollHeight<=content.clientHeight+1;
- };
-
- // Preserve the large illustration. Typography gives first, within a comfortable range.
- let guard=0;
- while(!fits()&&size>14.5&&guard++<20){
-   size-=0.25;
-   line=Math.max(1.30,line-0.008);
-   text.style.fontSize=size+'px';
-   text.style.lineHeight=String(line);
- }
- // If a page is genuinely long, give only as much image height as is necessary.
- guard=0;
- while(!fits()&&art>minArt&&guard++<40){
-   art=Math.max(minArt,art-6);
-   bookEl.style.setProperty('--mobile-art-height',art+'px');
- }
- // Never clip. A pathological long page scrolls inside the text zone only.
- if(!fits()){
-   content.style.overflowY='auto';
-   content.style.webkitOverflowScrolling='touch';
- }else{
-   content.style.overflowY='hidden';
- }
+ content.style.overflowY='auto';
+ content.style.webkitOverflowScrolling='touch';
+ text.style.removeProperty('font-size');
+ text.style.removeProperty('line-height');
+ text.style.removeProperty('max-height');
+ text.style.removeProperty('overflow');
 }
 
 function fitDesktopStoryText(){
