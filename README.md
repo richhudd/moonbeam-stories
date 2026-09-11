@@ -367,3 +367,11 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 - Homepage therefore has no setup arrows; the Create their first story button remains the route into setup.
 - Setup pages and their existing working previous/next arrows are unchanged.
 - No Supabase/database changes.
+
+
+## V72 — homepage-to-account navigation correction
+- The homepage **Create their first story** button now always opens the Account / Sign in page first.
+- The homepage secondary CTA follows the same account-first route.
+- Back navigation remains Homepage ← Account ← Child profile in the expected order.
+- V71 single-screen homepage fix is retained unchanged.
+- No database migration is required.
