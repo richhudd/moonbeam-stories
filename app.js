@@ -675,7 +675,9 @@ function fitMobileStoryText(){
  const bookH=Math.max(260,Math.floor(navTop-4));
  bookEl.style.setProperty('--mobile-book-height',bookH+'px');
 
- const maxArt=Math.min(430,Math.round(bookH*0.49));
+ // V104: reserve one additional mobile text line on every page by taking it from artwork, not typography.
+ const mobileTextLineReserve=28;
+ const maxArt=Math.max(190,Math.min(430,Math.round(bookH*0.49))-mobileTextLineReserve);
  const minArt=Math.min(maxArt,Math.max(190,Math.round(bookH*0.27)));
  let art=maxArt;
  let size=18;

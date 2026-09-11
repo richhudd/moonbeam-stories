@@ -1,4 +1,12 @@
-# V103 — slimmer portrait-mobile story navigation
+# V104 — one extra mobile text line
+
+V104 is a portrait-mobile-only reader adjustment based on V103.
+
+- Reserves 28px (approximately one full story-text line) for prose on every mobile story page.
+- Takes that space directly from illustration height.
+- Keeps V103 slim Previous / page count / Turn Page controls.
+- Does not change story length, typography, desktop reader, saved-story translation, or illustration generation/storage.
+
 
 - Mobile portrait only: reduced the fixed Previous / page / Turn Page bar height, padding and gaps.
 - Buttons are now 38px high and the bar uses 4px vertical padding.
