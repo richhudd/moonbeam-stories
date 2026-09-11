@@ -31,15 +31,18 @@ async function rpc(name, payload) {
   return value;
 }
 
-async function consumeStoryCredit(userId) {
-  const remaining = Number(await rpc('consume_story_credit', { p_user_id: userId }));
-  if (!Number.isFinite(remaining) || remaining < 0) {
-    const e = new Error('You have used your free stories. Add more story credits to make another adventure.');
-    e.status = 402; e.code = 'NO_CREDITS'; throw e;
+async function reserveStoryCredit(userId) {
+  const result = await rpc('reserve_story_credit_v60', { p_user_id: userId });
+  if (!result || result.ok !== true) {
+    const code = String(result?.code || 'CREDIT_ERROR');
+    const e = new Error(code === 'CONSENT_REQUIRED'
+      ? 'Please confirm immediate digital supply before creating this paid story.'
+      : 'You have used your free stories. Add more story credits to make another adventure.');
+    e.status = code === 'CONSENT_REQUIRED' ? 409 : 402; e.code = code; e.batchId = result?.batch_id || null; throw e;
   }
-  return remaining;
+  return { remaining: Number(result.balance), batchId: String(result.batch_id || '') };
 }
-async function refundStoryCredit(userId) { try { return await rpc('refund_story_credit',{p_user_id:userId}); } catch(e){ console.error('credit refund failed',e); return null; } }
+async function refundReservedStoryCredit(userId,batchId) { try { return await rpc('refund_story_credit_v60',{p_user_id:userId,p_batch_id:batchId}); } catch(e){ console.error('credit refund failed',e); return null; } }
 async function createGenerationRun(userId) { return String(await rpc('create_story_generation_run',{p_user_id:userId})); }
 async function consumeGenerationSlot(userId, runId, kind) {
   const ok = await rpc('consume_generation_slot',{p_user_id:userId,p_run_id:runId,p_kind:kind});
@@ -47,4 +50,4 @@ async function consumeGenerationSlot(userId, runId, kind) {
   return true;
 }
 async function refundGenerationSlot(userId, runId, kind) { try { return await rpc('refund_generation_slot',{p_user_id:userId,p_run_id:runId,p_kind:kind}); } catch(e){ console.error('slot refund failed',e); return null; } }
-module.exports={verifyMoonbeamUser,rpc,consumeStoryCredit,refundStoryCredit,createGenerationRun,consumeGenerationSlot,refundGenerationSlot};
+module.exports={verifyMoonbeamUser,rpc,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun,consumeGenerationSlot,refundGenerationSlot};

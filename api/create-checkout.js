@@ -16,7 +16,6 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const pack = packForCredits(body.credits);
     if (!pack) return res.status(400).json({error:'Choose a valid Moonbeam credit pack.'});
-    if (body.digital_supply_consent !== true) return res.status(400).json({error:'Please confirm the immediate digital supply acknowledgement before checkout.'});
 
     const origin = siteOrigin(req);
     const form = new URLSearchParams();
@@ -32,13 +31,8 @@ module.exports = async function handler(req, res) {
     form.set('line_items[0][price_data][product_data][description]', 'Prepaid Moonbeam Stories credits. One credit creates one new story.');
     form.set('metadata[moonbeam_user_id]', user.id);
     form.set('metadata[moonbeam_credits]', String(pack.credits));
-    form.set('metadata[digital_supply_consent]', 'true');
-    form.set('metadata[digital_supply_consent_version]', '2026-09-11');
     form.set('payment_intent_data[metadata][moonbeam_user_id]', user.id);
     form.set('payment_intent_data[metadata][moonbeam_credits]', String(pack.credits));
-    form.set('payment_intent_data[metadata][digital_supply_consent]', 'true');
-    form.set('payment_intent_data[metadata][digital_supply_consent_version]', '2026-09-11');
-    form.set('custom_text[submit][message]', 'You requested immediate access to purchased credits and immediate supply of digital content when used, and acknowledged that once digital supply begins your statutory cancellation right for that content may be lost as provided by law. Terms, Refund and Privacy Policies: moonbeamstories.co.uk.');
 
     const session = await stripeRequest('/v1/checkout/sessions', {
       method: 'POST',

@@ -1,6 +1,6 @@
 # Moonbeam Stories V57
 
-V57 includes all V56 refund-protection work plus revised UK consumer/refund wording and an explicit immediate-digital-supply acknowledgement before Stripe Checkout.
+V60 keeps checkout simple and moves the immediate-digital-supply acknowledgement to the first story created from each newly purchased credit pack.
 
 ## Deploy in this order
 
@@ -233,3 +233,25 @@ Create one webhook endpoint:
 Select only the `email.received` event. Copy its signing secret into `RESEND_WEBHOOK_SECRET`, then redeploy Production so Vercel picks up the variables.
 
 No Supabase SQL changes are required for V55.
+
+## V58
+- Makes the checkout consent wording clearer and less alarming while preserving the required immediate-supply acknowledgement.
+- Adds a self-healing checkout UI safeguard so the consent checkbox is inserted if an older cached HTML shell is missing it.
+- No Supabase SQL or Stripe configuration changes from V57.
+
+
+## V59
+Checkout consent wording shortened: no prominent reference to refunds, statutory rights or the 14-day period; express immediate-supply consent remains required. No database migration or Stripe configuration change.
+
+
+## V60 — per-purchase first-use digital supply acknowledgement
+
+- Removes the consent checkbox from the Stripe credit-purchase modal and restores the simple Terms / Refund Policy / Privacy Policy line.
+- Tracks new trial and paid credits in server-side credit batches while preserving all existing balances as legacy credits.
+- Shows the digital-supply acknowledgement only when a user first tries to create a story from a newly purchased credit pack.
+- Records consent against that specific purchase; the rest of that pack can then be used without repeating the checkbox.
+- A later purchase creates a new batch and requires one new acknowledgement on the next Create Story action; each purchased pack is acknowledged once.
+- Free introductory credits do not require this acknowledgement.
+- Sends a confirmation email after a new paid-pack acknowledgement is recorded.
+- Refund reconciliation removes unused credits from the exact V60 purchase batch where possible.
+- Run `SUPABASE_V60_PER_PURCHASE_CONSENT.sql` before deploying the V60 code.

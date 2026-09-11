@@ -1,5 +1,5 @@
 const {logUsage,estimateGBP}=require('./_usage');
-const {verifyMoonbeamUser,consumeStoryCredit,refundStoryCredit,createGenerationRun}=require('./_credits');
+const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('./_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -21,14 +21,18 @@ module.exports = async function handler(req, res) {
 
     // V50: every new Moonbeam story has the same predictable length and cost.
     const moonbeamUser = await verifyMoonbeamUser(req);
-    let creditsRemaining;
-    try { creditsRemaining = await consumeStoryCredit(moonbeamUser.id); }
-    catch (e) { return res.status(e.status || 500).json({ error: e.message, code: e.code || 'CREDIT_ERROR' }); }
+    let creditsRemaining, reservedBatchId;
+    try {
+      const reservation = await reserveStoryCredit(moonbeamUser.id);
+      creditsRemaining = reservation.remaining; reservedBatchId = reservation.batchId;
+    } catch (e) {
+      return res.status(e.status || 500).json({ error: e.message, code: e.code || 'CREDIT_ERROR', batchId: e.batchId || null });
+    }
     let creditReserved = true;
     const refundReservedCredit = async () => {
       if (!creditReserved) return;
       creditReserved = false;
-      await refundStoryCredit(moonbeamUser.id);
+      await refundReservedStoryCredit(moonbeamUser.id,reservedBatchId);
     };
     const language = child.language || 'en-GB';
     const languageGuide = {

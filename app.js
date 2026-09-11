@@ -271,13 +271,11 @@ function openCreditShop(){
 function closeCreditShop(){$('creditShop')?.classList.add('hidden');document.body.classList.remove('credit-shop-open')}
 async function startCreditCheckout(credits,button){
  if(!currentUser){closeCreditShop();openCreditShop();return}
- const consent=$('digitalSupplyConsent');
- if(!consent?.checked){if($('checkoutStatus'))$('checkoutStatus').innerHTML='<span class="error">Please tick the box to request immediate digital supply before continuing.</span>';return}
  const token=await currentAccessToken();if(!token){if($('checkoutStatus'))$('checkoutStatus').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
  const buttons=[...document.querySelectorAll('[data-buy-credits]')];buttons.forEach(b=>b.disabled=true);
  if($('checkoutStatus'))$('checkoutStatus').textContent='Opening secure checkout…';
  try{
-   const r=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({credits:Number(credits),digital_supply_consent:true})});
+   const r=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({credits:Number(credits)})});
    const data=await r.json().catch(()=>({}));
    if(!r.ok||!data.url)throw new Error(data.error||'Could not start checkout.');
    location.href=data.url;
@@ -317,6 +315,30 @@ async function handleCheckoutReturn(){
  }
 }
 
+
+async function prepareStoryCreditConsent(accessToken){
+ const box=$('storySupplyConsent'),check=$('storySupplyConsentCheck');
+ if(!box||!check)return true;
+ try{
+   const r=await fetch('/api/story-consent',{headers:{'Authorization':`Bearer ${accessToken}`}});
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok)throw new Error(data.error||'Could not check story credits.');
+   if(!data.has_credit){box.classList.add('hidden');box.dataset.batchId='';return true}
+   if(!data.consent_required){box.classList.add('hidden');box.dataset.batchId='';check.checked=false;return true}
+   const batchId=String(data.batch_id||'');
+   if(box.dataset.batchId!==batchId){check.checked=false;box.dataset.batchId=batchId}
+   box.classList.remove('hidden');
+   if(!check.checked){box.scrollIntoView?.({block:'nearest',behavior:'smooth'});return false}
+   const accept=await fetch('/api/story-consent',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({batchId})});
+   const accepted=await accept.json().catch(()=>({}));
+   if(!accept.ok||accepted.accepted!==true)throw new Error(accepted.error||'Could not record your confirmation.');
+   box.classList.add('hidden');box.dataset.batchId='';check.checked=false;
+   return true;
+ }catch(e){
+   $('status').innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';
+   return false;
+ }
+}
 async function generateStory(){
  let resolvedReferencePhoto=null;
  if($('useChildPhoto')?.checked){
@@ -328,6 +350,7 @@ async function generateStory(){
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
  const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
+ if(!(await prepareStoryCreditConsent(accessToken)))return;
  const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy');
  $('status').textContent='';button.disabled=true;button.classList.add('is-generating');
  if(preparingTitle)preparingTitle.textContent=language.startsWith('es')?'Preparando tu historia…':language.startsWith('fr')?'Préparation de votre histoire…':language.startsWith('de')?'Deine Geschichte wird vorbereitet…':language.startsWith('it')?'Preparazione della storia…':language.startsWith('pt')?'A preparar a tua história…':'Preparing your story…';
