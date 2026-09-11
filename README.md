@@ -565,3 +565,9 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Fixed saved-story translation lookup/save to use the verified parent ID with the server service role, avoiding serverless RLS/session lookup failures while retaining ownership checks.
 - Mobile Story Preferences now uses strict normal document flow: Story Values → Make Tonight's Story → Saved Stories → Back. The create and Back buttons cannot float over form content.
 - No new database migration is required for V95.
+
+## V96 — saved-story reliability
+- Fixed saved-story translation authentication to use the shared Supabase `adminHeaders()` helper, including compatibility with modern `sb_secret_` keys.
+- New saves snapshot the exact open book, retain finished artwork on the book object, upload every cover/page asset, and verify `saved_assets` was actually persisted before reporting success.
+- Saved stories missing cloud artwork now attempt a zero-credit recovery from the browser's existing persistent illustration cache and, when all page images are found, repair the private Storage objects and `saved_assets` record automatically.
+- No new SQL migration is required for V96.

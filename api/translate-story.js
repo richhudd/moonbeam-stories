@@ -1,5 +1,5 @@
 const {verifyMoonbeamUser}=require('../_credits');
-const {SUPABASE_URL,SECRET_KEY,logUsage}=require('../_usage');
+const {SUPABASE_URL,SECRET_KEY,logUsage,adminHeaders}=require('../_usage');
 const PUBLISHABLE_KEY=String(process.env.SUPABASE_PUBLISHABLE_KEY||'sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q').trim();
 const supported=new Set(['en-GB','en-US','es-ES','es-419','fr-FR','de-DE','it-IT','pt-BR','pl-PL']);
 const names={'en-GB':'British English','en-US':'American English','es-ES':'Spanish (Spain)','es-419':'Latin American Spanish','fr-FR':'French (France)','de-DE':'German (Germany)','it-IT':'Italian (Italy)','pt-BR':'Brazilian Portuguese','pl-PL':'Polish'};
@@ -15,7 +15,7 @@ module.exports=async function handler(req,res){
   // browser-session/RLS differences inside the serverless translation function while preserving
   // ownership: another parent's story can never match both id and parent_id.
   const q=new URLSearchParams({id:`eq.${storyId}`,parent_id:`eq.${user.id}`,select:'id,title,language,opening,pages,closing,translations'});
-  const serviceHeaders={apikey:SECRET_KEY,Authorization:`Bearer ${SECRET_KEY}`};
+  const serviceHeaders=adminHeaders();
   const sr=await fetch(`${SUPABASE_URL}/rest/v1/saved_stories?${q}`,{headers:serviceHeaders});
   const rawRows=await sr.text();let rows=[];try{rows=JSON.parse(rawRows)}catch{}
   if(!sr.ok){console.error('saved story translation lookup failed',sr.status,rawRows);return res.status(502).json({error:'Moonbeam could not load that saved story for translation. Please try again.'})}
