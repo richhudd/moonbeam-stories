@@ -398,3 +398,10 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 - The navigation pair is centred together at the bottom of the white setup card.
 - On the signed-out Account page, the single Back button remains centred while Enter stays hidden behind the V74 authentication gate.
 - No navigation logic, story-reader controls, authentication rules, or database schema were changed.
+
+## V76 — homepage language gateway
+- The globe language selector now appears only on the public homepage; the internal setup selector is hidden.
+- Changing language on the homepage immediately translates the visible homepage interface, including Sign in, headline, supporting copy, CTA and free-trial message, while keeping the Moonbeam Stories brand unchanged.
+- The selected locale is persisted and drives the login/setup/story interface as soon as the visitor enters the app.
+- The existing homepage demonstration artwork is unchanged.
+- No Supabase migration is required.
