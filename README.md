@@ -451,3 +451,14 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 ## V81 complete package
 
 This package includes the 12 existing V80 API functions unchanged. V81 requires no Supabase SQL, Stripe, API, or environment-variable changes.
+
+
+## V82 — reader recovery and true fullscreen desktop cover
+- Rebuilt the V81 desktop CSS using real stylesheet line breaks; the malformed literal escape block is removed.
+- Desktop cover now occupies the viewport and preserves the complete portrait cover with `object-fit: contain`, with a painted backdrop behind unused side space.
+- Read it myself and Read it to me use direct explicit click handlers and force the cover out/book into view before rendering page 1.
+- Added a persistent top-left close/back control so the story reader can never trap the parent.
+- Desktop spreads remain full viewport with overlaid edge navigation, page indicator, narration and end controls.
+- Existing page-turn animation retained and checked against the fullscreen book geometry.
+- Mobile rules and behaviour are unchanged.
+- No Supabase migration required.
