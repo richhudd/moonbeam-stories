@@ -470,3 +470,31 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Back and Next now have direct click handlers, so desktop page navigation no longer depends on invisible edge hit-zones or delegated click handling.
 - The persistent top-left close control remains available as an escape route from the reader.
 - Fullscreen cover/spread layout from V82 is retained. No Supabase, API, Stripe or environment-variable changes are required.
+
+
+## V84 — definitive desktop page-navigation repair
+- Fixes the root cause of the page-2 navigation deadlock: the old page-turn code rendered the next page halfway through the animation, which deleted the animation sheet before `animationend` and could leave the book permanently marked `turning`.
+- Page changes now happen only after the turn has been fully cleaned up; a 950 ms fail-safe guarantees cleanup even if the browser does not fire `animationend`.
+- Back and Next remain explicit desktop buttons with direct click handlers. Back on the first spread returns to the cover.
+- Cover reading choices are compact; on wide desktop they move into the right-hand surround so they cannot cover the generated title/artwork.
+- Mobile behaviour, APIs, Supabase, Stripe and environment variables are unchanged.
+
+
+## V85 — reliable navigation, dedicated ending, desktop cover polish
+- Removed the page-turn/swoosh animation system completely. Back and Next now render the adjacent page immediately, with no `turning` lock, animation event, or timeout dependency.
+- Added a dedicated final **The End** page after the closing story page, with Save story and New story actions. Back returns to the closing story page.
+- Narrated reading advances through the closing story page to The End, but The End itself is not narrated.
+- Desktop cover keeps the complete portrait artwork uncropped at full viewport height, with the same artwork enlarged/blurred behind it to fill landscape side space.
+- Desktop Read it myself / Read it to me controls are compact and live in the side area on wide screens so they do not obscure cover titles.
+- The × escape control remains available and returns to the Moonbeam setup/home flow.
+- No API or Supabase migration changes.
+
+## V86 — simplified creation architecture
+- Replaces the six sparse setup pages with authentication plus two substantial creation screens: **Your child** and **Tonight's story**.
+- Combines saved child selection, name, age, interests, dislikes and optional child photo into the single Your child screen.
+- Keeps tone, values, credits, consent, generation and Saved Stories together on Tonight's story.
+- Removes setup dots, swipe paging, horizontal setup scrolling and keyboard-arrow setup navigation. Only visible buttons change creation screens.
+- Signed-out visitors are still hard-gated at Account; signed-in visitors enter directly at Your child.
+- Story generation now presents the existing preparation indicator as a dedicated full-viewport temporary state before the generated cover opens.
+- Reader architecture from V85 is unchanged: simple Back/Next, no page-turn animation, and the dedicated The End page.
+- No API, Supabase, Stripe or environment-variable changes are required.

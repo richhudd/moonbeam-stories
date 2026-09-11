@@ -245,7 +245,7 @@ function dataUrlToBlob(dataUrl){const m=String(dataUrl||'').match(/^data:([^;]+)
 async function finishedImageForSave(index){const book=currentBook;if(!book)throw new Error('No story is open.');const key=illustrationKey(book,index,getIllustrationPrompt(index));let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image)image=await requestIllustration(key,getIllustrationPrompt(index),`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,book.child?.referencePhoto||null);return image}
 async function finishedCoverForSave(){const book=currentBook;if(!book)throw new Error('No story is open.');const key=coverKey(book);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image)image=await requestIllustration(key,getCoverPrompt(book),`Premium children's storybook cover artwork. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,book.child?.referencePhoto||null);return image}
 async function uploadSavedBookArt(storyId){if(!currentUser||!currentBook)throw new Error('Sign in to save the complete book.');const total=currentBook.pages.length+2,assets={version:1,cover:null,pages:[]},base=`${currentUser.id}/${storyId}`;const cover=await finishedCoverForSave(),coverPath=`${base}/cover.webp`;let r=await supabaseClient.storage.from('saved-story-art').upload(coverPath,dataUrlToBlob(cover),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.cover=coverPath;for(let i=0;i<total;i++){const image=await finishedImageForSave(i),path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}return assets}
-async function saveCurrentStory(){if(!currentBook)return;const button=$('mobileSave')||$('save');if(button)button.disabled=true;try{const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing,generation_run_id:currentBook.generationRunId||null}).select('id').single();if(insert.error)throw insert.error;try{const assets=await uploadSavedBookArt(insert.data.id);const update=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',insert.data.id);if(update.error)throw update.error}catch(assetError){await supabaseClient.storage.from('saved-story-art').remove([`${currentUser.id}/${insert.data.id}/cover.webp`,...Array.from({length:currentBook.pages.length+2},(_,i)=>`${currentUser.id}/${insert.data.id}/page-${i}.webp`)]);await supabaseClient.from('saved_stories').delete().eq('id',insert.data.id);throw new Error('The complete illustrated book could not be saved. Nothing was added to your library. '+(assetError.message||assetError))}await loadCloudStories();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;return}const savedChild={...(currentBook.child||{})};delete savedChild.referencePhoto;saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:savedChild,generationRunId:currentBook.generationRunId||null,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn}catch(e){console.error(e);if(button)button.textContent=t().save;alert('The story could not be saved: '+(e.message||e))}finally{if(button)button.disabled=false}}
+async function saveCurrentStory(){if(!currentBook)return;const button=$('endSave')||$('mobileSave')||$('save');if(button)button.disabled=true;try{const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing,generation_run_id:currentBook.generationRunId||null}).select('id').single();if(insert.error)throw insert.error;try{const assets=await uploadSavedBookArt(insert.data.id);const update=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',insert.data.id);if(update.error)throw update.error}catch(assetError){await supabaseClient.storage.from('saved-story-art').remove([`${currentUser.id}/${insert.data.id}/cover.webp`,...Array.from({length:currentBook.pages.length+2},(_,i)=>`${currentUser.id}/${insert.data.id}/page-${i}.webp`)]);await supabaseClient.from('saved_stories').delete().eq('id',insert.data.id);throw new Error('The complete illustrated book could not be saved. Nothing was added to your library. '+(assetError.message||assetError))}await loadCloudStories();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;return}const savedChild={...(currentBook.child||{})};delete savedChild.referencePhoto;saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:savedChild,generationRunId:currentBook.generationRunId||null,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn}catch(e){console.error(e);if(button)button.textContent=t().save;alert('The story could not be saved: '+(e.message||e))}finally{if(button)button.disabled=false}}
 async function deleteCloudStory(id){if(!currentUser)return;if(!confirm('Delete this saved story?'))return;const item=cloudStories.find(x=>x.id===id),paths=[item?.savedAssets?.cover,...(item?.savedAssets?.pages||[])].filter(Boolean);if(paths.length)await supabaseClient.storage.from('saved-story-art').remove(paths);const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
 
 let storyCreditBalance=null;
@@ -475,7 +475,7 @@ function renderStory(s,image,child,options={}){
  if(beginSelf)beginSelf.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();beginStory('self')});
  if(beginNarrated)beginNarrated.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();beginStory('narrated')});
  if(storyExit)storyExit.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();exitStoryToSetup()});
- // V83: explicit page controls. Do not depend on edge hit-zones or delegated clicks.
+ // V85: explicit page controls. Navigation is immediate; no animation state or timer.
  if(prevPage)prevPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goPreviousBookPage()});
  if(nextPage)nextPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goNextBookPage()});
  loadCoverIllustration(false);
@@ -647,7 +647,7 @@ Make this composition clearly different from the previous page: advance the acti
 function prefetchIllustrations(index,ahead=4){const book=currentBook;if(!book)return;const total=book.pages.length+2;for(let step=1;step<=ahead;step++){const i=index+step;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}}
 function isPhonePortrait(){return window.matchMedia('(max-width:700px) and (orientation:portrait)').matches}
 function mobilePhysicalPageNumber(){if(!currentBook)return 1;return currentBook.currentPage+1}
-function mobilePhysicalTotal(){return currentBook?currentBook.pages.length+2:0}
+function mobilePhysicalTotal(){return currentBook?currentBook.pages.length+3:0}
 function applyMobileSide(){
  const bookEl=$('book');if(!bookEl||!currentBook)return;
  bookEl.classList.toggle('show-mobile-image',false);
@@ -657,7 +657,7 @@ function applyMobileSide(){
    const indicator=$('pageIndicator');if(indicator)indicator.textContent=`${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}`;
    const prev=$('prevPage'),next=$('nextPage');
    if(prev)prev.textContent=currentBook.currentPage===0?coverT().cover:t().previous;
-   if(next){next.disabled=currentBook.currentPage===currentBook.pages.length+1;next.textContent=next.disabled?t().end:t().turn}
+   if(next){next.disabled=currentBook.currentPage===currentBook.pages.length+2;next.textContent=next.disabled?t().end:t().turn}
    const progress=document.querySelector('.mobile-page-progress');if(progress)progress.textContent=`${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}`;
    requestAnimationFrame(fitMobileStoryText);
  }
@@ -711,36 +711,37 @@ let narrationAudio=null,narrationRun=0,narrationTimer=null,narrationStartTimeout
 const activeNarrationAudios=new Set();
 function splitNarrationSentences(text){const m=String(text||'').match(/[^.!?…]+(?:[.!?…]+[”’\"']?|$)/g);return (m&&m.length?m:[String(text||'')]).map(x=>x.trim()).filter(Boolean)}
 function renderNarrationText(text){return splitNarrationSentences(text).map((sentence,i)=>`<span class="narration-sentence" data-sentence="${i}">${escapeHtml(sentence)}</span>`).join(' ')}
-function currentPageText(){if(!currentBook)return'';const i=currentBook.currentPage,total=currentBook.pages.length+2;if(i===0)return currentBook.opening||'';if(i===total-1)return currentBook.closing||'';return currentBook.pages[i-1]?.text||''}
+function currentPageText(){if(!currentBook)return'';const i=currentBook.currentPage,closingIndex=currentBook.pages.length+1;if(i===0)return currentBook.opening||'';if(i===closingIndex)return currentBook.closing||'';if(i>closingIndex)return'';return currentBook.pages[i-1]?.text||''}
 function narrationKey(){return currentBook?`${currentBook.cacheId}:audio:${language}:${currentBook.currentPage}`:''}
 async function getNarration(text,key){if(narrationCache.has(key))return narrationCache.get(key);const accessToken=await currentAccessToken();if(!accessToken)throw new Error(t().signInAgain);const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure narration allowance.');const r=await fetch('/api/narrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({text,language,generationRunId})});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok||!data.audio)throw new Error(data?.error||`Narration failed (${r.status})`);narrationCache.set(key,data.audio);return data.audio}
 function clearNarrationHighlight(){document.querySelectorAll('.narration-sentence').forEach(x=>x.classList.remove('speaking'))}
 function stopNarration(){narrationRun++;if(narrationStartTimeout){clearTimeout(narrationStartTimeout);narrationStartTimeout=null}if(narrationTimer){clearInterval(narrationTimer);narrationTimer=null}for(const audio of activeNarrationAudios){try{audio.pause();audio.currentTime=0;audio.onended=null;audio.ontimeupdate=null}catch{}}activeNarrationAudios.clear();narrationAudio=null;clearNarrationHighlight();const b=$('narrationControl');if(b){b.textContent='▶';b.classList.remove('loading')}}
 function scheduleNarration(delay=120){if(narrationStartTimeout)clearTimeout(narrationStartTimeout);narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;startNarrationForCurrentPage()},delay)}
 function updateNarrationHighlight(audio){const spans=[...document.querySelectorAll('.narration-sentence')];if(!spans.length||!isFinite(audio.duration)||audio.duration<=0)return;const weights=spans.map(s=>Math.max(1,s.textContent.trim().length)),total=weights.reduce((a,b)=>a+b,0);let target=(audio.currentTime/audio.duration)*total,acc=0,idx=0;for(let i=0;i<weights.length;i++){acc+=weights[i];if(target<=acc){idx=i;break}}spans.forEach((s,i)=>s.classList.toggle('speaking',i===idx))}
-async function startNarrationForCurrentPage(){if(!currentBook||currentBook.currentPage<0)return;for(const a of activeNarrationAudios){try{a.pause();a.currentTime=0}catch{}}activeNarrationAudios.clear();narrationAudio=null;const pageAtStart=currentBook.currentPage,run=++narrationRun,text=currentPageText(),key=narrationKey(),button=$('narrationControl');if(button){button.textContent='…';button.classList.add('loading')}try{const src=await getNarration(text,key);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;const audio=new Audio(src);activeNarrationAudios.add(audio);narrationAudio=audio;if(button){button.textContent='⏸';button.classList.remove('loading')}audio.ontimeupdate=()=>{if(currentBook?.currentPage===pageAtStart)updateNarrationHighlight(audio)};audio.onended=()=>{activeNarrationAudios.delete(audio);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;clearNarrationHighlight();if(narrationAudio===audio)narrationAudio=null;if(button)button.textContent='▶';if(currentBook.readingMode==='narrated'&&pageAtStart<currentBook.pages.length+1){narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;goNextBookPage(true)},500)}};await audio.play()}catch(e){console.error(e);if(button){button.textContent='▶';button.classList.remove('loading');button.title=e?.message||t().narrationUnavailable}}}
+async function startNarrationForCurrentPage(){if(!currentBook||currentBook.currentPage<0)return;for(const a of activeNarrationAudios){try{a.pause();a.currentTime=0}catch{}}activeNarrationAudios.clear();narrationAudio=null;const pageAtStart=currentBook.currentPage,run=++narrationRun,text=currentPageText(),key=narrationKey(),button=$('narrationControl');if(button){button.textContent='…';button.classList.add('loading')}try{const src=await getNarration(text,key);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;const audio=new Audio(src);activeNarrationAudios.add(audio);narrationAudio=audio;if(button){button.textContent='⏸';button.classList.remove('loading')}audio.ontimeupdate=()=>{if(currentBook?.currentPage===pageAtStart)updateNarrationHighlight(audio)};audio.onended=()=>{activeNarrationAudios.delete(audio);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;clearNarrationHighlight();if(narrationAudio===audio)narrationAudio=null;if(button)button.textContent='▶';if(currentBook.readingMode==='narrated'&&pageAtStart<=currentBook.pages.length+1){narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;goNextBookPage(true)},500)}};await audio.play()}catch(e){console.error(e);if(button){button.textContent='▶';button.classList.remove('loading');button.title=e?.message||t().narrationUnavailable}}}
 function toggleNarration(){if(!currentBook)return;if(narrationAudio&&!narrationAudio.paused){narrationAudio.pause();const b=$('narrationControl');if(b)b.textContent='▶';return}if(narrationAudio&&narrationAudio.paused){narrationAudio.play();const b=$('narrationControl');if(b)b.textContent='⏸';return}startNarrationForCurrentPage()}
 function renderBookPage(index){
- const book=currentBook,total=book.pages.length+2,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;if(!isPhonePortrait())book.mobileSide='text';
- const isOpening=clamped===0,isClosing=clamped===total-1;let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
- const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';const bookEl=$('book');
- const endActions=isClosing?`<div class="mobile-end-actions">${book.isSaved?'':`<button class="secondary" id="mobileSave" type="button">${escapeHtml(t().save)}</button>`}<button class="secondary" id="mobileNewStory" type="button">${escapeHtml(t().newStory)}</button></div>`:'';
- bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${endActions}${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
- const prev=$('prevPage'),next=$('nextPage'),indicator=$('pageIndicator');if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=clamped===total-1;next.textContent=clamped===total-1?t().end:t().turn}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
- const mobileSave=$('mobileSave');if(mobileSave)mobileSave.onclick=saveCurrentStory;const mobileNew=$('mobileNewStory');if(mobileNew)mobileNew.onclick=()=>exitStoryToSetup();const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
- applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3);if(book.readingMode==='narrated'&&clamped<total-1){const nextText=clamped+1===total-1?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
+ const book=currentBook,total=book.pages.length+3,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;if(!isPhonePortrait())book.mobileSide='text';
+ const closingIndex=total-2,isOpening=clamped===0,isClosing=clamped===closingIndex,isEnd=clamped===total-1;
+ const prev=$('prevPage'),next=$('nextPage'),indicator=$('pageIndicator'),bookEl=$('book');
+ if(isEnd){
+   const saveButton=book.isSaved?'':`<button class="secondary end-save" id="endSave" type="button">${escapeHtml(t().save)}</button>`;
+   bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div><div class="end-actions">${saveButton}<button class="secondary end-new-story" id="endNewStory" type="button">${escapeHtml(t().newStory)}</button></div></div></div>`;
+   if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
+   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const en=$('endNewStory');if(en)en.onclick=()=>exitStoryToSetup();
+   applyMobileSide();return;
+ }
+ let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
+ const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';
+ bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
+ if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.textContent=t().turn}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
+ const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
+ applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3);
+ if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
 }
 function exitStoryToSetup(){stopNarration();document.body.classList.remove('story-mode','desktop-story-mode');$('story')?.classList.add('hidden');goSetupPage(5)}
-function animateBookTurn(direction,action){
- const book=$('book');if(!book||isPhonePortrait()||matchMedia('(prefers-reduced-motion: reduce)').matches){action();return}
- if(book.classList.contains('turning'))return;book.classList.add('turning');
- const sheet=document.createElement('div');sheet.className=`page-turn-sheet ${direction==='back'?'turn-back':'turn-forward'}`;sheet.innerHTML='<div class="page-turn-front"></div><div class="page-turn-backface"></div>';book.appendChild(sheet);
- let changed=false;const change=()=>{if(changed)return;changed=true;action()};setTimeout(change,410);
- sheet.addEventListener('animationend',()=>{change();sheet.remove();book.classList.remove('turning')},{once:true});
- setTimeout(()=>{if(sheet.isConnected){change();sheet.remove();book.classList.remove('turning')}},930)
-}
-function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+2;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){animateBookTurn('forward',()=>{renderBookPage(currentBook.currentPage+1);if(mode==='narrated')scheduleNarration(120)})}}
-function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{animateBookTurn('back',()=>{renderBookPage(currentBook.currentPage-1);if(mode==='narrated')scheduleNarration(120)})}}
+function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+3;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
+function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 let lastStorySwipeAt=0;
 $('story').addEventListener('click',e=>{if(Date.now()-lastStorySwipeAt<500&&(e.target.classList.contains('mobile-turn-left')||e.target.classList.contains('mobile-turn-right')))return;if(e.target.id==='beginStory')beginStory('self');if(e.target.id==='beginNarrated')beginStory('narrated');if(e.target.id==='retryCover')loadCoverIllustration(true);if(e.target.id==='prevPage'||e.target.classList.contains('mobile-turn-left'))goPreviousBookPage();if(e.target.id==='nextPage'||e.target.classList.contains('mobile-turn-right'))goNextBookPage()});
 let storyTouchX=null,storyTouchY=null;
@@ -767,45 +768,41 @@ window.deleteSavedStory=id=>deleteCloudStory(id);
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 
-// V27 — swipe-page setup navigation for portrait phones.
+// V86 — simplified creation flow. One explicit screen at a time on desktop and mobile.
 let setupPageIndex=0;
 function setupPages(){return [...document.querySelectorAll('#setupTrack .setup-page')]}
 const SETUP_NAV_WORDS={
- 'en-GB':['Back','Enter'],'en-US':['Back','Enter'],'es-ES':['Atrás','Entrar'],'es-419':['Atrás','Entrar'],
- 'fr-FR':['Retour','Continuer'],'de-DE':['Zurück','Weiter'],'it-IT':['Indietro','Avanti'],
- 'pt-BR':['Voltar','Entrar'],'pl-PL':['Wstecz','Dalej']
+ 'en-GB':{back:'Back',home:'Home',story:'Story →'},'en-US':{back:'Back',home:'Home',story:'Story →'},
+ 'es-ES':{back:'Atrás',home:'Inicio',story:'Historia →'},'es-419':{back:'Atrás',home:'Inicio',story:'Historia →'},
+ 'fr-FR':{back:'Retour',home:'Accueil',story:'Histoire →'},'de-DE':{back:'Zurück',home:'Start',story:'Geschichte →'},
+ 'it-IT':{back:'Indietro',home:'Home',story:'Storia →'},'pt-BR':{back:'Voltar',home:'Início',story:'História →'},
+ 'pl-PL':{back:'Wstecz',home:'Start',story:'Historia →'}
 };
 function setupNavWords(){return SETUP_NAV_WORDS[language]||SETUP_NAV_WORDS['en-GB']}
 function ensureSetupCardNav(){
- const pages=setupPages(),[backLabel,enterLabel]=setupNavWords();
+ const pages=setupPages(),words=setupNavWords();
  pages.forEach((page,i)=>{
    let nav=page.querySelector('.setup-card-nav');
-   if(!nav){nav=document.createElement('div');nav.className='setup-card-nav';nav.innerHTML='<button class="secondary setup-card-back" type="button"></button><button class="primary setup-card-enter" type="button"></button>';page.appendChild(nav)}
-   const back=nav.querySelector('.setup-card-back'),enter=nav.querySelector('.setup-card-enter');
-   back.textContent=backLabel; enter.textContent=enterLabel;
-   enter.classList.toggle('hidden',i===pages.length-1 || (i===0&&!currentUser));
-   enter.disabled=(i===0&&!currentUser);
+   if(!nav){nav=document.createElement('div');nav.className='setup-card-nav';page.appendChild(nav)}
+   const step=page.dataset.step;
+   if(step==='Account'){
+     nav.innerHTML=`<button class="secondary setup-home" type="button">← ${words.home}</button>`;
+   }else if(step==='Child'){
+     nav.innerHTML=`<button class="secondary setup-home" type="button">← ${words.home}</button><button class="primary setup-card-enter" type="button">${words.story}</button>`;
+   }else if(step==='Story'){
+     nav.innerHTML=`<button class="secondary setup-card-back" type="button">← ${words.back}</button>`;
+   }
  })
 }
-function updateSetupNav(){
- const pages=setupPages(),dots=$('setupDots');
- ensureSetupCardNav();
- if(dots){dots.innerHTML=pages.map((_,i)=>`<button class="setup-dot${i===setupPageIndex?' active':''}" type="button" data-setup-index="${i}" tabindex="-1"></button>`).join('')}
-}
+function updateSetupNav(){ensureSetupCardNav();const dots=$('setupDots');if(dots)dots.innerHTML=''}
 function goSetupPage(index,instant=false){
  const track=$('setupTrack'),pages=setupPages();if(!track||!pages.length)return;
  let requested=Math.max(0,Math.min(Number(index)||0,pages.length-1));
- // V74: the account page is a hard authentication gate. No click, dot, key or swipe may bypass it.
- if(!currentUser && setupPageIndex===0 && requested>0){requested=0;const status=$('authStatus');if(status)status.textContent='Sign in or create an account to continue.';}
+ // Authentication is a hard gate. Account -> Child occurs only after a real session exists.
+ if(!currentUser&&requested>0){requested=0;const status=$('authStatus');if(status)status.textContent='Sign in or create an account to continue.'}
  setupPageIndex=requested;
- if(!isPhonePortrait() && innerWidth>700){
-   pages.forEach((page,i)=>{page.classList.toggle('setup-current',i===setupPageIndex);page.setAttribute('aria-hidden',i===setupPageIndex?'false':'true')});
-   track.scrollLeft=0;
- }else{
-   pages.forEach(page=>{page.classList.remove('setup-current');page.removeAttribute('aria-hidden')});
-   const left=pages[setupPageIndex].offsetLeft-track.offsetLeft;
-   track.scrollTo({left,behavior:instant?'auto':'smooth'});
- }
+ pages.forEach((page,i)=>{const active=i===setupPageIndex;page.classList.toggle('setup-current',active);page.setAttribute('aria-hidden',active?'false':'true')});
+ track.scrollLeft=0;track.scrollTop=0;
  const storyIndex=pages.findIndex(p=>p.dataset.step==='Story');
  if(setupPageIndex===storyIndex&&currentUser)refreshStoryCreditConsentUI().catch(()=>{});
  updateSetupNav();
@@ -813,15 +810,14 @@ function goSetupPage(index,instant=false){
 function initSetupDeck(){
  const track=$('setupTrack');if(!track)return;
  track.addEventListener('click',e=>{
-   if(e.target.closest('.setup-card-back')){if(setupPageIndex===0)showMoonbeamLanding();else goSetupPage(setupPageIndex-1);return}
+   if(e.target.closest('.setup-home')){showMoonbeamLanding();return}
+   if(e.target.closest('.setup-card-back')){goSetupPage(Math.max(0,setupPageIndex-1),true);return}
    if(e.target.closest('.setup-card-enter')){
-     if(setupPageIndex===0&&!currentUser){const status=$('authStatus');if(status)status.textContent='Sign in or create an account to continue.';return}
-     goSetupPage(setupPageIndex+1);return
+     if(!currentUser){setAuthStatus('Sign in or create an account to continue.',true);goSetupPage(0,true);return}
+     goSetupPage(Math.min(setupPages().length-1,setupPageIndex+1),true);return
    }
  });
- $('setupDots')?.addEventListener('click',e=>{const b=e.target.closest('[data-setup-index]');if(!b)return;const target=Number(b.dataset.setupIndex);if(!currentUser&&setupPageIndex===0&&target>0){setAuthStatus('Sign in or create an account to continue.',true);goSetupPage(0,true);return}goSetupPage(target)});
- let raf=null;track.addEventListener('scroll',()=>{if(!isPhonePortrait())return;cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{const pages=setupPages(),center=track.scrollLeft+track.clientWidth/2;let best=0,dist=Infinity;pages.forEach((p,i)=>{const d=Math.abs((p.offsetLeft-track.offsetLeft+p.offsetWidth/2)-center);if(d<dist){dist=d;best=i}});if(best!==setupPageIndex){if(!currentUser&&setupPageIndex===0&&best>0){goSetupPage(0,true);return}setupPageIndex=best;updateSetupNav()}})},{passive:true});
- updateSetupNav();
+ updateSetupNav();goSetupPage(setupPageIndex,true);
 }
 initSetupDeck();
 $('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyConsentCheck').checked)clearStoryConsentAttention()});
@@ -833,4 +829,4 @@ function showMoonbeamLanding(){if(currentBook)return;$('productApp')?.classList.
 $('landingStart')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landingStartBottom')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landingSignIn')?.addEventListener('click',()=>enterMoonbeamApp(true));
 const landingLanguage=$('landingLanguage');if(landingLanguage){landingLanguage.value=language;landingLanguage.addEventListener('change',()=>{const main=$('language');if(main){main.value=landingLanguage.value;main.dispatchEvent(new Event('change',{bubbles:true}))}})}
 $('language')?.addEventListener('change',()=>{if(landingLanguage)landingLanguage.value=$('language').value});
-document.addEventListener('keydown',e=>{if(!$('productApp')?.classList.contains('hidden')&&$('story')?.classList.contains('hidden')&&innerWidth>700){if(e.key==='ArrowRight'&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))goSetupPage(setupPageIndex+1);if(e.key==='ArrowLeft'&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)){if(setupPageIndex===0)showMoonbeamLanding();else goSetupPage(setupPageIndex-1)}}else if(!$('story')?.classList.contains('hidden')&&innerWidth>700){if(e.key==='ArrowRight')goNextBookPage();if(e.key==='ArrowLeft')goPreviousBookPage()}});
+// V86: setup navigation is intentionally button-only; no keyboard-arrow page changes.
