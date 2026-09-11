@@ -375,3 +375,13 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 - Back navigation remains Homepage ← Account ← Child profile in the expected order.
 - V71 single-screen homepage fix is retained unchanged.
 - No database migration is required.
+
+
+## V73 — clear in-card setup navigation
+- Removed the large translucent/watermark setup arrows completely.
+- Added clear **Back** and **Enter** buttons inside each white setup card.
+- The account page cannot be bypassed with Enter while signed out; the parent must sign in or create an account first.
+- The final Story Preferences page keeps its existing story-generation controls and has no redundant Enter button.
+- Story-reader page controls and mobile story navigation are unchanged.
+- Retains the V71 single-homepage fix and V72 Homepage → Account routing.
+- No Supabase migration is required for V73.

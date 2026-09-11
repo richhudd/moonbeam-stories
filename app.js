@@ -737,10 +737,25 @@ function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 // V27 — swipe-page setup navigation for portrait phones.
 let setupPageIndex=0;
 function setupPages(){return [...document.querySelectorAll('#setupTrack .setup-page')]}
+const SETUP_NAV_WORDS={
+ 'en-GB':['Back','Enter'],'en-US':['Back','Enter'],'es-ES':['Atrás','Entrar'],'es-419':['Atrás','Entrar'],
+ 'fr-FR':['Retour','Continuer'],'de-DE':['Zurück','Weiter'],'it-IT':['Indietro','Avanti'],
+ 'pt-BR':['Voltar','Entrar'],'pl-PL':['Wstecz','Dalej']
+};
+function setupNavWords(){return SETUP_NAV_WORDS[language]||SETUP_NAV_WORDS['en-GB']}
+function ensureSetupCardNav(){
+ const pages=setupPages(),[backLabel,enterLabel]=setupNavWords();
+ pages.forEach((page,i)=>{
+   let nav=page.querySelector('.setup-card-nav');
+   if(!nav){nav=document.createElement('div');nav.className='setup-card-nav';nav.innerHTML='<button class="secondary setup-card-back" type="button"></button><button class="primary setup-card-enter" type="button"></button>';page.appendChild(nav)}
+   const back=nav.querySelector('.setup-card-back'),enter=nav.querySelector('.setup-card-enter');
+   back.textContent=backLabel; enter.textContent=enterLabel;
+   enter.classList.toggle('hidden',i===pages.length-1);
+ })
+}
 function updateSetupNav(){
- const pages=setupPages(),prev=$('setupPrev'),next=$('setupNext'),dots=$('setupDots');
- if(prev){prev.disabled=false;prev.title=setupPageIndex===0?'Back to Moonbeam Stories':'Previous page'}
- if(next)next.disabled=setupPageIndex>=pages.length-1;
+ const pages=setupPages(),dots=$('setupDots');
+ ensureSetupCardNav();
  if(dots){dots.innerHTML=pages.map((_,i)=>`<button class="setup-dot${i===setupPageIndex?' active':''}" type="button" data-setup-index="${i}" tabindex="-1"></button>`).join('')}
 }
 function goSetupPage(index,instant=false){
@@ -760,8 +775,13 @@ function goSetupPage(index,instant=false){
 }
 function initSetupDeck(){
  const track=$('setupTrack');if(!track)return;
- $('setupPrev')?.addEventListener('click',()=>{if(setupPageIndex===0)showMoonbeamLanding();else goSetupPage(setupPageIndex-1)});
- $('setupNext')?.addEventListener('click',()=>goSetupPage(setupPageIndex+1));
+ track.addEventListener('click',e=>{
+   if(e.target.closest('.setup-card-back')){if(setupPageIndex===0)showMoonbeamLanding();else goSetupPage(setupPageIndex-1);return}
+   if(e.target.closest('.setup-card-enter')){
+     if(setupPageIndex===0&&!currentUser){const status=$('authStatus');if(status)status.textContent='Sign in or create an account to continue.';return}
+     goSetupPage(setupPageIndex+1);return
+   }
+ });
  $('setupDots')?.addEventListener('click',e=>{const b=e.target.closest('[data-setup-index]');if(b)goSetupPage(Number(b.dataset.setupIndex))});
  let raf=null;track.addEventListener('scroll',()=>{if(!isPhonePortrait())return;cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{const pages=setupPages(),center=track.scrollLeft+track.clientWidth/2;let best=0,dist=Infinity;pages.forEach((p,i)=>{const d=Math.abs((p.offsetLeft-track.offsetLeft+p.offsetWidth/2)-center);if(d<dist){dist=d;best=i}});if(best!==setupPageIndex){setupPageIndex=best;updateSetupNav()}})},{passive:true});
  updateSetupNav();
