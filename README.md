@@ -269,3 +269,7 @@ Checkout consent wording shortened: no prominent reference to refunds, statutory
 - Paid-pack first-use consent is now shown quietly in grey as soon as it is required.
 - If Create Story is pressed without ticking it, the existing red flash/focus warning appears.
 - No SQL, Stripe, or environment-variable changes from V61.
+
+
+## V63
+Nine-locale localisation foundation, globe selector, Brazilian Portuguese, Polish, and improved locale-specific narration/prosody. No database migration required.

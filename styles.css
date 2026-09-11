@@ -698,3 +698,6 @@
 .story-supply-consent.consent-attention input{outline:2px solid #c92f3c;outline-offset:2px}
 .story-consent-hint{margin:.48rem 0 0 1.62rem;color:#b4232f;font-size:.8rem;font-weight:700;line-height:1.25}
 @keyframes consentFlash{from{box-shadow:0 0 0 0 rgba(201,47,60,0)}to{box-shadow:0 0 0 4px rgba(201,47,60,.18)}}
+
+/* V63 international language selector */
+.language-globe{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:16px}.language-symbol{font-size:1.7rem;line-height:1}.language-globe label{margin:0}.language-globe select{min-width:210px}.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}

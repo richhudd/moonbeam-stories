@@ -17,14 +17,15 @@ module.exports = async function handler(req, res) {
     let slotReserved=true;const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(moonbeamUser.id,generationRunId,'narration')}};
     if (text.length > 4096) return res.status(400).json({ error: 'This page is too long to narrate.' });
     const narrationProfiles = {
-      'en-GB': 'Speak in natural British English with a warm, neutral contemporary UK accent. Use British pronunciation throughout; do not drift into American pronunciation.',
+      'en-GB': 'Speak in natural contemporary British English with a neutral educated British accent. Use authentic British sentence rhythm, word stress, syllable stress and intonation. Avoid American pronunciation, exaggerated Received Pronunciation, sing-song delivery, misplaced emphasis, and unnatural pauses. Read punctuation naturally and keep names consistent.',
       'en-US': 'Speak in natural American English with a warm, neutral contemporary US accent. Use American pronunciation throughout.',
       'es-ES': 'Speak in European Spanish from Spain with a natural neutral Peninsular Spanish accent and pronunciation, including normal distinctions used in Spain where appropriate. Do not use a Latin American accent.',
       'es-419': 'Speak in natural Latin American Spanish with a warm, broadly neutral Latin American accent. Do not use a Peninsular Spanish accent.',
       'fr-FR': 'Speak in French from France with a natural, warm, neutral metropolitan French accent and pronunciation.',
       'de-DE': 'Speak in German from Germany with a natural, warm, neutral Standard German accent and pronunciation.',
       'it-IT': 'Speak in Italian from Italy with a natural, warm, neutral standard Italian accent and pronunciation.',
-      'pt-PT': 'Speak in European Portuguese from Portugal with a natural, warm, neutral Portuguese accent and pronunciation. Do not use Brazilian Portuguese pronunciation.'
+      'pt-BR': 'Speak in Brazilian Portuguese with natural native Brazilian pronunciation, rhythm, stress and intonation. Use a warm, broadly neutral Brazilian accent. Do not use European Portuguese pronunciation.',
+      'pl-PL': 'Speak in natural native Polish with authentic Polish pronunciation, lexical stress, sentence rhythm and intonation. Avoid English-influenced vowels, consonants or stress. Read warmly and conversationally.'
     };
     const accentInstruction = narrationProfiles[language] || 'Speak naturally in the language and regional variety of the text.';
 
@@ -38,10 +39,11 @@ module.exports = async function handler(req, res) {
       'fr-FR': 'shimmer',
       'de-DE': 'onyx',
       'it-IT': 'nova',
-      'pt-PT': 'sage'
+      'pt-BR': 'sage',
+      'pl-PL': 'cedar'
     };
     const voice = voiceProfiles[language] || 'marin';
-    const instructions = `${accentInstruction} Read as a warm, gentle, expressive children's storybook narrator. Natural bedtime pacing, clear diction and subtle character expression. Never theatrical or frightening. Keep the selected regional accent consistent for the entire page. Do not imitate any real person.`;
+    const instructions = `${accentInstruction} Read as an experienced, warm children's audiobook narrator. Use natural native prosody, conversational phrasing, clear diction, and subtle character expression. Let punctuation guide breathing and pauses. Never sound theatrical, robotic, sing-song, or frightening. Keep the selected regional accent consistent for the entire page. Do not imitate any real person.`;
     const r = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
