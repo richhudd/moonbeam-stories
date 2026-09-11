@@ -599,3 +599,7 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 
 ## V101
 Rebuilt the portrait-mobile live reader around measured physical boundaries: the book ends above the fixed navigation, with separate image and text regions. Removed guessed bottom padding from the active V101 layout; text fitting now measures only the dedicated text region and falls back to internal text scrolling rather than clipping. Desktop and saved-story translation behavior are unchanged.
+
+
+## V102
+Portrait-mobile reader: removed the chapter/page label (Page 1, Page 2, etc.) above story prose so the text begins immediately below the illustration. The fixed bottom navigation remains the sole page-position indicator. Desktop reader is unchanged.

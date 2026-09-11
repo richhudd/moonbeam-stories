@@ -1393,3 +1393,10 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode #book.show-mobile-spread .page-footer,
   body.story-mode #book.show-mobile-spread .mobile-turn-zone{display:none!important;}
 }
+
+
+/* V102 — mobile story pages do not repeat Page 1/Page 2/etc above the prose.
+   Position remains visible only in the fixed Previous | n / total | Turn page controls. */
+@media (max-width:700px) and (orientation:portrait){
+  body.story-mode #book.show-mobile-spread .chapter-label{display:none!important;}
+}
