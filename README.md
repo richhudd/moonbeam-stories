@@ -498,3 +498,10 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Story generation now presents the existing preparation indicator as a dedicated full-viewport temporary state before the generated cover opens.
 - Reader architecture from V85 is unchanged: simple Back/Next, no page-turn animation, and the dedicated The End page.
 - No API, Supabase, Stripe or environment-variable changes are required.
+
+## V87 — setup polish, saved-story library, narration teardown, Home route
+- Tightens the desktop Story Preferences screen so the complete setup card fits the viewport without page scrolling.
+- Redesigns Saved Stories as compact library cards. The read-only/no-credit explanation is shown once at library level, and each saved story has Read/Open, language/translation, and confirmed Delete controls.
+- Hardens narration teardown: every book-page render stops and disposes any active narration audio first, invalidates pending narration starts, and prevents audio from a page that has been left continuing underneath the destination page.
+- Makes the Moonbeam Stories setup header/logo a permanent route back to the public homepage without signing the parent out.
+- No API, Supabase schema, Stripe, or environment-variable changes are required.
