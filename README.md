@@ -1,3 +1,11 @@
+# Moonbeam Stories V61
+
+V61 is a small UX release on top of V60. If a user presses **Make Tonight's Story** while the required first-use purchased-credit consent box is still unticked, Moonbeam now scrolls/focuses to the consent line, flashes it red, outlines the checkbox, and shows **“Please tick this box to continue.”** The warning clears immediately when the box is ticked. No credit is consumed and no story generation starts until consent is recorded.
+
+**Deployment:** replace the current site files with the contents of this `moonbeam-v61` folder and let Vercel deploy. **No Supabase SQL changes, no new environment variables, and no Stripe changes are required.**
+
+---
+
 # Moonbeam Stories V57
 
 V60 keeps checkout simple and moves the immediate-digital-supply acknowledgement to the first story created from each newly purchased credit pack.

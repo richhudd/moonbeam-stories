@@ -693,3 +693,8 @@
 /* V60: first-use acknowledgement for each newly purchased credit pack. */
 .story-supply-consent{margin:.75rem 0 .65rem;padding:.72rem .82rem;border:1px solid rgba(79,59,181,.18);border-radius:12px;background:rgba(86,55,200,.04);font-size:.82rem;line-height:1.42;color:#514b67}
 .story-supply-consent label{display:flex;gap:.62rem;align-items:flex-start;cursor:pointer}.story-supply-consent input{margin-top:.18rem;width:1rem;height:1rem;flex:0 0 auto;accent-color:#5637c8}.story-supply-consent span{display:block}
+.story-supply-consent.consent-attention{border-color:#c92f3c;background:rgba(201,47,60,.07);animation:consentFlash .42s ease-in-out 0s 3 alternate}
+.story-supply-consent.consent-attention label{color:#a8212d;font-weight:650}
+.story-supply-consent.consent-attention input{outline:2px solid #c92f3c;outline-offset:2px}
+.story-consent-hint{margin:.48rem 0 0 1.62rem;color:#b4232f;font-size:.8rem;font-weight:700;line-height:1.25}
+@keyframes consentFlash{from{box-shadow:0 0 0 0 rgba(201,47,60,0)}to{box-shadow:0 0 0 4px rgba(201,47,60,.18)}}

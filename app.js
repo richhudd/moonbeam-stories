@@ -316,6 +316,29 @@ async function handleCheckoutReturn(){
 }
 
 
+function clearStoryConsentAttention(){
+ const box=$('storySupplyConsent'),check=$('storySupplyConsentCheck');
+ if(!box)return;
+ box.classList.remove('consent-attention');
+ const msg=box.querySelector('.story-consent-hint');
+ if(msg)msg.remove();
+ if(check)check.removeAttribute('aria-invalid');
+}
+function showStoryConsentAttention(){
+ const box=$('storySupplyConsent'),check=$('storySupplyConsentCheck');
+ if(!box||!check)return;
+ clearStoryConsentAttention();
+ const msg=document.createElement('div');
+ msg.className='story-consent-hint';
+ msg.setAttribute('role','alert');
+ msg.textContent='Please tick this box to continue.';
+ box.appendChild(msg);
+ check.setAttribute('aria-invalid','true');
+ // Re-adding the class after a frame guarantees the flash animation restarts on repeated clicks.
+ requestAnimationFrame(()=>box.classList.add('consent-attention'));
+ box.scrollIntoView?.({block:'center',behavior:'smooth'});
+ try{check.focus({preventScroll:true})}catch{check.focus?.()}
+}
 async function prepareStoryCreditConsent(accessToken){
  const box=$('storySupplyConsent'),check=$('storySupplyConsentCheck');
  if(!box||!check)return true;
@@ -323,12 +346,13 @@ async function prepareStoryCreditConsent(accessToken){
    const r=await fetch('/api/story-consent',{headers:{'Authorization':`Bearer ${accessToken}`}});
    const data=await r.json().catch(()=>({}));
    if(!r.ok)throw new Error(data.error||'Could not check story credits.');
-   if(!data.has_credit){box.classList.add('hidden');box.dataset.batchId='';return true}
-   if(!data.consent_required){box.classList.add('hidden');box.dataset.batchId='';check.checked=false;return true}
+   if(!data.has_credit){clearStoryConsentAttention();box.classList.add('hidden');box.dataset.batchId='';return true}
+   if(!data.consent_required){clearStoryConsentAttention();box.classList.add('hidden');box.dataset.batchId='';check.checked=false;return true}
    const batchId=String(data.batch_id||'');
-   if(box.dataset.batchId!==batchId){check.checked=false;box.dataset.batchId=batchId}
+   if(box.dataset.batchId!==batchId){check.checked=false;box.dataset.batchId=batchId;clearStoryConsentAttention()}
    box.classList.remove('hidden');
-   if(!check.checked){box.scrollIntoView?.({block:'nearest',behavior:'smooth'});return false}
+   if(!check.checked){showStoryConsentAttention();return false}
+   clearStoryConsentAttention();
    const accept=await fetch('/api/story-consent',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({batchId})});
    const accepted=await accept.json().catch(()=>({}));
    if(!accept.ok||accepted.accepted!==true)throw new Error(accepted.error||'Could not record your confirmation.');
@@ -673,4 +697,5 @@ function initSetupDeck(){
  updateSetupNav();
 }
 initSetupDeck();
+$('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyConsentCheck').checked)clearStoryConsentAttention()});
 window.addEventListener('orientationchange',()=>setTimeout(()=>{document.body.classList.toggle('story-mode',!!currentBook&&!$('story')?.classList.contains('hidden')&&isPhonePortrait());goSetupPage(setupPageIndex,true)},120));
