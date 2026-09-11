@@ -1,3 +1,5 @@
+# Moonbeam Stories V81
+
 # Moonbeam Stories V70
 
 V69 is a corrective navigation release on top of V68. It replaces the fragile desktop horizontal-scroll setup navigation with explicit single-page desktop rendering, forces the large edge arrows in critical inline CSS, cache-busts the V69 CSS/JS assets, and confirms Saved Stories is embedded beneath Make Tonight's Story rather than being a setup step.
@@ -428,3 +430,24 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 - When a saved child is selected, the Saved child profile dropdown now includes a separated “Delete profile [name]…” management option at the bottom.
 - Choosing it asks for confirmation before deletion; saved stories remain untouched.
 - No Supabase migration is required.
+
+
+## V80 — desktop drag-and-drop child photo upload
+- Desktop users can now drag a JPG, PNG or WebP directly onto the child-photo preview box, as well as using Choose photo.
+- The drop zone highlights while a file is dragged over it and uses the existing validated resize, IndexedDB storage, profile association and illustration-reference pipeline.
+- The drag-and-drop hint is localised across all nine supported locales and hidden on touch/mobile layouts.
+- No Supabase migration is required.
+
+
+## V81 — immersive desktop reader + cover-button repair
+- Repairs the V80 cover regression by binding **Read it myself** and **Read it to me** directly to the reader transition, while retaining the existing delegated story controls as a fallback.
+- Desktop cover now takes over the full viewport. The generated cover is enlarged with `object-fit: contain` so the complete artwork remains visible rather than being cropped.
+- Desktop reading spreads fill the viewport; the illustration page uses its full half-screen and reader controls remain overlays rather than consuming book space.
+- Read-it-myself still contains no narration control; Read-it-to-me retains the existing narration flow.
+- Keeps the existing V68 physical 3D page-turn architecture (perspective, spine crossing, moving shadow and curved/lifted sheet) and ensures it operates over the full-screen book.
+- Portrait-phone/mobile reader and photo-upload behaviour are unchanged.
+- No Supabase SQL, Stripe, Vercel environment-variable or API changes are required.
+
+## V81 complete package
+
+This package includes the 12 existing V80 API functions unchanged. V81 requires no Supabase SQL, Stripe, API, or environment-variable changes.
