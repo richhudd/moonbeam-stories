@@ -545,3 +545,10 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Automatic duplicate-image regeneration was removed so Moonbeam never silently spends a second image slot for one physical page.
 - Illustration prompts explicitly forbid collages, grids, split screens and multi-panel output.
 - Unexpected illustration endpoint failures now refund a reserved image-generation slot.
+
+
+## V93 — mobile setup scrolling and reader controls
+- Mobile setup screens now use normal vertical scrolling when their condensed form content exceeds the phone viewport; the homepage remains a fixed no-scroll hero.
+- Story Preferences is a single continuous scroll, including Saved Stories, and its navigation no longer overlays form controls.
+- Mobile Previous/Next reader buttons now explicitly reset legacy desktop edge-hit-zone positioning so the actual labelled controls remain visible and tappable above the safe area.
+- Desktop layout and V92 illustration scheduling/allowance protections are unchanged.

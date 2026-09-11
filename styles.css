@@ -1099,3 +1099,97 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode .right-page .illustration-frame{bottom:0!important;}
   body.story-mode .mobile-end-actions{bottom:max(82px,calc(env(safe-area-inset-bottom) + 74px))!important;}
 }
+
+
+/* V93 — mobile setup scroll architecture + definitive reader controls repair. */
+@media (max-width:700px){
+  /* Setup forms may scroll vertically. The landing page remains governed by V91's no-scroll mobile hero. */
+  body.product-active:not(.desktop-story-mode) .app-product{
+    height:100dvh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.product-active:not(.desktop-story-mode) .setup-shell,
+  body.product-active:not(.desktop-story-mode) #setupTrack{
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.product-active:not(.desktop-story-mode) #setupTrack>.setup-page.setup-current{
+    min-height:0!important;
+    height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain;
+    padding-bottom:max(24px,calc(env(safe-area-inset-bottom) + 18px))!important;
+  }
+  /* Story Preferences is one continuous scroll: no clipped lower form and no nested library scroller. */
+  body.product-active:not(.desktop-story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    padding-bottom:max(28px,calc(env(safe-area-inset-bottom) + 20px))!important;
+  }
+  .setup-page[data-step="Story"] .story-library-inline,
+  .setup-page[data-step="Story"] .library{
+    max-height:none!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+  /* Setup navigation belongs to the document flow, so it can never cover form controls. */
+  .setup-card-nav{
+    position:static!important;
+    inset:auto!important;
+    flex:0 0 auto!important;
+    margin-top:14px!important;
+    padding-top:10px!important;
+    padding-bottom:2px!important;
+    background:none!important;
+  }
+
+  /* Earlier desktop reader rules turned these into invisible edge hit-zones.
+     Reset every inherited positioning/colour property for real mobile Previous/Next buttons. */
+  body.story-mode .book-controls:not(.hidden){
+    display:grid!important;
+    position:fixed!important;
+    inset:auto 10px max(8px,env(safe-area-inset-bottom)) 10px!important;
+    z-index:120!important;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+    align-items:center!important;
+    gap:7px!important;
+    padding:7px!important;
+    pointer-events:auto!important;
+  }
+  body.story-mode .book-controls:not(.hidden) button,
+  body.story-mode .book-controls:not(.hidden) .secondary,
+  body.story-mode .book-controls:not(.hidden) .turn{
+    position:static!important;
+    inset:auto!important;
+    top:auto!important;
+    left:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    transform:none!important;
+    display:block!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:44px!important;
+    max-width:none!important;
+    min-width:0!important;
+    padding:9px 7px!important;
+    overflow:visible!important;
+    pointer-events:auto!important;
+    color:inherit!important;
+    border:1px solid rgba(83,64,110,.18)!important;
+    box-shadow:none!important;
+    font-size:12px!important;
+    line-height:1.15!important;
+  }
+  body.story-mode .book-controls:not(.hidden) .turn{
+    color:white!important;
+  }
+  body.story-mode .book-controls:not(.hidden) button:after{content:none!important;display:none!important;}
+  body.story-mode .book-controls:not(.hidden) button:disabled{opacity:.45!important;}
+  body.story-mode #book.show-mobile-spread .left-page{
+    padding-bottom:max(112px,calc(env(safe-area-inset-bottom) + 102px))!important;
+  }
+}
