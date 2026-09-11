@@ -571,3 +571,12 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - New saves snapshot the exact open book, retain finished artwork on the book object, upload every cover/page asset, and verify `saved_assets` was actually persisted before reporting success.
 - Saved stories missing cloud artwork now attempt a zero-credit recovery from the browser's existing persistent illustration cache and, when all page images are found, repair the private Storage objects and `saved_assets` record automatically.
 - No new SQL migration is required for V96.
+
+
+## V97 — saved-book language editions
+- Rebuilt Saved Stories around one canonical saved book, one permanent illustration set, and translations stored on demand in the existing `translations` JSON column.
+- Reading and translating are now separate actions. `Read in` lists only editions that already exist; `Translate into another language` lists only missing editions.
+- A successful translation is cached permanently on the same saved story and does not use a story credit.
+- Opening a saved edition no longer changes Moonbeam's interface language. Story language and interface language are independent.
+- Saved artwork remains attached to the canonical book and is reused unchanged by every language edition.
+- No new SQL migration is required for V97; this uses the existing V67/V68 schema.

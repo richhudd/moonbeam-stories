@@ -1241,3 +1241,7 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     padding:0!important;
   }
 }
+
+/* V97 — saved books have permanent artwork plus independently stored language editions. */
+.saved-editions{margin-top:4px;font-size:10px;color:#776d80;line-height:1.35}.saved-translation-panel{grid-column:1/-1;display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:8px 10px;align-items:end;padding:10px;margin-top:2px;border-top:1px solid #eee5f2;background:#faf8fc;border-radius:10px}.saved-translation-panel.hidden{display:none!important}.saved-translation-panel label{margin:0!important}.saved-translation-panel select{width:100%!important}.saved-translation-buttons{display:flex;gap:6px}.saved-translation-buttons button{width:auto!important;margin:0!important}.saved-translation-panel>small{grid-column:1/-1;color:#776d80}.saved-all-languages{font-size:10px;color:#776d80}
+@media(max-width:700px){.saved-translation-panel{grid-template-columns:1fr}.saved-translation-buttons{grid-column:1}.saved-story-actions .saved-language-compact{flex:1 1 100%}.saved-story-actions .saved-read{flex:1 1 42%}.saved-story-actions .saved-translate{flex:1 1 52%}}
