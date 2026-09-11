@@ -797,3 +797,6 @@
 /* V77 — the homepage is the only visible language selector.
    The internal select remains in the DOM as application state, but can never render. */
 .internal-language-control,.internal-language-control.language-globe,.language-inline.internal-language-control{display:none!important}
+
+/* V78 — signed-in users skip the redundant account state; sign out lives unobtrusively in the app header. */
+.app-sign-out{margin-left:auto;width:auto;flex:0 0 auto;padding:8px 12px;border:1px solid rgba(255,255,255,.28);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer}.app-sign-out:hover{background:rgba(255,255,255,.14)}

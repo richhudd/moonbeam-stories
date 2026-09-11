@@ -151,10 +151,9 @@ async function initSupabase(){
 function setAuthStatus(message,isError=false){const el=$('authStatus');if(!el)return;el.innerHTML=isError?`<span class="error">${escapeHtml(message)}</span>`:escapeHtml(message||'')}
 async function applyAuthSession(session){
  currentUser=session?.user||null;
- $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('authSignedIn')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
+ $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('signOut')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
- if($('signedInAs'))$('signedInAs').textContent=currentUser?`${t().signedInAs||'Signed in as'} ${currentUser.email}`:'';
- if(currentUser){setAuthStatus('');updateSetupNav();await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}}else{updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
+ if(currentUser){setAuthStatus('');updateSetupNav();await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}if(!$('productApp')?.classList.contains('hidden')&&setupPageIndex===0&&$('passwordRecovery')?.classList.contains('hidden'))goSetupPage(1,true)}else{updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
 }
 
 function showPasswordRecovery(){
@@ -807,7 +806,7 @@ $('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyCo
 window.addEventListener('orientationchange',()=>setTimeout(()=>{const open=!!currentBook&&!$('story')?.classList.contains('hidden');document.body.classList.toggle('story-mode',open);document.body.classList.toggle('desktop-story-mode',open&&!isPhonePortrait());goSetupPage(setupPageIndex,true)},120));
 
 // V65 — public landing and desktop page architecture.
-function enterMoonbeamApp(accountFirst=false){$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');goSetupPage(accountFirst?0:(currentUser?1:0),true)}
+function enterMoonbeamApp(accountFirst=false){$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');goSetupPage(currentUser?1:0,true)}
 function showMoonbeamLanding(){if(currentBook)return;$('productApp')?.classList.add('hidden');$('landing')?.classList.remove('hidden');document.body.classList.remove('product-active')}
 $('landingStart')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landingStartBottom')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landingSignIn')?.addEventListener('click',()=>enterMoonbeamApp(true));
 const landingLanguage=$('landingLanguage');if(landingLanguage){landingLanguage.value=language;landingLanguage.addEventListener('change',()=>{const main=$('language');if(main){main.value=landingLanguage.value;main.dispatchEvent(new Event('change',{bubbles:true}))}})}

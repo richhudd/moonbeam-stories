@@ -412,3 +412,12 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 - The homepage globe is now the only visible language selector in the application.
 - The internal locale select remains hidden in the DOM so existing localisation/state logic continues to work without changing authentication, setup navigation, story generation, saved stories, payments, or legal behaviour.
 - No Supabase migration is required.
+
+
+## V78 — remove redundant signed-in Parent Account step
+- The Account screen is now used only for sign-in, account creation, and password recovery.
+- After successful authentication, Moonbeam proceeds directly to “Who’s tonight’s story for?” instead of showing a redundant signed-in Parent Account page.
+- Visitors who are already signed in also go directly from the homepage into child selection.
+- Sign out remains available as a small, unobtrusive control in the application header.
+- The authentication gate remains intact for signed-out visitors.
+- No Supabase migration is required.
