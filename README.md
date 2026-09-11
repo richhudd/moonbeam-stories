@@ -405,3 +405,10 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 - The selected locale is persisted and drives the login/setup/story interface as soon as the visitor enters the app.
 - The existing homepage demonstration artwork is unchanged.
 - No Supabase migration is required.
+
+
+## V77 — homepage-only language selector
+- Fixed the V76 selector leak caused by the later `.language-globe` display rule overriding the generic `.hidden` class.
+- The homepage globe is now the only visible language selector in the application.
+- The internal locale select remains hidden in the DOM so existing localisation/state logic continues to work without changing authentication, setup navigation, story generation, saved stories, payments, or legal behaviour.
+- No Supabase migration is required.

@@ -792,3 +792,8 @@
 .setup-card-nav button{width:128px!important;min-width:128px!important;max-width:128px!important;margin:0!important;flex:0 0 128px!important}
 .setup-card-nav .setup-card-enter{margin-left:0!important}
 @media(max-width:700px){.setup-card-nav{justify-content:center!important;gap:12px!important;margin-top:auto!important}.setup-card-nav button{width:112px!important;min-width:112px!important;max-width:112px!important;flex-basis:112px!important}}
+
+
+/* V77 — the homepage is the only visible language selector.
+   The internal select remains in the DOM as application state, but can never render. */
+.internal-language-control,.internal-language-control.language-globe,.language-inline.internal-language-control{display:none!important}
