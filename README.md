@@ -273,3 +273,18 @@ Checkout consent wording shortened: no prominent reference to refunds, statutory
 
 ## V63
 Nine-locale localisation foundation, globe selector, Brazilian Portuguese, Polish, and improved locale-specific narration/prosody. No database migration required.
+
+## V64
+- Completes the Polish interface localisation that was falling back to English in parts of V63.
+- Localises the “Signed in as …” account status in every supported locale.
+- No SQL, Stripe, or environment-variable changes.
+
+## V65 — homepage, stationary desktop navigation and animated book
+- Adds a public Moonbeam Stories marketing homepage with a clear product introduction, three-step explanation, pricing, and the existing photo-to-story visual as the main demonstration asset.
+- Keeps the marketing homepage scrollable, while the actual desktop application becomes a stationary viewport with discrete setup pages and Previous / Next navigation instead of a long scrolling form.
+- Adds desktop left/right keyboard navigation when focus is not inside a form field.
+- Adds a lightweight browser-only physical page-turn transition to the desktop storybook. It uses no additional OpenAI/API calls and respects `prefers-reduced-motion`.
+- Preserves the existing portrait-phone swipe reader rather than forcing the desktop book metaphor onto mobile.
+- Localises the dynamic story-credit balance copy in all nine supported locales, including “18 story credits remaining. One new story uses one credit.” and the zero/checking/free states.
+- Includes the V62–V65 release history in README.
+- No Supabase SQL, Stripe, or environment-variable changes.

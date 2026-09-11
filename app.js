@@ -232,10 +232,20 @@ function renderStoryCredits(balance=storyCreditBalance){
  const el=$('creditStatus');if(!el)return;
  el.classList.toggle('empty',storyCreditBalance===0);
  const buy=$('buyCredits');if(buy)buy.classList.toggle('hidden',!currentUser);
- if(!currentUser){el.innerHTML='<strong>3 free stories</strong> when you create or sign in to your parent account.';return}
- if(storyCreditBalance===null){el.textContent='Checking story credits…';return}
- if(storyCreditBalance===0){el.innerHTML='<strong>No story credits remaining.</strong> Your saved stories are still free to reopen and read.';return}
- el.innerHTML=`<strong>${storyCreditBalance} story credit${storyCreditBalance===1?'':'s'} remaining.</strong> One new story uses one credit.`;
+ const creditCopy={
+'en-GB':{free:'<strong>3 free stories</strong> when you create or sign in to your parent account.',checking:'Checking story credits…',none:'<strong>No story credits remaining.</strong> Your saved stories are still free to reopen and read.',left:n=>`<strong>${n} story credit${n===1?'':'s'} remaining.</strong> One new story uses one credit.`},
+'en-US':{free:'<strong>3 free stories</strong> when you create or sign in to your parent account.',checking:'Checking story credits…',none:'<strong>No story credits remaining.</strong> Your saved stories are still free to reopen and read.',left:n=>`<strong>${n} story credit${n===1?'':'s'} remaining.</strong> One new story uses one credit.`},
+'es-ES':{free:'<strong>3 historias gratis</strong> al crear una cuenta de padre o iniciar sesión.',checking:'Comprobando créditos…',none:'<strong>No quedan créditos.</strong> Tus historias guardadas siguen siendo gratuitas para volver a leerlas.',left:n=>`<strong>Quedan ${n} créditos de historias.</strong> Cada historia nueva utiliza un crédito.`},
+'es-419':{free:'<strong>3 historias gratis</strong> al crear una cuenta de padre o iniciar sesión.',checking:'Comprobando créditos…',none:'<strong>No quedan créditos.</strong> Tus historias guardadas siguen siendo gratuitas para volver a leerlas.',left:n=>`<strong>Quedan ${n} créditos de historias.</strong> Cada historia nueva usa un crédito.`},
+'fr-FR':{free:'<strong>3 histoires gratuites</strong> en créant votre compte parent ou en vous connectant.',checking:'Vérification des crédits…',none:'<strong>Aucun crédit restant.</strong> Vos histoires enregistrées restent gratuites à relire.',left:n=>`<strong>Il reste ${n} crédit${n>1?'s':''} histoire.</strong> Une nouvelle histoire utilise un crédit.`},
+'de-DE':{free:'<strong>3 kostenlose Geschichten</strong>, wenn du ein Elternkonto erstellst oder dich anmeldest.',checking:'Story-Guthaben wird geprüft…',none:'<strong>Kein Story-Guthaben mehr.</strong> Gespeicherte Geschichten kannst du weiterhin kostenlos lesen.',left:n=>`<strong>Noch ${n} Story-Guthaben.</strong> Eine neue Geschichte verbraucht ein Guthaben.`},
+'it-IT':{free:'<strong>3 storie gratis</strong> quando crei o accedi al tuo account genitore.',checking:'Controllo dei crediti…',none:'<strong>Nessun credito rimasto.</strong> Le storie salvate restano gratuite da rileggere.',left:n=>`<strong>Restano ${n} credit${n===1?'o':'i'} storia.</strong> Una nuova storia usa un credito.`},
+'pt-BR':{free:'<strong>3 histórias grátis</strong> ao criar ou entrar na sua conta de responsável.',checking:'Verificando créditos…',none:'<strong>Nenhum crédito restante.</strong> Suas histórias salvas continuam gratuitas para reler.',left:n=>`<strong>Restam ${n} crédito${n===1?'':'s'} de histórias.</strong> Uma nova história usa um crédito.`},
+'pl-PL':{free:'<strong>3 darmowe historie</strong> po utworzeniu konta rodzica lub zalogowaniu.',checking:'Sprawdzanie kredytów…',none:'<strong>Brak kredytów na historie.</strong> Zapisane historie nadal możesz czytać bezpłatnie.',left:n=>`<strong>Pozostało ${n} kredytów na historie.</strong> Jedna nowa historia wykorzystuje jeden kredyt.`}}[language]||null;
+ if(!currentUser){el.innerHTML=creditCopy.free;return}
+ if(storyCreditBalance===null){el.textContent=creditCopy.checking;return}
+ if(storyCreditBalance===0){el.innerHTML=creditCopy.none;return}
+ el.innerHTML=creditCopy.left(storyCreditBalance);
 }
 function moonbeamDeviceId(){
  let id=localStorage.getItem('moonbeamDeviceId');
@@ -688,8 +698,9 @@ function renderBookPage(index){
  applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3);if(book.readingMode==='narrated'&&clamped<total-1){const nextText=clamped+1===total-1?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
 }
 function exitStoryToSetup(){stopNarration();document.body.classList.remove('story-mode');$('story')?.classList.add('hidden');goSetupPage(2)}
-function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+2;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated')scheduleNarration(120)}}
-function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated')scheduleNarration(120)}}
+function animateBookTurn(direction,action){const book=$('book');if(!book||isPhonePortrait()||matchMedia('(prefers-reduced-motion: reduce)').matches){action();return}const cls=direction==='back'?'page-flip-back':'page-flip-forward';book.classList.remove('page-flip-forward','page-flip-back');void book.offsetWidth;book.classList.add(cls);setTimeout(()=>{action();book.classList.remove(cls)},290)}
+function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+2;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){animateBookTurn('forward',()=>{renderBookPage(currentBook.currentPage+1);if(mode==='narrated')scheduleNarration(120)})}}
+function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{animateBookTurn('back',()=>{renderBookPage(currentBook.currentPage-1);if(mode==='narrated')scheduleNarration(120)})}}
 let lastStorySwipeAt=0;
 $('story').addEventListener('click',e=>{if(Date.now()-lastStorySwipeAt<500&&(e.target.classList.contains('mobile-turn-left')||e.target.classList.contains('mobile-turn-right')))return;if(e.target.id==='beginStory')beginStory('self');if(e.target.id==='beginNarrated')beginStory('narrated');if(e.target.id==='retryCover')loadCoverIllustration(true);if(e.target.id==='prevPage'||e.target.classList.contains('mobile-turn-left'))goPreviousBookPage();if(e.target.id==='nextPage'||e.target.classList.contains('mobile-turn-right'))goNextBookPage()});
 let storyTouchX=null,storyTouchY=null;
@@ -733,3 +744,11 @@ function initSetupDeck(){
 initSetupDeck();
 $('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyConsentCheck').checked)clearStoryConsentAttention()});
 window.addEventListener('orientationchange',()=>setTimeout(()=>{document.body.classList.toggle('story-mode',!!currentBook&&!$('story')?.classList.contains('hidden')&&isPhonePortrait());goSetupPage(setupPageIndex,true)},120));
+
+// V65 — public landing and desktop page architecture.
+function enterMoonbeamApp(accountFirst=false){$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');goSetupPage(accountFirst?0:(currentUser?1:0),true)}
+function showMoonbeamLanding(){if(currentBook)return;$('productApp')?.classList.add('hidden');$('landing')?.classList.remove('hidden');document.body.classList.remove('product-active')}
+$('landingStart')?.addEventListener('click',()=>enterMoonbeamApp(false));$('landingStartBottom')?.addEventListener('click',()=>enterMoonbeamApp(false));$('landingSignIn')?.addEventListener('click',()=>enterMoonbeamApp(true));
+const landingLanguage=$('landingLanguage');if(landingLanguage){landingLanguage.value=language;landingLanguage.addEventListener('change',()=>{const main=$('language');if(main){main.value=landingLanguage.value;main.dispatchEvent(new Event('change',{bubbles:true}))}})}
+$('language')?.addEventListener('change',()=>{if(landingLanguage)landingLanguage.value=$('language').value});
+document.addEventListener('keydown',e=>{if(!$('productApp')?.classList.contains('hidden')&&$('story')?.classList.contains('hidden')&&innerWidth>700){if(e.key==='ArrowRight'&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))goSetupPage(setupPageIndex+1);if(e.key==='ArrowLeft'&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))goSetupPage(setupPageIndex-1)}else if(!$('story')?.classList.contains('hidden')&&innerWidth>700){if(e.key==='ArrowRight')goNextBookPage();if(e.key==='ArrowLeft')goPreviousBookPage()}});
