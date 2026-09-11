@@ -582,7 +582,7 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - No new SQL migration is required for V97; this uses the existing V67/V68 schema.
 
 
-## V98 — mobile reader layout repair
+## V99 — mobile reader layout repair
 - Portrait mobile story pages now maximise illustration size while preserving a small top inset.
 - Removed the redundant in-page mobile page counter; the counter between Previous and Turn Page remains.
 - Restored measured text fitting: typography compacts only as needed, then illustration height yields only as much as necessary.

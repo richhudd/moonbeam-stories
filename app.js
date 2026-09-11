@@ -655,33 +655,64 @@ function applyMobileSide(){
    const prev=$('prevPage'),next=$('nextPage');
    if(prev)prev.textContent=currentBook.currentPage===0?coverT().cover:t().previous;
    if(next){next.disabled=currentBook.currentPage===currentBook.pages.length+2;next.textContent=next.disabled?t().end:t().turn}
-   const progress=document.querySelector('.mobile-page-progress');if(progress)progress.textContent=`${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}`;
    requestAnimationFrame(fitMobileStoryText);
  }
 }
 function fitMobileStoryText(){
  if(!isPhonePortrait())return;
- const bookEl=$('book'),content=document.querySelector('.left-page .page-content'),el=document.querySelector('.left-page .story-text');
- if(!bookEl||!content||!el)return;
- // V98: use the viewport intelligently. Start with a prominent illustration, then
- // shrink typography and (only if necessary) the art enough to guarantee complete text.
- const vh=Math.max(1,window.innerHeight||document.documentElement.clientHeight||700);
- const maxArt=Math.min(Math.round(vh*0.49),430);
- const minArt=Math.max(230,Math.min(Math.round(vh*0.35),300));
- let art=maxArt;
- bookEl.style.setProperty('--mobile-art-height',art+'px');
- el.style.fontSize='18px';el.style.lineHeight='1.42';el.style.overflowY='visible';
- const label=document.querySelector('.left-page .chapter-label');
- const fits=()=>el.scrollHeight<=Math.max(0,content.clientHeight-(label?.offsetHeight||0)-10)+1;
- let size=18,line=1.42,guard=0;
- // Preserve the largest possible illustration first; compact long passages gently.
- while(!fits()&&size>13.5&&guard++<30){size-=0.25;line=Math.max(1.28,line-0.006);el.style.fontSize=size+'px';el.style.lineHeight=String(line)}
- // If text still cannot fit, trade only as much illustration height as is required.
- while(!fits()&&art>minArt){art-=8;bookEl.style.setProperty('--mobile-art-height',art+'px')}
- // Absolute safety net: never clip story text on an unusually long generated page.
- if(!fits())el.style.overflowY='auto';
-}
+ const bookEl=$('book');
+ const content=document.querySelector('.left-page .page-content');
+ const text=document.querySelector('.left-page .story-text');
+ if(!bookEl||!content||!text)return;
 
+ // V99: one authoritative mobile fit pass. Measure the complete passage itself;
+ // never infer fit from a child whose height/overflow has already been constrained.
+ const vh=Math.max(1,window.visualViewport?.height||window.innerHeight||document.documentElement.clientHeight||700);
+ const maxArt=Math.min(Math.round(vh*0.49),430);
+ const minArt=Math.max(205,Math.min(Math.round(vh*0.30),270));
+ let art=maxArt;
+ let size=18;
+ let line=1.42;
+
+ bookEl.style.setProperty('--mobile-art-height',art+'px');
+ text.style.fontSize=size+'px';
+ text.style.lineHeight=String(line);
+ text.style.maxHeight='none';
+ text.style.overflow='visible';
+ content.style.overflowY='hidden';
+
+ const overflows=()=>{
+   const cr=content.getBoundingClientRect();
+   const tr=text.getBoundingClientRect();
+   const label=document.querySelector('.left-page .chapter-label');
+   const lr=label?.getBoundingClientRect();
+   const bottom=Math.max(tr.bottom,lr?.bottom||0);
+   return bottom>cr.bottom-2 || content.scrollHeight>content.clientHeight+2;
+ };
+
+ // Keep artwork as large as possible. Compact typography gently first.
+ let guard=0;
+ while(overflows()&&size>14.5&&guard++<20){
+   size-=0.25;
+   line=Math.max(1.30,line-0.008);
+   text.style.fontSize=size+'px';
+   text.style.lineHeight=String(line);
+ }
+ // Then surrender only the artwork height actually required by a long page.
+ guard=0;
+ while(overflows()&&art>minArt&&guard++<40){
+   art=Math.max(minArt,art-8);
+   bookEl.style.setProperty('--mobile-art-height',art+'px');
+ }
+ // Absolute invariant: no story text may be silently clipped.
+ // If an unusually long generated page still exceeds the viewport, the text pane scrolls.
+ if(overflows()){
+   content.style.overflowY='auto';
+   content.style.webkitOverflowScrolling='touch';
+ } else {
+   content.style.overflowY='hidden';
+ }
+}
 function fitDesktopStoryText(){
  if(window.matchMedia('(max-width:700px)').matches)return;
  const content=document.querySelector('.left-page .page-content');
@@ -740,9 +771,9 @@ function renderBookPage(index){
    const es=$('endSave');if(es)es.onclick=saveCurrentStory;const en=$('endNewStory');if(en)en.onclick=()=>startNewStory();
    applyMobileSide();return;
  }
- let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=t().end}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
+ let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';
- bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
+ bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.textContent=t().turn}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
  const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
  applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,1);

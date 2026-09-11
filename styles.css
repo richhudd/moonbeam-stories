@@ -1246,64 +1246,81 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
 .saved-editions{margin-top:4px;font-size:10px;color:#776d80;line-height:1.35}.saved-translation-panel{grid-column:1/-1;display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:8px 10px;align-items:end;padding:10px;margin-top:2px;border-top:1px solid #eee5f2;background:#faf8fc;border-radius:10px}.saved-translation-panel.hidden{display:none!important}.saved-translation-panel label{margin:0!important}.saved-translation-panel select{width:100%!important}.saved-translation-buttons{display:flex;gap:6px}.saved-translation-buttons button{width:auto!important;margin:0!important}.saved-translation-panel>small{grid-column:1/-1;color:#776d80}.saved-all-languages{font-size:10px;color:#776d80}
 @media(max-width:700px){.saved-translation-panel{grid-template-columns:1fr}.saved-translation-buttons{grid-column:1}.saved-story-actions .saved-language-compact{flex:1 1 100%}.saved-story-actions .saved-read{flex:1 1 42%}.saved-story-actions .saved-translate{flex:1 1 52%}}
 
-
-/* V98 — portrait mobile reader: maximise artwork while guaranteeing complete story text. */
+/* V99 — canonical portrait-mobile reader. Replaces the accumulated V34/V39/V92/V93/V98
+   layout assumptions for the live spread. There is one counter only: #pageIndicator in controls. */
 @media (max-width:700px) and (orientation:portrait){
   body.story-mode #book.show-mobile-spread{
     --mobile-art-height:49dvh;
-    grid-template-rows:var(--mobile-art-height) minmax(0,1fr)!important;
+    display:grid!important;
+    position:absolute!important;
+    inset:0!important;
+    width:100vw!important;
     height:100dvh!important;
-  }
-  /* A small deliberate inset keeps the art from feeling glued to the screen edge. */
-  body.story-mode #book.show-mobile-spread .right-page{
-    padding:max(6px,env(safe-area-inset-top)) 7px 3px!important;
-    background:#f6f0e4!important;
+    grid-template-columns:1fr!important;
+    grid-template-rows:var(--mobile-art-height) minmax(0,1fr)!important;
     overflow:hidden!important;
+    background:#fffdf8!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page,
+  body.story-mode #book.show-mobile-spread .left-page{
+    display:block!important;position:relative!important;inset:auto!important;
+    width:100%!important;height:100%!important;min-height:0!important;border:0!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page{
+    grid-row:1!important;
+    padding:max(6px,env(safe-area-inset-top)) 7px 3px!important;
+    background:#f6f0e4!important;overflow:hidden!important;
   }
   body.story-mode #book.show-mobile-spread .illustration-frame,
   body.story-mode #book.show-mobile-spread .illustration-loading,
   body.story-mode #book.show-mobile-spread .illustration-error,
   body.story-mode #book.show-mobile-spread .illustration-placeholder{
-    position:relative!important;
-    inset:auto!important;
-    width:100%!important;
-    height:100%!important;
-    min-height:0!important;
-    border-radius:10px!important;
-    overflow:hidden!important;
+    position:relative!important;inset:auto!important;width:100%!important;height:100%!important;
+    min-height:0!important;max-height:none!important;border-radius:10px!important;overflow:hidden!important;
   }
   body.story-mode #book.show-mobile-spread .illustration-frame img{
-    position:absolute!important;
-    inset:0!important;
-    width:100%!important;
-    height:100%!important;
-    border-radius:10px!important;
-    object-fit:cover!important;
+    position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+    max-height:none!important;border-radius:10px!important;object-fit:cover!important;
   }
   body.story-mode #book.show-mobile-spread .left-page{
-    padding:10px 20px max(78px,calc(env(safe-area-inset-bottom) + 70px))!important;
+    grid-row:2!important;
+    padding:9px 20px max(78px,calc(env(safe-area-inset-bottom) + 70px))!important;
+    background:linear-gradient(90deg,#fffdf8,#faf6ec)!important;
     overflow:hidden!important;
   }
   body.story-mode #book.show-mobile-spread .page-content{
-    justify-content:center!important;
-    min-height:0!important;
-    overflow:hidden!important;
+    display:flex!important;flex-direction:column!important;justify-content:center!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-width:620px!important;
+    margin:0 auto!important;overflow-x:hidden!important;overflow-y:hidden;
   }
   body.story-mode #book.show-mobile-spread .chapter-label{
-    margin:0 0 5px!important;
-    font-size:9px!important;
-    line-height:1.1!important;
+    flex:0 0 auto!important;margin:0 0 5px!important;font-size:9px!important;line-height:1.1!important;
   }
   body.story-mode #book.show-mobile-spread .story-text,
   body.story-mode #book.show-mobile-spread .story-text.compact-text,
   body.story-mode #book.show-mobile-spread .story-text.roomy-text{
-    max-height:100%!important;
-    min-height:0!important;
-    overflow-x:hidden!important;
-    scrollbar-width:thin;
+    display:block!important;flex:0 0 auto!important;margin:0!important;max-height:none!important;
+    min-height:0!important;overflow:visible!important;font-size:18px;line-height:1.42;
   }
-  /* Page number already lives between Previous and Turn Page. */
-  body.story-mode #book.show-mobile-spread .mobile-page-progress{display:none!important;}
   body.story-mode #book.show-mobile-spread .page-number,
   body.story-mode #book.show-mobile-spread .page-footer{display:none!important;}
+  body.story-mode .book-controls:not(.hidden){
+    display:grid!important;position:fixed!important;inset:auto 10px max(8px,env(safe-area-inset-bottom)) 10px!important;
+    z-index:120!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+    align-items:center!important;gap:7px!important;padding:7px!important;margin:0!important;
+    border-radius:16px!important;background:rgba(255,253,247,.94)!important;box-shadow:0 7px 26px #0003!important;
+    backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;pointer-events:auto!important;
+  }
+  body.story-mode .book-controls:not(.hidden) button,
+  body.story-mode .book-controls:not(.hidden) .secondary,
+  body.story-mode .book-controls:not(.hidden) .turn{
+    position:static!important;inset:auto!important;transform:none!important;display:block!important;
+    width:100%!important;height:auto!important;min-height:44px!important;max-width:none!important;min-width:0!important;
+    padding:9px 7px!important;overflow:visible!important;pointer-events:auto!important;
+    border:1px solid rgba(83,64,110,.18)!important;box-shadow:none!important;font-size:12px!important;line-height:1.15!important;
+  }
+  body.story-mode .book-controls:not(.hidden) .turn{color:white!important;}
+  body.story-mode .book-controls:not(.hidden) button:after{content:none!important;display:none!important;}
+  body.story-mode .book-controls:not(.hidden) button:disabled{opacity:.45!important;}
+  body.story-mode .book-controls .page-indicator{min-width:42px!important;align-self:center!important;font-size:10px!important;}
 }
