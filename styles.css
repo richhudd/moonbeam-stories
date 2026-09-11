@@ -1400,3 +1400,22 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
 @media (max-width:700px) and (orientation:portrait){
   body.story-mode #book.show-mobile-spread .chapter-label{display:none!important;}
 }
+
+
+/* V103 — portrait-mobile navigation is deliberately slim to return vertical space to story text.
+   V101 measures the live top edge of this bar, so every pixel recovered here becomes book/text space. */
+@media (max-width:700px) and (orientation:portrait){
+  body.story-mode .book-controls:not(.hidden){
+    left:8px!important;right:8px!important;bottom:max(4px,env(safe-area-inset-bottom))!important;
+    gap:5px!important;padding:4px!important;border-radius:13px!important;
+  }
+  body.story-mode .book-controls:not(.hidden) button,
+  body.story-mode .book-controls:not(.hidden) .secondary,
+  body.story-mode .book-controls:not(.hidden) .turn{
+    min-height:38px!important;height:38px!important;padding:4px 6px!important;
+    font-size:11px!important;line-height:1.05!important;border-radius:10px!important;
+  }
+  body.story-mode .book-controls .page-indicator{
+    min-width:36px!important;font-size:10px!important;line-height:1!important;
+  }
+}

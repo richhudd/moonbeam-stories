@@ -1,3 +1,10 @@
+# V103 — slimmer portrait-mobile story navigation
+
+- Mobile portrait only: reduced the fixed Previous / page / Turn Page bar height, padding and gaps.
+- Buttons are now 38px high and the bar uses 4px vertical padding.
+- V101's geometry already measures the navigation bar's real top edge, so the recovered height is automatically returned to the book/text region.
+- Story generation, story length, desktop reader, saved artwork and saved-story translation are unchanged.
+
 # Moonbeam Stories V81
 
 # Moonbeam Stories V70
