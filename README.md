@@ -505,3 +505,11 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Hardens narration teardown: every book-page render stops and disposes any active narration audio first, invalidates pending narration starts, and prevents audio from a page that has been left continuing underneath the destination page.
 - Makes the Moonbeam Stories setup header/logo a permanent route back to the public homepage without signing the parent out.
 - No API, Supabase schema, Stripe, or environment-variable changes are required.
+
+
+## V88 — saved-story translation ownership fix
+- Saved-story translation now retrieves and updates the story using the signed-in parent’s own Supabase session and the same Row Level Security path used by the browser library.
+- Removes the separate server-side `parent_id` filter that could incorrectly report an otherwise readable saved story as missing.
+- Database lookup failures are now distinguished from a genuinely unavailable story instead of both being reported as “Saved story not found.”
+- Translation ownership remains protected by Supabase RLS; users cannot translate or update another account’s saved stories.
+- No Supabase migration is required.
