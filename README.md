@@ -536,3 +536,12 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Mobile copy, spacing, and controls compress before the hero artwork does, keeping the CTA visible without scrolling.
 - Extra-short phones hide the kicker and tighten copy/spacing while preserving the artwork as the dominant element.
 - Retains all V90 RC1 hardening changes.
+
+## V92 — mobile reader and deterministic illustration pipeline
+- Mobile Story Preferences gives Tone the full available width and keeps Make Tonight's Story below Story Values without overlap.
+- Mobile reader Previous/Next controls are visible as a safe-area-aware bottom overlay.
+- Illustration prefetch is sequential: only the next physical illustration is prepared in the background while the current page is being read.
+- Existing per-page in-flight/persistent caching prevents duplicate requests for the same page.
+- Automatic duplicate-image regeneration was removed so Moonbeam never silently spends a second image slot for one physical page.
+- Illustration prompts explicitly forbid collages, grids, split screens and multi-panel output.
+- Unexpected illustration endpoint failures now refund a reserved image-generation slot.

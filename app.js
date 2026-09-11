@@ -480,7 +480,7 @@ function renderStory(s,image,child,options={}){
  if(nextPage)nextPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goNextBookPage()});
  loadCoverIllustration(false);
  // Start the opening and next two illustrations immediately while the cover is on screen.
- prefetchIllustrations(-1,3);
+ prefetchIllustrations(-1,1);
  $('save').onclick=saveCurrentStory;
  $('newStory').onclick=()=>startNewStory();
 }
@@ -621,14 +621,8 @@ async function loadIllustration(index,prompt,silent=false,force=false){
    const prevKey=previousIllustrationKey(book,index);
    const prevImage=prevKey?(illustrationCache.get(prevKey)||await persistentImageGet(prevKey)):null;
    let image=await requestIllustration(key,prompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referencePhoto||null);
-   // An exact repeat should never appear on consecutive pages. If the image service ever
-   // returns identical artwork, regenerate this page once with a stronger scene-change cue.
-   if(index>0&&prevImage&&image===prevImage){
-     const distinctPrompt=`${prompt}
-
-CRITICAL SCENE CHANGE: This is the NEXT page of the book. Create a visibly different composition from the previous page: change camera angle, character pose/action, staging and background emphasis while remaining faithful to this page's events. Do not reuse the previous illustration.`;
-     image=await requestIllustration(key,distinctPrompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,true,book.child?.referencePhoto||null);
-   }
+   // Never spend a second generation slot automatically. In-flight and persistent caching
+   // make each physical page deterministic; a rare duplicate can be retried only by explicit user action.
    if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image
  }catch(e){console.error(e);if(!silent&&currentBook===book&&book.currentPage===index){const f=document.querySelector('.illustration-frame');if(f)f.innerHTML=`<div class="illustration-error"><div class="moon">☾</div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(e?.message||String(e))}</small><button class="secondary retry-illustration" type="button">${escapeHtml(t().retry)}</button></div>`;const retry=document.querySelector('.retry-illustration');if(retry)retry.onclick=()=>loadIllustration(index,prompt,false,true)}}}
 function getIllustrationPrompt(index){
@@ -644,7 +638,7 @@ SCENE DIRECTION: ${page.illustration_prompt||'A charming children’s storybook 
 PREVIOUS PAGE CONTEXT (for continuity only; DO NOT re-illustrate it): ${excerpt(previous,260)}
 Make this composition clearly different from the previous page: advance the action, choose a fresh camera angle or framing, and show the distinctive event/location/object from the current page. Never repeat a previous illustration.`
 }
-function prefetchIllustrations(index,ahead=4){const book=currentBook;if(!book)return;const total=book.pages.length+2;for(let step=1;step<=ahead;step++){const i=index+step;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}}
+function prefetchIllustrations(index,ahead=1){const book=currentBook;if(!book||book.isSaved)return;const total=book.pages.length+2;const i=index+1;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}
 function isPhonePortrait(){return window.matchMedia('(max-width:700px) and (orientation:portrait)').matches}
 function mobilePhysicalPageNumber(){if(!currentBook)return 1;return currentBook.currentPage+1}
 function mobilePhysicalTotal(){return currentBook?currentBook.pages.length+3:0}
@@ -737,7 +731,7 @@ function renderBookPage(index){
  bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content"><div class="chapter-label">${escapeHtml(label)}</div><div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-page-progress">${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}</div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.textContent=t().turn}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
  const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
- applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,3);
+ applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,1);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
 }
 function closeReader(){stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode');$('story')?.classList.add('hidden')}

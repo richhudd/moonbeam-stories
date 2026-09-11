@@ -1076,3 +1076,26 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body:not(.product-active) #landing .hero-cta{min-height:36px!important;padding:7px 10px!important}
   body:not(.product-active) #landing .hero-copy small{font-size:9px!important}
 }
+
+/* V92 — mobile setup/reader repair. Desktop layout remains unchanged. */
+@media (max-width:700px){
+  /* Story preferences: give Tone the full line and keep generation below Story Values. */
+  body.product-active:not(.desktop-story-mode) #setupTrack>.setup-page[data-step="Story"]{overflow:hidden!important;padding-bottom:8px!important;}
+  .setup-page[data-step="Story"] .row{display:block!important;width:100%!important;flex:0 0 auto!important;}
+  .setup-page[data-step="Story"] .row label{display:block!important;width:100%!important;}
+  .setup-page[data-step="Story"] #tone{display:block!important;width:100%!important;max-width:none!important;min-height:48px!important;}
+  .setup-page[data-step="Story"] #valuesTitle{flex:0 0 auto!important;margin:8px 0 5px!important;}
+  .setup-page[data-step="Story"] .chips{flex:0 1 auto!important;min-height:0!important;margin:0 0 7px!important;}
+  .setup-page[data-step="Story"] #storySupplyConsent{flex:0 0 auto!important;margin:3px 0 6px!important;}
+  .setup-page[data-step="Story"] #generate{position:static!important;inset:auto!important;z-index:auto!important;flex:0 0 auto!important;margin:5px 0 3px!important;width:100%!important;}
+  .setup-page[data-step="Story"] .story-library-inline{min-height:0!important;overflow:auto!important;margin-top:3px!important;}
+
+  /* Reader: visible, safe-area-aware Previous / Next controls throughout the story. */
+  body.story-mode .book-controls:not(.hidden){display:grid!important;position:fixed!important;z-index:80!important;left:10px!important;right:10px!important;bottom:max(8px,env(safe-area-inset-bottom))!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;gap:7px!important;padding:7px!important;margin:0!important;border-radius:16px!important;background:rgba(255,253,247,.94)!important;box-shadow:0 7px 26px #0003!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;}
+  body.story-mode .book-controls .secondary,body.story-mode .book-controls .turn{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;min-height:42px!important;padding:9px 6px!important;font-size:12px!important;margin:0!important;}
+  body.story-mode .book-controls .page-indicator{min-width:42px!important;align-self:center!important;font-size:10px!important;}
+  body.story-mode .paper{padding-bottom:max(98px,calc(env(safe-area-inset-bottom) + 88px))!important;}
+  body.story-mode .right-page{padding-bottom:0!important;}
+  body.story-mode .right-page .illustration-frame{bottom:0!important;}
+  body.story-mode .mobile-end-actions{bottom:max(82px,calc(env(safe-area-inset-bottom) + 74px))!important;}
+}

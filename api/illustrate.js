@@ -9,6 +9,9 @@ module.exports = async function handler(req, res) {
   const apiKey = String(process.env.OPENAI_API_KEY || '').trim().replace(/^['"]|['"]$/g, '');
   if (!apiKey) return res.status(500).json({ error: 'OPENAI_API_KEY is not configured in Vercel.' });
 
+  let slotReserved=false;
+  let reservedUserId=null;
+  let reservedRunId=null;
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const prompt = String(body.prompt || '').trim();
@@ -20,8 +23,8 @@ module.exports = async function handler(req, res) {
     const moonbeamUser = await verifyMoonbeamUser(req);
     try { await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
     catch(e){ return res.status(e.status||402).json({error:e.message,code:e.code||'GENERATION_LIMIT'}); }
-    let slotReserved=true;
-    const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(moonbeamUser.id,generationRunId,'image')}};
+    slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;
+    const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(reservedUserId,reservedRunId,'image')}};
 
     const hasReference = /^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage);
     const identityDirection = hasReference
@@ -45,6 +48,8 @@ IMPORTANT
 - Compose the scene as a beautiful book illustration with clear focal characters and readable silhouettes.
 - Keep character appearance consistent with the description in the scene and, when supplied, the attached identity reference.
 - Every page in a story must be a genuinely new illustration. If the scene prompt identifies a page/scene number or previous-page context, use that information to advance the visual action and avoid repeating the previous composition, pose, camera angle or background staging.
+- ONE continuous scene only: never create a collage, contact sheet, comic strip, grid, split screen, diptych, triptych, multiple panels, inset pictures or multiple frames.
+- The finished output must look like one uninterrupted full-page painting viewed through one camera/composition.
 - Square composition suitable for the right-hand page of a children's book.`;
 
     let r;
@@ -102,6 +107,7 @@ IMPORTANT
     return res.status(200).json({ image: `data:image/webp;base64,${item.b64_json}`, usedReferencePhoto: hasReference });
   } catch (e) {
     console.error('illustrate error', e);
+    if(slotReserved&&reservedUserId&&reservedRunId){try{await refundGenerationSlot(reservedUserId,reservedRunId,'image');slotReserved=false}catch(refundError){console.error('illustration slot refund failed',refundError)}}
     return res.status(500).json({ error: String(e && e.message ? e.message : e) });
   }
 };
