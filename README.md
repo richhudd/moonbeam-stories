@@ -421,3 +421,10 @@ Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deploy
 - Sign out remains available as a small, unobtrusive control in the application header.
 - The authentication gate remains intact for signed-out visitors.
 - No Supabase migration is required.
+
+
+## V79 — profile deletion moved into Saved profiles menu
+- Removed the large Delete profile button from the child-selection card.
+- When a saved child is selected, the Saved child profile dropdown now includes a separated “Delete profile [name]…” management option at the bottom.
+- Choosing it asks for confirmation before deletion; saved stories remain untouched.
+- No Supabase migration is required.
