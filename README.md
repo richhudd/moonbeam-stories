@@ -552,3 +552,10 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Story Preferences is a single continuous scroll, including Saved Stories, and its navigation no longer overlays form controls.
 - Mobile Previous/Next reader buttons now explicitly reset legacy desktop edge-hit-zone positioning so the actual labelled controls remain visible and tappable above the safe area.
 - Desktop layout and V92 illustration scheduling/allowance protections are unchanged.
+
+## V94 — one free introductory story
+- Reduces the introductory offer for new eligible trial claims from three free stories to one free story.
+- Existing users keep their current balances; no credits are removed or reset.
+- Updates the trial copy in every supported interface language and the device-used message.
+- Run `SUPABASE_V94_ONE_FREE_STORY.sql` once in Supabase SQL Editor before deploying V94 so the server-side trial grant changes from 3 credits to 1.
+- Paid packs remain unchanged: 10 for £9.99, 25 for £19.99, and 50 for £34.99.
