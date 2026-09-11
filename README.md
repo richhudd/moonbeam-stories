@@ -1,4 +1,22 @@
-# Moonbeam Stories V61
+# Moonbeam Stories V69
+
+V69 is a corrective navigation release on top of V68. It replaces the fragile desktop horizontal-scroll setup navigation with explicit single-page desktop rendering, forces the large edge arrows in critical inline CSS, cache-busts the V69 CSS/JS assets, and confirms Saved Stories is embedded beneath Make Tonight's Story rather than being a setup step.
+
+## V69 deployment
+
+Deploy the complete contents of the `moonbeam-v69` folder. There is **no new V69 SQL**. If `SUPABASE_V68_COMPLETE_SAVED_BOOKS.sql` has already been run for V68, do not run it again. No Stripe or Vercel environment-variable changes are required.
+
+## V69 hard acceptance checks
+
+- Desktop setup has exactly six pages; there is no Saved Stories setup page.
+- Back/Next are large translucent controls fixed halfway down the left/right viewport edges.
+- Back on the first setup page returns to the public homepage.
+- Saved Stories is inside Story Preferences, directly below Make Tonight's Story.
+- V69 references `/styles.css?v=69`, `/i18n.js?v=69`, and `/app.js?v=69` so a browser cannot silently keep the previous release assets.
+
+---
+
+## V61
 
 V61 is a small UX release on top of V60. If a user presses **Make Tonight's Story** while the required first-use purchased-credit consent box is still unticked, Moonbeam now scrolls/focuses to the consent line, flashes it red, outlines the checkbox, and shows **“Please tick this box to continue.”** The warning clears immediately when the box is ticked. No credit is consumed and no story generation starts until consent is recorded.
 
@@ -322,3 +340,13 @@ Nine-locale localisation foundation, globe selector, Brazilian Portuguese, Polis
 - Saved stories remain Read it myself only, so replay cannot call TTS. Translation remains the only optional AI action from the saved library; each translated language is stored and reused.
 - Older saved stories created before V68 are not silently regenerated. If they have no cloud-saved artwork, Moonbeam reports the missing saved image instead of spending image-generation allowance.
 - Run `SUPABASE_V68_COMPLETE_SAVED_BOOKS.sql` in Supabase before deploying V68. No Stripe or Vercel environment-variable changes are required.
+
+
+## V69 — corrective setup navigation
+- Replaces desktop scroll-position navigation with explicit one-setup-page-at-a-time rendering.
+- Forces large translucent left/right viewport navigation in inline critical CSS.
+- Removes any possibility of Saved Stories being a setup step; it remains inline beneath Make Tonight's Story.
+- Back from the first setup page returns to the public homepage; desktop keyboard Back does the same.
+- Corrects setup progress from seven pages to six.
+- Cache-busts V69 CSS and JavaScript assets to prevent an older deployed interface being reused by the browser.
+- No new SQL, Stripe, or environment-variable changes beyond the V68 requirements.

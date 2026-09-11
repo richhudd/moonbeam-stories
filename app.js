@@ -746,9 +746,17 @@ function updateSetupNav(){
 function goSetupPage(index,instant=false){
  const track=$('setupTrack'),pages=setupPages();if(!track||!pages.length)return;
  setupPageIndex=Math.max(0,Math.min(Number(index)||0,pages.length-1));
- const left=pages[setupPageIndex].offsetLeft-track.offsetLeft;
- track.scrollTo({left,behavior:instant?'auto':'smooth'});updateSetupNav();
- if(setupPageIndex===5&&currentUser)refreshStoryCreditConsentUI().catch(()=>{});
+ if(!isPhonePortrait() && innerWidth>700){
+   pages.forEach((page,i)=>{page.classList.toggle('setup-current',i===setupPageIndex);page.setAttribute('aria-hidden',i===setupPageIndex?'false':'true')});
+   track.scrollLeft=0;
+ }else{
+   pages.forEach(page=>{page.classList.remove('setup-current');page.removeAttribute('aria-hidden')});
+   const left=pages[setupPageIndex].offsetLeft-track.offsetLeft;
+   track.scrollTo({left,behavior:instant?'auto':'smooth'});
+ }
+ const storyIndex=pages.findIndex(p=>p.dataset.step==='Story');
+ if(setupPageIndex===storyIndex&&currentUser)refreshStoryCreditConsentUI().catch(()=>{});
+ updateSetupNav();
 }
 function initSetupDeck(){
  const track=$('setupTrack');if(!track)return;
@@ -768,4 +776,4 @@ function showMoonbeamLanding(){if(currentBook)return;$('productApp')?.classList.
 $('landingStart')?.addEventListener('click',()=>enterMoonbeamApp(false));$('landingStartBottom')?.addEventListener('click',()=>enterMoonbeamApp(false));$('landingSignIn')?.addEventListener('click',()=>enterMoonbeamApp(true));
 const landingLanguage=$('landingLanguage');if(landingLanguage){landingLanguage.value=language;landingLanguage.addEventListener('change',()=>{const main=$('language');if(main){main.value=landingLanguage.value;main.dispatchEvent(new Event('change',{bubbles:true}))}})}
 $('language')?.addEventListener('change',()=>{if(landingLanguage)landingLanguage.value=$('language').value});
-document.addEventListener('keydown',e=>{if(!$('productApp')?.classList.contains('hidden')&&$('story')?.classList.contains('hidden')&&innerWidth>700){if(e.key==='ArrowRight'&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))goSetupPage(setupPageIndex+1);if(e.key==='ArrowLeft'&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))goSetupPage(setupPageIndex-1)}else if(!$('story')?.classList.contains('hidden')&&innerWidth>700){if(e.key==='ArrowRight')goNextBookPage();if(e.key==='ArrowLeft')goPreviousBookPage()}});
+document.addEventListener('keydown',e=>{if(!$('productApp')?.classList.contains('hidden')&&$('story')?.classList.contains('hidden')&&innerWidth>700){if(e.key==='ArrowRight'&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))goSetupPage(setupPageIndex+1);if(e.key==='ArrowLeft'&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)){if(setupPageIndex===0)showMoonbeamLanding();else goSetupPage(setupPageIndex-1)}}else if(!$('story')?.classList.contains('hidden')&&innerWidth>700){if(e.key==='ArrowRight')goNextBookPage();if(e.key==='ArrowLeft')goPreviousBookPage()}});
