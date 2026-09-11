@@ -288,3 +288,22 @@ Nine-locale localisation foundation, globe selector, Brazilian Portuguese, Polis
 - Localises the dynamic story-credit balance copy in all nine supported locales, including “18 story credits remaining. One new story uses one credit.” and the zero/checking/free states.
 - Includes the V62–V65 release history in README.
 - No Supabase SQL, Stripe, or environment-variable changes.
+
+
+## V66 — Navigation and full-screen book refinement
+- Enlarged desktop setup navigation into obvious translucent edge arrows; the first Back arrow now returns to the public homepage.
+- Moved Saved Stories beneath Make Tonight's Story with explicit no-extra-credit replay messaging.
+- Desktop story reader now occupies the full browser viewport.
+- Read-it-myself mode no longer shows narration controls.
+- Save Story and New Story controls appear only on the closing spread.
+- Replaced the V65 wobble transition with a 3D curved-corner page swoosh.
+- Kept portrait-phone swipe architecture intact while sharing the Saved Stories placement change.
+
+## V67 — saved-story translation and cost-safe replay
+- Includes all V66 navigation, full-screen reader, saved-story placement and page-turn refinements.
+- Saved stories now reopen in **Read it myself** mode only, preventing repeat TTS API charges from library replays.
+- Adds one-off text translation of a cloud-saved story into any of Moonbeam's nine supported locales without using another story credit.
+- Translations preserve the original page structure and reuse the original illustration prompts/cache identity, so translating does not deliberately regenerate or alter the artwork.
+- Each translated text version is stored on the saved story and reused on subsequent opens; the AI translation call is therefore made only once per story/language combination.
+- Adds `SUPABASE_V67_SAVED_TRANSLATIONS.sql`. Run this SQL before deploying the V67 code.
+- No Stripe or Vercel environment-variable changes are required.
