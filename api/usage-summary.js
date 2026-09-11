@@ -1,5 +1,5 @@
 
-const { SUPABASE_URL, SECRET_KEY, adminHeaders } = require('./_usage');
+const { SUPABASE_URL, SECRET_KEY, adminHeaders } = require('../_usage');
 
 const PUBLISHABLE_KEY =
   String(process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q').trim();

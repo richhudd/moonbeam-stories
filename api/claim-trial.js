@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const net = require('net');
-const { verifyMoonbeamUser, rpc } = require('./_credits');
-const { SECRET_KEY } = require('./_usage');
+const { verifyMoonbeamUser, rpc } = require('../_credits');
+const { SECRET_KEY } = require('../_usage');
 
 function privateHash(kind, value) {
   const key = SECRET_KEY || 'moonbeam-v52-fallback';

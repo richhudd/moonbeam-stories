@@ -1,5 +1,5 @@
-const {verifyMoonbeamUser}=require('./_credits');
-const {SUPABASE_URL,SECRET_KEY,adminHeaders,logUsage}=require('./_usage');
+const {verifyMoonbeamUser}=require('../_credits');
+const {SUPABASE_URL,SECRET_KEY,adminHeaders,logUsage}=require('../_usage');
 const supported=new Set(['en-GB','en-US','es-ES','es-419','fr-FR','de-DE','it-IT','pt-BR','pl-PL']);
 const names={'en-GB':'British English','en-US':'American English','es-ES':'Spanish (Spain)','es-419':'Latin American Spanish','fr-FR':'French (France)','de-DE':'German (Germany)','it-IT':'Italian (Italy)','pt-BR':'Brazilian Portuguese','pl-PL':'Polish'};
 function extractText(data){if(typeof data?.output_text==='string')return data.output_text;let out='';for(const item of data?.output||[])for(const part of item?.content||[])if(typeof part?.text==='string')out+=part.text;return out}

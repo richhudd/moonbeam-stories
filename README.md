@@ -1,4 +1,4 @@
-# Moonbeam Stories V69
+# Moonbeam Stories V70
 
 V69 is a corrective navigation release on top of V68. It replaces the fragile desktop horizontal-scroll setup navigation with explicit single-page desktop rendering, forces the large edge arrows in critical inline CSS, cache-busts the V69 CSS/JS assets, and confirms Saved Stories is embedded beneath Make Tonight's Story rather than being a setup step.
 
@@ -350,3 +350,10 @@ Nine-locale localisation foundation, globe selector, Brazilian Portuguese, Polis
 - Corrects setup progress from seven pages to six.
 - Cache-busts V69 CSS and JavaScript assets to prevent an older deployed interface being reused by the browser.
 - No new SQL, Stripe, or environment-variable changes beyond the V68 requirements.
+
+
+## V70 — Vercel Hobby deployment repair
+
+V70 keeps the V69 application/UI work but fixes the deployment architecture after Vercel rejected the recent releases for exceeding the Hobby-plan limit of 12 Serverless Functions. The three shared backend helper modules (`_credits.js`, `_stripe.js`, and `_usage.js`) live at the repository root, outside `/api`, where they remain reusable Node modules rather than deployable API endpoints. `/api` now contains exactly 12 serverless function files. No Supabase, Stripe, Resend, or environment-variable changes are required for this repair.
+
+Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deployment status is **Ready** before testing the website.

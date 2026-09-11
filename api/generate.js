@@ -1,5 +1,5 @@
-const {logUsage,estimateGBP}=require('./_usage');
-const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('./_credits');
+const {logUsage,estimateGBP}=require('../_usage');
+const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('../_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');

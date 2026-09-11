@@ -1,5 +1,5 @@
-const {logUsage,estimateGBP}=require('./_usage');
-const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('./_credits');
+const {logUsage,estimateGBP}=require('../_usage');
+const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('../_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
