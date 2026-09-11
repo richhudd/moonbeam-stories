@@ -984,3 +984,11 @@ body.product-active:not(.desktop-story-mode) .setup-nav{display:none!important;}
 }
 .saved-library-note{font-size:11px;line-height:1.3;color:#6c6279;background:#f6f2fa;border:1px solid #e5dcef;border-radius:10px;padding:6px 9px;margin:0 0 6px}.saved-story-list{display:grid;gap:6px}.saved-story-card{display:grid;grid-template-columns:minmax(150px,1fr) auto;gap:10px;align-items:center;border:1px solid #e8e0ef;border-radius:12px;padding:7px 9px;background:#fff}.saved-story-main{min-width:0}.saved-story-title{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.saved-story-main small{color:#776d80}.saved-story-actions{display:flex;align-items:center;gap:5px}.saved-story-actions button{width:auto!important;min-width:0!important;padding:7px 9px!important;font-size:11px!important;margin:0!important}.saved-language-compact{display:flex;align-items:center;gap:4px;font-size:10px!important;margin:0!important}.saved-language-compact select{width:125px!important;padding:6px!important;font-size:10px!important}.library-delete{background:transparent!important;border:1px solid #e2c9cf!important;color:#8e4352!important;border-radius:8px!important}.library-delete:hover{background:#fff1f3!important}.saved-library-empty{margin:5px 0!important}
 @media(max-width:900px){.saved-story-card{grid-template-columns:1fr}.saved-story-actions{flex-wrap:wrap}.saved-language-compact{flex:1 1 150px}.saved-language-compact select{width:100%!important}}
+
+/* V89 — cover and book are mutually exclusive reader states. */
+body.story-mode #story #book.hidden,
+body.story-mode #story #book[hidden],
+body.desktop-story-mode #story #book.hidden,
+body.desktop-story-mode #story #book[hidden]{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body.story-mode #story #bookControls.hidden,
+body.story-mode #story #bookControls[hidden]{display:none!important;visibility:hidden!important;pointer-events:none!important}

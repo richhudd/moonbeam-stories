@@ -513,3 +513,10 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Database lookup failures are now distinguished from a genuinely unavailable story instead of both being reported as “Saved story not found.”
 - Translation ownership remains protected by Supabase RLS; users cannot translate or update another account’s saved stories.
 - No Supabase migration is required.
+
+
+## V89 — cover/book reader-state isolation
+- Fixes the opening-page Back navigation so returning to the cover completely hides the rendered story spread instead of leaving page 1 visible underneath the cover.
+- Cover and book are now explicit mutually exclusive reader states using class, hidden attribute, inline display protection, and a defensive CSS rule.
+- Returning to the cover also tears down narration immediately and hides book navigation controls before revealing the cover.
+- Starting from the cover cleanly restores the book and controls. No API, Supabase, Stripe, or environment-variable changes are required.
