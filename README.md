@@ -357,3 +357,13 @@ Nine-locale localisation foundation, globe selector, Brazilian Portuguese, Polis
 V70 keeps the V69 application/UI work but fixes the deployment architecture after Vercel rejected the recent releases for exceeding the Hobby-plan limit of 12 Serverless Functions. The three shared backend helper modules (`_credits.js`, `_stripe.js`, and `_usage.js`) live at the repository root, outside `/api`, where they remain reusable Node modules rather than deployable API endpoints. `/api` now contains exactly 12 serverless function files. No Supabase, Stripe, Resend, or environment-variable changes are required for this repair.
 
 Deployment acceptance rule: after uploading to GitHub, confirm the Vercel deployment status is **Ready** before testing the website.
+
+
+## V71 — single-screen homepage correction
+
+- Fixed the public homepage rendering the hidden product/setup app underneath it on desktop.
+- Added an explicit `.app-product.hidden` rule so the setup navigation cannot appear on the public homepage.
+- Desktop public homepage is now a single non-scrolling hero screen; the lower marketing sections are suppressed there.
+- Homepage therefore has no setup arrows; the Create their first story button remains the route into setup.
+- Setup pages and their existing working previous/next arrows are unchanged.
+- No Supabase/database changes.
