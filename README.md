@@ -263,3 +263,9 @@ Checkout consent wording shortened: no prominent reference to refunds, statutory
 - Sends a confirmation email after a new paid-pack acknowledgement is recorded.
 - Refund reconciliation removes unused credits from the exact V60 purchase batch where possible.
 - Run `SUPABASE_V60_PER_PURCHASE_CONSENT.sql` before deploying the V60 code.
+
+
+## V62
+- Paid-pack first-use consent is now shown quietly in grey as soon as it is required.
+- If Create Story is pressed without ticking it, the existing red flash/focus warning appears.
+- No SQL, Stripe, or environment-variable changes from V61.

@@ -254,7 +254,10 @@ async function loadStoryCredits(){
  }
 
  if(error){console.error('credit balance',error);renderStoryCredits(null);return null}
- renderStoryCredits(data?.balance ?? 3);return storyCreditBalance;
+ renderStoryCredits(data?.balance ?? 3);
+ // Keep the first-use acknowledgement visible in its normal grey state whenever a paid batch needs consent.
+ refreshStoryCreditConsentUI().catch(()=>{});
+ return storyCreditBalance;
 }
 async function currentAccessToken(){
  const {data:{session}}=await supabaseClient.auth.getSession();return session?.access_token||'';
@@ -304,6 +307,7 @@ async function handleCheckoutReturn(){
    if(!r.ok)throw new Error(data.error||'Could not confirm payment.');
    if(data.paid){
      if(Number.isFinite(Number(data.balance)))renderStoryCredits(Number(data.balance));else await loadStoryCredits();
+     await refreshStoryCreditConsentUI().catch(()=>{});
      showCheckoutNotice(`${Number(data.credits)||'Your'} new story credits have been added. Enjoy your next adventure!`,'success');
      history.replaceState({},document.title,location.pathname);
    }else{
@@ -339,18 +343,34 @@ function showStoryConsentAttention(){
  box.scrollIntoView?.({block:'center',behavior:'smooth'});
  try{check.focus({preventScroll:true})}catch{check.focus?.()}
 }
+async function refreshStoryCreditConsentUI(accessToken=''){
+ const box=$('storySupplyConsent'),check=$('storySupplyConsentCheck');
+ if(!box||!check)return {consentRequired:false};
+ try{
+   const token=accessToken||await currentAccessToken();
+   if(!token||!currentUser){clearStoryConsentAttention();box.classList.add('hidden');box.dataset.batchId='';check.checked=false;return {consentRequired:false}}
+   const r=await fetch('/api/story-consent',{headers:{'Authorization':`Bearer ${token}`}});
+   const data=await r.json().catch(()=>({}));
+   if(!r.ok)throw new Error(data.error||'Could not check story credits.');
+   if(!data.has_credit||!data.consent_required){clearStoryConsentAttention();box.classList.add('hidden');box.dataset.batchId='';check.checked=false;return {consentRequired:false}}
+   const batchId=String(data.batch_id||'');
+   if(box.dataset.batchId!==batchId){check.checked=false;box.dataset.batchId=batchId;clearStoryConsentAttention()}
+   // V62: show the acknowledgement quietly in its normal grey state before the customer presses Create.
+   box.classList.remove('hidden');
+   return {consentRequired:true,batchId};
+ }catch(e){
+   console.warn('story consent preview',e);
+   return {consentRequired:false,error:e};
+ }
+}
 async function prepareStoryCreditConsent(accessToken){
  const box=$('storySupplyConsent'),check=$('storySupplyConsentCheck');
  if(!box||!check)return true;
  try{
-   const r=await fetch('/api/story-consent',{headers:{'Authorization':`Bearer ${accessToken}`}});
-   const data=await r.json().catch(()=>({}));
-   if(!r.ok)throw new Error(data.error||'Could not check story credits.');
-   if(!data.has_credit){clearStoryConsentAttention();box.classList.add('hidden');box.dataset.batchId='';return true}
-   if(!data.consent_required){clearStoryConsentAttention();box.classList.add('hidden');box.dataset.batchId='';check.checked=false;return true}
-   const batchId=String(data.batch_id||'');
-   if(box.dataset.batchId!==batchId){check.checked=false;box.dataset.batchId=batchId;clearStoryConsentAttention()}
-   box.classList.remove('hidden');
+   const state=await refreshStoryCreditConsentUI(accessToken);
+   if(state.error)throw state.error;
+   if(!state.consentRequired)return true;
+   const batchId=String(state.batchId||box.dataset.batchId||'');
    if(!check.checked){showStoryConsentAttention();return false}
    clearStoryConsentAttention();
    const accept=await fetch('/api/story-consent',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({batchId})});
@@ -687,6 +707,7 @@ function goSetupPage(index,instant=false){
  setupPageIndex=Math.max(0,Math.min(Number(index)||0,pages.length-1));
  const left=pages[setupPageIndex].offsetLeft-track.offsetLeft;
  track.scrollTo({left,behavior:instant?'auto':'smooth'});updateSetupNav();
+ if(setupPageIndex===5&&currentUser)refreshStoryCreditConsentUI().catch(()=>{});
 }
 function initSetupDeck(){
  const track=$('setupTrack');if(!track)return;
