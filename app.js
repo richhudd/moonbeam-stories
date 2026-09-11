@@ -687,7 +687,12 @@ function fitMobileStoryText(){
    const label=document.querySelector('.left-page .chapter-label');
    const lr=label?.getBoundingClientRect();
    const bottom=Math.max(tr.bottom,lr?.bottom||0);
-   return bottom>cr.bottom-2 || content.scrollHeight>content.clientHeight+2;
+   // V100: Safari can paint the final glyphs below the nominal text box.
+   // Require one full rendered line of clearance before declaring a page fitted.
+   const cs=getComputedStyle(text);
+   const linePx=parseFloat(cs.lineHeight)||(parseFloat(cs.fontSize)||18)*1.42;
+   const safety=Math.ceil(linePx);
+   return bottom>cr.bottom-safety || content.scrollHeight>content.clientHeight-safety;
  };
 
  // Keep artwork as large as possible. Compact typography gently first.

@@ -588,3 +588,10 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Restored measured text fitting: typography compacts only as needed, then illustration height yields only as much as necessary.
 - Added an internal text-scroll safety fallback so generated story text is never silently clipped.
 - Desktop reader and Saved Stories translation code are unchanged from V97.
+
+
+## V100 — mobile final-line clearance
+- Keeps the V99 mobile-reader architecture intact.
+- Adds a one-rendered-line safety margin to the mobile text-fit test so Safari cannot accept a page with a partially painted final line.
+- Retains the single page counter in the fixed navigation bar and the prominent mobile illustration layout.
+- Corrects the build metadata and cache references to V100.
