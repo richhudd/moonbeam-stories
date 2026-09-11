@@ -1245,3 +1245,65 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
 /* V97 — saved books have permanent artwork plus independently stored language editions. */
 .saved-editions{margin-top:4px;font-size:10px;color:#776d80;line-height:1.35}.saved-translation-panel{grid-column:1/-1;display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:8px 10px;align-items:end;padding:10px;margin-top:2px;border-top:1px solid #eee5f2;background:#faf8fc;border-radius:10px}.saved-translation-panel.hidden{display:none!important}.saved-translation-panel label{margin:0!important}.saved-translation-panel select{width:100%!important}.saved-translation-buttons{display:flex;gap:6px}.saved-translation-buttons button{width:auto!important;margin:0!important}.saved-translation-panel>small{grid-column:1/-1;color:#776d80}.saved-all-languages{font-size:10px;color:#776d80}
 @media(max-width:700px){.saved-translation-panel{grid-template-columns:1fr}.saved-translation-buttons{grid-column:1}.saved-story-actions .saved-language-compact{flex:1 1 100%}.saved-story-actions .saved-read{flex:1 1 42%}.saved-story-actions .saved-translate{flex:1 1 52%}}
+
+
+/* V98 — portrait mobile reader: maximise artwork while guaranteeing complete story text. */
+@media (max-width:700px) and (orientation:portrait){
+  body.story-mode #book.show-mobile-spread{
+    --mobile-art-height:49dvh;
+    grid-template-rows:var(--mobile-art-height) minmax(0,1fr)!important;
+    height:100dvh!important;
+  }
+  /* A small deliberate inset keeps the art from feeling glued to the screen edge. */
+  body.story-mode #book.show-mobile-spread .right-page{
+    padding:max(6px,env(safe-area-inset-top)) 7px 3px!important;
+    background:#f6f0e4!important;
+    overflow:hidden!important;
+  }
+  body.story-mode #book.show-mobile-spread .illustration-frame,
+  body.story-mode #book.show-mobile-spread .illustration-loading,
+  body.story-mode #book.show-mobile-spread .illustration-error,
+  body.story-mode #book.show-mobile-spread .illustration-placeholder{
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    border-radius:10px!important;
+    overflow:hidden!important;
+  }
+  body.story-mode #book.show-mobile-spread .illustration-frame img{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    border-radius:10px!important;
+    object-fit:cover!important;
+  }
+  body.story-mode #book.show-mobile-spread .left-page{
+    padding:10px 20px max(78px,calc(env(safe-area-inset-bottom) + 70px))!important;
+    overflow:hidden!important;
+  }
+  body.story-mode #book.show-mobile-spread .page-content{
+    justify-content:center!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.story-mode #book.show-mobile-spread .chapter-label{
+    margin:0 0 5px!important;
+    font-size:9px!important;
+    line-height:1.1!important;
+  }
+  body.story-mode #book.show-mobile-spread .story-text,
+  body.story-mode #book.show-mobile-spread .story-text.compact-text,
+  body.story-mode #book.show-mobile-spread .story-text.roomy-text{
+    max-height:100%!important;
+    min-height:0!important;
+    overflow-x:hidden!important;
+    scrollbar-width:thin;
+  }
+  /* Page number already lives between Previous and Turn Page. */
+  body.story-mode #book.show-mobile-spread .mobile-page-progress{display:none!important;}
+  body.story-mode #book.show-mobile-spread .page-number,
+  body.story-mode #book.show-mobile-spread .page-footer{display:none!important;}
+}

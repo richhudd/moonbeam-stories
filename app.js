@@ -660,17 +660,28 @@ function applyMobileSide(){
  }
 }
 function fitMobileStoryText(){
- if(!isPhonePortrait())return;const el=document.querySelector('.left-page .story-text');if(!el)return;
- el.style.fontSize='';el.style.lineHeight='';
- let size=18;let line=1.52;el.style.fontSize=size+'px';el.style.lineHeight=line;
- const content=document.querySelector('.left-page .page-content');
- const footer=document.querySelector('.left-page .page-footer');
- if(!content)return;
- const progress=document.querySelector('.left-page .mobile-page-progress');
- const footerReserve=(progress?.offsetHeight||0)+8;
- const available=Math.max(0,content.clientHeight-footerReserve);
- while(el.scrollHeight>available&&size>12.2){size-=0.3;line=Math.max(1.28,line-0.008);el.style.fontSize=size+'px';el.style.lineHeight=line}
+ if(!isPhonePortrait())return;
+ const bookEl=$('book'),content=document.querySelector('.left-page .page-content'),el=document.querySelector('.left-page .story-text');
+ if(!bookEl||!content||!el)return;
+ // V98: use the viewport intelligently. Start with a prominent illustration, then
+ // shrink typography and (only if necessary) the art enough to guarantee complete text.
+ const vh=Math.max(1,window.innerHeight||document.documentElement.clientHeight||700);
+ const maxArt=Math.min(Math.round(vh*0.49),430);
+ const minArt=Math.max(230,Math.min(Math.round(vh*0.35),300));
+ let art=maxArt;
+ bookEl.style.setProperty('--mobile-art-height',art+'px');
+ el.style.fontSize='18px';el.style.lineHeight='1.42';el.style.overflowY='visible';
+ const label=document.querySelector('.left-page .chapter-label');
+ const fits=()=>el.scrollHeight<=Math.max(0,content.clientHeight-(label?.offsetHeight||0)-10)+1;
+ let size=18,line=1.42,guard=0;
+ // Preserve the largest possible illustration first; compact long passages gently.
+ while(!fits()&&size>13.5&&guard++<30){size-=0.25;line=Math.max(1.28,line-0.006);el.style.fontSize=size+'px';el.style.lineHeight=String(line)}
+ // If text still cannot fit, trade only as much illustration height as is required.
+ while(!fits()&&art>minArt){art-=8;bookEl.style.setProperty('--mobile-art-height',art+'px')}
+ // Absolute safety net: never clip story text on an unusually long generated page.
+ if(!fits())el.style.overflowY='auto';
 }
+
 function fitDesktopStoryText(){
  if(window.matchMedia('(max-width:700px)').matches)return;
  const content=document.querySelector('.left-page .page-content');

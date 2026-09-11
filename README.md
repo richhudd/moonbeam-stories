@@ -580,3 +580,11 @@ This package includes the 12 existing V80 API functions unchanged. V81 requires 
 - Opening a saved edition no longer changes Moonbeam's interface language. Story language and interface language are independent.
 - Saved artwork remains attached to the canonical book and is reused unchanged by every language edition.
 - No new SQL migration is required for V97; this uses the existing V67/V68 schema.
+
+
+## V98 — mobile reader layout repair
+- Portrait mobile story pages now maximise illustration size while preserving a small top inset.
+- Removed the redundant in-page mobile page counter; the counter between Previous and Turn Page remains.
+- Restored measured text fitting: typography compacts only as needed, then illustration height yields only as much as necessary.
+- Added an internal text-scroll safety fallback so generated story text is never silently clipped.
+- Desktop reader and Saved Stories translation code are unchanged from V97.
