@@ -175,4 +175,11 @@ Mobile homepage composition only: separate brand/language rows, concise hero, la
 - Mobile setup remains the existing sequential Step 1 / Step 2 flow.
 - No setup fields, story generation, Saved Stories, reader, payment, sharing, narration, legal or API behaviour changed.
 
-V151 — Desktop child selector: visual saved-child tiles with real local profile photos, New child tile, and overflow scrolling. Mobile unchanged.
+V152 — Desktop child selector: visual saved-child tiles with real local profile photos, New child tile, and overflow scrolling. Mobile unchanged.
+
+## V152 — desktop left card arrangement
+- Desktop only: the proven child selector now spans the full left card.
+- Existing photo, name and age controls are rearranged beneath it toward the approved desktop layout.
+- Interests and Things to avoid are hidden on desktop only; their fields/data remain intact for existing logic and mobile.
+- Existing photo choose/remove/use controls and Save child profile remain the same functional controls.
+- Story card, mobile setup, Saved Stories, reader, payments and APIs are unchanged.

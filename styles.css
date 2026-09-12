@@ -2039,3 +2039,145 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
   .desktop-child-scroll.visible{display:grid!important;place-items:center!important}
   .desktop-child-scroll-left{left:-7px}.desktop-child-scroll-right{right:-7px}
 }
+
+/* V152 — desktop left-card reorganisation only.
+   Mobile and the desktop Story card remain unchanged. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page{
+    padding:24px 22px 20px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-page-heading{
+    margin-bottom:18px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-setup-grid{
+    display:grid!important;
+    grid-template-columns:minmax(230px,.58fr) minmax(180px,.42fr)!important;
+    grid-template-rows:auto auto!important;
+    column-gap:28px!important;
+    row-gap:18px!important;
+    align-items:start!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-details-column{
+    display:contents!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-chooser{
+    grid-column:1 / -1!important;
+    grid-row:1!important;
+    width:100%!important;
+    margin:0!important;
+    padding:0 0 18px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{
+    width:100%!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-tile{
+    flex-basis:142px!important;
+    min-width:142px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-column{
+    grid-column:1!important;
+    grid-row:2!important;
+    min-width:0!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-column>h3{
+    display:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-card{
+    display:block!important;
+    margin:0!important;
+    padding:0!important;
+    border:1px solid #e1d8eb!important;
+    border-radius:16px!important;
+    overflow:hidden!important;
+    background:#fffdf9!important;
+    box-shadow:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-copy{
+    display:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-controls{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:0!important;
+    width:100%!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-preview{
+    width:100%!important;
+    height:auto!important;
+    aspect-ratio:4 / 5!important;
+    min-height:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:#f6f1fb!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-preview img{
+    width:100%!important;
+    height:100%!important;
+    object-fit:cover!important;
+    display:block!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-buttons{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:7px!important;
+    padding:10px!important;
+    background:#fffdf9!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-buttons button{
+    width:100%!important;
+    min-height:42px!important;
+    margin:0!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-toggle{
+    margin:4px 10px 10px!important;
+    padding:12px 12px!important;
+    border-radius:13px!important;
+    background:#f6f1fb!important;
+    color:#2d2145!important;
+    font-weight:700!important;
+    line-height:1.25!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-toggle:before{
+    content:'★';
+    color:#7046d3;
+    font-size:18px;
+    margin-right:7px;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-status{
+    margin:0 10px 10px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid{
+    grid-column:2!important;
+    grid-row:2!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:18px!important;
+    margin:18px 0 0!important;
+    min-width:0!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid label{
+    width:100%!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid input{
+    width:100%!important;
+    min-height:52px!important;
+    font-size:17px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .about-grid,
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .mobile-comfort-copy{
+    display:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions{
+    grid-column:2!important;
+    grid-row:2!important;
+    align-self:start!important;
+    margin:190px 0 0!important;
+    display:block!important;
+    min-width:0!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .secondary{
+    width:100%!important;
+    min-height:44px!important;
+  }
+}
