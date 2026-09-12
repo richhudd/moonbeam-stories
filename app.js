@@ -246,21 +246,8 @@ function dataUrlToBlob(dataUrl){const m=String(dataUrl||'').match(/^data:([^;]+)
 async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');image=await requestIllustration(key,prompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,book.child?.referencePhoto||null);book.artwork.pages[index]=image}return image}
 async function finishedCoverForSave(book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.cover)return book.artwork.cover;const key=coverKey(book);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image)image=book.artwork?.pages?.[0]||await finishedImageForSave(0,book);return image}
 async function uploadSavedBookArt(storyId,book=currentBook){if(!currentUser||!book)throw new Error('Sign in to save the complete book.');const total=book.pages.length+2,assets={version:2,cover:null,pages:[]},base=`${currentUser.id}/${storyId}`;const cover=await finishedCoverForSave(book),coverPath=`${base}/cover.webp`;let r=await supabaseClient.storage.from('saved-story-art').upload(coverPath,dataUrlToBlob(cover),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.cover=coverPath;for(let i=0;i<total;i++){const image=await finishedImageForSave(i,book),path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}return assets}
-async function persistCachedNarrationForNewSave(storyId,book,assets){
- if(!currentUser||!storyId||!book)return assets;
- book.savedStoryId=storyId;book.savedAssets=assets||{};
- const lang=narrationLanguage(book),lastNarratedPage=book.pages.length+1;
- for(let pageIndex=0;pageIndex<=lastNarratedPage;pageIndex++){
-   const key=`${book.cacheId}:audio:${lang}:${pageIndex}`,audio=narrationCache.get(key);
-   if(typeof audio==='string'&&audio.startsWith('data:audio/'))await persistSavedNarration(book,pageIndex,lang,audio);
- }
- return book.savedAssets
-}
-function savedNarrationPaths(assets){
- const out=[];for(const edition of Object.values(assets?.narration||{}))for(const path of Object.values(edition||{}))if(path)out.push(path);return out
-}
-async function saveCurrentStory(){if(!currentBook)return;const bookToSave=currentBook;const button=$('endSave')||$('mobileSave')||$('save');if(button)button.disabled=true;try{const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing,generation_run_id:currentBook.generationRunId||null}).select('id').single();if(insert.error)throw insert.error;try{const assets=await uploadSavedBookArt(insert.data.id,bookToSave);const update=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',insert.data.id).select('saved_assets').single();if(update.error)throw update.error;if(!update.data?.saved_assets?.cover||update.data.saved_assets.pages?.length!==bookToSave.pages.length+2)throw new Error('Moonbeam could not verify the saved illustrations.');await persistCachedNarrationForNewSave(insert.data.id,bookToSave,update.data.saved_assets)}catch(assetError){await supabaseClient.storage.from('saved-story-art').remove([`${currentUser.id}/${insert.data.id}/cover.webp`,...Array.from({length:currentBook.pages.length+2},(_,i)=>`${currentUser.id}/${insert.data.id}/page-${i}.webp`)]);await supabaseClient.from('saved_stories').delete().eq('id',insert.data.id);throw new Error('The complete illustrated book could not be saved. Nothing was added to your library. '+(assetError.message||assetError))}await loadCloudStories();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;return}const savedChild={...(currentBook.child||{})};delete savedChild.referencePhoto;saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:savedChild,generationRunId:currentBook.generationRunId||null,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn}catch(e){console.error(e);if(button)button.textContent=t().save;alert('The story could not be saved: '+(e.message||e))}finally{if(button)button.disabled=false}}
-async function deleteCloudStory(id){if(!currentUser)return;if(!confirm('Delete this saved story?'))return;const item=cloudStories.find(x=>x.id===id),paths=[item?.savedAssets?.cover,...(item?.savedAssets?.pages||[]),...savedNarrationPaths(item?.savedAssets)].filter(Boolean);if(paths.length)await supabaseClient.storage.from('saved-story-art').remove(paths);const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
+async function saveCurrentStory(){if(!currentBook)return;const bookToSave=currentBook;const button=$('endSave')||$('mobileSave')||$('save');if(button)button.disabled=true;try{const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing,generation_run_id:currentBook.generationRunId||null}).select('id').single();if(insert.error)throw insert.error;try{const assets=await uploadSavedBookArt(insert.data.id,bookToSave);const update=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',insert.data.id).select('saved_assets').single();if(update.error)throw update.error;if(!update.data?.saved_assets?.cover||update.data.saved_assets.pages?.length!==bookToSave.pages.length+2)throw new Error('Moonbeam could not verify the saved illustrations.');}catch(assetError){await supabaseClient.storage.from('saved-story-art').remove([`${currentUser.id}/${insert.data.id}/cover.webp`,...Array.from({length:currentBook.pages.length+2},(_,i)=>`${currentUser.id}/${insert.data.id}/page-${i}.webp`)]);await supabaseClient.from('saved_stories').delete().eq('id',insert.data.id);throw new Error('The complete illustrated book could not be saved. Nothing was added to your library. '+(assetError.message||assetError))}await loadCloudStories();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;return}const savedChild={...(currentBook.child||{})};delete savedChild.referencePhoto;saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:savedChild,generationRunId:currentBook.generationRunId||null,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();if(button)button.textContent=t().savedBtn;const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn}catch(e){console.error(e);if(button)button.textContent=t().save;alert('The story could not be saved: '+(e.message||e))}finally{if(button)button.disabled=false}}
+async function deleteCloudStory(id){if(!currentUser)return;if(!confirm('Delete this saved story?'))return;const item=cloudStories.find(x=>x.id===id),paths=[item?.savedAssets?.cover,...(item?.savedAssets?.pages||[])].filter(Boolean);if(paths.length)await supabaseClient.storage.from('saved-story-art').remove(paths);const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
 
 let storyCreditBalance=null;
 function renderStoryCredits(balance=storyCreditBalance){
@@ -759,39 +746,17 @@ function renderNarrationText(text){return splitNarrationSentences(text).map((sen
 function currentPageText(){if(!currentBook)return'';const i=currentBook.currentPage,closingIndex=currentBook.pages.length+1;if(i===0)return currentBook.opening||'';if(i===closingIndex)return currentBook.closing||'';if(i>closingIndex)return'';return currentBook.pages[i-1]?.text||''}
 function narrationLanguage(book=currentBook){return book?.child?.language||language}
 function narrationKey(){return currentBook?`${currentBook.cacheId}:audio:${narrationLanguage()}:${currentBook.currentPage}`:''}
-function savedNarrationPath(book,pageIndex,lang=narrationLanguage(book)){return book?.savedAssets?.narration?.[lang]?.[String(pageIndex)]||null}
-let narrationPersistQueue=Promise.resolve();
-async function persistSavedNarration(book,pageIndex,lang,audioData){
- if(!currentUser||!book?.savedStoryId||!audioData?.startsWith('data:audio/'))return;
- const safeLang=String(lang||'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
- const path=`${currentUser.id}/${book.savedStoryId}/narration/${safeLang}/page-${pageIndex}.mp3`;
- const task=async()=>{
-   const up=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(audioData),{contentType:'audio/mpeg',upsert:true,cacheControl:'31536000'});
-   if(up.error)throw up.error;
-   const narration={...(book.savedAssets?.narration||{})};
-   narration[lang]={...(narration[lang]||{}),[String(pageIndex)]:path};
-   book.savedAssets={...(book.savedAssets||{}),narration};
-   const u=await supabaseClient.from('saved_stories').update({saved_assets:book.savedAssets}).eq('id',book.savedStoryId).select('saved_assets').single();
-   if(u.error)throw u.error;
-   book.savedAssets=u.data.saved_assets||book.savedAssets;
-   const item=cloudStories.find(x=>x.id===book.savedStoryId);if(item)item.savedAssets=book.savedAssets;
- };
- narrationPersistQueue=narrationPersistQueue.then(task,task);
- try{await narrationPersistQueue}catch(e){console.error('saved narration persistence failed',e)}
-}
-async function getNarration(text,key,pageIndex=currentBook?.currentPage??-1){
+// V117 — saved books regenerate narration audio on demand.
+// Story text and illustrations remain the already-saved assets; only /api/narrate is called.
+async function getNarration(text,key,pageIndex=currentBook?.currentPage){
  if(narrationCache.has(key))return narrationCache.get(key);
  const book=currentBook,lang=narrationLanguage(book);
- if(book?.isSaved){
-   const path=savedNarrationPath(book,pageIndex,lang);
-   if(path){try{const src=await savedAssetUrl(path);narrationCache.set(key,src);return src}catch(e){console.error('saved narration download failed',e)}}
- }
- const accessToken=await currentAccessToken();if(!accessToken)throw new Error(t().signInAgain);
- const generationRunId=book?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure narration allowance.');
- const r=await fetch('/api/narrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({text,language:lang,generationRunId})});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok||!data.audio)throw new Error(data?.error||`Narration failed (${r.status})`);
- narrationCache.set(key,data.audio);
- if(book?.isSaved)persistSavedNarration(book,pageIndex,lang,data.audio);
- return data.audio
+ const {data:{session}}=await supabaseClient.auth.getSession(),accessToken=session?.access_token;if(!accessToken)throw new Error('Sign in to use narration.');
+ const payload={text,language:lang};
+ if(book?.isSaved)payload.savedStoryId=book.savedStoryId;else payload.generationRunId=book?.generationRunId||null;
+ const r=await fetch('/api/narrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify(payload)});
+ const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok||!data.audio)throw new Error(data?.error||`Narration failed (${r.status})`);
+ narrationCache.set(key,data.audio);return data.audio
 }
 function clearNarrationHighlight(){narrationScrollSentence=-1;document.querySelectorAll('.narration-sentence').forEach(x=>x.classList.remove('speaking'))}
 function stopNarration(){narrationRun++;if(narrationStartTimeout){clearTimeout(narrationStartTimeout);narrationStartTimeout=null}if(narrationTimer){clearInterval(narrationTimer);narrationTimer=null}const audios=new Set(activeNarrationAudios);if(narrationAudio)audios.add(narrationAudio);for(const audio of audios){try{audio.onended=null;audio.ontimeupdate=null;audio.pause();audio.currentTime=0;audio.removeAttribute?.('src');audio.load?.()}catch{}}activeNarrationAudios.clear();narrationAudio=null;clearNarrationHighlight();const b=$('narrationControl');if(b){b.textContent='▶';b.classList.remove('loading')}}
@@ -889,23 +854,36 @@ function ensureSetupCardNav(){
  })
 }
 function updateSetupNav(){ensureSetupCardNav();const dots=$('setupDots');if(dots)dots.innerHTML=''}
-// V116 — reuse the reader's double-chevron convention on mobile setup pages.
-// One overlay belongs to the setup shell; the active page remains the native scroll container.
+// V117 — mobile setup cue is based on rendered viewport geometry, not only
+// scrollHeight. This matches what the user can actually see in mobile Safari.
 function ensureSetupScrollCue(){
  const shell=$('setupShell');if(!shell)return null;
  let cue=shell.querySelector(':scope > .setup-scroll-cue');
  if(!cue){cue=document.createElement('div');cue.className='setup-scroll-cue';cue.setAttribute('aria-hidden','true');cue.innerHTML='<span></span><span></span>';shell.appendChild(cue)}
  return cue;
 }
+function setupVisibleBottom(page){
+ const vv=window.visualViewport,viewportBottom=vv?vv.offsetTop+vv.height:window.innerHeight;
+ const shell=$('setupShell'),shellRect=shell?.getBoundingClientRect(),pageRect=page?.getBoundingClientRect();
+ return Math.min(viewportBottom, shellRect?.bottom||viewportBottom, pageRect?.bottom||viewportBottom);
+}
 function updateSetupScrollCue(){
- const cue=ensureSetupScrollCue();if(!cue)return;
- const page=setupPages()[setupPageIndex];
+ const cue=ensureSetupScrollCue(),page=setupPages()[setupPageIndex];if(!cue||!page)return;
  const mobile=window.matchMedia('(max-width:700px)').matches;
- const moreBelow=!!(mobile&&page&&page.classList.contains('setup-current')&&(page.scrollHeight-page.scrollTop-page.clientHeight)>6);
+ const active=page.classList.contains('setup-current');
+ // Geometry first: measure the bottom of real content inside the active setup card.
+ // The sticky navigation is content too, so use the furthest rendered child bottom.
+ let contentBottom=page.getBoundingClientRect().top;
+ for(const child of page.children){if(child===cue)continue;const r=child.getBoundingClientRect();if(r.height||r.width)contentBottom=Math.max(contentBottom,r.bottom)}
+ const visibleBottom=setupVisibleBottom(page);
+ const scrollOverflow=(page.scrollHeight-page.scrollTop-page.clientHeight)>6;
+ const geometryOverflow=contentBottom>visibleBottom+6;
+ const moreBelow=!!(mobile&&active&&(scrollOverflow||geometryOverflow));
  cue.classList.toggle('visible',moreBelow);cue.setAttribute('aria-hidden',moreBelow?'false':'true');
 }
 function bindSetupScrollCue(){
  setupPages().forEach(page=>{if(page.dataset.scrollCueBound)return;page.dataset.scrollCueBound='1';page.addEventListener('scroll',updateSetupScrollCue,{passive:true})});
+ if(!window.__moonbeamSetupCueBound){window.__moonbeamSetupCueBound=true;window.addEventListener('resize',updateSetupScrollCue,{passive:true});window.visualViewport?.addEventListener('resize',updateSetupScrollCue,{passive:true});window.visualViewport?.addEventListener('scroll',updateSetupScrollCue,{passive:true})}
  requestAnimationFrame(()=>requestAnimationFrame(updateSetupScrollCue));
 }
 function goSetupPage(index,instant=false){

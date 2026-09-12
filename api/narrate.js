@@ -1,4 +1,4 @@
-const {logUsage,estimateGBP}=require('../_usage');
+const {logUsage,estimateGBP,SUPABASE_URL,adminHeaders}=require('../_usage');
 const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('../_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -9,12 +9,21 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const text = String(body.text || '').trim();
     const generationRunId = String(body.generationRunId || '').trim();
+    const savedStoryId = String(body.savedStoryId || '').trim();
     const language = String(body.language || 'en-GB');
     if (!text) return res.status(400).json({ error: 'Narration text is required.' });
-    if (!generationRunId) return res.status(400).json({ error: 'This saved story predates the secure narration allowance.' });
+    if (!generationRunId && !savedStoryId) return res.status(400).json({ error: 'Narration source is required.' });
     const moonbeamUser=await verifyMoonbeamUser(req);
-    try{await consumeGenerationSlot(moonbeamUser.id,generationRunId,'narration')}catch(e){return res.status(e.status||402).json({error:e.message,code:e.code||'GENERATION_LIMIT'})}
-    let slotReserved=true;const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(moonbeamUser.id,generationRunId,'narration')}};
+    let slotReserved=false;
+    if(savedStoryId){
+      // Saved-story replay is audio-only. Verify ownership server-side before allowing TTS.
+      const own=await fetch(`${SUPABASE_URL}/rest/v1/saved_stories?id=eq.${encodeURIComponent(savedStoryId)}&parent_id=eq.${encodeURIComponent(moonbeamUser.id)}&select=id`,{headers:adminHeaders()});
+      const rows=own.ok?await own.json():[];
+      if(!own.ok||!Array.isArray(rows)||rows.length!==1)return res.status(404).json({error:'That saved story is unavailable.'});
+    }else{
+      try{await consumeGenerationSlot(moonbeamUser.id,generationRunId,'narration');slotReserved=true}catch(e){return res.status(e.status||402).json({error:e.message,code:e.code||'GENERATION_LIMIT'})}
+    }
+    const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(moonbeamUser.id,generationRunId,'narration')}};
     if (text.length > 4096) return res.status(400).json({ error: 'This page is too long to narrate.' });
     const narrationProfiles = {
       'en-GB': 'Speak in natural contemporary British English with a neutral educated British accent. Use authentic British sentence rhythm, word stress, syllable stress and intonation. Avoid American pronunciation, exaggerated Received Pronunciation, sing-song delivery, misplaced emphasis, and unnatural pauses. Read punctuation naturally and keep names consistent.',
@@ -56,7 +65,7 @@ module.exports = async function handler(req, res) {
       return res.status(502).json({ error:String(message), openai_status:r.status });
     }
     const bytes = Buffer.from(await r.arrayBuffer());
-    await logUsage({event_type:'narration',estimated_cost_gbp:estimateGBP('narration'),metadata:{model:'gpt-4o-mini-tts',characters:text.length,user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    await logUsage({event_type:'narration',estimated_cost_gbp:estimateGBP('narration'),metadata:{model:'gpt-4o-mini-tts',characters:text.length,user_id:moonbeamUser.id,generation_run_id:generationRunId||null,saved_story_id:savedStoryId||null}});
     slotReserved=false;
     return res.status(200).json({ audio:`data:audio/mpeg;base64,${bytes.toString('base64')}` });
   } catch (e) {
