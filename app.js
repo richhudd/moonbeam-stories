@@ -240,7 +240,7 @@ async function deleteChildProfile(){
  if(!currentUser||!activeProfileId)return;const doomed=cloudProfiles.find(p=>p.id===activeProfileId);if(!confirm(`Delete ${doomed?.name||'this child'}’s profile? Saved stories will remain in your library.`))return;const oldPhotoKey=currentPhotoKey(activeProfileId);const {error}=await supabaseClient.from('child_profiles').delete().eq('id',activeProfileId);if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}await childPhotoDelete(oldPhotoKey);activeProfileId=null;await loadCloudProfiles();await selectCloudProfile();$('profileStatus').textContent='Profile deleted.'
 }
 async function loadCloudStories(){
- if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:{...(profile||{name:'',age:7,interests:'',dislikes:''}),profileId:row.child_id},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,generationRunId:row.generation_run_id||null,translations:(row.translations&&typeof row.translations==='object')?row.translations:{},savedAssets:(row.saved_assets&&typeof row.saved_assets==='object')?row.saved_assets:{},at:row.created_at}});renderLibrary()
+ if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:{...(profile||{name:'',age:7,interests:'',dislikes:''}),profileId:row.child_id},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,generationRunId:row.generation_run_id||null,savedAssets:(row.saved_assets&&typeof row.saved_assets==='object')?row.saved_assets:{},at:row.created_at}});renderLibrary()
 }
 function dataUrlToBlob(dataUrl){const m=String(dataUrl||'').match(/^data:([^;]+);base64,(.+)$/);if(!m)throw new Error('A finished illustration is missing.');const binary=atob(m[2]),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new Blob([bytes],{type:m[1]||'image/webp'})}
 async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');image=await requestIllustration(key,prompt,`Premium children's storybook illustration. Consistent recurring characters: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,book.child?.referencePhoto||null);book.artwork.pages[index]=image}return image}
@@ -846,31 +846,18 @@ let storyTouchX=null,storyTouchY=null;
 $('story').addEventListener('touchstart',e=>{const t=e.changedTouches?.[0];if(!t)return;storyTouchX=t.clientX;storyTouchY=t.clientY},{passive:true});
 $('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){lastStorySwipeAt=Date.now();stopNarration();if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
 window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0){if(!isPhonePortrait())currentBook.mobileSide='text';applyMobileSide();requestAnimationFrame(fitDesktopStoryText)}});
-function savedStoryCopy(){return {readIn:'Read in',readStory:'Read story',original:'Original',available:'Available editions',translateAnother:'Translate into another language',chooseLanguage:'Choose a language',translate:'Translate',translating:'Translating…',cancel:'Cancel',free:'Translation does not use a story credit.',readOnly:'Saved stories reopen in read-it-myself mode.',signIn:'Sign in to translate saved stories.',failed:'Translation could not be created.',allAvailable:'All supported languages are already available.',...(t().savedTranslation||{})}}
-function savedStoryForLanguage(x,target){
- if(!target||target===x.language)return x.story;
- const tr=x.translations?.[target];if(!tr)return null;
- return {title:tr.title||x.title,opening:tr.opening||'',character_bible:x.story.character_bible||'',pages:(x.story.pages||[]).map((p,i)=>({text:tr.pages?.[i]?.text||p.text||'',illustration_prompt:p.illustration_prompt||''})),closing:tr.closing||''};
-}
-function savedAvailableLanguages(x){return [x.language,...Object.keys(x.translations||{}).filter(code=>code!==x.language&&languageNames[code])].filter((v,i,a)=>languageNames[v]&&a.indexOf(v)===i)}
-function savedMissingLanguages(x){const have=new Set(savedAvailableLanguages(x));return Object.keys(languageNames).filter(code=>!have.has(code))}
+function savedLibraryCopy(){return {replay:'Replay',original:'Original',...(t().savedLibrary||{})}}
 function renderLibrary(){
- const l=$('library');if(!l)return;const items=currentUser?cloudStories:saved,c=savedStoryCopy();
- if(!items.length){l.innerHTML=`<p class="muted saved-library-empty">${escapeHtml(t().noSaved)}</p>${currentUser?'':`<p class="cloud-note">${escapeHtml(c.signIn)}</p>`}`;return}
- if(currentUser){
-  l.innerHTML=`<div class="saved-library-note">📚 ${escapeHtml(c.readOnly)} ${escapeHtml(c.free)}</div><div class="saved-story-list">${items.map((x,i)=>{const available=savedAvailableLanguages(x),missing=savedMissingLanguages(x),options=available.map(code=>`<option value="${code}">${escapeHtml(languageNames[code])}${code===x.language?' · '+escapeHtml(c.original):''}</option>`).join('');return `<article class="saved-story-card"><div class="saved-story-main"><div class="saved-story-title">${escapeHtml(x.title)}</div><small>${escapeHtml(x.child?.name||'')} · ${escapeHtml(c.original)}: ${escapeHtml(languageNames[x.language]||x.language)}</small><div class="saved-editions">${escapeHtml(c.available)}: ${available.map(code=>escapeHtml(languageNames[code])).join(' · ')}</div></div><div class="saved-story-actions"><label class="saved-language-compact"><span>${escapeHtml(c.readIn)}</span><select id="savedReadLang${i}">${options}</select></label><button class="primary saved-read" type="button" onclick="readSavedStory(${i})">📖 ${escapeHtml(c.readStory)}</button>${missing.length?`<button class="secondary saved-translate" type="button" onclick="showSavedTranslation(${i})">🌐 ${escapeHtml(c.translateAnother)}</button>`:`<small class="saved-all-languages">${escapeHtml(c.allAvailable)}</small>`}<button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">🗑 ${escapeHtml(t().delete)}</button></div><div class="saved-translation-panel hidden" id="savedTranslationPanel${i}"><label><span>${escapeHtml(c.chooseLanguage)}</span><select id="savedTranslateLang${i}">${missing.map(code=>`<option value="${code}">${escapeHtml(languageNames[code])}</option>`).join('')}</select></label><div class="saved-translation-buttons"><button class="primary" type="button" onclick="translateSavedStory(${i})">🌐 ${escapeHtml(c.translate)}</button><button class="secondary" type="button" onclick="hideSavedTranslation(${i})">${escapeHtml(c.cancel)}</button></div><small>${escapeHtml(c.free)}</small></div></article>`}).join('')}</div>`;
- }else l.innerHTML=items.map((x,i)=>`<div class="library-item"><button type="button" onclick="openSaved(${i})">📖 ${escapeHtml(x.title)} <small>— ${escapeHtml(x.child?.name||'')}</small></button><small>${escapeHtml(c.signIn)}</small></div>`).join('');
+ const l=$('library');if(!l)return;const items=currentUser?cloudStories:saved,c=savedLibraryCopy();
+ if(!items.length){l.innerHTML=`<p class="muted saved-library-empty">${escapeHtml(t().noSaved)}</p>`;return}
+ l.innerHTML=`<div class="saved-story-list">${items.map((x,i)=>`<article class="saved-story-card"><div class="saved-story-main"><div class="saved-story-title">${escapeHtml(x.title)}</div><small>${escapeHtml(x.child?.name||'')}${x.language?` · ${escapeHtml(languageNames[x.language]||x.language)}`:''}</small></div><div class="saved-story-actions"><button class="primary saved-replay" type="button" onclick="openSaved(${i})">▶ ${escapeHtml(c.replay)}</button>${currentUser?`<button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">🗑 ${escapeHtml(t().delete)}</button>`:''}</div></article>`).join('')}</div>`;
 }
 async function recoverMissingSavedStoryArt(x,book){
  if(!currentUser||!x?.id||!book||x.savedAssets?.pages?.length===book.pages.length+2)return false;
  try{const total=book.pages.length+2,images=[];for(let i=0;i<total;i++){const prompt=getIllustrationPrompt(i),suffix=`:${i}:${stableHash(String(prompt||''))}`;const image=await persistentImageFindBySuffix(suffix);if(!image)return false;images.push(image)}const base=`${currentUser.id}/${x.id}`,assets={version:2,cover:`${base}/cover.webp`,pages:[]};let r=await supabaseClient.storage.from('saved-story-art').upload(assets.cover,dataUrlToBlob(images[0]),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;for(let i=0;i<total;i++){const path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(images[i]),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',x.id).select('saved_assets').single();if(u.error)throw u.error;x.savedAssets=u.data.saved_assets;book.savedAssets=x.savedAssets;return true}catch(e){console.error('saved artwork recovery failed',e);return false}
 }
-async function openSavedVersion(x,target){const story=savedStoryForLanguage(x,target);if(!story)throw new Error('That saved language edition is not available.');const storyLanguage=target||x.language;const child={...(x.child||{}),language:storyLanguage};delete child.referencePhoto;child.generationRunId=x.generationRunId||null;renderStory(story,null,child,{isSaved:true,savedStoryId:x.id,visualCacheId:`saved:${x.id}`,savedAssets:x.savedAssets||{}});if(!x.savedAssets?.pages?.length)await recoverMissingSavedStoryArt(x,currentBook)}
-window.openSaved=async i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x)await openSavedVersion(x,x.language)};
-window.readSavedStory=async i=>{const x=cloudStories[i],target=$(`savedReadLang${i}`)?.value||x?.language;if(x&&savedStoryForLanguage(x,target))await openSavedVersion(x,target)};
-window.showSavedTranslation=i=>$(`savedTranslationPanel${i}`)?.classList.remove('hidden');
-window.hideSavedTranslation=i=>$(`savedTranslationPanel${i}`)?.classList.add('hidden');
-window.translateSavedStory=async i=>{const x=cloudStories[i],c=savedStoryCopy(),target=$(`savedTranslateLang${i}`)?.value;if(!x||!target||x.translations?.[target]||target===x.language)return renderLibrary();const panel=$(`savedTranslationPanel${i}`),button=panel?.querySelector('.saved-translation-buttons .primary');if(button){button.disabled=true;button.textContent='🌐 '+c.translating}try{const token=await currentAccessToken();if(!token)throw new Error(c.signIn);const r=await fetch('/api/translate-story',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({storyId:x.id,targetLanguage:target})});const data=await r.json().catch(()=>({}));if(!r.ok||!data.translation)throw new Error(data.error||c.failed);x.translations=x.translations||{};x.translations[target]=data.translation;renderLibrary()}catch(e){alert(e.message||c.failed);if(button){button.disabled=false;button.textContent='🌐 '+c.translate}}};
+async function openSavedVersion(x){const story=x?.story;if(!story)throw new Error('That saved story is unavailable.');const child={...(x.child||{}),language:x.language||language};delete child.referencePhoto;child.generationRunId=x.generationRunId||null;renderStory(story,null,child,{isSaved:true,savedStoryId:x.id,visualCacheId:`saved:${x.id}`,savedAssets:x.savedAssets||{}});if(!x.savedAssets?.pages?.length)await recoverMissingSavedStoryArt(x,currentBook)}
+window.openSaved=async i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x)await openSavedVersion(x)};
 window.deleteSavedStory=id=>deleteCloudStory(id);
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -902,6 +889,25 @@ function ensureSetupCardNav(){
  })
 }
 function updateSetupNav(){ensureSetupCardNav();const dots=$('setupDots');if(dots)dots.innerHTML=''}
+// V116 — reuse the reader's double-chevron convention on mobile setup pages.
+// One overlay belongs to the setup shell; the active page remains the native scroll container.
+function ensureSetupScrollCue(){
+ const shell=$('setupShell');if(!shell)return null;
+ let cue=shell.querySelector(':scope > .setup-scroll-cue');
+ if(!cue){cue=document.createElement('div');cue.className='setup-scroll-cue';cue.setAttribute('aria-hidden','true');cue.innerHTML='<span></span><span></span>';shell.appendChild(cue)}
+ return cue;
+}
+function updateSetupScrollCue(){
+ const cue=ensureSetupScrollCue();if(!cue)return;
+ const page=setupPages()[setupPageIndex];
+ const mobile=window.matchMedia('(max-width:700px)').matches;
+ const moreBelow=!!(mobile&&page&&page.classList.contains('setup-current')&&(page.scrollHeight-page.scrollTop-page.clientHeight)>6);
+ cue.classList.toggle('visible',moreBelow);cue.setAttribute('aria-hidden',moreBelow?'false':'true');
+}
+function bindSetupScrollCue(){
+ setupPages().forEach(page=>{if(page.dataset.scrollCueBound)return;page.dataset.scrollCueBound='1';page.addEventListener('scroll',updateSetupScrollCue,{passive:true})});
+ requestAnimationFrame(()=>requestAnimationFrame(updateSetupScrollCue));
+}
 function goSetupPage(index,instant=false){
  const track=$('setupTrack'),pages=setupPages();if(!track||!pages.length)return;
  let requested=Math.max(0,Math.min(Number(index)||0,pages.length-1));
@@ -913,6 +919,7 @@ function goSetupPage(index,instant=false){
  const storyIndex=pages.findIndex(p=>p.dataset.step==='Story');
  if(setupPageIndex===storyIndex&&currentUser)refreshStoryCreditConsentUI().catch(()=>{});
  updateSetupNav();
+ bindSetupScrollCue();
 }
 function initSetupDeck(){
  const track=$('setupTrack');if(!track)return;
@@ -928,6 +935,7 @@ function initSetupDeck(){
 }
 initSetupDeck();
 $('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyConsentCheck').checked)clearStoryConsentAttention()});
+window.addEventListener('resize',()=>requestAnimationFrame(updateSetupScrollCue));
 window.addEventListener('orientationchange',()=>setTimeout(()=>{const open=!!currentBook&&!$('story')?.classList.contains('hidden');document.body.classList.toggle('story-mode',open);document.body.classList.toggle('desktop-story-mode',open&&!isPhonePortrait());goSetupPage(setupPageIndex,true)},120));
 
 // V65 — public landing and desktop page architecture.

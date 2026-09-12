@@ -12,12 +12,15 @@ Object.assign(window.MOONBEAM_UI['pt-BR'],{savedReplay:'ou releia uma das suas h
 Object.assign(window.MOONBEAM_UI['pl-PL'],{savedReplay:'lub przeczytaj ponownie jedną z zapisanych historii',savedReplayFree:'Zapisane historie nie zużywają kolejnego kredytu.'});
 
 // V67 saved-story translation and replay rules.
-Object.assign(window.MOONBEAM_UI['en-GB'],{savedTranslation:{readIn:'Read in',open:'Open',translate:'Translate',translating:'Translating…',free:'Translation does not use a story credit.',readOnly:'Saved stories reopen in read-it-myself mode.',signIn:'Sign in to translate saved stories.',failed:'Translation could not be created.'}});
-Object.assign(window.MOONBEAM_UI['en-US'],{savedTranslation:{readIn:'Read in',open:'Open',translate:'Translate',translating:'Translating…',free:'Translation does not use a story credit.',readOnly:'Saved stories reopen in read-it-myself mode.',signIn:'Sign in to translate saved stories.',failed:'Translation could not be created.'}});
-Object.assign(window.MOONBEAM_UI['es-ES'],{savedTranslation:{readIn:'Leer en',open:'Abrir',translate:'Traducir',translating:'Traduciendo…',free:'La traducción no usa un crédito de historia.',readOnly:'Las historias guardadas se vuelven a abrir en modo de lectura propia.',signIn:'Inicia sesión para traducir historias guardadas.',failed:'No se pudo crear la traducción.'}});
-Object.assign(window.MOONBEAM_UI['es-419'],{savedTranslation:{readIn:'Leer en',open:'Abrir',translate:'Traducir',translating:'Traduciendo…',free:'La traducción no usa un crédito de historia.',readOnly:'Las historias guardadas se abren en modo de lectura propia.',signIn:'Inicia sesión para traducir historias guardadas.',failed:'No se pudo crear la traducción.'}});
-Object.assign(window.MOONBEAM_UI['fr-FR'],{savedTranslation:{readIn:'Lire en',open:'Ouvrir',translate:'Traduire',translating:'Traduction…',free:'La traduction n’utilise pas de crédit histoire.',readOnly:'Les histoires enregistrées se rouvrent en mode lecture personnelle.',signIn:'Connectez-vous pour traduire les histoires enregistrées.',failed:'La traduction n’a pas pu être créée.'}});
-Object.assign(window.MOONBEAM_UI['de-DE'],{savedTranslation:{readIn:'Lesen auf',open:'Öffnen',translate:'Übersetzen',translating:'Wird übersetzt…',free:'Die Übersetzung verbraucht keinen Story-Credit.',readOnly:'Gespeicherte Geschichten werden im Selbstlesemodus geöffnet.',signIn:'Melde dich an, um gespeicherte Geschichten zu übersetzen.',failed:'Die Übersetzung konnte nicht erstellt werden.'}});
-Object.assign(window.MOONBEAM_UI['it-IT'],{savedTranslation:{readIn:'Leggi in',open:'Apri',translate:'Traduci',translating:'Traduzione…',free:'La traduzione non usa un credito storia.',readOnly:'Le storie salvate si riaprono in modalità lettura autonoma.',signIn:'Accedi per tradurre le storie salvate.',failed:'Non è stato possibile creare la traduzione.'}});
-Object.assign(window.MOONBEAM_UI['pt-BR'],{savedTranslation:{readIn:'Ler em',open:'Abrir',translate:'Traduzir',translating:'Traduzindo…',free:'A tradução não usa um crédito de história.',readOnly:'Histórias salvas reabrem no modo de leitura própria.',signIn:'Entre na sua conta para traduzir histórias salvas.',failed:'Não foi possível criar a tradução.'}});
-Object.assign(window.MOONBEAM_UI['pl-PL'],{savedTranslation:{readIn:'Czytaj po',open:'Otwórz',translate:'Przetłumacz',translating:'Tłumaczenie…',free:'Tłumaczenie nie zużywa kredytu na historię.',readOnly:'Zapisane historie otwierają się w trybie samodzielnego czytania.',signIn:'Zaloguj się, aby tłumaczyć zapisane historie.',failed:'Nie udało się utworzyć tłumaczenia.'}});
+
+
+// V115 — Saved Stories are canonical replays only; no post-save translation UI.
+Object.assign(window.MOONBEAM_UI['en-GB'],{savedLibrary:{replay:'Replay'}});
+Object.assign(window.MOONBEAM_UI['en-US'],{savedLibrary:{replay:'Replay'}});
+Object.assign(window.MOONBEAM_UI['es-ES'],{savedLibrary:{replay:'Volver a leer'}});
+Object.assign(window.MOONBEAM_UI['es-419'],{savedLibrary:{replay:'Volver a leer'}});
+Object.assign(window.MOONBEAM_UI['fr-FR'],{savedLibrary:{replay:'Relire'}});
+Object.assign(window.MOONBEAM_UI['de-DE'],{savedLibrary:{replay:'Noch einmal lesen'}});
+Object.assign(window.MOONBEAM_UI['it-IT'],{savedLibrary:{replay:'Rileggi'}});
+Object.assign(window.MOONBEAM_UI['pt-BR'],{savedLibrary:{replay:'Ler novamente'}});
+Object.assign(window.MOONBEAM_UI['pl-PL'],{savedLibrary:{replay:'Czytaj ponownie'}});
