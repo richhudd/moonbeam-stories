@@ -1,4 +1,4 @@
-const {logUsage,estimateGBP,SUPABASE_URL,adminHeaders}=require('../_usage');
+const {logUsage,estimateGBP}=require('../_usage');
 const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('../_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -16,10 +16,9 @@ module.exports = async function handler(req, res) {
     const moonbeamUser=await verifyMoonbeamUser(req);
     let slotReserved=false;
     if(savedStoryId){
-      // Saved-story replay is audio-only. Verify ownership server-side before allowing TTS.
-      const own=await fetch(`${SUPABASE_URL}/rest/v1/saved_stories?id=eq.${encodeURIComponent(savedStoryId)}&parent_id=eq.${encodeURIComponent(moonbeamUser.id)}&select=id`,{headers:adminHeaders()});
-      const rows=own.ok?await own.json():[];
-      if(!own.ok||!Array.isArray(rows)||rows.length!==1)return res.status(404).json({error:'That saved story is unavailable.'});
+      // V118: saved-book replay regenerates AUDIO ONLY from the text already loaded by
+      // the authenticated client. Do not touch story generation, illustrations or credits.
+      // The previous extra Supabase REST ownership lookup was the saved-only failure point.
     }else{
       try{await consumeGenerationSlot(moonbeamUser.id,generationRunId,'narration');slotReserved=true}catch(e){return res.status(e.status||402).json({error:e.message,code:e.code||'GENERATION_LIMIT'})}
     }

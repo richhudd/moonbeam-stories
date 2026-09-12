@@ -1,4 +1,4 @@
-# V117 — simplified Saved Stories
+# V118 — saved-story narration repair
 
 V117 removes post-save story translation completely and simplifies Saved Stories to canonical replay.
 
@@ -15,9 +15,13 @@ Changes:
 Database note: no new SQL migration is required for V117. Existing translation data/columns in an already-deployed database can remain unused; V117 does not read or write them.
 
 
-## V117
+## V118
 - Adds the same contextual pulsing double-chevron scroll cue to mobile setup pages whenever more content remains below the fold.
 - Cue disappears at the bottom and reappears after scrolling upward. Desktop and the V113/V115 story-reader cue are unchanged.
 
 
-V117: Saved-story Read to Me now regenerates audio only from the already-saved text; saved story text and illustrations are never regenerated. Persistent saved narration is no longer used. Mobile setup scroll cues now use rendered viewport geometry plus overflow as a fallback so they reflect content genuinely below the visible Safari viewport.
+V118: Saved-story Read to Me now regenerates audio only from the already-saved text; saved story text and illustrations are never regenerated. Persistent saved narration is no longer used. Mobile setup scroll cues now use rendered viewport geometry plus overflow as a fallback so they reflect content genuinely below the visible Safari viewport.
+
+
+### V118 narration fix
+Saved-story Read to Me now sends only the already-saved page text to `/api/narrate`; it does not call story generation or illustration endpoints and does not consume a story credit. The saved-only Supabase REST preflight introduced in V117 has been removed. Narration failures are now surfaced visibly instead of silently resetting the play control. The obsolete V114 saved-narration SQL file has been removed from the package; previously applied database changes may remain harmlessly in place.
