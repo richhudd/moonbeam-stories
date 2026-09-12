@@ -96,7 +96,8 @@ async function publicAsset(req,res){
  if(kind==='cover')path=story.saved_assets?.cover;
  else if(/^\d+$/.test(kind))path=story.saved_assets?.pages?.[Number(kind)];
  if(!path)return res.status(404).send('Image unavailable');
- const r=await fetch(`${SUPABASE_URL}/storage/v1/object/${String(path).split('/').map(encodeURIComponent).join('/')}`,{headers:adminHeaders()});
+ const objectPath=String(path).split('/').map(encodeURIComponent).join('/');
+ const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/saved-story-art/${objectPath}`,{headers:adminHeaders()});
  if(!r.ok)return res.status(404).send('Image unavailable');
  const bytes=Buffer.from(await r.arrayBuffer());
  res.setHeader('Content-Type',r.headers.get('content-type')||'image/webp');

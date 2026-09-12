@@ -1,3 +1,8 @@
+V126
+- Fixed shared-story artwork delivery: the consolidated sharing API now reads permanent saved illustrations from the private saved-story-art bucket through Supabase Storage’s authenticated object route.
+- No story or artwork regeneration; shared stories continue to use the canonical saved copy.
+- No database migration and no API-function changes.
+
 # Moonbeam Stories V125
 
 ## V125 — complete Share Story interface localisation
