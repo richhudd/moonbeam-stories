@@ -1686,3 +1686,79 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
  .saved-stories-view{border-radius:20px;padding:18px 14px;min-height:0;overflow:auto}.saved-stories-heading h2{font-size:27px}.saved-stories-heading p{font-size:14px}
  .saved-stories-library .saved-story-list{grid-template-columns:1fr;gap:11px}.saved-stories-library .saved-story-card{grid-template-columns:94px minmax(0,1fr);gap:11px;padding:10px;border-radius:14px}.saved-story-cover{width:94px;height:119px;border-radius:10px}.saved-stories-library .saved-story-title{font-size:16px}.saved-stories-library .saved-story-actions{padding-top:9px}.saved-stories-library .saved-story-actions button{padding:6px 8px!important;font-size:11px!important}
 }
+\n\n/* V146 — dedicated Saved Stories repair: unrestricted library scrolling, stable mobile covers, contextual reader exit. */
+@media(min-width:701px){
+  body.product-active:not(.story-mode) .saved-stories-view:not(.hidden){
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+  }
+}
+@media(max-width:700px){
+  body.product-active:not(.story-mode) .saved-stories-view:not(.hidden){
+    flex:1 1 auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain;
+    margin:0!important;
+    padding-bottom:max(24px,calc(env(safe-area-inset-bottom) + 18px))!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-library .saved-story-list{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    width:100%!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-library .saved-story-card{
+    display:grid!important;
+    grid-template-columns:94px minmax(0,1fr)!important;
+    width:100%!important;
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-library .saved-story-cover{
+    display:block!important;
+    width:94px!important;
+    min-width:94px!important;
+    max-width:94px!important;
+    height:119px!important;
+    min-height:119px!important;
+    flex:0 0 94px!important;
+    align-self:start!important;
+    overflow:hidden!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-library .saved-story-cover img{
+    display:block;
+    width:100%!important;
+    height:100%!important;
+    min-width:100%!important;
+    max-width:none!important;
+    object-fit:cover!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-library .saved-story-main{min-width:0!important;overflow:hidden!important}
+  body.product-active:not(.story-mode) .saved-stories-library .saved-story-title{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important}
+  body.story-mode:not(.shared-story-mode) .story-exit{
+    display:grid!important;
+    position:fixed!important;
+    top:max(12px,env(safe-area-inset-top))!important;
+    left:12px!important;
+    z-index:10050!important;
+    width:42px!important;
+    height:42px!important;
+    min-width:42px!important;
+    padding:0!important;
+    margin:0!important;
+    place-items:center!important;
+    border:0!important;
+    border-radius:999px!important;
+    background:rgba(48,37,79,.84)!important;
+    color:#fff!important;
+    font:700 28px/1 system-ui,-apple-system,Segoe UI,sans-serif!important;
+    box-shadow:0 6px 18px rgba(23,19,45,.25)!important;
+  }
+}

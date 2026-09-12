@@ -147,8 +147,12 @@ Stage 2 only: mobile application header matching the V141 desktop shell. Adds co
 - Tightened only the mobile application-header spacing so the live credit counter no longer crowds/overlays the Moonbeam branding.
 - No application logic, API, payment, story, reader, save, share or legal-link destinations changed.
 
-## V145 — Saved Stories relocation
+## V146 — Saved Stories relocation
 - Moved Saved Stories out of Story setup into a dedicated view reached from the existing desktop header and mobile hamburger.
 - Saved story cards now use the permanent saved cover artwork when available; older stories without a saved cover show a Moonbeam fallback.
 - Replay/open and Delete remain wired to the same existing saved-story functions.
 - No story generation, reader, narration, credit, checkout, share, database, or API changes.
+
+
+## V146
+Saved Stories repair only: dedicated library scrolls for any number of stories on desktop/mobile; mobile cover thumbnails have fixed non-shrinking geometry; saved-story reader close returns to Saved Stories and is visible on mobile. No API, database, generation, payment, narration, or sharing changes.
