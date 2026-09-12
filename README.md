@@ -183,3 +183,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Interests and Things to avoid are hidden on desktop only; their fields/data remain intact for existing logic and mobile.
 - Existing photo choose/remove/use controls and Save child profile remain the same functional controls.
 - Story card, mobile setup, Saved Stories, reader, payments and APIs are unchanged.
+
+
+## V153 — desktop saved-child removal micro-update
+- Adds a dedicated **Remove child** button beside Save child profile on the desktop left panel.
+- The button appears only when an existing saved child is selected.
+- It calls the existing `deleteChildProfile()` path, including the existing confirmation that saved stories remain in the library.
+- Existing **Remove photo** remains photo-only and unchanged.
+- Mobile layout and all other application behaviour are unchanged.

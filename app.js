@@ -148,6 +148,7 @@ $('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStrip
 $('desktopChildStrip')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
 window.addEventListener('resize',updateDesktopChildScrollButtons);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
+$('removeProfile')?.addEventListener('click',deleteChildProfile);
 $('chooseChildPhoto')?.addEventListener('click',()=>$('childPhotoInput')?.click());
 $('childPhotoInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)chooseChildPhoto(f);e.target.value=''});
 // V80: desktop drag-and-drop uses the same validated/resized photo pipeline as Choose photo.
@@ -271,8 +272,9 @@ function renderProfileSelect(){
  const selected=activeProfileId||'';
  const profileOptions=cloudProfiles.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}${p.age?` — ${p.age}`:''}</option>`).join('');
  const active=cloudProfiles.find(p=>p.id===activeProfileId);
- const deleteOption=active?`<option disabled>──────────</option><option value="__delete_profile__">${escapeHtml(t().deleteProfile || 'Delete profile')} ${escapeHtml(active.name)}…</option>`:'';
+ const deleteOption=active?`<option disabled>──────────</option><option value="__delete_profile__">${escapeHtml(typeof t().deleteProfile==='function'?'Delete profile':(t().deleteProfile||'Delete profile'))} ${escapeHtml(active.name)}…</option>`:'';
  sel.innerHTML=`<option value="">${escapeHtml(t().newChild)}</option>`+profileOptions+deleteOption;sel.value=selected;
+ const removeProfile=$('removeProfile');if(removeProfile){const labels={'en-GB':'Remove child','en-US':'Remove child','es-ES':'Eliminar niño/a','es-419':'Eliminar niño/a','fr-FR':'Supprimer l’enfant','de-DE':'Kind entfernen','it-IT':'Rimuovi bambino','pt-BR':'Remover criança','pl-PL':'Usuń dziecko'};removeProfile.textContent=labels[language]||'Remove child';removeProfile.classList.toggle('hidden',!active);}
  renderDesktopProfileTiles();
 }
 async function selectCloudProfile(){

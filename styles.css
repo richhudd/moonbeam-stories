@@ -2181,3 +2181,12 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
     min-height:44px!important;
   }
 }
+
+/* V153 — desktop saved-child removal control only */
+.profile-action-buttons{display:grid;gap:8px}
+@media (min-width: 821px){
+ body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .profile-action-buttons{grid-template-columns:1fr 1fr;align-items:stretch}
+ body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .profile-action-buttons .secondary{width:100%!important;min-width:0!important}
+ body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .remove-child-button{border-color:#e7c5c9!important;color:#9b3340!important;background:#fffafa!important}
+ body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .remove-child-button:hover{background:#fff1f2!important;border-color:#d99ca5!important}
+}
