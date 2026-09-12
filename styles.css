@@ -1544,10 +1544,11 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
  color:#fff!important;
  box-shadow:0 0 0 0 rgba(47,158,98,.34);
  animation:moonbeam-credit-pulse 1.8s ease-in-out infinite;
+ width:auto!important;min-width:0!important;max-width:max-content!important;align-self:flex-start!important;
 }
 @keyframes moonbeam-credit-pulse{
- 0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(47,158,98,.34)}
- 50%{transform:scale(1.045);box-shadow:0 0 0 8px rgba(47,158,98,0)}
+ 0%,100%{box-shadow:0 0 0 0 rgba(47,158,98,.34)}
+ 50%{box-shadow:0 0 0 8px rgba(47,158,98,0)}
 }
 @media (prefers-reduced-motion:reduce){
  .buy-credits-button.no-credits-attention{animation:none!important}
