@@ -1498,4 +1498,26 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
 .saved-story-actions{display:flex;align-items:center;gap:7px;flex-wrap:nowrap}
 .saved-story-actions .saved-replay{min-width:92px!important;padding:8px 12px!important}
 @media(max-width:700px){.saved-story-card{grid-template-columns:minmax(0,1fr) auto!important}.saved-story-actions{flex-wrap:nowrap!important}.saved-story-actions .saved-replay{min-width:82px!important}.library-delete{padding:7px!important}}
-\n\n/* V117 — contextual mobile setup scroll cue. Same tightly stacked chevrons as the reader. */\n.setup-scroll-cue{display:none}\n@media(max-width:700px){\n  body.product-active:not(.story-mode) #setupShell{position:relative!important}\n  body.product-active:not(.story-mode) #setupShell>.setup-scroll-cue{\n    position:fixed!important;z-index:300!important;left:50%!important;bottom:max(72px,calc(env(safe-area-inset-bottom) + 56px))!important;transform:translateX(-50%)!important;\n    width:42px!important;height:34px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;\n    gap:0!important;pointer-events:none!important;opacity:0!important;visibility:hidden!important;transition:opacity .28s ease!important;\n    filter:drop-shadow(0 1px 2px rgba(255,255,255,.95))!important;\n  }\n  body.product-active:not(.story-mode) #setupShell>.setup-scroll-cue::before{\n    content:\"\"!important;position:absolute!important;z-index:-1!important;left:50%!important;bottom:-8px!important;transform:translateX(-50%)!important;\n    width:92px!important;height:58px!important;pointer-events:none!important;background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.92) 62%,rgba(255,255,255,.98))!important;\n  }\n  body.product-active:not(.story-mode) #setupShell>.setup-scroll-cue.visible{opacity:.82!important;visibility:visible!important}\n  body.product-active:not(.story-mode) #setupShell>.setup-scroll-cue span{\n    display:block!important;width:12px!important;height:12px!important;border-right:2.5px solid #5f4b83!important;border-bottom:2.5px solid #5f4b83!important;\n    transform:rotate(45deg)!important;margin:-3px 0!important;animation:moonbeamScrollCue 2.15s ease-in-out infinite!important;\n  }\n  body.product-active:not(.story-mode) #setupShell>.setup-scroll-cue span+span{animation-delay:.12s!important}\n}\n@media(prefers-reduced-motion:reduce){body.product-active:not(.story-mode) #setupShell>.setup-scroll-cue span{animation:none!important}}\n
+
+/* V119 — setup-page scroll cue. Positioned inside the real scrolling page by JS. */
+.setup-scroll-cue{display:none}
+@media(max-width:700px){
+  body.product-active:not(.story-mode) #setupTrack>.setup-page{position:relative!important}
+  body.product-active:not(.story-mode) #setupTrack>.setup-page>.setup-scroll-cue{
+    position:absolute!important;z-index:30!important;left:50%!important;transform:translateX(-50%)!important;
+    width:42px!important;height:34px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+    gap:0!important;pointer-events:none!important;opacity:0!important;visibility:hidden!important;transition:opacity .28s ease!important;
+    filter:drop-shadow(0 1px 2px rgba(255,255,255,.95))!important;
+  }
+  body.product-active:not(.story-mode) #setupTrack>.setup-page>.setup-scroll-cue::before{
+    content:""!important;position:absolute!important;z-index:-1!important;left:50%!important;bottom:-8px!important;transform:translateX(-50%)!important;
+    width:92px!important;height:58px!important;pointer-events:none!important;background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.92) 62%,rgba(255,255,255,.98))!important;
+  }
+  body.product-active:not(.story-mode) #setupTrack>.setup-page>.setup-scroll-cue.visible{opacity:.82!important;visibility:visible!important}
+  body.product-active:not(.story-mode) #setupTrack>.setup-page>.setup-scroll-cue span{
+    display:block!important;width:12px!important;height:12px!important;border-right:2.5px solid #5f4b83!important;border-bottom:2.5px solid #5f4b83!important;
+    transform:rotate(45deg)!important;margin:-3px 0!important;animation:moonbeamScrollCue 2.15s ease-in-out infinite!important;
+  }
+  body.product-active:not(.story-mode) #setupTrack>.setup-page>.setup-scroll-cue span+span{animation-delay:.12s!important}
+}
+@media(prefers-reduced-motion:reduce){body.product-active:not(.story-mode) #setupTrack>.setup-page>.setup-scroll-cue span{animation:none!important}}

@@ -854,36 +854,34 @@ function ensureSetupCardNav(){
  })
 }
 function updateSetupNav(){ensureSetupCardNav();const dots=$('setupDots');if(dots)dots.innerHTML=''}
-// V117 — mobile setup cue is based on rendered viewport geometry, not only
-// scrollHeight. This matches what the user can actually see in mobile Safari.
-function ensureSetupScrollCue(){
- const shell=$('setupShell');if(!shell)return null;
- let cue=shell.querySelector(':scope > .setup-scroll-cue');
- if(!cue){cue=document.createElement('div');cue.className='setup-scroll-cue';cue.setAttribute('aria-hidden','true');cue.innerHTML='<span></span><span></span>';shell.appendChild(cue)}
- return cue;
-}
-function setupVisibleBottom(page){
- const vv=window.visualViewport,viewportBottom=vv?vv.offsetTop+vv.height:window.innerHeight;
- const shell=$('setupShell'),shellRect=shell?.getBoundingClientRect(),pageRect=page?.getBoundingClientRect();
- return Math.min(viewportBottom, shellRect?.bottom||viewportBottom, pageRect?.bottom||viewportBottom);
+// V119 — setup cue belongs to the actual setup-page scroll container.
+// Its position is derived only from that page's own scroll state; no viewport geometry.
+function ensureSetupScrollCues(){
+ setupPages().forEach(page=>{
+   let cue=page.querySelector(':scope > .setup-scroll-cue');
+   if(!cue){cue=document.createElement('div');cue.className='setup-scroll-cue';cue.setAttribute('aria-hidden','true');cue.innerHTML='<span></span><span></span>';page.appendChild(cue)}
+ });
 }
 function updateSetupScrollCue(){
- const cue=ensureSetupScrollCue(),page=setupPages()[setupPageIndex];if(!cue||!page)return;
+ ensureSetupScrollCues();
  const mobile=window.matchMedia('(max-width:700px)').matches;
- const active=page.classList.contains('setup-current');
- // Geometry first: measure the bottom of real content inside the active setup card.
- // The sticky navigation is content too, so use the furthest rendered child bottom.
- let contentBottom=page.getBoundingClientRect().top;
- for(const child of page.children){if(child===cue)continue;const r=child.getBoundingClientRect();if(r.height||r.width)contentBottom=Math.max(contentBottom,r.bottom)}
- const visibleBottom=setupVisibleBottom(page);
- const scrollOverflow=(page.scrollHeight-page.scrollTop-page.clientHeight)>6;
- const geometryOverflow=contentBottom>visibleBottom+6;
- const moreBelow=!!(mobile&&active&&(scrollOverflow||geometryOverflow));
- cue.classList.toggle('visible',moreBelow);cue.setAttribute('aria-hidden',moreBelow?'false':'true');
+ setupPages().forEach((page,i)=>{
+   const cue=page.querySelector(':scope > .setup-scroll-cue');if(!cue)return;
+   const active=i===setupPageIndex&&page.classList.contains('setup-current');
+   const remaining=page.scrollHeight-page.scrollTop-page.clientHeight;
+   const moreBelow=!!(mobile&&active&&remaining>6);
+   cue.classList.toggle('visible',moreBelow);
+   cue.setAttribute('aria-hidden',moreBelow?'false':'true');
+   if(moreBelow){
+     const top=Math.max(8,page.scrollTop+page.clientHeight-cue.offsetHeight-10);
+     cue.style.top=top+'px';
+   }
+ });
 }
 function bindSetupScrollCue(){
+ ensureSetupScrollCues();
  setupPages().forEach(page=>{if(page.dataset.scrollCueBound)return;page.dataset.scrollCueBound='1';page.addEventListener('scroll',updateSetupScrollCue,{passive:true})});
- if(!window.__moonbeamSetupCueBound){window.__moonbeamSetupCueBound=true;window.addEventListener('resize',updateSetupScrollCue,{passive:true});window.visualViewport?.addEventListener('resize',updateSetupScrollCue,{passive:true});window.visualViewport?.addEventListener('scroll',updateSetupScrollCue,{passive:true})}
+ if(!window.__moonbeamSetupCueBound){window.__moonbeamSetupCueBound=true;window.addEventListener('resize',updateSetupScrollCue,{passive:true})}
  requestAnimationFrame(()=>requestAnimationFrame(updateSetupScrollCue));
 }
 function goSetupPage(index,instant=false){

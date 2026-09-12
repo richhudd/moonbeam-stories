@@ -1,4 +1,17 @@
-# V118 — saved-story narration repair
+# V119 — mobile setup scroll cue repair
+
+V119 is a surgical update from the working V118 baseline.
+
+## V119
+- Preserves V118 saved-story narration unchanged.
+- Preserves the V111–V113 mobile reader and reader chevrons unchanged.
+- Removes the V117 setup-cue viewport-geometry implementation.
+- Each setup page now owns its own scroll cue.
+- Cue visibility uses only the active setup page's real `scrollHeight`, `scrollTop`, and `clientHeight`.
+- Cue position follows that same scroll container and disappears at its true bottom.
+- No database migration is required.
+
+## Previous baseline: V118 — saved-story narration repair
 
 V117 removes post-save story translation completely and simplifies Saved Stories to canonical replay.
 
