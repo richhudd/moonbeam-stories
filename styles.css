@@ -1325,7 +1325,7 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode .book-controls .page-indicator{min-width:42px!important;align-self:center!important;font-size:10px!important;}
 }
 
-/* V110 — authoritative portrait-mobile reader.
+/* V111 — authoritative portrait-mobile reader.
    Pixel-explicit 60/40 split of the measured usable area above navigation. */
 @media (max-width:700px) and (orientation:portrait){
   body.story-mode #book.show-mobile-spread{
@@ -1376,9 +1376,12 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     overflow:hidden!important;background:linear-gradient(90deg,#fffdf8,#faf6ec)!important;
   }
   body.story-mode #book.show-mobile-spread .page-content{
-    position:absolute!important;top:8px!important;right:20px!important;bottom:6px!important;left:20px!important;
-    display:block!important;width:auto!important;height:auto!important;min-height:0!important;max-width:none!important;
-    box-sizing:border-box!important;margin:0!important;padding:0 2px 48px 0!important;
+    /* V111: this is now a normal in-flow scroll viewport.  Its scrollHeight is
+       therefore derived directly from the complete story content, not from
+       visible overflow inside an absolutely positioned box. */
+    position:relative!important;inset:auto!important;
+    display:block!important;width:100%!important;height:100%!important;min-height:0!important;max-width:none!important;
+    box-sizing:border-box!important;margin:0!important;padding:0 2px 0 0!important;
     overflow-x:hidden!important;overflow-y:auto!important;
     -webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important;
     touch-action:pan-y!important;
@@ -1392,8 +1395,14 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode #book.show-mobile-spread .story-text.roomy-text{
     display:block!important;position:static!important;inset:auto!important;
     width:auto!important;height:auto!important;min-height:0!important;max-height:none!important;
-    margin:0!important;padding:0 0 8px!important;transform:none!important;
+    margin:0!important;padding:0!important;transform:none!important;
     overflow:visible!important;font-size:18px!important;line-height:1.42!important;
+  }
+  body.story-mode #book.show-mobile-spread .story-text::after{
+    /* Real flow content after the final line: Safari includes this in scrollHeight,
+       allowing the final lines to rest above the bottom edge without rubber-band overscroll. */
+    content:""!important;display:block!important;height:48px!important;width:1px!important;
+    pointer-events:none!important;
   }
   body.story-mode .book-controls:not(.hidden){
     left:8px!important;right:8px!important;bottom:max(4px,env(safe-area-inset-bottom))!important;

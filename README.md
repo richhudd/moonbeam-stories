@@ -1,5 +1,7 @@
-# V110 — mobile final-line scroll fix
+# V111 — Safari mobile scroll-range fix
 
-V110 preserves the V109 portrait-mobile geometry: 60% fixed illustration, the scrolling text pane anchored immediately below it and extending to the fixed navigation.
+V111 preserves the V110/V109 portrait geometry: 60% fixed illustration and 40% scrolling text down to the fixed navigation.
 
-The only reader change is extra **real bottom space inside the scrollable text content**. The text viewport now has 48px of bottom padding, so the final line can be scrolled fully above the bottom edge and remain there when the finger is released instead of appearing only during iOS overscroll/rubber-banding. No story fitting, font shrinking, illustration resizing, navigation positioning, desktop reader, generation, saved-story, payment, or translation logic was changed.
+The mobile prose viewport is now a normal in-flow 100%-height scrolling element rather than an absolutely positioned scroller containing visibly overflowing text. A real 48px in-flow spacer follows the story text, so mobile Safari includes the complete final lines plus clearance in the element's scrollHeight.
+
+No story-generation, saved-story, translation, illustration, payment or desktop-reader behaviour was changed.
