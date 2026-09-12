@@ -120,7 +120,7 @@ function applyLocale(){
  $('storyPrefs').textContent=x.storyPrefs; $('toneLabel').textContent=x.tone; $('valuesTitle').textContent=x.values;
  $('generate').textContent=x.generate; if($('savedTitle'))$('savedTitle').textContent=x.saved;
  const tones=[['cosy and funny',x.cosy],['magical',x.magical],['adventurous',x.adventurous],['calm and dreamy',x.calm]]; const old=$('tone').value||'cosy and funny'; $('tone').innerHTML=tones.map(([v,l])=>`<option value="${v}" ${v===old?'selected':''}>${l}</option>`).join('');
- renderValues(); renderLibrary(); applyInterfaceLocale(); renderProfileSelect(); applyLandingLocale();
+ renderDesktopStoryPanel(); renderValues(); renderLibrary(); applyInterfaceLocale(); renderProfileSelect(); applyLandingLocale();
 }
 function setText(sel,val){const el=document.querySelector(sel);if(el&&val!=null)el.textContent=val}
 function applyInterfaceLocale(){const x=t();
@@ -148,7 +148,6 @@ $('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStrip
 $('desktopChildStrip')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
 window.addEventListener('resize',updateDesktopChildScrollButtons);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
-$('removeProfile')?.addEventListener('click',deleteChildProfile);
 $('chooseChildPhoto')?.addEventListener('click',()=>$('childPhotoInput')?.click());
 $('childPhotoInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)chooseChildPhoto(f);e.target.value=''});
 // V80: desktop drag-and-drop uses the same validated/resized photo pipeline as Choose photo.
@@ -272,17 +271,16 @@ function renderProfileSelect(){
  const selected=activeProfileId||'';
  const profileOptions=cloudProfiles.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}${p.age?` — ${p.age}`:''}</option>`).join('');
  const active=cloudProfiles.find(p=>p.id===activeProfileId);
- const deleteOption=active?`<option disabled>──────────</option><option value="__delete_profile__">${escapeHtml(typeof t().deleteProfile==='function'?'Delete profile':(t().deleteProfile||'Delete profile'))} ${escapeHtml(active.name)}…</option>`:'';
+ const deleteOption=active?`<option disabled>──────────</option><option value="__delete_profile__">${escapeHtml(t().deleteProfile || 'Delete profile')} ${escapeHtml(active.name)}…</option>`:'';
  sel.innerHTML=`<option value="">${escapeHtml(t().newChild)}</option>`+profileOptions+deleteOption;sel.value=selected;
- const removeProfile=$('removeProfile');if(removeProfile){const labels={'en-GB':'Remove child','en-US':'Remove child','es-ES':'Eliminar niño/a','es-419':'Eliminar niño/a','fr-FR':'Supprimer l’enfant','de-DE':'Kind entfernen','it-IT':'Rimuovi bambino','pt-BR':'Remover criança','pl-PL':'Usuń dziecko'};removeProfile.textContent=labels[language]||'Remove child';removeProfile.classList.toggle('hidden',!active);}
  renderDesktopProfileTiles();
 }
 async function selectCloudProfile(){
  const sel=$('profileSelect');
  if(sel?.value==='__delete_profile__'){sel.value=activeProfileId||'';await deleteChildProfile();return}
  activeProfileId=sel?.value||null;$('profileStatus').textContent='';
- if(!activeProfileId){$('name').value='';$('age').value=7;$('interests').value='';$('dislikes').value='';await loadCurrentChildPhoto();return}
- const p=cloudProfiles.find(x=>x.id===activeProfileId);if(!p)return;$('name').value=p.name||'';$('age').value=p.age||7;$('interests').value=p.interests||'';$('dislikes').value=p.dislikes||'';await loadCurrentChildPhoto();
+ if(!activeProfileId){$('name').value='';$('age').value=7;$('interests').value='';$('dislikes').value='';syncDesktopStoryIdea();await loadCurrentChildPhoto();return}
+ const p=cloudProfiles.find(x=>x.id===activeProfileId);if(!p)return;$('name').value=p.name||'';$('age').value=p.age||7;$('interests').value=p.interests||'';$('dislikes').value=p.dislikes||'';syncDesktopStoryIdea();await loadCurrentChildPhoto();
 }
 async function loadCloudProfiles(){
  if(!currentUser)return;const {data,error}=await supabaseClient.from('child_profiles').select('id,name,age,interests,dislikes,created_at').order('created_at',{ascending:true});if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}cloudProfiles=data||[];if(activeProfileId&&!cloudProfiles.some(p=>p.id===activeProfileId))activeProfileId=null;renderProfileSelect()
@@ -315,6 +313,24 @@ function renderHeaderCredits(){
  if(balance){balance.classList.toggle('hidden',!currentUser);balance.textContent=`✦ ${storyCreditBalance===null?'—':storyCreditBalance}`;balance.setAttribute('aria-label',storyCreditBalance===null?'Story credits loading':`${storyCreditBalance} story credits`)}
  if(buy){buy.classList.toggle('hidden',!currentUser);buy.classList.toggle('no-credits-attention',!!currentUser&&storyCreditBalance===0)}
  const mobileSignOut=$('appMobileSignOut');if(mobileSignOut)mobileSignOut.classList.toggle('hidden',!currentUser);
+}
+function syncDesktopStoryIdea(){const idea=$('desktopStoryIdea'),interests=$('interests');if(idea&&interests&&idea.value!==interests.value)idea.value=interests.value}
+function renderDesktopStoryPanel(){
+ const idea=$('desktopStoryIdea'),interests=$('interests'),tone=$('tone'),choices=$('desktopToneChoices');
+ const copy={
+  'en-GB':['What would you like the story to be about?','Tell Moonbeam your idea, then choose a tone and (optionally) some values to include.','For example: “Amelia loves horses and I’d like an adventure where she discovers a secret castle in the mountains.”','Story tone','Choose the mood for your story.','Values to include','optional','Choose one or more themes.'],
+  'en-US':['What would you like the story to be about?','Tell Moonbeam your idea, then choose a tone and (optionally) some values to include.','For example: “Amelia loves horses and I’d like an adventure where she discovers a secret castle in the mountains.”','Story tone','Choose the mood for your story.','Values to include','optional','Choose one or more themes.'],
+  'es-ES':['¿De qué te gustaría que tratara el cuento?','Cuéntale a Moonbeam tu idea y después elige un tono y, si quieres, algunos valores.','Por ejemplo: «A Amelia le encantan los caballos y me gustaría una aventura en la que descubra un castillo secreto en las montañas».','Tono del cuento','Elige el ambiente del cuento.','Valores que incluir','opcional','Elige uno o varios temas.'],
+  'es-419':['¿De qué te gustaría que tratara el cuento?','Cuéntale a Moonbeam tu idea y después elige un tono y, si quieres, algunos valores.','Por ejemplo: «A Amelia le encantan los caballos y me gustaría una aventura en la que descubra un castillo secreto en las montañas».','Tono del cuento','Elige el ambiente del cuento.','Valores que incluir','opcional','Elige uno o varios temas.'],
+  'fr-FR':['De quoi aimeriez-vous que l’histoire parle ?','Donnez votre idée à Moonbeam, puis choisissez un ton et, si vous le souhaitez, quelques valeurs.','Par exemple : « Amelia adore les chevaux et j’aimerais une aventure où elle découvre un château secret dans les montagnes. »','Ton de l’histoire','Choisissez l’ambiance de votre histoire.','Valeurs à inclure','facultatif','Choisissez un ou plusieurs thèmes.'],
+  'de-DE':['Worum soll die Geschichte gehen?','Erzähl Moonbeam deine Idee und wähle dann einen Ton und optional einige Werte aus.','Zum Beispiel: „Amelia liebt Pferde und ich wünsche mir ein Abenteuer, in dem sie ein geheimes Schloss in den Bergen entdeckt.“','Ton der Geschichte','Wähle die Stimmung für deine Geschichte.','Werte einbeziehen','optional','Wähle ein oder mehrere Themen.'],
+  'it-IT':['Di cosa vorresti che parlasse la storia?','Racconta a Moonbeam la tua idea, poi scegli un tono e, se vuoi, alcuni valori.','Per esempio: «Amelia adora i cavalli e vorrei un’avventura in cui scopre un castello segreto tra le montagne».','Tono della storia','Scegli l’atmosfera della storia.','Valori da includere','facoltativo','Scegli uno o più temi.'],
+  'pt-BR':['Sobre o que você gostaria que fosse a história?','Conte sua ideia à Moonbeam e depois escolha um tom e, se quiser, alguns valores.','Por exemplo: “Amelia adora cavalos e eu gostaria de uma aventura em que ela descobre um castelo secreto nas montanhas.”','Tom da história','Escolha o clima da sua história.','Valores a incluir','opcional','Escolha um ou mais temas.'],
+  'pl-PL':['O czym ma być ta historia?','Opowiedz Moonbeam swój pomysł, a potem wybierz nastrój i opcjonalnie wartości.','Na przykład: „Amelia uwielbia konie i chciałabym przygodę, w której odkrywa sekretny zamek w górach.”','Nastrój historii','Wybierz nastrój swojej historii.','Wartości do uwzględnienia','opcjonalnie','Wybierz jeden lub kilka tematów.']
+ }[language]||null;
+ if(copy){setText('#desktopStoryTitle',copy[0]);setText('#desktopStoryIntro',copy[1]);if(idea)idea.placeholder=copy[2];setText('#desktopToneTitle',copy[3]);setText('#desktopToneHelp',copy[4]);setText('#desktopValuesTitle',copy[5]);setText('#desktopOptional',copy[6]);setText('#desktopValuesHelp',copy[7])}
+ if(idea&&interests){idea.value=interests.value;idea.oninput=()=>{interests.value=idea.value}}
+ if(tone&&choices){const icons={'cosy and funny':'☾','magical':'✦','adventurous':'▲','calm and dreamy':'☁'};choices.innerHTML=[...tone.options].map(o=>`<button type="button" class="desktop-tone-choice${o.value===tone.value?' active':''}" data-tone="${escapeHtml(o.value)}"><span>${icons[o.value]||'✦'}</span><b>${escapeHtml(o.textContent)}</b></button>`).join('');choices.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tone.value=b.dataset.tone;tone.dispatchEvent(new Event('change',{bubbles:true}));renderDesktopStoryPanel()}))}
 }
 function renderStoryCredits(balance=storyCreditBalance){
  storyCreditBalance=Number.isFinite(Number(balance))?Number(balance):null;
@@ -1076,4 +1092,3 @@ $('landingStart')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landi
 const landingLanguage=$('landingLanguage');if(landingLanguage){landingLanguage.value=language;landingLanguage.addEventListener('change',()=>{const main=$('language');if(main){main.value=landingLanguage.value;main.dispatchEvent(new Event('change',{bubbles:true}))}})}
 $('language')?.addEventListener('change',()=>{if(landingLanguage)landingLanguage.value=$('language').value});
 // V86: setup navigation is intentionally button-only; no keyboard-arrow page changes.
-// test
