@@ -162,3 +162,7 @@ Saved Stories repair only: dedicated library scrolls for any number of stories o
 - Fixes the setup shell remaining visible behind/above the dedicated Saved Stories view after V147.
 - Explicitly preserves the hidden state for setup and Saved Stories despite responsive flex display rules.
 - No changes to scrolling, covers, Replay/Delete, reader exit, APIs, payments, generation, or storage.
+
+
+## V149
+Mobile homepage composition only: separate brand/language rows, concise hero, larger demonstration image. Desktop homepage and product app unchanged.
