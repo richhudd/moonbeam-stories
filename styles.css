@@ -1762,3 +1762,56 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     box-shadow:0 6px 18px rgba(23,19,45,.25)!important;
   }
 }
+
+/* V147 — constrain the dedicated Saved Stories view to the available app slot.
+   The heading stays fixed; only the complete story-card collection scrolls. */
+@media (min-width:701px){
+  body.product-active:not(.story-mode) .app-product > .saved-stories-view:not(.hidden){
+    flex:1 1 0!important;
+    min-height:0!important;
+    height:auto!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-view:not(.hidden) .saved-stories-heading{
+    flex:0 0 auto!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-view:not(.hidden) .saved-stories-library{
+    flex:1 1 0!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;
+    padding-right:4px;
+  }
+}
+@media (max-width:700px){
+  body.product-active:not(.story-mode) .app-product > .saved-stories-view:not(.hidden){
+    flex:1 1 0!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-view:not(.hidden) .saved-stories-heading{
+    flex:0 0 auto!important;
+  }
+  body.product-active:not(.story-mode) .saved-stories-view:not(.hidden) .saved-stories-library{
+    flex:1 1 0!important;
+    min-height:0!important;
+    height:auto!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    padding-bottom:12px;
+  }
+  body.product-active:not(.story-mode) .saved-stories-view:not(.hidden) .saved-story-list{
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+}
