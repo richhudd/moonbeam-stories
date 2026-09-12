@@ -1943,3 +1943,54 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
   body:not(.product-active) #landing .hero-cta{min-height:36px!important;padding:7px 10px!important}
   body:not(.product-active) #landing .hero-copy small{font-size:9px!important}
 }
+
+
+/* V150 — desktop setup architecture only.
+   Authenticated desktop users see Child + Story simultaneously as two cards.
+   Mobile retains the proven sequential setup deck unchanged. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell{
+    display:flex!important;
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:16px!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    scroll-snap-type:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Account"]{
+    display:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"],
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    display:flex!important;
+    flex-direction:column!important;
+    width:auto!important;
+    max-width:none!important;
+    min-width:0!important;
+    height:100%!important;
+    min-height:0!important;
+    margin:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    scroll-snap-align:none!important;
+    justify-content:flex-start!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    padding:24px 22px 20px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"] .setup-step-label,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"] .setup-step-label,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"]>.setup-card-nav,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]>.setup-card-nav,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell>.setup-nav{
+    display:none!important;
+  }
+}

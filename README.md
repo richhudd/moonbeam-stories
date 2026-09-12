@@ -166,3 +166,11 @@ Saved Stories repair only: dedicated library scrolls for any number of stories o
 
 ## V149
 Mobile homepage composition only: separate brand/language rows, concise hero, larger demonstration image. Desktop homepage and product app unchanged.
+
+
+## V150
+- Desktop setup architecture only: authenticated desktop users now see Child and Story setup simultaneously in two side-by-side cards.
+- Desktop 1-of-2/card navigation is hidden because both setup areas are present together.
+- Signed-out authentication gate is preserved.
+- Mobile setup remains the existing sequential Step 1 / Step 2 flow.
+- No setup fields, story generation, Saved Stories, reader, payment, sharing, narration, legal or API behaviour changed.
