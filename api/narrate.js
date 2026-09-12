@@ -12,11 +12,12 @@ module.exports = async function handler(req, res) {
     const generationRunId = String(body.generationRunId || '').trim();
     const savedStoryId = String(body.savedStoryId || '').trim();
     const shareToken = String(body.shareToken || '').trim();
-    const language = String(body.language || 'en-GB');
+    const requestedLanguage = String(body.language || 'en-GB');
+    let language = requestedLanguage;
     if (!text) return res.status(400).json({ error: 'Narration text is required.' });
     if (!generationRunId && !savedStoryId && !shareToken) return res.status(400).json({ error: 'Narration source is required.' });
     let moonbeamUser=null,shared=null;
-    if(shareToken){shared=await validateSharedText(shareToken,text);if(!shared)return res.status(403).json({error:'This shared story cannot narrate that text.'});}
+    if(shareToken){shared=await validateSharedText(shareToken,text);if(!shared)return res.status(403).json({error:'This shared story cannot narrate that text.'});language=String(shared.story?.language||requestedLanguage);}
     else moonbeamUser=await verifyMoonbeamUser(req);
     let slotReserved=false;
     if(shareToken){

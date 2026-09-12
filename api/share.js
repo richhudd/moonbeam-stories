@@ -11,8 +11,21 @@ const emailOk=s=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s||'').trim());
 const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const parseBody=req=>typeof req.body==='string'?JSON.parse(req.body):req.body||{};
 
+const SHARE_EMAIL={
+ 'en-GB':{subject:n=>`${n} sent you a special story ✨`,heading:n=>`${n} sent you a special story ✨`,intro:(n,t)=>`${n} thought you might enjoy <strong>${esc(t)}</strong>.`,button:'Read the Story →',note:'This private link was sent only so you can enjoy this story. You do not need a Moonbeam account to read or listen to it.'},
+ 'en-US':{subject:n=>`${n} sent you a special story ✨`,heading:n=>`${n} sent you a special story ✨`,intro:(n,t)=>`${n} thought you might enjoy <strong>${esc(t)}</strong>.`,button:'Read the Story →',note:'This private link was sent only so you can enjoy this story. You do not need a Moonbeam account to read or listen to it.'},
+ 'es-ES':{subject:n=>`${n} te ha enviado una historia especial ✨`,heading:n=>`${n} te ha enviado una historia especial ✨`,intro:(n,t)=>`${n} ha pensado que te gustaría <strong>${esc(t)}</strong>.`,button:'Leer la historia →',note:'Este enlace privado se ha enviado únicamente para que disfrutes de esta historia. No necesitas una cuenta de Moonbeam para leerla o escucharla.'},
+ 'es-419':{subject:n=>`${n} te envió una historia especial ✨`,heading:n=>`${n} te envió una historia especial ✨`,intro:(n,t)=>`${n} pensó que te gustaría <strong>${esc(t)}</strong>.`,button:'Leer la historia →',note:'Este enlace privado se envió únicamente para que disfrutes de esta historia. No necesitas una cuenta de Moonbeam para leerla o escucharla.'},
+ 'fr-FR':{subject:n=>`${n} vous a envoyé une histoire spéciale ✨`,heading:n=>`${n} vous a envoyé une histoire spéciale ✨`,intro:(n,t)=>`${n} a pensé que <strong>${esc(t)}</strong> vous plairait.`,button:"Lire l’histoire →",note:"Ce lien privé vous a été envoyé uniquement pour vous permettre de profiter de cette histoire. Vous n’avez pas besoin d’un compte Moonbeam pour la lire ou l’écouter."},
+ 'de-DE':{subject:n=>`${n} hat dir eine besondere Geschichte geschickt ✨`,heading:n=>`${n} hat dir eine besondere Geschichte geschickt ✨`,intro:(n,t)=>`${n} dachte, dass dir <strong>${esc(t)}</strong> gefallen könnte.`,button:'Geschichte lesen →',note:'Dieser private Link wurde nur gesendet, damit du diese Geschichte genießen kannst. Du brauchst kein Moonbeam-Konto, um sie zu lesen oder anzuhören.'},
+ 'it-IT':{subject:n=>`${n} ti ha inviato una storia speciale ✨`,heading:n=>`${n} ti ha inviato una storia speciale ✨`,intro:(n,t)=>`${n} ha pensato che ti sarebbe piaciuta <strong>${esc(t)}</strong>.`,button:'Leggi la storia →',note:'Questo link privato è stato inviato solo per permetterti di goderti questa storia. Non serve un account Moonbeam per leggerla o ascoltarla.'},
+ 'pt-BR':{subject:n=>`${n} enviou uma história especial para você ✨`,heading:n=>`${n} enviou uma história especial para você ✨`,intro:(n,t)=>`${n} achou que você gostaria de <strong>${esc(t)}</strong>.`,button:'Ler a história →',note:'Este link privado foi enviado somente para que você aproveite esta história. Você não precisa de uma conta Moonbeam para ler ou ouvir.'},
+ 'pl-PL':{subject:n=>`${n} wysłał(a) Ci wyjątkową historię ✨`,heading:n=>`${n} wysłał(a) Ci wyjątkową historię ✨`,intro:(n,t)=>`${n} pomyślał(a), że spodoba Ci się <strong>${esc(t)}</strong>.`,button:'Przeczytaj historię →',note:'Ten prywatny link został wysłany wyłącznie po to, aby umożliwić Ci przeczytanie tej historii. Nie potrzebujesz konta Moonbeam, aby ją przeczytać lub odsłuchać.'}
+};
+const shareEmail=lang=>SHARE_EMAIL[lang]||SHARE_EMAIL['en-GB'];
+
 async function ownedStory(userId,storyId){
- const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/saved_stories?id=eq.${encodeURIComponent(storyId)}&parent_id=eq.${encodeURIComponent(userId)}&select=id,title,saved_assets`,{headers:adminHeaders()});
+ const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/saved_stories?id=eq.${encodeURIComponent(storyId)}&parent_id=eq.${encodeURIComponent(userId)}&select=id,title,language,saved_assets`,{headers:adminHeaders()});
  return Array.isArray(rows)&&rows.length===1?rows[0]:null;
 }
 
@@ -46,8 +59,8 @@ async function ownerShares(req,res){
   if(!name||!emailOk(email)){failed.push({name,email,error:'Enter a valid name and email address.'});continue}
   const token=crypto.randomBytes(32).toString('base64url'),hash=tokenHash(token);
   const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/story_shares`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({owner_id:user.id,saved_story_id:storyId,token_hash:hash,sender_name:senderName,recipient_name:name,recipient_email:email})});
-  const share=rows?.[0],link=`${SITE_URL}/shared/${encodeURIComponent(token)}`,subject=`${senderName} sent you a special story ✨`;
-  const html=`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#2d2540"><div style="font-size:24px;font-weight:700;margin-bottom:24px">☾ Moonbeam Stories</div><h1 style="font-size:28px">${esc(senderName)} sent you a special story ✨</h1><p style="font-size:17px;line-height:1.6">${esc(senderName)} thought you might enjoy <strong>${esc(story.title)}</strong>.</p><p style="margin:30px 0"><a href="${esc(link)}" style="background:#6b55a3;color:white;text-decoration:none;padding:14px 22px;border-radius:999px;font-weight:700">Read the Story →</a></p><p style="font-size:13px;color:#777">This private link was sent only so you can enjoy this story. You do not need a Moonbeam account to read or listen to it.</p></div>`;
+  const share=rows?.[0],link=`${SITE_URL}/shared/${encodeURIComponent(token)}`,copy=shareEmail(story.language),subject=copy.subject(senderName);
+  const html=`<div lang="${esc(story.language||'en-GB')}" style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#2d2540"><div style="font-size:24px;font-weight:700;margin-bottom:24px">☾ Moonbeam Stories</div><h1 style="font-size:28px">${esc(copy.heading(senderName))}</h1><p style="font-size:17px;line-height:1.6">${copy.intro(esc(senderName),story.title)}</p><p style="margin:30px 0"><a href="${esc(link)}" style="background:#6b55a3;color:white;text-decoration:none;padding:14px 22px;border-radius:999px;font-weight:700">${esc(copy.button)}</a></p><p style="font-size:13px;color:#777">${esc(copy.note)}</p></div>`;
   const result=await resend.emails.send({from:SHARE_FROM,to:[email],subject,html});
   if(result.error){
    failed.push({name,email,error:result.error.message||'Email could not be sent.'});

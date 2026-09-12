@@ -1,8 +1,8 @@
-# Moonbeam Stories V122
+# Moonbeam Stories V123
 
-V122 is V121 plus the Vercel Hobby deployment fix for Private Share Story.
+V123 includes the V122 Vercel Hobby deployment fix plus end-to-end language inheritance for Private Share Story.
 
-## V122 change — 12-function Vercel limit
+## V122 retained — 12-function Vercel limit
 V120/V121 contained 14 files in `/api`, which exceeds the Vercel Hobby limit of 12 Serverless Functions. V122 consolidates the three new sharing entry points into one `/api/share.js` function without removing sharing behaviour:
 
 - `action=owner` — authenticated create/send, list and revoke operations
@@ -46,3 +46,8 @@ V122 uses the existing `RESEND_API_KEY`. Optional environment variables:
 - story-consent.js
 - stripe-webhook.js
 - usage-summary.js
+
+## V123 change — shared-story language inheritance
+The canonical saved story language now controls the recipient journey: outbound share email, shared reader interface, narration language, The End conversion CTA, and the public Moonbeam landing/signup journey after the recipient chooses to create a story. The CTA carries `?lang=...` and the app persists that language so signup/onboarding remains in the same language unless the recipient changes it. The story itself is never translated or regenerated.
+
+V123 still contains exactly **12** `/api/*.js` Serverless Functions.

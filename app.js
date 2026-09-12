@@ -1,4 +1,4 @@
-// Moonbeam Stories V122
+// Moonbeam Stories V123
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -35,8 +35,10 @@ const SUPABASE_URL='https://quwjfjojeibaxnnpykaf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q';
 const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let currentUser=null, cloudProfiles=[], activeProfileId=null, cloudStories=[];
-let language=localStorage.getItem('moonbeamLanguage')||'en-GB';
+const requestedLanguage=new URLSearchParams(location.search).get('lang');
+let language=(requestedLanguage&&locales[requestedLanguage])?requestedLanguage:(localStorage.getItem('moonbeamLanguage')||'en-GB');
 if(!locales[language]) language='en-GB';
+if(requestedLanguage&&locales[requestedLanguage])localStorage.setItem('moonbeamLanguage',language);
 let selected = new Set();
 let saved=[]; try{saved=JSON.parse(localStorage.getItem('moonbeamStories')||'[]');if(!Array.isArray(saved))saved=[]}catch{saved=[]}
 let currentBook=null, illustrationCache=new Map();
@@ -743,14 +745,27 @@ function renderIllustrationIntoPage(index,image){if(!currentBook||currentBook.cu
 
 
 // V120 — private per-recipient story sharing. Shared mode reuses this exact reader.
+// V123 — the recipient journey inherits the canonical saved story language.
+const SHARE_LOCALES={
+ 'en-GB':{sentBy:n=>`${n} sent you this story`,loved:'Loved this story? Create one for someone you love ✨',free:'Your first personalised story is free.',create:'Create my story'},
+ 'en-US':{sentBy:n=>`${n} sent you this story`,loved:'Loved this story? Create one for someone you love ✨',free:'Your first personalized story is free.',create:'Create my story'},
+ 'es-ES':{sentBy:n=>`${n} te ha enviado esta historia`,loved:'¿Te ha encantado esta historia? Crea una para alguien a quien quieres ✨',free:'Tu primera historia personalizada es gratis.',create:'Crear mi historia'},
+ 'es-419':{sentBy:n=>`${n} te envió esta historia`,loved:'¿Te encantó esta historia? Crea una para alguien que quieres ✨',free:'Tu primera historia personalizada es gratis.',create:'Crear mi historia'},
+ 'fr-FR':{sentBy:n=>`${n} vous a envoyé cette histoire`,loved:'Vous avez aimé cette histoire ? Créez-en une pour quelqu’un que vous aimez ✨',free:'Votre première histoire personnalisée est gratuite.',create:'Créer mon histoire'},
+ 'de-DE':{sentBy:n=>`${n} hat dir diese Geschichte geschickt`,loved:'Hat dir diese Geschichte gefallen? Erstelle eine für einen Menschen, den du liebst ✨',free:'Deine erste personalisierte Geschichte ist kostenlos.',create:'Meine Geschichte erstellen'},
+ 'it-IT':{sentBy:n=>`${n} ti ha inviato questa storia`,loved:'Ti è piaciuta questa storia? Creane una per qualcuno a cui vuoi bene ✨',free:'La tua prima storia personalizzata è gratis.',create:'Crea la mia storia'},
+ 'pt-BR':{sentBy:n=>`${n} enviou esta história para você`,loved:'Gostou desta história? Crie uma para alguém que você ama ✨',free:'Sua primeira história personalizada é grátis.',create:'Criar minha história'},
+ 'pl-PL':{sentBy:n=>`${n} wysłał(a) Ci tę historię`,loved:'Podobała Ci się ta historia? Stwórz własną dla kogoś, kogo kochasz ✨',free:'Twoja pierwsza spersonalizowana historia jest bezpłatna.',create:'Stwórz moją historię'}
+};
+function shareT(lang=language){return SHARE_LOCALES[lang]||SHARE_LOCALES['en-GB']}
 function shareTokenFromLocation(){const m=location.pathname.match(/^\/shared\/([^/]+)\/?$/);return m?decodeURIComponent(m[1]):''}
 async function loadSharedStory(token){
  try{
   const r=await fetch(`/api/share?action=story&token=${encodeURIComponent(token)}`,{cache:'no-store'}),data=await r.json();if(!r.ok)throw new Error(data?.error||'This shared story is unavailable.');
-  language=data.language||language;const lang=$('language');if(lang)lang.value=language;
+  language=(data.language&&locales[data.language])?data.language:language;localStorage.setItem('moonbeamLanguage',language);applyLocale();const lang=$('language');if(lang)lang.value=language;
   $('landing')?.classList.add('hidden');$('productApp')?.classList.add('hidden');
   renderStory(data.story,null,{...(data.child||{}),language},{isSaved:true,isShared:true,shareToken:token,shareSenderName:data.senderName||'',visualCacheId:`shared:${token}`,savedAssets:data.savedAssets||{}});
-  const head=document.querySelector('.book-cover-head');if(head)head.innerHTML=`<span>☾ Moonbeam Stories</span><span>${escapeHtml((data.senderName||'Someone')+' sent you this story')}</span>`;
+  const head=document.querySelector('.book-cover-head');if(head)head.innerHTML=`<span>☾ Moonbeam Stories</span><span>${escapeHtml(shareT().sentBy(data.senderName||'Moonbeam'))}</span>`;
  }catch(e){document.body.classList.add('shared-story-error');document.body.innerHTML=`<main class="shared-error-card"><div class="logo">☾</div><h1>Moonbeam Stories</h1><h2>This story link is unavailable</h2><p>${escapeHtml(e.message||String(e))}</p><a class="primary" href="/">Visit Moonbeam Stories</a></main>`}
 }
 function ensureShareDialog(){
@@ -813,7 +828,7 @@ function renderBookPage(index){
  if(isEnd){
    const saveButton=book.isSaved?'':`<button class="secondary end-save" id="endSave" type="button">${escapeHtml(t().save)}</button>`;
    const ownerActions=`${saveButton}<button class="primary end-share-story" id="endShareStory" type="button">✉ Share Story</button><button class="secondary end-new-story" id="endNewStory" type="button">${escapeHtml(t().newStory)}</button>`;
-   const sharedActions=`<div class="shared-conversion"><h3>Loved this story? Create one for someone you love ✨</h3><p>Your first personalised story is free.</p><a class="primary shared-create" href="/">Create my story</a></div>`;
+   const sx=shareT(book.child?.language||language),sharedActions=`<div class="shared-conversion"><h3>${escapeHtml(sx.loved)}</h3><p>${escapeHtml(sx.free)}</p><a class="primary shared-create" href="/?lang=${encodeURIComponent(book.child?.language||language)}&fromShare=1">${escapeHtml(sx.create)}</a></div>`;
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
    const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>startNewStory();
