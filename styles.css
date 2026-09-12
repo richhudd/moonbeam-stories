@@ -1325,7 +1325,7 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode .book-controls .page-indicator{min-width:42px!important;align-self:center!important;font-size:10px!important;}
 }
 
-/* V109 — authoritative portrait-mobile reader.
+/* V110 — authoritative portrait-mobile reader.
    Pixel-explicit 60/40 split of the measured usable area above navigation. */
 @media (max-width:700px) and (orientation:portrait){
   body.story-mode #book.show-mobile-spread{
@@ -1378,7 +1378,7 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode #book.show-mobile-spread .page-content{
     position:absolute!important;top:8px!important;right:20px!important;bottom:6px!important;left:20px!important;
     display:block!important;width:auto!important;height:auto!important;min-height:0!important;max-width:none!important;
-    box-sizing:border-box!important;margin:0!important;padding:0 2px 12px 0!important;
+    box-sizing:border-box!important;margin:0!important;padding:0 2px 48px 0!important;
     overflow-x:hidden!important;overflow-y:auto!important;
     -webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important;
     touch-action:pan-y!important;
