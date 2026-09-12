@@ -1,3 +1,7 @@
+# Moonbeam Stories V133
+
+V133 reapplies the V132 localization audit on the proven V131 baseline while removing the early `renderStoryCredits()` call that caused startup to abort before homepage/auth handlers were attached. Credit localization remains handled after credit state initialization.
+
 V127
 - Fixed shared-link startup visibility: `/shared/<token>` now makes `#productApp` visible and enables `product-active` before rendering the shared book.
 - This prevents the mobile landing-page `display:flex!important` rule from overriding the shared mode and prevents the shared book from being rendered inside a hidden parent.
@@ -102,3 +106,12 @@ V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires
 - The real `href` remains in place as a fallback for accessibility and open-in-new-tab behaviour.
 - No changes to sharing tokens, email delivery, saved artwork, story generation, credits, narration, or the proven reader layout.
 
+
+
+## V133 — comprehensive localisation repair
+- Audited production UI for hard-coded English and connected missing setup, share, profile, saved-story and credit copy to the active locale.
+- Share Story button now follows the canonical story/interface language.
+- Credit status is re-rendered whenever the locale changes.
+- Removed obsolete raw `3 stories free` fallback copy.
+- Legal pages now localise their complete visible content, navigation and browser title for all supported Moonbeam locales.
+- No database migration and no API-function changes.
