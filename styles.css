@@ -1674,3 +1674,15 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     white-space:nowrap!important;
   }
 }
+
+/* V145 — Saved Stories moved into its dedicated header destination. */
+.saved-stories-view{background:#fff;border:1px solid #eee4f5;border-radius:22px;box-shadow:0 10px 30px rgba(48,37,79,.08);padding:24px;min-height:420px;color:#30254f}
+.saved-stories-heading{margin-bottom:20px}.saved-stories-heading h2{font-family:Georgia,'Times New Roman',serif;color:#30254f;font-size:30px;margin:0 0 5px}.saved-stories-heading p{margin:0;color:#756c7d}
+.saved-stories-library .saved-story-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.saved-stories-library .saved-story-card{display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:stretch;padding:12px;background:#fffaf1;border:1px solid #eee4f5;border-radius:16px;box-shadow:0 5px 16px rgba(48,37,79,.06)}
+.saved-story-cover{position:relative;display:block;width:112px;height:142px;padding:0;border:0;border-radius:12px;overflow:hidden;background:#eee7fb;cursor:pointer}.saved-story-cover img{width:100%;height:100%;object-fit:cover;display:block}.saved-cover-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#6848ba;font-size:38px}.saved-story-cover:not(.no-cover) .saved-cover-fallback{display:none}
+.saved-stories-library .saved-story-main{display:flex;min-width:0;flex-direction:column;align-items:flex-start}.saved-stories-library .saved-story-title{font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;line-height:1.18;color:#30254f;margin:4px 0 6px}.saved-stories-library .saved-story-main small{color:#756c7d;line-height:1.35}.saved-stories-library .saved-story-actions{display:flex;gap:7px;margin-top:auto;padding-top:12px;flex-wrap:wrap}.saved-stories-library .saved-story-actions button{flex:0 0 auto!important;width:auto!important;min-width:0!important;margin:0!important;padding:7px 10px!important;font-size:12px!important;border-radius:9px!important}.saved-stories-library .saved-replay{background:#6848ba!important}.saved-stories-library .library-delete{border:1px solid #e1d6f2;background:#fff;color:#655c70}.app-desktop-nav button.active{background:#eee7fb;color:#6848ba}
+@media(max-width:700px){
+ .saved-stories-view{border-radius:20px;padding:18px 14px;min-height:0;overflow:auto}.saved-stories-heading h2{font-size:27px}.saved-stories-heading p{font-size:14px}
+ .saved-stories-library .saved-story-list{grid-template-columns:1fr;gap:11px}.saved-stories-library .saved-story-card{grid-template-columns:94px minmax(0,1fr);gap:11px;padding:10px;border-radius:14px}.saved-story-cover{width:94px;height:119px;border-radius:10px}.saved-stories-library .saved-story-title{font-size:16px}.saved-stories-library .saved-story-actions{padding-top:9px}.saved-stories-library .saved-story-actions button{padding:6px 8px!important;font-size:11px!important}
+}

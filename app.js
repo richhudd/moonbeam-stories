@@ -887,7 +887,7 @@ function renderBookPage(index){
 }
 function closeReader(){stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode','shared-story-mode');$('story')?.classList.add('hidden')}
 function exitStoryHome(){closeReader();showMoonbeamLanding()}
-function startNewStory(){closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');goSetupPage(currentUser?1:0,true)}
+function startNewStory(){closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
 function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+3;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 let lastStorySwipeAt=0;
@@ -897,10 +897,25 @@ $('story').addEventListener('touchstart',e=>{const t=e.changedTouches?.[0];if(!t
 $('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){lastStorySwipeAt=Date.now();stopNarration();if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
 window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0){if(!isPhonePortrait())currentBook.mobileSide='text';applyMobileSide();requestAnimationFrame(fitDesktopStoryText)}});
 function savedLibraryCopy(){return {replay:t().replay,original:t().original||'Original',...(t().savedLibrary||{})}}
+const savedLibraryCoverUrls=new Map();
+function savedStoryDate(x){try{return new Intl.DateTimeFormat(language||'en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(x.at))}catch{return ''}}
+async function loadSavedLibraryCovers(){
+ const items=currentUser?cloudStories:saved;
+ await Promise.all(items.map(async(x,i)=>{
+  const img=document.querySelector(`[data-saved-cover="${i}"]`);if(!img)return;
+  if(!currentUser||!x?.savedAssets?.cover){img.closest('.saved-story-cover')?.classList.add('no-cover');return}
+  try{
+   const key=x.savedAssets.cover;let url=savedLibraryCoverUrls.get(key);
+   if(!url){const {data,error}=await supabaseClient.storage.from('saved-story-art').download(key);if(error)throw error;url=URL.createObjectURL(data);savedLibraryCoverUrls.set(key,url)}
+   img.src=url;img.hidden=false;img.closest('.saved-story-cover')?.classList.remove('no-cover');
+  }catch(e){console.warn('Saved cover unavailable',e);img.closest('.saved-story-cover')?.classList.add('no-cover')}
+ }))
+}
 function renderLibrary(){
  const l=$('library');if(!l)return;const items=currentUser?cloudStories:saved,c=savedLibraryCopy();
  if(!items.length){l.innerHTML=`<p class="muted saved-library-empty">${escapeHtml(t().noSaved)}</p>`;return}
- l.innerHTML=`<div class="saved-story-list">${items.map((x,i)=>`<article class="saved-story-card"><div class="saved-story-main"><div class="saved-story-title">${escapeHtml(x.title)}</div><small>${escapeHtml(x.child?.name||'')}${x.language?` · ${escapeHtml(languageNames[x.language]||x.language)}`:''}</small></div><div class="saved-story-actions"><button class="primary saved-replay" type="button" onclick="openSaved(${i})">▶ ${escapeHtml(c.replay)}</button>${currentUser?`<button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">🗑 ${escapeHtml(t().delete)}</button>`:''}</div></article>`).join('')}</div>`;
+ l.innerHTML=`<div class="saved-story-list">${items.map((x,i)=>`<article class="saved-story-card"><button class="saved-story-cover no-cover" type="button" onclick="openSaved(${i})" aria-label="${escapeHtml(c.replay)}: ${escapeHtml(x.title)}"><span class="saved-cover-fallback">☾</span><img data-saved-cover="${i}" alt="" hidden></button><div class="saved-story-main"><div class="saved-story-title">${escapeHtml(x.title)}</div><small>${escapeHtml(x.child?.name||'')}${x.at?` · ${escapeHtml(savedStoryDate(x))}`:''}${x.language?` · ${escapeHtml(languageNames[x.language]||x.language)}`:''}</small><div class="saved-story-actions"><button class="primary saved-replay" type="button" onclick="openSaved(${i})">▶ ${escapeHtml(c.replay)}</button>${currentUser?`<button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">🗑 ${escapeHtml(t().delete)}</button>`:''}</div></div></article>`).join('')}</div>`;
+ loadSavedLibraryCovers();
 }
 async function recoverMissingSavedStoryArt(x,book){
  if(!currentUser||!x?.id||!book||x.savedAssets?.pages?.length===book.pages.length+2)return false;
@@ -995,8 +1010,16 @@ function initSetupDeck(){
  updateSetupNav();goSetupPage(setupPageIndex,true);
 }
 initSetupDeck();
-$('appCreateNav')?.addEventListener('click',()=>{const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Child');goSetupPage(i>=0?i:1,true)});
-$('appSavedNav')?.addEventListener('click',()=>{const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Story');goSetupPage(i>=0?i:pages.length-1,true);requestAnimationFrame(()=>document.querySelector('.story-library-inline')?.scrollIntoView({block:'nearest'}))});
+$('appCreateNav')?.addEventListener('click',()=>{showCreateStoryView();const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Child');goSetupPage(i>=0?i:1,true)});
+function showSavedStoriesView(){
+ $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.remove('hidden');renderLibrary();
+ $('appCreateNav')?.classList.remove('active');$('appSavedNav')?.classList.add('active');
+}
+function showCreateStoryView(){
+ $('savedStoriesView')?.classList.add('hidden');$('setupShell')?.classList.remove('hidden');
+ $('appSavedNav')?.classList.remove('active');$('appCreateNav')?.classList.add('active');
+}
+$('appSavedNav')?.addEventListener('click',showSavedStoriesView);
 // V142 — mobile application header mirrors the proven V141 desktop routes.
 const mobileMenu=$('appMobileMenu'),mobileMenuToggle=$('appMobileMenuToggle');
 function closeAppMobileMenu(){if(!mobileMenu||!mobileMenuToggle)return;mobileMenu.classList.add('hidden');mobileMenuToggle.setAttribute('aria-expanded','false');mobileMenuToggle.setAttribute('aria-label','Open menu')}
@@ -1012,7 +1035,7 @@ window.addEventListener('resize',()=>requestAnimationFrame(updateSetupScrollCue)
 window.addEventListener('orientationchange',()=>setTimeout(()=>{const open=!!currentBook&&!$('story')?.classList.contains('hidden');document.body.classList.toggle('story-mode',open);document.body.classList.toggle('desktop-story-mode',open&&!isPhonePortrait());goSetupPage(setupPageIndex,true)},120));
 
 // V65 — public landing and desktop page architecture.
-function enterMoonbeamApp(accountFirst=false){$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');goSetupPage(currentUser?1:0,true)}
+function enterMoonbeamApp(accountFirst=false){$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
 function showMoonbeamLanding(){stopNarration();$('story')?.classList.add('hidden');$('productApp')?.classList.add('hidden');$('landing')?.classList.remove('hidden');document.body.classList.remove('product-active','story-mode','desktop-story-mode')}
 
 // V87 — setup brand is a permanent Home route without signing out.
