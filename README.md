@@ -116,14 +116,14 @@ V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires
 - Legal pages now localise their complete visible content, navigation and browser title for all supported Moonbeam locales.
 - No database migration and no API-function changes.
 
-## V138
+## V140
 - Language changes now immediately refresh visible credit/status/story UI without waiting for page navigation.
 - The End page always shows equal-size Save Story, Share Story and New Story actions; saved stories show a disabled saved state.
 - Share now offers WhatsApp, Email and Copy Link. WhatsApp/Copy Link create private tokenised story links; email retains recipient tracking and revocation.
 - Buy credits is now a compact, prominent control; checkout/pricing logic is unchanged.
 
 
-## V138
+## V140
 - When a signed-in account has exactly zero story credits, the compact Buy credits button turns green and gently pulses.
 - The attention state is removed automatically as soon as the balance is above zero or unavailable.
 - Respects prefers-reduced-motion by keeping the green emphasis without animation.

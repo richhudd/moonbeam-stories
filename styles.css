@@ -1552,3 +1552,24 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
 @media (prefers-reduced-motion:reduce){
  .buy-credits-button.no-credits-attention{animation:none!important}
 }
+
+/* V140 — keep Buy credits genuinely compact in every state.
+   .secondary has flex:1 globally, so width:auto alone is not enough inside a flex container. */
+#buyCredits.buy-credits-button{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  align-self:flex-start!important;
+  padding:7px 12px!important;
+  margin:4px 0 12px!important;
+  border-radius:999px!important;
+  font-size:13px!important;
+  line-height:1.2!important;
+  white-space:nowrap!important;
+}
+#buyCredits.buy-credits-button.no-credits-attention{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  padding:7px 12px!important;
+}
