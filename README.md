@@ -1,7 +1,3 @@
-# Moonbeam Stories V143
-
-V143 is a deliberately small footer-only visual stage built on V142. It restyles the existing legal footer to match the established Moonbeam homepage palette (warm ivory, aubergine/muted copy and Moonbeam purple links). The existing Privacy, Terms, Refunds and Contact destinations are unchanged. No application JavaScript, APIs, setup screens, reader, credits, checkout, sharing, narration, authentication or database behaviour is changed in this stage.
-
 # Moonbeam Stories V133
 
 V133 reapplies the V132 localization audit on the proven V131 baseline while removing the early `renderStoryCredits()` call that caused startup to abort before homepage/auth handlers were attached. Credit localization remains handled after credit state initialization.
@@ -145,3 +141,8 @@ V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires
 
 ## V142
 Stage 2 only: mobile application header matching the V141 desktop shell. Adds compact live credits, existing Buy Credits action, and a hamburger menu wired to the existing Create Story, Saved Stories, and Sign Out actions. No application content, reader, generation, saving, sharing, payment, legal, or API behaviour changed.
+
+## V144 micro-update
+- Removed the copyright line from the application footer so the four existing legal links have the available width.
+- Tightened only the mobile application-header spacing so the live credit counter no longer crowds/overlays the Moonbeam branding.
+- No application logic, API, payment, story, reader, save, share or legal-link destinations changed.

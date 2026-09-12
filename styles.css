@@ -1631,4 +1631,46 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.product-active:not(.story-mode) .app-mobile-menu button:active{background:#eee7fb!important;color:#6848ba!important}
   body.product-active:not(.story-mode) #appMobileSignOut.hidden{display:none!important}
 }
-\n\n/* V143 — footer-only visual pass. Preserve the existing legal destinations and behaviour. */\n.site-legal-footer{\n  background:#fffaf1!important;\n  color:#655c70!important;\n  border-top:1px solid #eee4f5!important;\n  padding:10px 14px 14px!important;\n  gap:.5rem 1rem!important;\n  font-size:.78rem!important;\n  line-height:1.35!important;\n  box-sizing:border-box!important;\n}\n.site-legal-footer a{\n  color:#6848ba!important;\n  text-decoration:none!important;\n  font-weight:700!important;\n}\n.site-legal-footer a:hover,.site-legal-footer a:focus-visible{\n  color:#49365f!important;\n  text-decoration:underline!important;\n  text-underline-offset:3px!important;\n}\n@media(max-width:700px){\n  .site-legal-footer{padding:8px 10px 11px!important;gap:.35rem .8rem!important;font-size:.72rem!important}\n}\n
+
+/* V144 micro-update: compact mobile header spacing + legal-links-only footer */
+@media (max-width:700px){
+  body.product-active:not(.story-mode) .app-product>header.app-header{
+    padding-left:7px!important;
+    padding-right:7px!important;
+    gap:3px!important;
+  }
+  body.product-active:not(.story-mode) .app-header-brand{
+    gap:3px!important;
+    flex:1 1 0!important;
+    overflow:hidden!important;
+  }
+  body.product-active:not(.story-mode) .app-header-brand .logo{font-size:22px!important}
+  body.product-active:not(.story-mode) .app-header-brand h1{
+    font-size:14px!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  body.product-active:not(.story-mode) .app-header-actions{gap:3px!important}
+  body.product-active:not(.story-mode) .header-credit-balance{
+    padding:5px 6px!important;
+    min-width:38px!important;
+    text-align:center!important;
+  }
+  body.product-active:not(.story-mode) .header-buy-credits{
+    padding:5px 6px!important;
+    font-size:9px!important;
+  }
+  body.product-active:not(.story-mode) .app-mobile-menu-toggle{
+    flex-basis:29px!important;
+    width:29px!important;
+    height:29px!important;
+  }
+  .site-legal-footer{
+    flex-wrap:nowrap!important;
+    gap:0 14px!important;
+    padding-left:8px!important;
+    padding-right:8px!important;
+    font-size:12px!important;
+    white-space:nowrap!important;
+  }
+}
