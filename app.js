@@ -836,10 +836,10 @@ function renderBookPage(index){
  if(isEnd){
    const saveButton=book.isSaved?'':`<button class="secondary end-save" id="endSave" type="button">${escapeHtml(t().save)}</button>`;
    const ownerActions=`${saveButton}<button class="primary end-share-story" id="endShareStory" type="button">✉ Share Story</button><button class="secondary end-new-story" id="endNewStory" type="button">${escapeHtml(t().newStory)}</button>`;
-   const sx=shareT(book.child?.language||language),sharedActions=`<div class="shared-conversion"><h3>${escapeHtml(sx.loved)}</h3><p>${escapeHtml(sx.free)}</p><a class="primary shared-create" href="/?lang=${encodeURIComponent(book.child?.language||language)}&fromShare=1">${escapeHtml(sx.create)}</a></div>`;
+   const sx=shareT(book.child?.language||language),sharedActions=`<div class="shared-conversion"><h3>${escapeHtml(sx.loved)}</h3><p>${escapeHtml(sx.free)}</p><a class="primary shared-create" id="sharedCreateStory" href="/?lang=${encodeURIComponent(book.child?.language||language)}&fromShare=1">${escapeHtml(sx.create)}</a></div>`;
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
-   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>startNewStory();
+   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>startNewStory();const sc=$('sharedCreateStory');if(sc)sc.onclick=e=>{e.preventDefault();const nextLanguage=book.child?.language||language||'en-GB';stopNarration();document.body.classList.remove('shared-story-mode','story-mode','desktop-story-mode');location.assign(`/?lang=${encodeURIComponent(nextLanguage)}&fromShare=1`)};
    applyMobileSide();return;
  }
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};

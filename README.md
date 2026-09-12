@@ -96,3 +96,9 @@ V130 still contains exactly **12** `/api/*.js` Serverless Functions and requires
 The Share Story form now asks only for the sender's name and each recipient's email address. The sender placeholder is the localized equivalent of “Your name”; the redundant recipient-name field has been removed. Multiple-recipient sharing, unique private links, language inheritance, revocation and the V128 shared-link startup flow are unchanged. The existing `story_shares.recipient_name` database column is retained for migration compatibility and is populated server-side from the recipient email; it is no longer requested from or shown to the sender.
 
 V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires no new Supabase migration.
+## V131 — shared-story conversion CTA fix
+- The final **Create my story** CTA in a received shared story now has an explicit click action rather than relying only on default anchor navigation.
+- The action stops any narration, exits shared-reader display state, and navigates to the public Moonbeam journey with the original story language preserved via `?lang=<language>&fromShare=1`.
+- The real `href` remains in place as a fallback for accessibility and open-in-new-tab behaviour.
+- No changes to sharing tokens, email delivery, saved artwork, story generation, credits, narration, or the proven reader layout.
+
