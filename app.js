@@ -658,6 +658,21 @@ function applyMobileSide(){
    requestAnimationFrame(()=>{fitMobileStoryText();requestAnimationFrame(fitMobileStoryText)});
  }
 }
+function updateMobileScrollCue(){
+ if(!isPhonePortrait())return;
+ const content=document.querySelector('.left-page .page-content');
+ const cue=document.querySelector('.left-page .mobile-scroll-cue');
+ if(!content||!cue)return;
+ const moreBelow=(content.scrollHeight-content.scrollTop-content.clientHeight)>4;
+ cue.classList.toggle('visible',moreBelow);
+ cue.setAttribute('aria-hidden',moreBelow?'false':'true');
+}
+function setupMobileScrollCue(){
+ const content=document.querySelector('.left-page .page-content');
+ if(!content)return;
+ content.addEventListener('scroll',updateMobileScrollCue,{passive:true});
+ requestAnimationFrame(()=>requestAnimationFrame(updateMobileScrollCue));
+}
 function fitMobileStoryText(){
  if(!isPhonePortrait())return;
  const bookEl=$('book');
@@ -666,7 +681,7 @@ function fitMobileStoryText(){
  const text=document.querySelector('.left-page .story-text');
  if(!bookEl||!controls||!content||!text)return;
 
- // V112: deterministic portrait reader. Calculate the rendered mobile reader
+ // V113: deterministic portrait reader. Calculate the rendered mobile reader
  // heights explicitly in pixels: 60% artwork and 40% scrollable prose.
  const vv=window.visualViewport;
  const viewportH=Math.max(1,vv?.height||window.innerHeight||document.documentElement.clientHeight||700);
@@ -688,6 +703,7 @@ function fitMobileStoryText(){
  text.style.removeProperty('line-height');
  text.style.removeProperty('max-height');
  text.style.removeProperty('overflow');
+ requestAnimationFrame(updateMobileScrollCue);
 }
 
 function fitDesktopStoryText(){
@@ -766,10 +782,10 @@ function renderBookPage(index){
  }
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';
- bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
+ bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-scroll-cue" aria-hidden="true"><span></span><span></span></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.textContent=t().turn}if(indicator)indicator.textContent=`${clamped+1} / ${total}`;
  const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
- applyMobileSide();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,1);
+ applyMobileSide();setupMobileScrollCue();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,1);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${language}:${clamped+1}`).catch(()=>{})}
 }
 function closeReader(){stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode');$('story')?.classList.add('hidden')}

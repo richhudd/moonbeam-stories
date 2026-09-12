@@ -1,10 +1,10 @@
-# V112 — narrated mobile auto-scroll
+# V113 — mobile picture-book reader polish
 
-V112 preserves the proven V111 mobile reader geometry and Safari scroll-range fix.
+V113 preserves the proven V111/V112 mobile reader geometry, Safari scrolling fix, and narration auto-scroll.
 
-## Change
-- Narrated stories now automatically scroll the mobile text pane as narration advances.
-- Auto-scroll follows the currently highlighted sentence and moves only when it approaches the upper/lower comfort band.
-- Scrolling is smooth and clamped to the text pane's real scroll range.
-- The fixed 60% illustration and bottom navigation do not move.
-- Manual/self-reading behaviour is unchanged.
+Changes:
+- tightly stacked, gently pulsing double-chevron cue appears only while more story text remains below
+- cue disappears at the true bottom and reappears if the reader scrolls upward
+- mobile Previous/Next controls are clean circular left/right arrow buttons
+- page number remains centred between the arrows
+- no change to the 60/40 fixed-artwork / scrolling-text architecture
