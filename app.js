@@ -666,7 +666,7 @@ function fitMobileStoryText(){
  const text=document.querySelector('.left-page .story-text');
  if(!bookEl||!controls||!content||!text)return;
 
- // V107: deterministic portrait reader. Calculate the rendered mobile reader
+ // V109: deterministic portrait reader. Calculate the rendered mobile reader
  // heights explicitly in pixels: 60% artwork and 40% scrollable prose.
  const vv=window.visualViewport;
  const viewportH=Math.max(1,vv?.height||window.innerHeight||document.documentElement.clientHeight||700);
