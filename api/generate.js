@@ -54,7 +54,7 @@ module.exports = async function handler(req, res) {
     const lengthGuide = lengthConfig.totalWords;
     const targetPerScreen = '105-125 words';
 
-    const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original bedtime adventure story for one child.
+    const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original adventure story for one child. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
 
 CHILD
 Name/nickname: ${String(child.name)}
@@ -77,7 +77,10 @@ The story should have:
 - dialogue that sounds natural for children;
 - a sense of place and atmosphere, especially around ordinary things made magical by imagination;
 - a proper climax where the characters solve or face the central problem;
-- a warm, reassuring bedtime ending.
+- a warm, reassuring and satisfying ending.
+
+SETTING AND TIME OF DAY — IMPORTANT
+Choose the setting and time of day naturally from the child's interests, the plot and the adventure. Vary them freely across stories: morning, daytime, afternoon, sunset, evening or night are all possible, as are indoor, outdoor, real-world and fantastical settings. Do NOT default to nighttime, darkness, moonlight, stars, sleep, bedrooms, pyjamas or bedtime imagery merely because Moonbeam stories may be read at bedtime. Night should appear only when it genuinely suits this particular story. Do not force the ending to occur at bedtime or at night.
 
 Do NOT imitate or reproduce the wording, characters, plots, or distinctive passages of any existing author or book. This must be an original Moonbeam story. Do not mention authors or literary styles in the story itself.
 

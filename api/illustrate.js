@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
       ? `\nIDENTITY REFERENCE\nAn attached photograph shows the real child who is the main hero. Preserve the child's recognisable identity across the illustration: face shape, eyes, nose, smile, hair colour, hair texture, approximate skin tone and age. Translate the child naturally into the storybook painting style rather than making the result photographic. Do not copy the photograph's background, clothing or pose unless the scene calls for them. Identity preservation is a primary requirement: the illustrated child must be recognisably the same real child, not merely a generic child of similar age or hair colour. The child should clearly look like the same person in every illustration.`
       : '';
 
-    const finalPrompt = `Create a single full-page illustration for a premium children's bedtime storybook.
+    const finalPrompt = `Create a single full-page illustration for a premium children's storybook.
 
 ART DIRECTION
 ${style || 'Warm, charming, timeless British storybook illustration; painterly traditional feel, expressive characters, gentle lighting, rich but soft detail, magical without being frightening.'}
@@ -43,6 +43,7 @@ ${prompt}
 IMPORTANT
 - This is an illustration for children aged 3-12.
 - Keep the mood warm, adventurous and reassuring.
+- Follow the scene's actual setting, weather and time of day. Do NOT infer nighttime, moonlight, stars, darkness, sleep, bedrooms, pyjamas or bedtime imagery merely because this is a children's story. Use night only when the supplied scene genuinely calls for it.
 - No words, letters, captions, signs, logos or typography anywhere in the image.
 - Do not make it photorealistic, 3D-rendered or cartoonishly plastic.
 - Compose the scene as a beautiful book illustration with clear focal characters and readable silhouettes.
