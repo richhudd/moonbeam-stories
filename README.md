@@ -77,3 +77,9 @@ V122 uses the existing `RESEND_API_KEY`. Optional environment variables:
 The canonical saved story language now controls the recipient journey: outbound share email, shared reader interface, narration language, The End conversion CTA, and the public Moonbeam landing/signup journey after the recipient chooses to create a story. The CTA carries `?lang=...` and the app persists that language so signup/onboarding remains in the same language unless the recipient changes it. The story itself is never translated or regenerated.
 
 V124 still contains exactly **12** `/api/*.js` Serverless Functions.
+
+
+## V128 change — shared-link first-paint cleanup
+Shared `/shared/<token>` links are now detected synchronously in the document head before the browser can paint the public landing page. The normal landing/product UI stays hidden behind a lightweight Moonbeam loading screen until the existing shared reader has successfully rendered. On success the boot screen is removed; on invalid/revoked/error links it is also removed before the existing shared-story error screen is shown. No reader, narration, generation, credit, sharing-token, or saved-art logic was changed.
+
+V128 still contains exactly **12** `/api/*.js` Serverless Functions and requires no new Supabase migration.
