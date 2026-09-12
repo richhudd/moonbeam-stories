@@ -70,6 +70,19 @@ async function ownerShares(req,res){
  return res.status(sent.length?200:502).json({sent,failed});
 }
 
+
+async function ownerLink(req,res){
+ if(req.method!=='POST')return res.status(405).json({error:'POST only'});
+ const user=await verifyMoonbeamUser(req),body=parseBody(req),storyId=String(body.storyId||'').trim(),senderName=String(body.senderName||'').trim().slice(0,80);
+ if(!storyId||!senderName)return res.status(400).json({error:'Your name and story are required.'});
+ const story=await ownedStory(user.id,storyId);if(!story)return res.status(404).json({error:'That saved story is unavailable.'});
+ const assets=story.saved_assets||{};if(!assets.cover||!Array.isArray(assets.pages)||!assets.pages.length)return res.status(409).json({error:'This story does not have a complete permanent illustrated copy to share.'});
+ const token=crypto.randomBytes(32).toString('base64url'),hash=tokenHash(token);
+ const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/story_shares`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({owner_id:user.id,saved_story_id:storyId,token_hash:hash,sender_name:senderName,recipient_name:'',recipient_email:''})});
+ if(!rows?.[0])return res.status(500).json({error:'Private link could not be created.'});
+ return res.status(200).json({id:rows[0].id,link:`${SITE_URL}/shared/${encodeURIComponent(token)}`});
+}
+
 async function publicStory(req,res){
  if(req.method!=='GET')return res.status(405).json({error:'GET only'});
  const token=String(req.query?.token||'').trim(),share=await getShareByToken(token);
@@ -113,6 +126,7 @@ module.exports=async function(req,res){
   if(action==='story')return await publicStory(req,res);
   if(action==='asset')return await publicAsset(req,res);
   if(action==='owner')return await ownerShares(req,res);
+  if(action==='link')return await ownerLink(req,res);
   return res.status(400).json({error:'Unknown sharing action.'});
  }catch(e){
   console.error('share',action,e);
