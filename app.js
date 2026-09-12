@@ -282,7 +282,7 @@ function renderStoryCredits(balance=storyCreditBalance){
  storyCreditBalance=Number.isFinite(Number(balance))?Number(balance):null;
  const el=$('creditStatus');if(!el)return;
  el.classList.toggle('empty',storyCreditBalance===0);
- const buy=$('buyCredits');if(buy){buy.classList.toggle('hidden',!currentUser);buy.classList.toggle('no-credits-attention',!!currentUser&&storyCreditBalance===0)}
+ const buy=$('buyCredits');if(buy)buy.classList.toggle('hidden',!currentUser);
  const creditCopy={
 'en-GB':{free:'<strong>1 free story</strong> when you create or sign in to your parent account.',checking:'Checking story credits…',none:'<strong>No story credits remaining.</strong> Your saved stories are still free to reopen and read.',left:n=>`<strong>${n} story credit${n===1?'':'s'} remaining.</strong> One new story uses one credit.`},
 'en-US':{free:'<strong>1 free story</strong> when you create or sign in to your parent account.',checking:'Checking story credits…',none:'<strong>No story credits remaining.</strong> Your saved stories are still free to reopen and read.',left:n=>`<strong>${n} story credit${n===1?'':'s'} remaining.</strong> One new story uses one credit.`},
