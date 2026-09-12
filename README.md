@@ -1,10 +1,15 @@
-# V113 — mobile picture-book reader polish
+# V114 — persistent Read to Me for saved stories
 
-V113 preserves the proven V111/V112 mobile reader geometry, Safari scrolling fix, and narration auto-scroll.
+V114 preserves the V113 mobile reader and reinstates Read to Me on saved stories.
 
 Changes:
-- tightly stacked, gently pulsing double-chevron cue appears only while more story text remains below
-- cue disappears at the true bottom and reappears if the reader scrolls upward
-- mobile Previous/Next controls are clean circular left/right arrow buttons
-- page number remains centred between the arrows
-- no change to the 60/40 fixed-artwork / scrolling-text architecture
+- saved stories now offer Read to Me from the cover
+- narration already stored for a saved story/language/page is replayed without a new TTS request
+- newly generated narration for an existing saved story is uploaded once and recorded in `saved_assets`
+- narration generated before a new story is saved is persisted during the save
+- the reading edition language drives narration independently of the interface language
+- existing audio remains the master timeline for sentence highlighting and V112/V113 auto-scroll
+- deleting a saved story also deletes its stored narration files
+- V113 reader geometry, Safari scroll fix, chevrons and arrow navigation are unchanged
+
+Deployment note: run `SUPABASE_V114_SAVED_NARRATION.sql` once so the existing private `saved-story-art` bucket accepts MP3 narration files.
