@@ -666,7 +666,7 @@ function fitMobileStoryText(){
  const text=document.querySelector('.left-page .story-text');
  if(!bookEl||!controls||!content||!text)return;
 
- // V111: deterministic portrait reader. Calculate the rendered mobile reader
+ // V112: deterministic portrait reader. Calculate the rendered mobile reader
  // heights explicitly in pixels: 60% artwork and 40% scrollable prose.
  const vv=window.visualViewport;
  const viewportH=Math.max(1,vv?.height||window.innerHeight||document.documentElement.clientHeight||700);
@@ -730,10 +730,26 @@ function renderNarrationText(text){return splitNarrationSentences(text).map((sen
 function currentPageText(){if(!currentBook)return'';const i=currentBook.currentPage,closingIndex=currentBook.pages.length+1;if(i===0)return currentBook.opening||'';if(i===closingIndex)return currentBook.closing||'';if(i>closingIndex)return'';return currentBook.pages[i-1]?.text||''}
 function narrationKey(){return currentBook?`${currentBook.cacheId}:audio:${language}:${currentBook.currentPage}`:''}
 async function getNarration(text,key){if(narrationCache.has(key))return narrationCache.get(key);const accessToken=await currentAccessToken();if(!accessToken)throw new Error(t().signInAgain);const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure narration allowance.');const r=await fetch('/api/narrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({text,language,generationRunId})});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok||!data.audio)throw new Error(data?.error||`Narration failed (${r.status})`);narrationCache.set(key,data.audio);return data.audio}
-function clearNarrationHighlight(){document.querySelectorAll('.narration-sentence').forEach(x=>x.classList.remove('speaking'))}
+function clearNarrationHighlight(){narrationScrollSentence=-1;document.querySelectorAll('.narration-sentence').forEach(x=>x.classList.remove('speaking'))}
 function stopNarration(){narrationRun++;if(narrationStartTimeout){clearTimeout(narrationStartTimeout);narrationStartTimeout=null}if(narrationTimer){clearInterval(narrationTimer);narrationTimer=null}const audios=new Set(activeNarrationAudios);if(narrationAudio)audios.add(narrationAudio);for(const audio of audios){try{audio.onended=null;audio.ontimeupdate=null;audio.pause();audio.currentTime=0;audio.removeAttribute?.('src');audio.load?.()}catch{}}activeNarrationAudios.clear();narrationAudio=null;clearNarrationHighlight();const b=$('narrationControl');if(b){b.textContent='▶';b.classList.remove('loading')}}
 function scheduleNarration(delay=120){if(narrationStartTimeout)clearTimeout(narrationStartTimeout);narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;startNarrationForCurrentPage()},delay)}
-function updateNarrationHighlight(audio){const spans=[...document.querySelectorAll('.narration-sentence')];if(!spans.length||!isFinite(audio.duration)||audio.duration<=0)return;const weights=spans.map(s=>Math.max(1,s.textContent.trim().length)),total=weights.reduce((a,b)=>a+b,0);let target=(audio.currentTime/audio.duration)*total,acc=0,idx=0;for(let i=0;i<weights.length;i++){acc+=weights[i];if(target<=acc){idx=i;break}}spans.forEach((s,i)=>s.classList.toggle('speaking',i===idx))}
+let narrationScrollSentence=-1;
+function keepNarratedSentenceVisible(span,idx){
+ if(!isPhonePortrait()||!span||idx===narrationScrollSentence)return;
+ narrationScrollSentence=idx;
+ const content=span.closest('.page-content');
+ if(!content)return;
+ const cr=content.getBoundingClientRect(),sr=span.getBoundingClientRect();
+ // Keep the spoken sentence in the comfortable middle band of the lower text pane.
+ // Only the text viewport scrolls; the fixed 60% illustration and navigation never move.
+ const upper=cr.top+Math.min(34,cr.height*.16),lower=cr.bottom-Math.min(46,cr.height*.22);
+ if(sr.top<upper||sr.bottom>lower){
+   const desired=content.scrollTop+(sr.top-cr.top)-(cr.height*.32);
+   const max=Math.max(0,content.scrollHeight-content.clientHeight);
+   content.scrollTo({top:Math.max(0,Math.min(max,desired)),behavior:'smooth'});
+ }
+}
+function updateNarrationHighlight(audio){const spans=[...document.querySelectorAll('.narration-sentence')];if(!spans.length||!isFinite(audio.duration)||audio.duration<=0)return;const weights=spans.map(s=>Math.max(1,s.textContent.trim().length)),total=weights.reduce((a,b)=>a+b,0);let target=(audio.currentTime/audio.duration)*total,acc=0,idx=0;for(let i=0;i<weights.length;i++){acc+=weights[i];if(target<=acc){idx=i;break}}spans.forEach((s,i)=>s.classList.toggle('speaking',i===idx));keepNarratedSentenceVisible(spans[idx],idx)}
 async function startNarrationForCurrentPage(){if(!currentBook||currentBook.currentPage<0)return;for(const a of activeNarrationAudios){try{a.pause();a.currentTime=0}catch{}}activeNarrationAudios.clear();narrationAudio=null;const pageAtStart=currentBook.currentPage,run=++narrationRun,text=currentPageText(),key=narrationKey(),button=$('narrationControl');if(button){button.textContent='…';button.classList.add('loading')}try{const src=await getNarration(text,key);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;const audio=new Audio(src);activeNarrationAudios.add(audio);narrationAudio=audio;if(button){button.textContent='⏸';button.classList.remove('loading')}audio.ontimeupdate=()=>{if(currentBook?.currentPage===pageAtStart)updateNarrationHighlight(audio)};audio.onended=()=>{activeNarrationAudios.delete(audio);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;clearNarrationHighlight();if(narrationAudio===audio)narrationAudio=null;if(button)button.textContent='▶';if(currentBook.readingMode==='narrated'&&pageAtStart<=currentBook.pages.length+1){narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;goNextBookPage(true)},500)}};await audio.play()}catch(e){console.error(e);if(button){button.textContent='▶';button.classList.remove('loading');button.title=e?.message||t().narrationUnavailable}}}
 function toggleNarration(){if(!currentBook)return;if(narrationAudio&&!narrationAudio.paused){narrationAudio.pause();const b=$('narrationControl');if(b)b.textContent='▶';return}if(narrationAudio&&narrationAudio.paused){narrationAudio.play();const b=$('narrationControl');if(b)b.textContent='⏸';return}startNarrationForCurrentPage()}
 function renderBookPage(index){

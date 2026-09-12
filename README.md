@@ -1,7 +1,10 @@
-# V111 — Safari mobile scroll-range fix
+# V112 — narrated mobile auto-scroll
 
-V111 preserves the V110/V109 portrait geometry: 60% fixed illustration and 40% scrolling text down to the fixed navigation.
+V112 preserves the proven V111 mobile reader geometry and Safari scroll-range fix.
 
-The mobile prose viewport is now a normal in-flow 100%-height scrolling element rather than an absolutely positioned scroller containing visibly overflowing text. A real 48px in-flow spacer follows the story text, so mobile Safari includes the complete final lines plus clearance in the element's scrollHeight.
-
-No story-generation, saved-story, translation, illustration, payment or desktop-reader behaviour was changed.
+## Change
+- Narrated stories now automatically scroll the mobile text pane as narration advances.
+- Auto-scroll follows the currently highlighted sentence and moves only when it approaches the upper/lower comfort band.
+- Scrolling is smooth and clamped to the text pane's real scroll range.
+- The fixed 60% illustration and bottom navigation do not move.
+- Manual/self-reading behaviour is unchanged.
