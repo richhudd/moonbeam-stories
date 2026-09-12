@@ -1076,3 +1076,4 @@ $('landingStart')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landi
 const landingLanguage=$('landingLanguage');if(landingLanguage){landingLanguage.value=language;landingLanguage.addEventListener('change',()=>{const main=$('language');if(main){main.value=landingLanguage.value;main.dispatchEvent(new Event('change',{bubbles:true}))}})}
 $('language')?.addEventListener('change',()=>{if(landingLanguage)landingLanguage.value=$('language').value});
 // V86: setup navigation is intentionally button-only; no keyboard-arrow page changes.
+// test
