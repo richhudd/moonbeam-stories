@@ -1,3 +1,7 @@
+# Moonbeam Stories V143
+
+V143 is a deliberately small footer-only visual stage built on V142. It restyles the existing legal footer to match the established Moonbeam homepage palette (warm ivory, aubergine/muted copy and Moonbeam purple links). The existing Privacy, Terms, Refunds and Contact destinations are unchanged. No application JavaScript, APIs, setup screens, reader, credits, checkout, sharing, narration, authentication or database behaviour is changed in this stage.
+
 # Moonbeam Stories V133
 
 V133 reapplies the V132 localization audit on the proven V131 baseline while removing the early `renderStoryCredits()` call that caused startup to abort before homepage/auth handlers were attached. Credit localization remains handled after credit state initialization.
