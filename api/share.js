@@ -55,8 +55,8 @@ async function ownerShares(req,res){
  if(!assets.cover||!Array.isArray(assets.pages)||!assets.pages.length)return res.status(409).json({error:'This story does not have a complete permanent illustrated copy to share.'});
  const resend=new Resend(RESEND_API_KEY),sent=[],failed=[];
  for(const raw of recipients){
-  const name=String(raw?.name||'').trim().slice(0,80),email=String(raw?.email||'').trim().toLowerCase();
-  if(!name||!emailOk(email)){failed.push({name,email,error:'Enter a valid name and email address.'});continue}
+  const email=String(raw?.email||'').trim().toLowerCase(),name=email.slice(0,80);
+  if(!emailOk(email)){failed.push({email,error:'Enter a valid email address.'});continue}
   const token=crypto.randomBytes(32).toString('base64url'),hash=tokenHash(token);
   const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/story_shares`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({owner_id:user.id,saved_story_id:storyId,token_hash:hash,sender_name:senderName,recipient_name:name,recipient_email:email})});
   const share=rows?.[0],link=`${SITE_URL}/shared/${encodeURIComponent(token)}`,copy=shareEmail(story.language),subject=copy.subject(senderName);

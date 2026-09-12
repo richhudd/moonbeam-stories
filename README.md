@@ -83,3 +83,9 @@ V124 still contains exactly **12** `/api/*.js` Serverless Functions.
 Shared `/shared/<token>` links are now detected synchronously in the document head before the browser can paint the public landing page. The normal landing/product UI stays hidden behind a lightweight Moonbeam loading screen until the existing shared reader has successfully rendered. On success the boot screen is removed; on invalid/revoked/error links it is also removed before the existing shared-story error screen is shown. No reader, narration, generation, credit, sharing-token, or saved-art logic was changed.
 
 V128 still contains exactly **12** `/api/*.js` Serverless Functions and requires no new Supabase migration.
+
+
+## V129 change — simpler Share Story form
+The Share Story form now asks only for the sender's name and each recipient's email address. The sender placeholder is the localized equivalent of “Your name”; the redundant recipient-name field has been removed. Multiple-recipient sharing, unique private links, language inheritance, revocation and the V128 shared-link startup flow are unchanged. The existing `story_shares.recipient_name` database column is retained for migration compatibility and is populated server-side from the recipient email; it is no longer requested from or shown to the sender.
+
+V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires no new Supabase migration.
