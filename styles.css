@@ -1536,3 +1536,19 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
 .share-back{display:block;margin:10px auto 0;border:0;background:transparent;color:#655374;text-decoration:underline;cursor:pointer}
 #shareEmailPanel .share-send{width:100%;margin-top:12px}
 @media(max-width:700px){.end-actions{grid-template-columns:1fr;width:min(320px,90%)}.end-actions>button{min-height:48px!important}.share-methods{grid-template-columns:1fr 1fr}}
+
+/* V136: draw attention to purchasing only when the signed-in account has zero credits. */
+.buy-credits-button.no-credits-attention{
+ background:#2f9e62!important;
+ border-color:#267f50!important;
+ color:#fff!important;
+ box-shadow:0 0 0 0 rgba(47,158,98,.34);
+ animation:moonbeam-credit-pulse 1.8s ease-in-out infinite;
+}
+@keyframes moonbeam-credit-pulse{
+ 0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(47,158,98,.34)}
+ 50%{transform:scale(1.045);box-shadow:0 0 0 8px rgba(47,158,98,0)}
+}
+@media (prefers-reduced-motion:reduce){
+ .buy-credits-button.no-credits-attention{animation:none!important}
+}
