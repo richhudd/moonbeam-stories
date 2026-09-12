@@ -666,8 +666,8 @@ function fitMobileStoryText(){
  const text=document.querySelector('.left-page .story-text');
  if(!bookEl||!controls||!content||!text)return;
 
- // V105: deterministic portrait reader. The usable viewport above the fixed
- // navigation is split exactly 50/50 between artwork and a scrollable text pane.
+ // V106: deterministic portrait reader. The usable viewport above the fixed
+ // navigation is split exactly 60/40 between artwork and a scrollable text pane.
  const vv=window.visualViewport;
  const viewportH=Math.max(1,vv?.height||window.innerHeight||document.documentElement.clientHeight||700);
  const nav=controls.getBoundingClientRect();

@@ -1325,8 +1325,8 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   body.story-mode .book-controls .page-indicator{min-width:42px!important;align-self:center!important;font-size:10px!important;}
 }
 
-/* V105 — authoritative portrait-mobile reader.
-   The usable area above the fixed navigation is split exactly in half:
+/* V106 — authoritative portrait-mobile reader.
+   The usable area above the fixed navigation is split exactly 60/40:
    fixed artwork above, independently scrollable prose below. */
 @media (max-width:700px) and (orientation:portrait){
   body.story-mode #book.show-mobile-spread{
@@ -1338,7 +1338,7 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     min-height:0!important;
     display:grid!important;
     grid-template-columns:1fr!important;
-    grid-template-rows:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,3fr) minmax(0,2fr)!important;
     overflow:hidden!important;
     background:#fffdf8!important;
   }
