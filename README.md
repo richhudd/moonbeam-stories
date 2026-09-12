@@ -174,3 +174,5 @@ Mobile homepage composition only: separate brand/language rows, concise hero, la
 - Signed-out authentication gate is preserved.
 - Mobile setup remains the existing sequential Step 1 / Step 2 flow.
 - No setup fields, story generation, Saved Stories, reader, payment, sharing, narration, legal or API behaviour changed.
+
+V151 — Desktop child selector: visual saved-child tiles with real local profile photos, New child tile, and overflow scrolling. Mobile unchanged.

@@ -60,8 +60,8 @@ function currentPhotoKey(profileId=activeProfileId){return `child-photo:${curren
 function renderChildPhoto(){const preview=$('childPhotoPreview'),remove=$('removeChildPhoto'),toggle=$('useChildPhoto');if(!preview)return;if(currentChildPhoto){preview.innerHTML=`<img src="${currentChildPhoto}" alt="Child photo preview">`;remove?.classList.remove('hidden');if(toggle)toggle.disabled=false}else{preview.innerHTML=`<span>☾</span><small>${escapeHtml(t().noPhoto)}</small><small class="photo-drop-hint">${escapeHtml(t().dropPhoto||'Drop photo here')}</small>`;remove?.classList.add('hidden');if(toggle){toggle.checked=true;toggle.disabled=true}}}
 async function loadCurrentChildPhoto(){currentChildPhoto=await childPhotoGet(currentPhotoKey());renderChildPhoto()}
 function resizeChildPhoto(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('Could not read that photo.'));reader.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error('That image format could not be opened.'));img.onload=()=>{const max=768,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',0.84))};img.src=reader.result};reader.readAsDataURL(file)})}
-async function chooseChildPhoto(file){if(!file)return;const status=$('photoStatus');try{if(!/^image\/(jpeg|png|webp)$/i.test(file.type))throw new Error('Please choose a JPG, PNG or WebP photo.');if(status)status.textContent='Preparing photo…';const image=await resizeChildPhoto(file);currentChildPhoto=image;await childPhotoPut(currentPhotoKey(),image);if($('useChildPhoto'))$('useChildPhoto').checked=true;renderChildPhoto();if(status)status.textContent='Photo ready for illustrations.'}catch(e){if(status)status.innerHTML=`<span class="error">${escapeHtml(e.message||e)}</span>`}}
-async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());currentChildPhoto=null;renderChildPhoto();if($('photoStatus'))$('photoStatus').textContent='Photo removed.'}
+async function chooseChildPhoto(file){if(!file)return;const status=$('photoStatus');try{if(!/^image\/(jpeg|png|webp)$/i.test(file.type))throw new Error('Please choose a JPG, PNG or WebP photo.');if(status)status.textContent='Preparing photo…';const image=await resizeChildPhoto(file);currentChildPhoto=image;await childPhotoPut(currentPhotoKey(),image);if($('useChildPhoto'))$('useChildPhoto').checked=true;renderChildPhoto();renderDesktopProfileTiles();if(status)status.textContent='Photo ready for illustrations.'}catch(e){if(status)status.innerHTML=`<span class="error">${escapeHtml(e.message||e)}</span>`}}
+async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());currentChildPhoto=null;renderChildPhoto();renderDesktopProfileTiles();if($('photoStatus'))$('photoStatus').textContent='Photo removed.'}
 async function pruneImageCache(){const db=await openImageDb();if(!db)return;try{const rows=await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([])});if(rows.length<=IMAGE_CACHE_LIMIT)return;rows.sort((a,b)=>(b.at||0)-(a.at||0));const remove=rows.slice(IMAGE_CACHE_LIMIT);await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite'),store=tx.objectStore(IMAGE_STORE);remove.forEach(r=>store.delete(r.key));tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 function stableHash(value){let h=2166136261>>>0;for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
 function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'']),c:s.closing||'',n:child?.name||'',a:child?.age||'',r:child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
@@ -143,6 +143,10 @@ $('signOut')?.addEventListener('click',signOutParent);
 $('forgotPassword')?.addEventListener('click',sendPasswordReset);
 $('saveNewPassword')?.addEventListener('click',saveNewPassword);
 $('profileSelect')?.addEventListener('change',selectCloudProfile);
+$('desktopChildScrollLeft')?.addEventListener('click',()=>{$('desktopChildStrip')?.scrollBy({left:-260,behavior:'smooth'})});
+$('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStrip')?.scrollBy({left:260,behavior:'smooth'})});
+$('desktopChildStrip')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
+window.addEventListener('resize',updateDesktopChildScrollButtons);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
 $('chooseChildPhoto')?.addEventListener('click',()=>$('childPhotoInput')?.click());
 $('childPhotoInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)chooseChildPhoto(f);e.target.value=''});
@@ -239,6 +243,29 @@ async function signInParent(){
 }
 async function signOutParent(){await supabaseClient.auth.signOut();setAuthStatus('Signed out.')}
 function formChild(){return{name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim()}}
+let desktopProfileRenderToken=0;
+async function renderDesktopProfileTiles(){
+ const strip=$('desktopChildStrip');if(!strip)return;
+ const token=++desktopProfileRenderToken;
+ const profiles=[...cloudProfiles];
+ const photos=await Promise.all(profiles.map(p=>childPhotoGet(currentPhotoKey(p.id))));
+ if(token!==desktopProfileRenderToken)return;
+ const tiles=profiles.map((p,i)=>{
+  const selected=p.id===activeProfileId;
+  const visual=photos[i]?`<img src="${photos[i]}" alt="">`:`<span class="desktop-child-avatar-fallback">☾</span>`;
+  return `<button type="button" class="desktop-child-tile${selected?' selected':''}" data-profile-id="${escapeHtml(p.id)}" aria-pressed="${selected?'true':'false'}"><span class="desktop-child-avatar">${visual}</span><span class="desktop-child-name">${escapeHtml(p.name||'Child')}</span></button>`
+ }).join('');
+ strip.innerHTML=tiles+`<button type="button" class="desktop-child-tile desktop-new-child${!activeProfileId?' selected':''}" data-profile-id="" aria-pressed="${!activeProfileId?'true':'false'}"><span class="desktop-child-avatar desktop-new-child-icon">＋</span><span class="desktop-child-name">${escapeHtml(t().newChild||'New child')}</span></button>`;
+ strip.querySelectorAll('.desktop-child-tile').forEach(btn=>btn.addEventListener('click',async()=>{
+  const sel=$('profileSelect');if(!sel)return;sel.value=btn.dataset.profileId||'';await selectCloudProfile();renderProfileSelect();
+  requestAnimationFrame(()=>strip.querySelector('.desktop-child-tile.selected')?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'}));
+ }));
+ updateDesktopChildScrollButtons();
+}
+function updateDesktopChildScrollButtons(){
+ const strip=$('desktopChildStrip'),left=$('desktopChildScrollLeft'),right=$('desktopChildScrollRight');if(!strip||!left||!right)return;
+ const overflow=strip.scrollWidth>strip.clientWidth+2;left.classList.toggle('visible',overflow&&strip.scrollLeft>2);right.classList.toggle('visible',overflow&&strip.scrollLeft<strip.scrollWidth-strip.clientWidth-2);
+}
 function renderProfileSelect(){
  const sel=$('profileSelect');if(!sel)return;
  const selected=activeProfileId||'';
@@ -246,6 +273,7 @@ function renderProfileSelect(){
  const active=cloudProfiles.find(p=>p.id===activeProfileId);
  const deleteOption=active?`<option disabled>──────────</option><option value="__delete_profile__">${escapeHtml(t().deleteProfile || 'Delete profile')} ${escapeHtml(active.name)}…</option>`:'';
  sel.innerHTML=`<option value="">${escapeHtml(t().newChild)}</option>`+profileOptions+deleteOption;sel.value=selected;
+ renderDesktopProfileTiles();
 }
 async function selectCloudProfile(){
  const sel=$('profileSelect');

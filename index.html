@@ -66,6 +66,14 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
       <div class="setup-page-heading"><span class="setup-step-label">1 of 2</span><h2 id="childTitle">Who's tonight's story for?</h2><p class="muted">Everything Moonbeam needs to personalise their adventure, all in one place.</p></div>
       <div class="child-setup-grid">
         <div class="child-details-column">
+          <div id="desktopChildChooser" class="desktop-child-chooser" aria-label="Choose a child">
+            <div class="desktop-child-chooser-label">Choose a child</div>
+            <div class="desktop-child-strip-shell">
+              <button class="desktop-child-scroll desktop-child-scroll-left" id="desktopChildScrollLeft" type="button" aria-label="Previous children">‹</button>
+              <div class="desktop-child-strip" id="desktopChildStrip"></div>
+              <button class="desktop-child-scroll desktop-child-scroll-right" id="desktopChildScrollRight" type="button" aria-label="More children">›</button>
+            </div>
+          </div>
           <div id="profileTools" class="profile-tools hidden"><label><span>Saved child profile</span><select id="profileSelect"><option value="">New child</option></select></label><p class="status profile-status" id="profileStatus"></p></div>
           <div class="grid basic-grid"><label><span id="nameLabel">Name or nickname</span><input id="name" placeholder="Milo"></label><label><span id="ageLabel">Age</span><input id="age" type="number" min="3" max="12" value="7"></label></div>
           <div class="grid about-grid"><label><span id="interestsLabel">Interests</span><input id="interests" placeholder="dinosaurs, space, football"></label><label><span id="dislikesLabel">Things to avoid</span><input id="dislikes" placeholder="too scary, spiders"></label></div>

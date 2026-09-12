@@ -1994,3 +1994,48 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
     display:none!important;
   }
 }
+
+/* V151 — desktop child profile chooser only. Mobile keeps the V150 selector. */
+.desktop-child-chooser{display:none}
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-chooser{
+    display:block!important;
+    margin:0 0 18px!important;
+    padding:0 0 16px!important;
+    border-bottom:1px solid #e4dced!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page #profileTools{
+    position:absolute!important;
+    width:1px!important;height:1px!important;
+    padding:0!important;margin:-1px!important;
+    overflow:hidden!important;clip:rect(0,0,0,0)!important;
+    white-space:nowrap!important;border:0!important;
+  }
+  .desktop-child-chooser-label{font-weight:800;font-size:14px;color:#2d2145;margin:0 0 9px}
+  .desktop-child-strip-shell{position:relative;display:flex;align-items:center;min-width:0}
+  .desktop-child-strip{
+    display:flex;gap:10px;width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;
+    scrollbar-width:none;scroll-behavior:smooth;padding:2px 1px 4px;
+  }
+  .desktop-child-strip::-webkit-scrollbar{display:none}
+  .desktop-child-tile{
+    flex:0 0 132px;min-width:132px;height:66px!important;min-height:66px!important;
+    display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;
+    padding:8px 10px!important;margin:0!important;border:1px solid #ddd2eb!important;border-radius:13px!important;
+    background:#fffdf9!important;color:#2d2145!important;box-shadow:none!important;font:inherit!important;text-align:left!important;
+  }
+  .desktop-child-tile:hover{border-color:#9a76dd!important;background:#fbf7ff!important}
+  .desktop-child-tile.selected{border:2px solid #7046d3!important;background:#faf7ff!important;padding:7px 9px!important}
+  .desktop-child-avatar{flex:0 0 42px;width:42px;height:42px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#eee7fa;color:#7046d3;font-size:21px;font-weight:800}
+  .desktop-child-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .desktop-child-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700}
+  .desktop-new-child-icon{font-size:26px;background:#eee8ff}
+  .desktop-child-scroll{
+    display:none!important;position:absolute!important;z-index:3;top:50%;transform:translateY(-50%);
+    width:30px!important;height:30px!important;min-height:30px!important;padding:0!important;margin:0!important;
+    border-radius:50%!important;border:1px solid #d7c9ea!important;background:#fffdf9!important;color:#5f3caa!important;
+    box-shadow:0 3px 10px #2d214526!important;font-size:23px!important;line-height:1!important;
+  }
+  .desktop-child-scroll.visible{display:grid!important;place-items:center!important}
+  .desktop-child-scroll-left{left:-7px}.desktop-child-scroll-right{right:-7px}
+}
