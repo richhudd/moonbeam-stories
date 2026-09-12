@@ -1,40 +1,25 @@
-# V119 — mobile setup scroll cue repair
+# V120 — Private Share Story
 
-V119 is a surgical update from the working V118 baseline.
+V120 adds Moonbeam's family-sharing loop while preserving the existing V118/V119 reader and narration behaviour for owners.
 
-## V119
-- Preserves V118 saved-story narration unchanged.
-- Preserves the V111–V113 mobile reader and reader chevrons unchanged.
-- Removes the V117 setup-cue viewport-geometry implementation.
-- Each setup page now owns its own scroll cue.
-- Cue visibility uses only the active setup page's real `scrollHeight`, `scrollTop`, and `clientHeight`.
-- Cue position follows that same scroll container and disappears at its true bottom.
-- No database migration is required.
+## What is new
+- A **Share Story** button appears on the owner's final **The End** page for both newly generated and previously saved stories.
+- Unsaved stories are permanently saved (canonical text + permanent illustrations) before sharing.
+- Sender chooses the display name recipients see and can add up to 10 recipient name/email pairs.
+- Each recipient receives a separate Resend email and a separate cryptographically random private link. No CC/BCC disclosure.
+- `/shared/<token>` opens directly into a restricted shared-story shell that reuses the normal Moonbeam cover, reader, illustrations, highlighting, auto-scroll and page navigation. No recipient account is required.
+- Shared readers get both **Read It Myself** and **Read to Me**. Shared narration regenerates audio only and is allowed only when the requested text exactly belongs to the valid, non-revoked shared story.
+- Private saved artwork remains private in Supabase. `/api/shared-asset` validates the share token before proxying only the artwork belonging to that story.
+- Shared readers cannot enter the sender's account/setup/library. The final page instead offers **Create my story** and returns to Moonbeam's public acquisition flow.
+- The owner can reopen Share Story to see prior recipients, see whether a link has been opened, and revoke individual links.
+- Recipient email addresses are stored only as share-delivery records; V120 does not subscribe recipients to marketing.
 
-## Previous baseline: V118 — saved-story narration repair
+## Required deployment step
+Run `SUPABASE_V120_STORY_SHARING.sql` once in the Supabase SQL editor before deploying V120.
 
-V117 removes post-save story translation completely and simplifies Saved Stories to canonical replay.
+V120 uses the existing `RESEND_API_KEY`. Optional environment variables:
+- `RESEND_SHARE_FROM` (defaults to `Moonbeam Stories <noreply@mail.moonbeamstories.co.uk>`)
+- `MOONBEAM_SITE_URL` (defaults to `https://www.moonbeamstories.co.uk`)
 
-Changes:
-- removed all saved-story language selectors, edition lists, translation panels and translation buttons
-- removed the saved-story translation client workflow
-- removed `/api/translate-story.js`
-- removed the obsolete V67 saved-translation migration from this deployment package
-- saved books now reopen only in the language in which they were originally generated
-- each saved story has one clear Replay button plus Delete for signed-in cloud stories
-- V114 persistent Read to Me remains available from the reopened saved-book cover
-- existing stored narration, illustrations, V113 reader layout, Safari scrolling fix, chevrons and narration auto-scroll are unchanged
-
-Database note: no new SQL migration is required for V117. Existing translation data/columns in an already-deployed database can remain unused; V117 does not read or write them.
-
-
-## V118
-- Adds the same contextual pulsing double-chevron scroll cue to mobile setup pages whenever more content remains below the fold.
-- Cue disappears at the bottom and reappears after scrolling upward. Desktop and the V113/V115 story-reader cue are unchanged.
-
-
-V118: Saved-story Read to Me now regenerates audio only from the already-saved text; saved story text and illustrations are never regenerated. Persistent saved narration is no longer used. Mobile setup scroll cues now use rendered viewport geometry plus overflow as a fallback so they reflect content genuinely below the visible Safari viewport.
-
-
-### V118 narration fix
-Saved-story Read to Me now sends only the already-saved page text to `/api/narrate`; it does not call story generation or illustration endpoints and does not consume a story credit. The saved-only Supabase REST preflight introduced in V117 has been removed. Narration failures are now surfaced visibly instead of silently resetting the play control. The obsolete V114 saved-narration SQL file has been removed from the package; previously applied database changes may remain harmlessly in place.
+## API functions
+V120 has 14 API functions. The three additions are `story-share.js`, `shared-story.js`, and `shared-asset.js`. Shared narration is handled by the existing `narrate.js` endpoint.

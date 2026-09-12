@@ -1,5 +1,6 @@
 const {logUsage,estimateGBP}=require('../_usage');
 const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('../_credits');
+const {validateSharedText}=require('../_shares');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -10,12 +11,17 @@ module.exports = async function handler(req, res) {
     const text = String(body.text || '').trim();
     const generationRunId = String(body.generationRunId || '').trim();
     const savedStoryId = String(body.savedStoryId || '').trim();
+    const shareToken = String(body.shareToken || '').trim();
     const language = String(body.language || 'en-GB');
     if (!text) return res.status(400).json({ error: 'Narration text is required.' });
-    if (!generationRunId && !savedStoryId) return res.status(400).json({ error: 'Narration source is required.' });
-    const moonbeamUser=await verifyMoonbeamUser(req);
+    if (!generationRunId && !savedStoryId && !shareToken) return res.status(400).json({ error: 'Narration source is required.' });
+    let moonbeamUser=null,shared=null;
+    if(shareToken){shared=await validateSharedText(shareToken,text);if(!shared)return res.status(403).json({error:'This shared story cannot narrate that text.'});}
+    else moonbeamUser=await verifyMoonbeamUser(req);
     let slotReserved=false;
-    if(savedStoryId){
+    if(shareToken){
+      // V120: anonymous narration is permitted only for exact text in a valid, non-revoked shared story.
+    }else if(savedStoryId){
       // V118: saved-book replay regenerates AUDIO ONLY from the text already loaded by
       // the authenticated client. Do not touch story generation, illustrations or credits.
       // The previous extra Supabase REST ownership lookup was the saved-only failure point.
@@ -64,7 +70,7 @@ module.exports = async function handler(req, res) {
       return res.status(502).json({ error:String(message), openai_status:r.status });
     }
     const bytes = Buffer.from(await r.arrayBuffer());
-    await logUsage({event_type:'narration',estimated_cost_gbp:estimateGBP('narration'),metadata:{model:'gpt-4o-mini-tts',characters:text.length,user_id:moonbeamUser.id,generation_run_id:generationRunId||null,saved_story_id:savedStoryId||null}});
+    await logUsage({event_type:'narration',estimated_cost_gbp:estimateGBP('narration'),metadata:{model:'gpt-4o-mini-tts',characters:text.length,user_id:moonbeamUser?.id||shared?.share?.owner_id||null,generation_run_id:generationRunId||null,saved_story_id:savedStoryId||shared?.story?.id||null,shared_story_id:shared?.share?.id||null}});
     slotReserved=false;
     return res.status(200).json({ audio:`data:audio/mpeg;base64,${bytes.toString('base64')}` });
   } catch (e) {
