@@ -666,14 +666,18 @@ function fitMobileStoryText(){
  const text=document.querySelector('.left-page .story-text');
  if(!bookEl||!controls||!content||!text)return;
 
- // V106: deterministic portrait reader. The usable viewport above the fixed
- // navigation is split exactly 60/40 between artwork and a scrollable text pane.
+ // V107: deterministic portrait reader. Calculate the rendered mobile reader
+ // heights explicitly in pixels: 60% artwork and 40% scrollable prose.
  const vv=window.visualViewport;
  const viewportH=Math.max(1,vv?.height||window.innerHeight||document.documentElement.clientHeight||700);
  const nav=controls.getBoundingClientRect();
  const navTop=Math.min(viewportH,Math.max(120,nav.top));
  const bookH=Math.max(260,Math.floor(navTop-4));
+ const artH=Math.round(bookH*0.60);
+ const textH=bookH-artH;
  bookEl.style.setProperty('--mobile-book-height',bookH+'px');
+ bookEl.style.setProperty('--mobile-art-height',artH+'px');
+ bookEl.style.setProperty('--mobile-text-height',textH+'px');
 
  // Each page starts at the beginning of its prose. The pane itself owns overflow;
  // no text-height fitting, font shrinking or artwork shrinking is performed.
