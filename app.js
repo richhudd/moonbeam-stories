@@ -120,7 +120,7 @@ function applyLocale(){
  $('storyPrefs').textContent=x.storyPrefs; $('toneLabel').textContent=x.tone; $('valuesTitle').textContent=x.values;
  $('generate').textContent=x.generate; if($('savedTitle'))$('savedTitle').textContent=x.saved;
  const tones=[['cosy and funny',x.cosy],['magical',x.magical],['adventurous',x.adventurous],['calm and dreamy',x.calm]]; const old=$('tone').value||'cosy and funny'; $('tone').innerHTML=tones.map(([v,l])=>`<option value="${v}" ${v===old?'selected':''}>${l}</option>`).join('');
- renderValues(); renderLibrary(); applyInterfaceLocale(); renderProfileSelect(); updateSetupNav(); applyLandingLocale();
+ renderValues(); renderLibrary(); applyInterfaceLocale(); applyLandingLocale();
 }
 function setText(sel,val){const el=document.querySelector(sel);if(el&&val!=null)el.textContent=val}
 function applyInterfaceLocale(){const x=t();
@@ -172,18 +172,6 @@ async function initSupabase(){
    setTimeout(()=>applyAuthSession(session),0)
  });
 }
-const UI_STATUS_135={
-'en-GB':{continueSignIn:'Sign in or create an account to continue.',buySignIn:'Sign in or create your parent account before buying story credits.',savedUnavailable:'That saved story is unavailable.',narrationSignIn:'Sign in to use narration.'},
-'en-US':{continueSignIn:'Sign in or create an account to continue.',buySignIn:'Sign in or create your parent account before buying story credits.',savedUnavailable:'That saved story is unavailable.',narrationSignIn:'Sign in to use narration.'},
-'es-ES':{continueSignIn:'Inicia sesión o crea una cuenta para continuar.',buySignIn:'Inicia sesión o crea tu cuenta de padres antes de comprar créditos.',savedUnavailable:'Esta historia guardada no está disponible.',narrationSignIn:'Inicia sesión para usar la narración.'},
-'es-419':{continueSignIn:'Inicia sesión o crea una cuenta para continuar.',buySignIn:'Inicia sesión o crea tu cuenta de padres antes de comprar créditos.',savedUnavailable:'Esta historia guardada no está disponible.',narrationSignIn:'Inicia sesión para usar la narración.'},
-'fr-FR':{continueSignIn:'Connectez-vous ou créez un compte pour continuer.',buySignIn:'Connectez-vous ou créez votre compte parent avant d’acheter des crédits.',savedUnavailable:'Cette histoire enregistrée n’est pas disponible.',narrationSignIn:'Connectez-vous pour utiliser la narration.'},
-'de-DE':{continueSignIn:'Melde dich an oder erstelle ein Konto, um fortzufahren.',buySignIn:'Melde dich an oder erstelle dein Elternkonto, bevor du Guthaben kaufst.',savedUnavailable:'Diese gespeicherte Geschichte ist nicht verfügbar.',narrationSignIn:'Melde dich an, um die Vorlesefunktion zu nutzen.'},
-'it-IT':{continueSignIn:'Accedi o crea un account per continuare.',buySignIn:'Accedi o crea il tuo account genitore prima di acquistare crediti.',savedUnavailable:'Questa storia salvata non è disponibile.',narrationSignIn:'Accedi per usare la narrazione.'},
-'pt-BR':{continueSignIn:'Entre ou crie uma conta para continuar.',buySignIn:'Entre ou crie sua conta dos pais antes de comprar créditos.',savedUnavailable:'Esta história salva não está disponível.',narrationSignIn:'Entre para usar a narração.'},
-'pl-PL':{continueSignIn:'Zaloguj się lub utwórz konto, aby kontynuować.',buySignIn:'Zaloguj się lub utwórz konto rodzica przed zakupem kredytów.',savedUnavailable:'Ta zapisana historia jest niedostępna.',narrationSignIn:'Zaloguj się, aby użyć narracji.'}
-};
-function uiStatus135(){return UI_STATUS_135[language]||UI_STATUS_135['en-GB']}
 function setAuthStatus(message,isError=false){const el=$('authStatus');if(!el)return;el.innerHTML=isError?`<span class="error">${escapeHtml(message)}</span>`:escapeHtml(message||'')}
 async function applyAuthSession(session){
  currentUser=session?.user||null;
@@ -243,7 +231,7 @@ function renderProfileSelect(){
  const profileOptions=cloudProfiles.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}${p.age?` — ${p.age}`:''}</option>`).join('');
  const active=cloudProfiles.find(p=>p.id===activeProfileId);
  const deleteOption=active?`<option disabled>──────────</option><option value="__delete_profile__">${escapeHtml(t().deleteProfile || 'Delete profile')} ${escapeHtml(active.name)}…</option>`:'';
- sel.innerHTML=`<option value="">${escapeHtml(t().newChild)}</option>`+profileOptions+deleteOption;sel.value=selected;
+ sel.innerHTML='<option value="">New child</option>'+profileOptions+deleteOption;sel.value=selected;
 }
 async function selectCloudProfile(){
  const sel=$('profileSelect');
@@ -342,7 +330,7 @@ function showCheckoutNotice(message,kind=''){
  el.textContent=message||'';el.classList.toggle('hidden',!message);el.classList.toggle('success',kind==='success');el.classList.toggle('error',kind==='error');
 }
 function openCreditShop(){
- if(!currentUser){setAuthStatus(uiStatus135().buySignIn,true);if(isPhonePortrait())goSetupPage(0);return}
+ if(!currentUser){setAuthStatus('Sign in or create your parent account before buying story credits.',true);if(isPhonePortrait())goSetupPage(0);return}
  $('creditShop')?.classList.remove('hidden');document.body.classList.add('credit-shop-open');if($('checkoutStatus'))$('checkoutStatus').textContent='';
 }
 function closeCreditShop(){$('creditShop')?.classList.add('hidden');document.body.classList.remove('credit-shop-open')}
@@ -828,7 +816,7 @@ async function getNarration(text,key,pageIndex=currentBook?.currentPage){
  if(narrationCache.has(key))return narrationCache.get(key);
  const book=currentBook,lang=narrationLanguage(book);
  const payload={text,language:lang};let headers={'Content-Type':'application/json'};
- if(book?.isShared)payload.shareToken=book.shareToken;else{const {data:{session}}=await supabaseClient.auth.getSession(),accessToken=session?.access_token;if(!accessToken)throw new Error(uiStatus135().narrationSignIn);headers.Authorization=`Bearer ${accessToken}`;if(book?.isSaved)payload.savedStoryId=book.savedStoryId;else payload.generationRunId=book?.generationRunId||null}
+ if(book?.isShared)payload.shareToken=book.shareToken;else{const {data:{session}}=await supabaseClient.auth.getSession(),accessToken=session?.access_token;if(!accessToken)throw new Error('Sign in to use narration.');headers.Authorization=`Bearer ${accessToken}`;if(book?.isSaved)payload.savedStoryId=book.savedStoryId;else payload.generationRunId=book?.generationRunId||null}
  const r=await fetch('/api/narrate',{method:'POST',headers,body:JSON.stringify(payload)});
  const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok||!data.audio)throw new Error(data?.error||`Narration failed (${r.status})`);
  narrationCache.set(key,data.audio);return data.audio
@@ -898,7 +886,7 @@ async function recoverMissingSavedStoryArt(x,book){
  if(!currentUser||!x?.id||!book||x.savedAssets?.pages?.length===book.pages.length+2)return false;
  try{const total=book.pages.length+2,images=[];for(let i=0;i<total;i++){const prompt=getIllustrationPrompt(i),suffix=`:${i}:${stableHash(String(prompt||''))}`;const image=await persistentImageFindBySuffix(suffix);if(!image)return false;images.push(image)}const base=`${currentUser.id}/${x.id}`,assets={version:2,cover:`${base}/cover.webp`,pages:[]};let r=await supabaseClient.storage.from('saved-story-art').upload(assets.cover,dataUrlToBlob(images[0]),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;for(let i=0;i<total;i++){const path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(images[i]),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',x.id).select('saved_assets').single();if(u.error)throw u.error;x.savedAssets=u.data.saved_assets;book.savedAssets=x.savedAssets;return true}catch(e){console.error('saved artwork recovery failed',e);return false}
 }
-async function openSavedVersion(x){const story=x?.story;if(!story)throw new Error(uiStatus135().savedUnavailable);const child={...(x.child||{}),language:x.language||language};delete child.referencePhoto;child.generationRunId=x.generationRunId||null;renderStory(story,null,child,{isSaved:true,savedStoryId:x.id,visualCacheId:`saved:${x.id}`,savedAssets:x.savedAssets||{}});if(!x.savedAssets?.pages?.length)await recoverMissingSavedStoryArt(x,currentBook)}
+async function openSavedVersion(x){const story=x?.story;if(!story)throw new Error('That saved story is unavailable.');const child={...(x.child||{}),language:x.language||language};delete child.referencePhoto;child.generationRunId=x.generationRunId||null;renderStory(story,null,child,{isSaved:true,savedStoryId:x.id,visualCacheId:`saved:${x.id}`,savedAssets:x.savedAssets||{}});if(!x.savedAssets?.pages?.length)await recoverMissingSavedStoryArt(x,currentBook)}
 window.openSaved=async i=>{const items=currentUser?cloudStories:saved,x=items[i];if(x)await openSavedVersion(x)};
 window.deleteSavedStory=id=>deleteCloudStory(id);
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -910,9 +898,9 @@ function setupPages(){return [...document.querySelectorAll('#setupTrack .setup-p
 const SETUP_NAV_WORDS={
  'en-GB':{back:'Back',home:'Home',story:'Story →'},'en-US':{back:'Back',home:'Home',story:'Story →'},
  'es-ES':{back:'Atrás',home:'Inicio',story:'Historia →'},'es-419':{back:'Atrás',home:'Inicio',story:'Historia →'},
- 'fr-FR':{back:'Retour',home:'Accueil',story:'Histoire →'},'de-DE':{back:'Zurück',home:'Startseite',story:'Geschichte →'},
- 'it-IT':{back:'Indietro',home:'Inizio',story:'Storia →'},'pt-BR':{back:'Voltar',home:'Início',story:'História →'},
- 'pl-PL':{back:'Wstecz',home:'Strona główna',story:'Historia →'}
+ 'fr-FR':{back:'Retour',home:'Accueil',story:'Histoire →'},'de-DE':{back:'Zurück',home:'Start',story:'Geschichte →'},
+ 'it-IT':{back:'Indietro',home:'Home',story:'Storia →'},'pt-BR':{back:'Voltar',home:'Início',story:'História →'},
+ 'pl-PL':{back:'Wstecz',home:'Start',story:'Historia →'}
 };
 function setupNavWords(){return SETUP_NAV_WORDS[language]||SETUP_NAV_WORDS['en-GB']}
 function ensureSetupCardNav(){
@@ -965,7 +953,7 @@ function goSetupPage(index,instant=false){
  const track=$('setupTrack'),pages=setupPages();if(!track||!pages.length)return;
  let requested=Math.max(0,Math.min(Number(index)||0,pages.length-1));
  // Authentication is a hard gate. Account -> Child occurs only after a real session exists.
- if(!currentUser&&requested>0){requested=0;const status=$('authStatus');if(status)status.textContent=uiStatus135().continueSignIn}
+ if(!currentUser&&requested>0){requested=0;const status=$('authStatus');if(status)status.textContent='Sign in or create an account to continue.'}
  setupPageIndex=requested;
  pages.forEach((page,i)=>{const active=i===setupPageIndex;page.classList.toggle('setup-current',active);page.setAttribute('aria-hidden',active?'false':'true')});
  track.scrollLeft=0;track.scrollTop=0;
@@ -980,7 +968,7 @@ function initSetupDeck(){
    if(e.target.closest('.setup-home')){showMoonbeamLanding();return}
    if(e.target.closest('.setup-card-back')){goSetupPage(Math.max(0,setupPageIndex-1),true);return}
    if(e.target.closest('.setup-card-enter')){
-     if(!currentUser){setAuthStatus(uiStatus135().continueSignIn,true);goSetupPage(0,true);return}
+     if(!currentUser){setAuthStatus('Sign in or create an account to continue.',true);goSetupPage(0,true);return}
      goSetupPage(Math.min(setupPages().length-1,setupPageIndex+1),true);return
    }
  });

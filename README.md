@@ -116,7 +116,7 @@ V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires
 - Legal pages now localise their complete visible content, navigation and browser title for all supported Moonbeam locales.
 - No database migration and no API-function changes.
 
-## V135
+## V134
 - Language changes now immediately refresh visible credit/status/story UI without waiting for page navigation.
 - The End page always shows equal-size Save Story, Share Story and New Story actions; saved stories show a disabled saved state.
 - Share now offers WhatsApp, Email and Copy Link. WhatsApp/Copy Link create private tokenised story links; email retains recipient tracking and revocation.
