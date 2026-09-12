@@ -116,15 +116,24 @@ V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires
 - Legal pages now localise their complete visible content, navigation and browser title for all supported Moonbeam locales.
 - No database migration and no API-function changes.
 
-## V140
+## V141
 - Language changes now immediately refresh visible credit/status/story UI without waiting for page navigation.
 - The End page always shows equal-size Save Story, Share Story and New Story actions; saved stories show a disabled saved state.
 - Share now offers WhatsApp, Email and Copy Link. WhatsApp/Copy Link create private tokenised story links; email retains recipient tracking and revocation.
 - Buy credits is now a compact, prominent control; checkout/pricing logic is unchanged.
 
 
-## V140
+## V141
 - When a signed-in account has exactly zero story credits, the compact Buy credits button turns green and gently pulses.
 - The attention state is removed automatically as soon as the balance is above zero or unavailable.
 - Respects prefers-reduced-motion by keeping the green emphasis without animation.
 - No checkout, pricing, credit-balance, API, or database logic changed.
+
+
+## V141 — Stage 1 desktop application header
+- Replaces only the logged-in desktop application header.
+- Uses the homepage ivory, aubergine and Moonbeam-purple palette.
+- Adds real Create Story and Saved Stories navigation into the existing V140 setup flow.
+- Adds a compact live credit balance and a Buy credits control wired to the existing checkout dialog.
+- Keeps Sign out wired to the existing authentication function.
+- Homepage, mobile shell, setup content, reader, saving, sharing, narration, APIs and legal footer are otherwise unchanged.

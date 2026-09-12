@@ -1573,3 +1573,32 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
   min-width:0!important;
   padding:7px 12px!important;
 }
+
+/* V141 — Stage 1: desktop application header only. Homepage and application content remain V140. */
+@media (min-width:701px){
+  body.product-active:not(.desktop-story-mode) .app-product>header.app-header{
+    min-height:58px!important;margin:0 0 10px!important;padding:8px 12px!important;
+    display:grid!important;grid-template-columns:minmax(220px,1fr) auto minmax(220px,1fr)!important;align-items:center!important;gap:14px!important;
+    background:#fffaf1!important;color:#30254f!important;border:1px solid #eee4f5!important;border-radius:18px!important;
+    box-shadow:0 8px 24px rgba(48,37,79,.08)!important;cursor:default!important;
+  }
+  .app-header-brand{display:flex;align-items:center;gap:8px;min-width:0;cursor:pointer}
+  .app-header-brand .logo{font-size:31px!important;line-height:1;color:#6848ba!important}
+  .app-header-brand h1{font-family:Georgia,'Times New Roman',serif!important;font-size:21px!important;line-height:1!important;color:#30254f!important;white-space:nowrap}
+  .app-header-brand #tagline{display:none!important}
+  .app-desktop-nav{display:flex;align-items:center;justify-content:center;gap:4px}
+  .app-desktop-nav button{border:0;background:transparent;color:#4d4164;font:inherit;font-size:13px;font-weight:750;padding:9px 11px;border-radius:10px;cursor:pointer;white-space:nowrap}
+  .app-desktop-nav button:hover,.app-desktop-nav button:focus-visible{background:#eee7fb;color:#6848ba;outline:none}
+  .app-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0}
+  .header-credit-balance{flex:0 0 auto;padding:7px 10px;border:1px solid #e1d6f2;border-radius:999px;background:#f7f1fd;color:#49365f;font-size:12px;font-weight:800;white-space:nowrap}
+  .header-buy-credits,.app-header .app-sign-out{flex:0 0 auto!important;width:auto!important;min-width:0!important;margin:0!important;padding:7px 10px!important;border-radius:999px!important;font-size:12px!important;line-height:1.2!important;font-weight:800!important;white-space:nowrap!important;cursor:pointer}
+  .header-buy-credits{border:1px solid #6848ba;background:#6848ba;color:#fff}
+  .header-buy-credits:hover{background:#5d3eaa}
+  .app-header .app-sign-out{border:1px solid #d9cfee!important;background:#fff!important;color:#49365f!important}
+  .header-buy-credits.no-credits-attention{background:#2f9e62!important;border-color:#267f50!important;color:#fff!important;box-shadow:0 0 0 0 rgba(47,158,98,.34);animation:moonbeam-credit-pulse 1.8s ease-in-out infinite}
+}
+@media (max-width:700px){
+  .app-desktop-nav,.header-credit-balance,.header-buy-credits{display:none!important}
+  .app-header-brand{display:flex;align-items:center;gap:7px;min-width:0}
+  .app-header-actions{margin-left:auto;display:flex;align-items:center}
+}
