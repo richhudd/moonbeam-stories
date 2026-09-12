@@ -1815,3 +1815,13 @@ body.story-mode #story #bookControls[hidden]{display:none!important;visibility:h
     overflow:visible!important;
   }
 }
+
+/* V148 — Saved Stories visibility-state repair.
+   V147's responsive flex rules can otherwise override the generic .hidden state.
+   Keep Create Story and Saved Stories mutually exclusive without touching library scrolling. */
+body.product-active:not(.story-mode) .app-product > #setupShell.hidden{
+  display:none!important;
+}
+body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
+  display:none!important;
+}
