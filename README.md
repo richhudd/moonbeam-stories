@@ -137,3 +137,7 @@ V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires
 - Adds a compact live credit balance and a Buy credits control wired to the existing checkout dialog.
 - Keeps Sign out wired to the existing authentication function.
 - Homepage, mobile shell, setup content, reader, saving, sharing, narration, APIs and legal footer are otherwise unchanged.
+
+
+## V142
+Stage 2 only: mobile application header matching the V141 desktop shell. Adds compact live credits, existing Buy Credits action, and a hamburger menu wired to the existing Create Story, Saved Stories, and Sign Out actions. No application content, reader, generation, saving, sharing, payment, legal, or API behaviour changed.

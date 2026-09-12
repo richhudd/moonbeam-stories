@@ -283,6 +283,7 @@ function renderHeaderCredits(){
  const balance=$('headerCreditBalance'),buy=$('headerBuyCredits');
  if(balance){balance.classList.toggle('hidden',!currentUser);balance.textContent=`✦ ${storyCreditBalance===null?'—':storyCreditBalance}`;balance.setAttribute('aria-label',storyCreditBalance===null?'Story credits loading':`${storyCreditBalance} story credits`)}
  if(buy){buy.classList.toggle('hidden',!currentUser);buy.classList.toggle('no-credits-attention',!!currentUser&&storyCreditBalance===0)}
+ const mobileSignOut=$('appMobileSignOut');if(mobileSignOut)mobileSignOut.classList.toggle('hidden',!currentUser);
 }
 function renderStoryCredits(balance=storyCreditBalance){
  storyCreditBalance=Number.isFinite(Number(balance))?Number(balance):null;
@@ -996,6 +997,16 @@ function initSetupDeck(){
 initSetupDeck();
 $('appCreateNav')?.addEventListener('click',()=>{const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Child');goSetupPage(i>=0?i:1,true)});
 $('appSavedNav')?.addEventListener('click',()=>{const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Story');goSetupPage(i>=0?i:pages.length-1,true);requestAnimationFrame(()=>document.querySelector('.story-library-inline')?.scrollIntoView({block:'nearest'}))});
+// V142 — mobile application header mirrors the proven V141 desktop routes.
+const mobileMenu=$('appMobileMenu'),mobileMenuToggle=$('appMobileMenuToggle');
+function closeAppMobileMenu(){if(!mobileMenu||!mobileMenuToggle)return;mobileMenu.classList.add('hidden');mobileMenuToggle.setAttribute('aria-expanded','false');mobileMenuToggle.setAttribute('aria-label','Open menu')}
+function toggleAppMobileMenu(){if(!mobileMenu||!mobileMenuToggle)return;const opening=mobileMenu.classList.contains('hidden');mobileMenu.classList.toggle('hidden',!opening);mobileMenuToggle.setAttribute('aria-expanded',opening?'true':'false');mobileMenuToggle.setAttribute('aria-label',opening?'Close menu':'Open menu')}
+mobileMenuToggle?.addEventListener('click',e=>{e.stopPropagation();toggleAppMobileMenu()});
+$('appMobileCreateNav')?.addEventListener('click',()=>{$('appCreateNav')?.click();closeAppMobileMenu()});
+$('appMobileSavedNav')?.addEventListener('click',()=>{$('appSavedNav')?.click();closeAppMobileMenu()});
+$('appMobileSignOut')?.addEventListener('click',()=>{$('signOut')?.click();closeAppMobileMenu()});
+document.addEventListener('click',e=>{if(mobileMenu&&!mobileMenu.classList.contains('hidden')&&!e.target.closest('.app-header'))closeAppMobileMenu()});
+
 $('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyConsentCheck').checked)clearStoryConsentAttention()});
 window.addEventListener('resize',()=>requestAnimationFrame(updateSetupScrollCue));
 window.addEventListener('orientationchange',()=>setTimeout(()=>{const open=!!currentBook&&!$('story')?.classList.contains('hidden');document.body.classList.toggle('story-mode',open);document.body.classList.toggle('desktop-story-mode',open&&!isPhonePortrait());goSetupPage(setupPageIndex,true)},120));
