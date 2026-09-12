@@ -85,6 +85,13 @@ Shared `/shared/<token>` links are now detected synchronously in the document he
 V128 still contains exactly **12** `/api/*.js` Serverless Functions and requires no new Supabase migration.
 
 
+
+## V130 change — explicit recipient email placeholder
+
+The Share Story recipient field now explicitly says **Recipient email address** (localized in every supported language), so it cannot be confused with the sender's own email address. No sharing logic, reader behavior, API count, or database schema changed.
+
+V130 still contains exactly **12** `/api/*.js` Serverless Functions and requires no new Supabase migration.
+
 ## V129 change — simpler Share Story form
 The Share Story form now asks only for the sender's name and each recipient's email address. The sender placeholder is the localized equivalent of “Your name”; the redundant recipient-name field has been removed. Multiple-recipient sharing, unique private links, language inheritance, revocation and the V128 shared-link startup flow are unchanged. The existing `story_shares.recipient_name` database column is retained for migration compatibility and is populated server-side from the recipient email; it is no longer requested from or shown to the sender.
 
