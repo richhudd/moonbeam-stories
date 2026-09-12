@@ -49,12 +49,16 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
   <section class="landing-pricing"><div class="section-kicker">SIMPLE PREPAID CREDITS</div><h2>Try 1 story free.</h2><p>No subscription. Saved stories are always free to reopen.</p><div class="price-row"><span><b>10</b> stories · £9.99</span><span><b>25</b> stories · £19.99</span><span><b>50</b> stories · £34.99</span></div><button class="primary hero-cta" id="landingStartBottom" type="button">Tonight's adventure is waiting →</button></section>
 </section>
 <main class="app app-product hidden" id="productApp">
-<header><div class="logo">☾</div><div><h1 id="taglineTitle">Moonbeam Stories</h1><p id="tagline">Make tonight's story just for them.</p></div><button class="app-sign-out hidden" id="signOut" type="button">Sign out</button></header>
+<header class="moonbeam-topbar">
+  <button class="brand-home" id="brandHome" type="button" aria-label="Moonbeam Stories home"><span class="brand-moon">☾</span><span><strong id="taglineTitle">Moonbeam Stories</strong><small id="tagline">Make tonight's story just for them.</small></span></button>
+  <nav class="product-tabs" aria-label="Moonbeam"><button class="top-tab active" id="navCreate" type="button">Create Story</button><button class="top-tab" id="navSaved" type="button">Saved Stories</button><button class="top-tab" id="navAccount" type="button">Account</button></nav>
+  <div class="top-actions"><div class="top-credit-pill"><span>⭐</span><span id="creditStatus" class="credit-status" aria-live="polite"></span><button class="secondary buy-credits-button hidden" id="buyCredits" type="button">Buy credits</button></div><button class="top-menu" id="topMenu" type="button" aria-label="Menu">☰</button><button class="app-sign-out hidden" id="signOut" type="button">Sign out</button></div>
+</header>
+<div class="mobile-menu hidden" id="mobileMenu"><button type="button" data-mobile-nav="create">✎ <span>Create Story</span></button><button type="button" data-mobile-nav="saved">▣ <span>Saved Stories</span></button><button type="button" data-mobile-nav="account">● <span>Account</span></button></div>
 
 <div class="setup-shell" id="setupShell">
   <div class="setup-track" id="setupTrack">
     <section class="card account-card setup-page" id="accountCard" data-step="Account">
-      
       <div class="account-head"><div><h2 id="accountTitle">Parent account</h2><p class="muted account-copy" id="accountCopy">Sign in to keep child profiles and stories safely available on your other devices.</p></div><div id="accountBadge" class="account-badge">Not signed in</div></div>
       <div id="authSignedOut"><div class="row auth-row"><label><span>Email</span><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></label><label><span>Password</span><input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters"></label></div><div class="auth-actions"><button class="primary small-primary" id="signIn" type="button">Sign in</button><button class="secondary" id="signUp" type="button">Create account</button></div><button class="auth-link" id="forgotPassword" type="button">Forgot password?</button></div>
       <p class="status" id="authStatus"></p>
@@ -63,28 +67,34 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
     </section>
 
     <section class="card setup-page setup-child-page" data-step="Child">
-      <div class="setup-page-heading"><span class="setup-step-label">1 of 2</span><h2 id="childTitle">Who's tonight's story for?</h2><p class="muted">Everything Moonbeam needs to personalise their adventure, all in one place.</p></div>
+      <div class="setup-page-heading"><span class="setup-number">1</span><div><h2 id="childTitle">Who is this story for?</h2><p class="muted child-intro">Choose a child from your saved profiles or add a new one.</p></div></div>
+      <div id="profileTools" class="profile-tools hidden"><span class="field-title">Choose a child</span><div id="profileChoices" class="profile-choices"></div><label class="profile-select-fallback"><span>Saved child profile</span><select id="profileSelect"><option value="">New child</option></select></label><p class="status profile-status" id="profileStatus"></p></div>
       <div class="child-setup-grid">
-        <div class="child-details-column">
-          <div id="profileTools" class="profile-tools hidden"><label><span>Saved child profile</span><select id="profileSelect"><option value="">New child</option></select></label><p class="status profile-status" id="profileStatus"></p></div>
-          <div class="grid basic-grid"><label><span id="nameLabel">Name or nickname</span><input id="name" placeholder="Milo"></label><label><span id="ageLabel">Age</span><input id="age" type="number" min="3" max="12" value="7"></label></div>
-          <div class="grid about-grid"><label><span id="interestsLabel">Interests</span><input id="interests" placeholder="dinosaurs, space, football"></label><label><span id="dislikesLabel">Things to avoid</span><input id="dislikes" placeholder="too scary, spiders"></label></div>
-          <p class="mobile-comfort-copy">A few words are enough — Moonbeam will do the rest.</p>
-          <div id="basicsProfileActions" class="basics-profile-actions hidden"><button class="secondary" id="saveProfile" type="button">Save child profile</button><p class="status profile-status" id="profileStatusBasics"></p></div>
-        </div>
         <div class="child-photo-column">
-          <h3>Make the pictures look like them</h3>
-          <div class="child-photo-card" id="childPhotoCard"><div class="child-photo-copy"><h3>Your child's photo <span class="optional-pill">Optional</span></h3><p>Use a clear photo so the illustrated child looks like them.</p><p class="photo-privacy">Kept on this device and sent only when an illustration is created.</p></div><div class="child-photo-controls"><div class="child-photo-preview" id="childPhotoPreview"><span>☾</span><small>No photo selected</small></div><div class="photo-buttons"><input id="childPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="secondary" id="chooseChildPhoto" type="button">Choose photo</button><button class="secondary danger-lite hidden" id="removeChildPhoto" type="button">Remove photo</button></div><label class="photo-toggle"><input id="useChildPhoto" type="checkbox" checked> <span>Use this photo for illustrations</span></label><p class="status photo-status" id="photoStatus"></p></div></div>
+          <div class="child-photo-card" id="childPhotoCard"><div class="child-photo-controls"><div class="child-photo-preview" id="childPhotoPreview"><span>☾</span><small>No photo selected</small></div><div class="photo-buttons"><input id="childPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="secondary" id="chooseChildPhoto" type="button">📷 Choose photo</button><button class="secondary danger-lite hidden" id="removeChildPhoto" type="button">Remove photo</button></div><label class="photo-toggle"><input id="useChildPhoto" type="checkbox" checked> <span>Use this photo for illustrations</span></label><p class="status photo-status" id="photoStatus"></p></div></div>
+          <div class="photo-star-note">⭐ <span>Make them the star of the illustrations!</span></div>
+        </div>
+        <div class="child-details-column">
+          <div class="basic-grid"><label><span id="nameLabel">Child's name</span><input id="name" placeholder="Milo"></label><label><span id="ageLabel">Age</span><input id="age" type="number" min="3" max="12" value="7"></label></div>
+          <input id="dislikes" type="hidden" value=""><div id="basicsProfileActions" class="basics-profile-actions hidden"><button class="secondary" id="saveProfile" type="button">Save child profile</button><p class="status profile-status" id="profileStatusBasics"></p></div>
         </div>
       </div>
     </section>
 
-    <section class="card setup-page" data-step="Story"><div class="setup-page-heading"><span class="setup-step-label">2 of 2</span></div><h2 id="storyPrefs">Story preferences</h2><div class="row"><label><span id="toneLabel">Tone</span><select id="tone"></select></label></div><div id="creditStatus" class="credit-status" aria-live="polite"></div><button class="secondary buy-credits-button hidden" id="buyCredits" type="button">＋ Buy story credits</button><div id="checkoutNotice" class="checkout-notice hidden" role="status" aria-live="polite"></div><h3 id="valuesTitle">Story Values</h3><div class="chips" id="values"></div><div id="storySupplyConsent" class="story-supply-consent hidden"><label><input id="storySupplyConsentCheck" type="checkbox"> <span>Create my story now. I agree to immediate digital supply and understand I can no longer cancel this purchase once creation begins.</span></label></div><button class="primary" id="generate" type="button"><span class="generate-label">✨ Make Tonight's Story</span></button><div id="storyPreparing" class="story-preparing hidden" role="status" aria-live="polite"><div class="hourglass" aria-hidden="true"><div class="hourglass-glass"><span class="hourglass-sand top"></span><span class="hourglass-stream"></span><span class="hourglass-sand bottom"></span></div></div><strong id="preparingTitle">Preparing your story…</strong><small id="preparingCopy">Moonbeam is writing tonight's adventure. This can take a little while.</small></div><p class="status" id="status"></p><div class="story-library-inline"><div class="saved-divider"><span>or replay one of your saved stories</span></div><p class="saved-free-note">Saved stories do not use another story credit.</p><div id="library" class="library"></div></div></section>
+    <section class="card setup-page setup-story-page" data-step="Story">
+      <div class="setup-page-heading"><span class="setup-number story-number">2</span><div><h2 id="storyPrefs">What would you like the story to be about?</h2><p class="muted story-intro">Tell Moonbeam your idea, then choose a tone and optionally some values to include.</p></div></div>
+      <div class="story-idea-box"><label><span class="idea-label">💡 <b id="interestsLabel">Your story idea</b></span><textarea id="interests" maxlength="500" placeholder="Tell Moonbeam anything you'd like to include…"></textarea><small class="idea-example">For example: “Amelia loves horses and I'd like an adventure where she discovers a secret castle in the mountains.”</small><small class="idea-count"><span id="ideaCount">0</span>/500</small></label></div>
+      <div class="story-option"><h3>🙂 <span id="toneLabel">Story tone</span></h3><p class="muted option-help">Choose the mood for your story.</p><select id="tone" class="tone-select-accessible"></select><div id="toneChoices" class="tone-choices"></div></div>
+      <div class="story-option"><h3>💗 <span id="valuesTitle">Values to include</span> <small>(optional)</small></h3><p class="muted option-help">Choose one or more themes.</p><div class="chips" id="values"></div></div>
+      <div id="checkoutNotice" class="checkout-notice hidden" role="status" aria-live="polite"></div><div id="storySupplyConsent" class="story-supply-consent hidden"><label><input id="storySupplyConsentCheck" type="checkbox"> <span>Create my story now. I agree to immediate digital supply and understand I can no longer cancel this purchase once creation begins.</span></label></div>
+      <button class="primary create-story-button" id="generate" type="button"><span class="generate-label">✨ Create Story</span></button><div id="storyPreparing" class="story-preparing hidden" role="status" aria-live="polite"><div class="hourglass" aria-hidden="true"><div class="hourglass-glass"><span class="hourglass-sand top"></span><span class="hourglass-stream"></span><span class="hourglass-sand bottom"></span></div></div><strong id="preparingTitle">Preparing your story…</strong><small id="preparingCopy">Moonbeam is writing tonight's adventure. This can take a little while.</small></div><p class="status" id="status"></p>
+    </section>
   </div>
   <nav class="setup-nav" aria-label="Setup pages"><div class="setup-dots" id="setupDots" aria-hidden="true"></div></nav>
 </div>
+<section class="saved-stories-view hidden" id="savedStoriesView"><div class="saved-view-head"><h2 id="savedTitle">Your Stories</h2><p>Relive and share your previous stories.</p></div><div id="library" class="library"></div></section>
 <section id="story" class="story hidden"></section>
-
+<div class="moonbeam-landscape" aria-hidden="true"><svg viewBox="0 0 1440 150" preserveAspectRatio="none"><path d="M0 96 Q120 35 245 92 T490 82 T740 92 T990 70 T1220 92 T1440 72 V150 H0Z" fill="#dbe5ff"/><path d="M0 120 Q120 72 270 116 T540 108 T820 120 T1090 103 T1440 115 V150 H0Z" fill="#aebff0"/><g fill="#35558a"><path d="M55 150v-48l-22 30h15l-24 18z"/><path d="M1340 150v-58l-27 36h18l-29 22z"/><path d="M1270 150v-40l-19 26h13l-21 14z"/></g><g fill="#f7d36c"><circle cx="200" cy="92" r="3"/><circle cx="1180" cy="82" r="3"/><circle cx="1050" cy="112" r="2"/></g></svg><span>Big imaginations. Brighter tomorrows.</span></div>
 <div class="credit-shop-backdrop hidden" id="creditShop" role="dialog" aria-modal="true" aria-labelledby="creditShopTitle">
   <div class="credit-shop-card">
     <button class="credit-shop-close" id="closeCreditShop" type="button" aria-label="Close">×</button>
@@ -101,4 +111,4 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
   </div>
 </div>
 <footer class="site-legal-footer"><span>© 2026 Moonbeam Stories</span><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refunds.html">Refunds</a><a href="mailto:support@moonbeamstories.co.uk">Contact</a></footer>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/i18n.js?v=132"></script><script src="/app.js?v=136-fixed"></script></body></html>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/i18n.js?v=139"></script><script src="/app.js?v=139"></script></body></html>

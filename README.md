@@ -116,15 +116,26 @@ V129 still contains exactly **12** `/api/*.js` Serverless Functions and requires
 - Legal pages now localise their complete visible content, navigation and browser title for all supported Moonbeam locales.
 - No database migration and no API-function changes.
 
-## V137
+## V138
 - Language changes now immediately refresh visible credit/status/story UI without waiting for page navigation.
 - The End page always shows equal-size Save Story, Share Story and New Story actions; saved stories show a disabled saved state.
 - Share now offers WhatsApp, Email and Copy Link. WhatsApp/Copy Link create private tokenised story links; email retains recipient tracking and revocation.
 - Buy credits is now a compact, prominent control; checkout/pricing logic is unchanged.
 
 
-## V137
+## V138
 - When a signed-in account has exactly zero story credits, the compact Buy credits button turns green and gently pulses.
 - The attention state is removed automatically as soon as the balance is above zero or unavailable.
 - Respects prefers-reduced-motion by keeping the green emphasis without animation.
 - No checkout, pricing, credit-balance, API, or database logic changed.
+
+## V139 — Create Story studio redesign
+- Rebuilt the signed-in creation UI to match the approved Moonbeam desktop/mobile mockups while retaining existing application IDs and generation/auth/storage/payment logic.
+- Desktop presents Child and Story as two clear side-by-side cards; mobile retains the proven sequential flow and V119 pulsing scroll chevrons.
+- Prominent child photo, saved-child choice cards, name/age only on Child step.
+- Reframed Interests as a 500-character story-idea brief; Things to avoid removed from the visible UI (legacy field retained hidden for compatibility).
+- Tone is presented as visual choices backed by the existing tone select; values remain backed by the existing value controls.
+- Credits and compact Buy credits moved into the top bar. Zero-credit green halo pulse retained without resizing the button.
+- Saved Stories is a dedicated navigation area and saved stories now expose Replay, Share and Delete.
+- Added lightweight inline SVG Moonbeam hills/trees footer decoration; no external asset dependency.
+- No database migration. API count remains 12.
