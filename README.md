@@ -1,3 +1,9 @@
+V127
+- Fixed shared-link startup visibility: `/shared/<token>` now makes `#productApp` visible and enables `product-active` before rendering the shared book.
+- This prevents the mobile landing-page `display:flex!important` rule from overriding the shared mode and prevents the shared book from being rendered inside a hidden parent.
+- V126 private canonical artwork delivery is retained.
+- No database migration, API-function changes, story regeneration, reader-layout changes, or narration changes.
+
 V126
 - Fixed shared-story artwork delivery: the consolidated sharing API now reads permanent saved illustrations from the private saved-story-art bucket through Supabase Storage’s authenticated object route.
 - No story or artwork regeneration; shared stories continue to use the canonical saved copy.

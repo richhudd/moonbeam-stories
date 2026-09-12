@@ -764,7 +764,10 @@ async function loadSharedStory(token){
  try{
   const r=await fetch(`/api/share?action=story&token=${encodeURIComponent(token)}`,{cache:'no-store'}),data=await r.json();if(!r.ok)throw new Error(data?.error||shareT().sharedUnavailable);
   language=(data.language&&locales[data.language])?data.language:language;localStorage.setItem('moonbeamLanguage',language);applyLocale();const lang=$('language');if(lang)lang.value=language;
-  $('landing')?.classList.add('hidden');$('productApp')?.classList.add('hidden');
+  // V127: shared links are an exclusive reader startup path. The story lives inside
+  // #productApp, so that container must be visible; product-active also prevents the
+  // mobile landing CSS from forcing #landing back on-screen with !important.
+  $('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');
   renderStory(data.story,null,{...(data.child||{}),language},{isSaved:true,isShared:true,shareToken:token,shareSenderName:data.senderName||'',visualCacheId:`shared:${token}`,savedAssets:data.savedAssets||{}});
   const head=document.querySelector('.book-cover-head');if(head)head.innerHTML=`<span>☾ Moonbeam Stories</span><span>${escapeHtml(shareT().sentBy(data.senderName||'Moonbeam'))}</span>`;
  }catch(e){const sx=shareT();document.body.classList.add('shared-story-error');document.body.innerHTML=`<main class="shared-error-card"><div class="logo">☾</div><h1>Moonbeam Stories</h1><h2>${escapeHtml(sx.unavailable)}</h2><p>${escapeHtml(e.message||String(e))}</p><a class="primary" href="/?lang=${encodeURIComponent(language)}">${escapeHtml(sx.visit)}</a></main>`}
