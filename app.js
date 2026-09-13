@@ -54,6 +54,7 @@ async function persistentImageGet(key){const db=await openImageDb();if(!db)retur
 async function persistentImagePut(key,image){const db=await openImageDb();if(!db||!image)return;try{await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite');tx.objectStore(IMAGE_STORE).put({key,image,at:Date.now()});tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()});imageWrites++;if(imageWrites%12===0)pruneImageCache()}catch{}}
 async function persistentImageFindBySuffix(suffix){const db=await openImageDb();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>{const rows=(req.result||[]).filter(r=>String(r.key||'').endsWith(suffix)).sort((a,b)=>(b.at||0)-(a.at||0));resolve(rows[0]?.image||null)};req.onerror=()=>resolve(null)}catch{resolve(null)}})}
 async function childPhotoGet(key){const db=await openImageDb();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(CHILD_PHOTO_STORE,'readonly'),req=tx.objectStore(CHILD_PHOTO_STORE).get(key);req.onsuccess=()=>resolve(req.result?.image||null);req.onerror=()=>resolve(null)}catch{resolve(null)}})}
+async function childPhotoGetForProfile(profileId){const exactKey=currentPhotoKey(profileId),exact=await childPhotoGet(exactKey);if(exact)return exact;const db=await openImageDb();if(!db||!profileId)return null;const suffix=`:${profileId}`;const found=await new Promise(resolve=>{try{const tx=db.transaction(CHILD_PHOTO_STORE,'readonly'),req=tx.objectStore(CHILD_PHOTO_STORE).getAll();req.onsuccess=()=>{const rows=(req.result||[]).filter(r=>String(r.key||'').endsWith(suffix)&&r.image).sort((a,b)=>(b.at||0)-(a.at||0));resolve(rows[0]?.image||null)};req.onerror=()=>resolve(null)}catch{resolve(null)}});if(found){await childPhotoPut(exactKey,found)}return found}
 async function childPhotoPut(key,image){const db=await openImageDb();if(!db||!image)return;try{await new Promise(resolve=>{const tx=db.transaction(CHILD_PHOTO_STORE,'readwrite');tx.objectStore(CHILD_PHOTO_STORE).put({key,image,at:Date.now()});tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 async function childPhotoDelete(key){const db=await openImageDb();if(!db)return;try{await new Promise(resolve=>{const tx=db.transaction(CHILD_PHOTO_STORE,'readwrite');tx.objectStore(CHILD_PHOTO_STORE).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 function currentPhotoKey(profileId=activeProfileId){return `child-photo:${currentUser?.id||'guest'}:${profileId||'draft'}`}
@@ -249,7 +250,7 @@ async function renderDesktopProfileTiles(){
  const strip=$('desktopChildStrip');if(!strip)return;
  const token=++desktopProfileRenderToken;
  const profiles=[...cloudProfiles];
- const photos=await Promise.all(profiles.map(p=>childPhotoGet(currentPhotoKey(p.id))));
+ const photos=await Promise.all(profiles.map(p=>childPhotoGetForProfile(p.id)));
  if(token!==desktopProfileRenderToken)return;
  const tiles=profiles.map((p,i)=>{
   const selected=p.id===activeProfileId;

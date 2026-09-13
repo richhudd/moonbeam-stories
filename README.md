@@ -1,3 +1,7 @@
+# Moonbeam Stories V169
+
+V169 is a surgical mobile Step 1 correction. Saved-child selector tiles now resolve each profile's locally stored IndexedDB photo, with a compatibility fallback for older photo keys and automatic migration back to the current canonical key. No desktop layout, Step 2, reader, Saved Stories, API, database, Stripe, or Supabase changes.
+
 # Moonbeam Stories V168
 
 V168 redesigns mobile Step 1 (Child) only. It uses the existing visual child tiles, makes the child photo the visual focus, hides legacy Interests/Things to avoid on phones, and presents only Name/Age plus compact profile actions before the existing Story navigation. Desktop rules and Step 2 are unchanged. No SQL or environment changes.
