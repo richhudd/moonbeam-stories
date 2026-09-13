@@ -402,3 +402,10 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Normal story pages retain Previous, page counter and Forward navigation unchanged.
 - Preserves the V185 removal of the page counter on The End. No other reader, setup, save/share, generation or profile behaviour is changed.
 - Bumps client cache keys to V186. No database migration is required.
+
+
+## V187 — stabilise the mobile homepage demo image
+- Fixes the intermittent blank mobile homepage demo while leaving the desktop homepage unchanged.
+- The mobile demo image now uses its intrinsic 1312×1199 aspect ratio (`height:auto`) instead of `height:100%` against a flex-calculated parent height. This removes the fragile percentage-height dependency that could resolve incorrectly in mobile Safari.
+- The existing mobile demo container, crop/overflow behaviour, homepage composition and all product/setup/reader functionality are unchanged.
+- Bumps client cache keys to V187. No database migration is required.
