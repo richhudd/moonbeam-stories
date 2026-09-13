@@ -324,3 +324,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Anchors the mobile crop explicitly at `center top`, preserving the top of portrait photos rather than discarding hair/headroom during the square crop.
 - Changes only the mobile saved-child thumbnail rendering; desktop thumbnails, stored photos, cloud sync, large profile photo, Story Step 2, reader, generation, narration, credits and Saved Stories are unchanged.
 - No database migration is required.
+
+
+## V177 — mobile thumbnail top-edge alignment
+- Keeps saved-child photos full-bleed inside the existing circular mobile avatars with `object-fit: cover`.
+- Aligns the source photo to `center top`, so the top edge of the photograph is at the top of the circle rather than vertically centred.
+- Bumps the stylesheet cache key in `index.html` to V177 so phones cannot continue using the cached V174 thumbnail CSS.
+- Changes no avatar dimensions, stored photos, cloud synchronisation, desktop thumbnails, large profile photo, Story Step 2, reader, generation, narration, credits or Saved Stories behaviour.
+- No database migration is required.

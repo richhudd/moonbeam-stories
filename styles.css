@@ -2555,11 +2555,14 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
 
 /* V174 — restore the proven centred crop for saved-child thumbnails. */
 
-/* V176 — keep mobile saved-child thumbnails circular and full-bleed, while anchoring portrait crops at the top so hair/headroom is not discarded. */
+/* V177 — mobile saved-child photos: keep the circle full and align the top edge of the photo with the top of the circle. */
 @media (max-width:700px){
   body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-avatar img{
+    width:100%!important;
+    height:100%!important;
     object-fit:cover!important;
     object-position:center top!important;
+    display:block!important;
     background:transparent!important;
   }
 }
