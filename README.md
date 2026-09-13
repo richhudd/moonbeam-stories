@@ -266,3 +266,14 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Uses the same thin crescent treatment, purple, Georgia wordmark, weight and proportions.
 - The app retains its ivory rounded navigation container; only the brand mark itself is standardised.
 - No functional, API, generation, reader, payment or mobile-flow changes.
+
+
+### V170 — Private cross-device child profile photos + shared navigation localisation
+- Adds a private Supabase Storage bucket for saved child-profile reference photos.
+- Existing local-only photos are migrated automatically from a device that already has them when no cloud copy exists.
+- Signed-in devices securely retrieve and locally cache the saved profile photo, so child tiles and the main photo use the same reference across devices.
+- Replacing/removing a photo updates/removes the private cloud copy; deleting a child profile removes its reference photo.
+- Localises Choose a child, Create Story and Saved Stories across all nine supported locales on desktop and mobile.
+- Updates child-photo privacy wording to describe private account storage accurately.
+- Run SUPABASE_V170_CHILD_PROFILE_PHOTOS.sql before deploying V170.
+- No API functions added; story reader, generation, credits and Saved Stories behaviour are unchanged.
