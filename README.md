@@ -394,3 +394,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - `applyMobileSide()` now explicitly detects the physical end page, clears the counter and keeps the existing `end-hidden` state there. On every actual story page it restores the normal page counter.
 - This build deliberately does **not** change Save story behaviour, reader geometry, setup pages, story generation, profiles, photos or any other functionality.
 - Bumps client cache keys to V185. No database migration is required.
+
+
+## V186 — remove Forward navigation from The End on mobile
+
+- The End remains a terminal page on mobile: Previous/back remains available, while the right/forward navigation button is hidden on The End only.
+- Normal story pages retain Previous, page counter and Forward navigation unchanged.
+- Preserves the V185 removal of the page counter on The End. No other reader, setup, save/share, generation or profile behaviour is changed.
+- Bumps client cache keys to V186. No database migration is required.

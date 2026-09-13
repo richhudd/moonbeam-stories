@@ -2747,3 +2747,8 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
   box-shadow:0 7px 20px rgba(62,44,79,.18)!important;
 }
 .page-indicator.end-hidden{display:none!important;}
+
+/* V186 — The End is terminal on mobile: keep Previous, hide Forward only on The End. */
+@media (max-width:700px) and (orientation:portrait){
+  body.story-mode #bookControls #nextPage.end-hidden{display:none!important;}
+}

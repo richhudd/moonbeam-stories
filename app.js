@@ -805,7 +805,7 @@ function applyMobileSide(){
    }
    const prev=$('prevPage'),next=$('nextPage');
    if(prev)prev.textContent=currentBook.currentPage===0?coverT().cover:t().previous;
-   if(next){next.disabled=currentBook.currentPage===currentBook.pages.length+2;next.textContent=next.disabled?t().end:t().turn}
+   if(next){next.disabled=isEnd;next.classList.toggle('end-hidden',isEnd);next.textContent=isEnd?t().end:t().turn}
    requestAnimationFrame(()=>{fitMobileStoryText();requestAnimationFrame(fitMobileStoryText)});
  }
 }
@@ -994,7 +994,7 @@ function renderBookPage(index){
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';
  bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-scroll-cue" aria-hidden="true"><span></span><span></span></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
- if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.textContent=t().turn}if(indicator){indicator.classList.remove('end-hidden');indicator.textContent=`${clamped+1} / ${total}`}
+ if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.classList.remove('end-hidden');next.textContent=t().turn}if(indicator){indicator.classList.remove('end-hidden');indicator.textContent=`${clamped+1} / ${total}`}
  const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
  applyMobileSide();setupMobileScrollCue();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,1);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${narrationLanguage(book)}:${clamped+1}`,clamped+1).catch(()=>{})}
