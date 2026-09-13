@@ -1,3 +1,16 @@
+## V193 — lock the Moonbeam house illustration style
+- Keeps V192/V191 story generation unchanged.
+- Replaces loose illustration-style wording with one immutable server-side Moonbeam house-style block used identically for every cover and interior page.
+- Targets the homepage mock-up: naturalistic painterly realism (approximately 80% realism / 20% storybook idealisation), recognisably the real child, clearly illustrated rather than photographic.
+- Makes consistency the highest-priority art-direction rule: the same realism level, facial treatment, anatomy and painterly finish must persist throughout a book.
+- Explicitly blocks common drift toward oversized eyes, enlarged heads, doll-like/button-nose faces, anime/chibi, glossy 3D and animation-film/Pixar-like character design, while also blocking drift into photography.
+- Removes competing cover/page style adjectives from the client prompts; scene prompts now control content/composition only and cannot override the server-side house style.
+- Child-photo identity instructions remain separate and authoritative. No Supabase SQL changes required.
+
+# Moonbeam Stories V192
+
+# Moonbeam Stories V192
+
 ## V192 — restore the consistent Moonbeam illustration style
 - Keeps V191's age-safe random story-blueprint architecture intact, including `storyIdea`, strict reality/magic constraints and blueprint-aware repair.
 - Removes V190's variable visual-style catalogue and style selection from story generation, saved-story metadata, client illustration requests and cache identity.

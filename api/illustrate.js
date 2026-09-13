@@ -16,7 +16,6 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const prompt = String(body.prompt || '').trim();
     const generationRunId = String(body.generationRunId || '').trim();
-    const style = String(body.style || '').trim();
     const referenceImage = typeof body.referenceImage === 'string' ? body.referenceImage : '';
     if (!prompt) return res.status(400).json({ error: 'An illustration prompt is required.' });
     if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
@@ -31,13 +30,26 @@ module.exports = async function handler(req, res) {
       ? `\nIDENTITY REFERENCE\nAn attached photograph shows the real child who is the main hero. Preserve the child's recognisable identity across the illustration: face shape, eyes, nose, smile, hair colour, hair texture, approximate skin tone and age. Translate the child naturally into the storybook painting style rather than making the result photographic. Do not copy the photograph's background, clothing or pose unless the scene calls for them. Identity preservation is a primary requirement: the illustrated child must be recognisably the same real child, not merely a generic child of similar age or hair colour. The child should clearly look like the same person in every illustration.`
       : '';
 
+    // V193: one literal, immutable Moonbeam house style for every cover and page.
+    // Scene text may describe content, mood and action, but must never change this rendering treatment.
+    const MOONBEAM_HOUSE_STYLE = `MOONBEAM HOUSE ILLUSTRATION STYLE — FIXED FOR THE ENTIRE BOOK
+Create a sophisticated contemporary storybook painting with naturalistic human anatomy and facial proportions. Render people as believable real people translated into premium painted illustration — never as redesigned cartoon or animation characters.
+
+REALISM TARGET
+Aim for approximately 80% naturalistic realism and 20% gentle storybook idealisation. The result must be clearly illustrated rather than photographic, but sit close to the realistic end of children's-book art. Use normal-sized human eyes, natural eye spacing, believable nose and mouth shapes, realistic head-to-body proportions, anatomically plausible hands and limbs, detailed natural hair, softly modelled skin, convincing fabrics and richly observed environments. Use subtle painterly texture, warm cinematic natural light, atmospheric depth and rich but believable colour.
+
+STYLE CONSISTENCY — HIGHEST PRIORITY
+The exact same degree of realism, facial treatment, anatomy, painterly finish, lighting language and character-design approach must be maintained in every illustration in this book, including the cover. Do not make one scene more cartoon-like, more photographic, more stylised or more animation-like than another. When there is any tension between novelty and consistency, choose consistency.
+
+PROHIBITED STYLE DRIFT
+Do not use oversized or doll-like eyes, enlarged heads, button noses, chibi proportions, caricature, anime, comic-book outlines, flat cartoon rendering, glossy plastic 3D characters, Pixar/Disney-like animation character design, toy-like faces, or photorealistic photography. Do not allow humorous, magical, exciting or dramatic scene content to alter the fixed rendering style.`;
+
     const finalPrompt = `Create a single full-page illustration for a premium children's storybook.
 
-ART DIRECTION
-${style || 'Warm, charming, timeless British storybook illustration; painterly traditional feel, expressive characters, gentle lighting, rich but soft detail, magical without being frightening.'}
+${MOONBEAM_HOUSE_STYLE}
 ${identityDirection}
 
-SCENE
+SCENE CONTENT — CONTENT ONLY; IT MUST NOT OVERRIDE THE FIXED HOUSE STYLE ABOVE
 ${prompt}
 
 IMPORTANT
@@ -45,7 +57,7 @@ IMPORTANT
 - Keep the mood warm, adventurous and reassuring.
 - Follow the scene's actual setting, weather and time of day. Do NOT infer nighttime, moonlight, stars, darkness, sleep, bedrooms, pyjamas or bedtime imagery merely because this is a children's story. Use night only when the supplied scene genuinely calls for it.
 - No words, letters, captions, signs, logos or typography anywhere in the image.
-- Do not make it photorealistic, 3D-rendered or cartoonishly plastic.
+- Preserve the fixed Moonbeam realism level above; do not drift toward either photography or cartoon/animation rendering.
 - Compose the scene as a beautiful book illustration with clear focal characters and readable silhouettes.
 - Keep character appearance consistent with the description in the scene and, when supplied, the attached identity reference.
 - Every page in a story must be a genuinely new illustration. If the scene prompt identifies a page/scene number or previous-page context, use that information to advance the visual action and avoid repeating the previous composition, pose, camera angle or background staging.
