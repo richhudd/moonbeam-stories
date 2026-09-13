@@ -316,3 +316,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Keeps the thumbnail circle, tile dimensions, child names and New Child tile unchanged.
 - Desktop thumbnails, the large profile photo, stored/cloud reference photos, photo synchronisation, Story Step 2, reader, generation, narration, credits and Saved Stories are unchanged.
 - No database migration is required.
+
+
+## V176 — circular mobile thumbnails with headroom
+- Replaces the unsuccessful V175 `object-fit: contain` thumbnail treatment, which exposed rectangular photographs inside the circular avatar.
+- Restores full-bleed `object-fit: cover` on phones so each saved-child photo fills the circular thumbnail.
+- Anchors the mobile crop explicitly at `center top`, preserving the top of portrait photos rather than discarding hair/headroom during the square crop.
+- Changes only the mobile saved-child thumbnail rendering; desktop thumbnails, stored photos, cloud sync, large profile photo, Story Step 2, reader, generation, narration, credits and Saved Stories are unchanged.
+- No database migration is required.
