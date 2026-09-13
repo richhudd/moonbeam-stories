@@ -1,3 +1,11 @@
+## V195 — rebalance the mobile homepage vertically
+- Mobile homepage only; desktop and product/story screens are untouched.
+- Redistributes the existing single-screen height instead of shrinking the page or demo.
+- Adds breathing room around the Moonbeam brand, language selector, headline and especially the Create Story CTA.
+- Moves the demo lower so the previously wasted cream area beneath it is consumed, leaving only a small intentional finishing margin.
+- Keeps the V193/V194 illustration style and V191/V192 story-generation architecture completely unchanged.
+- No Supabase SQL changes required.
+
 ## V194 — lock recurring non-photo character continuity
 - Keeps V193's Moonbeam house illustration style verbatim; the realism, painterly finish and homepage-mock-up target are unchanged.
 - Fixes a real continuity-path bug: `app.js` was already sending the story `character_bible` with every illustration request, but `api/illustrate.js` was not reading that field. V194 now makes that bible authoritative for every cover/page request.
