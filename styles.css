@@ -2221,3 +2221,92 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
   body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#generate{flex:0 0 auto!important;margin:8px 0 0!important;min-height:43px!important;padding:10px 12px!important;border-radius:12px!important;font-size:14px!important;background:#6848ba!important}
   body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#status{min-height:10px!important;margin:2px 0 0!important;font-size:9px!important}
 }
+
+/* V158 — compact desktop Child panel so the complete panel fits without scrolling. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"]{
+    padding:18px 18px 16px!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-page-heading{
+    margin-bottom:10px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-page-heading h2{
+    font-size:24px!important;
+    line-height:1.1!important;
+    margin:0!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-setup-grid{
+    grid-template-columns:minmax(210px,.56fr) minmax(170px,.44fr)!important;
+    column-gap:20px!important;
+    row-gap:10px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-chooser{
+    padding:0 0 10px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-chooser-label{
+    font-size:12px!important;
+    margin:0 0 5px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{
+    gap:7px!important;
+    padding:1px 1px 2px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-tile{
+    flex-basis:118px!important;
+    min-width:118px!important;
+    height:54px!important;
+    min-height:54px!important;
+    gap:7px!important;
+    padding:6px 8px!important;
+    border-radius:11px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-avatar{
+    width:38px!important;height:38px!important;flex-basis:38px!important;font-size:17px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-name{font-size:12px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-new-child-icon{font-size:21px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-preview{
+    height:190px!important;
+    min-height:190px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-buttons{
+    gap:5px!important;
+    padding:7px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-buttons button{
+    min-height:34px!important;
+    padding:6px 8px!important;
+    font-size:11px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-toggle{
+    margin:3px 7px 7px!important;
+    padding:8px 9px!important;
+    border-radius:10px!important;
+    font-size:11px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-toggle:before{font-size:14px!important;margin-right:5px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-status{margin:0 7px 6px!important;font-size:9px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid{
+    gap:10px!important;
+    margin:8px 0 0!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid label{
+    font-size:11px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid input{
+    min-height:42px!important;
+    height:42px!important;
+    padding:8px 10px!important;
+    font-size:14px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions{
+    margin:142px 0 0!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .secondary{
+    min-height:36px!important;
+    padding:7px 9px!important;
+    font-size:11px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .profile-status{font-size:9px!important;margin-top:4px!important}
+}

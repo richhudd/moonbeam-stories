@@ -190,3 +190,8 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Kept the mobile setup flow unchanged.
 - Included the confirmed Remove Child frontend fix so the delete confirmation works when `deleteProfile` is supplied as translated text rather than a function.
 - No API functions, saved-story architecture, narration, sharing or database schema were changed.
+
+### V158 — Compact desktop child panel
+- Reduced desktop-only spacing, child tiles, photo area, fields and controls in the left Child panel.
+- Child panel now fits within the desktop setup viewport without its own vertical scroll.
+- Mobile layout and V157 Story panel remain unchanged.
