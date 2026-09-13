@@ -798,7 +798,11 @@ function applyMobileSide(){
  bookEl.classList.toggle('show-mobile-text',false);
  bookEl.classList.toggle('show-mobile-spread',isPhonePortrait());
  if(isPhonePortrait()){
-   const indicator=$('pageIndicator');if(indicator)indicator.textContent=`${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}`;
+   const indicator=$('pageIndicator'),isEnd=currentBook.currentPage===currentBook.pages.length+2;
+   if(indicator){
+     indicator.classList.toggle('end-hidden',isEnd);
+     indicator.textContent=isEnd?'':`${mobilePhysicalPageNumber()} / ${mobilePhysicalTotal()}`;
+   }
    const prev=$('prevPage'),next=$('nextPage');
    if(prev)prev.textContent=currentBook.currentPage===0?coverT().cover:t().previous;
    if(next){next.disabled=currentBook.currentPage===currentBook.pages.length+2;next.textContent=next.disabled?t().end:t().turn}

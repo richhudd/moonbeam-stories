@@ -387,3 +387,10 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - The selected child's existing profile fields and reference photo load through the same `selectCloudProfile()` path as a manual tile selection; no duplicate profile-loading logic is introduced.
 - Child ordering, V178 mobile thumbnail positioning, V180 per-story Story idea behaviour, V179 mobile Story page, V182 reader scrolling/split and V183 end-page changes are unchanged.
 - Bumps client cache keys to V184. No database migration is required.
+
+
+## V185 — keep the page counter off The End page
+- Fixes the mobile reader counter being restored after The End page renders. The cause was `applyMobileSide()` rewriting `#pageIndicator` after `renderBookPage()` had already hidden it.
+- `applyMobileSide()` now explicitly detects the physical end page, clears the counter and keeps the existing `end-hidden` state there. On every actual story page it restores the normal page counter.
+- This build deliberately does **not** change Save story behaviour, reader geometry, setup pages, story generation, profiles, photos or any other functionality.
+- Bumps client cache keys to V185. No database migration is required.
