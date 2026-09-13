@@ -17,6 +17,11 @@ module.exports = async function handler(req, res) {
     const prompt = String(body.prompt || '').trim();
     const generationRunId = String(body.generationRunId || '').trim();
     const referenceImage = typeof body.referenceImage === 'string' ? body.referenceImage : '';
+    // V194: the client already sends the story's character bible as `style`.
+    // It was previously ignored here, so recurring non-photo characters were being
+    // re-invented independently on every image request. Treat it only as immutable
+    // character continuity data; it must never alter the V193 house rendering style.
+    const characterContinuity = typeof body.style === 'string' ? body.style.trim() : '';
     if (!prompt) return res.status(400).json({ error: 'An illustration prompt is required.' });
     if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
     const moonbeamUser = await verifyMoonbeamUser(req);
@@ -48,6 +53,10 @@ Do not use oversized or doll-like eyes, enlarged heads, button noses, chibi prop
 
 ${MOONBEAM_HOUSE_STYLE}
 ${identityDirection}
+
+RECURRING CHARACTER CONTINUITY — IMMUTABLE ACROSS THE ENTIRE BOOK
+${characterContinuity || 'Keep every recurring non-photo character exactly consistent across all scenes.'}
+For every recurring non-photo character, treat the supplied description as a fixed model sheet. The same named or recurring character must remain the same person, animal, robot or creature in every illustration: preserve exact apparent age, sex where specified, facial structure, skin/fur/material colours, eye colour, hair/fur colour and texture, hairstyle, height/build, body proportions, distinctive features and established clothing/accessories. Never age a recurring character up or down. Never redesign, reinterpret or substitute them with a different-looking character. Unless the story explicitly changes clothing or appearance, preserve it exactly. If a recurring character is a child, they must remain visibly the stated age in every scene. Character continuity is higher priority than novelty of casting, but it must NOT change or override the fixed Moonbeam rendering style above.
 
 SCENE CONTENT — CONTENT ONLY; IT MUST NOT OVERRIDE THE FIXED HOUSE STYLE ABOVE
 ${prompt}

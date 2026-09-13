@@ -1,3 +1,11 @@
+## V194 — lock recurring non-photo character continuity
+- Keeps V193's Moonbeam house illustration style verbatim; the realism, painterly finish and homepage-mock-up target are unchanged.
+- Fixes a real continuity-path bug: `app.js` was already sending the story `character_bible` with every illustration request, but `api/illustrate.js` was not reading that field. V194 now makes that bible authoritative for every cover/page request.
+- Recurring non-photo humans now have an exact age (not an age range) plus fixed face, skin, eyes, hair, build, clothing and permanent identifying features. They must not age up/down, be redesigned or be substituted between scenes.
+- The same fixed-model-sheet rule applies to recurring animals, robots and fantastical beings.
+- Strengthens story-generation and repair instructions so new books create/reconstruct precise immutable character bibles and page prompts cannot redefine recurring characters.
+- The photographed child's existing V193 identity-reference rules remain separate and unchanged. Story randomisation is unchanged. No Supabase SQL changes required.
+
 ## V193 — lock the Moonbeam house illustration style
 - Keeps V192/V191 story generation unchanged.
 - Replaces loose illustration-style wording with one immutable server-side Moonbeam house-style block used identically for every cover and interior page.
