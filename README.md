@@ -1,18 +1,4 @@
-# Moonbeam Stories V198
-
-## V198 — migrate to the planned-and-validated Moonbeam Story Engine
-- Replaces V197's single-pass story invention/writing prompt with a hidden **plan → validate → write → validate** pipeline based on the completed Moonbeam Story Engine specification.
-- Preserves V197's age bands, age-specific language/theme constraints, child-safety exclusions, exact-name lock, parent Story Idea precedence, nine language variants, tone/value handling, standard 6-screen/650–750-word product format, character bible and credit/refund flow.
-- Introduces the ten Moonbeam narrative architectures and requires one primary architecture with an architecture-specific payoff rather than one universal plot formula.
-- Blank/loose prompts can compete across multiple genuinely different concepts before a full story is planned; parent-defined ideas remain authoritative.
-- Plans the ending, causal progression, memorable element, meaningful personalisation and setup/payoff before prose is written.
-- Adds an independent plan-quality gate and final-story quality gate, including causal “nonsense”, middle-page shuffle, memorability and genericity checks.
-- Removes V197's coupling between story progression and illustration variety: story beats now exist for narrative reasons; illustrations vary composition without inventing or moving plot events merely to obtain different pictures.
-- Removes blind local sentence reflow across pages. Length/page-balance problems are now detected and repaired against the approved story plan so beats and illustration directions stay aligned.
-- Keeps the V193 Moonbeam house illustration style and V194 recurring-character/photo continuity unchanged.
-- Adds backend support for a future `rhyme` writing mode while keeping prose as the current/default customer experience; no new UI control is exposed in this build.
-- Adds `STORY_ENGINE_MIGRATION_V198.md` documenting every significant KEEP / MOVE / REWRITE / DELETE decision, and packages the completed design source of truth at `docs/MOONBEAM-STORY-ENGINE-SPEC.md`.
-- No Supabase SQL changes required.
+# Moonbeam Stories V197
 
 ## V197 — require narrative progression for visually varied books
 - Keeps the V193 Moonbeam house illustration-style specification unchanged and keeps V194 recurring-character continuity unchanged.

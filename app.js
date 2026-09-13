@@ -778,15 +778,15 @@ async function loadIllustration(index,prompt,silent=false,force=false){
 function getIllustrationPrompt(index){
  const book=currentBook;if(!book)return'';const total=book.pages.length+2;
  const excerpt=(text,max=520)=>String(text||'').replace(/\s+/g,' ').trim().slice(0,max);
- if(index===0)return`SCENE 1 OF ${total} — OPENING. Opening illustration for “${book.title}”. Depict a specific moment from the actual opening text and establish only what the story itself establishes: ${excerpt(book.opening)}. Story art direction: ${book.pages[0]?.illustration_prompt||''}. Use a composition appropriate to this beat without inventing new story events for visual variety.`;
- if(index===total-1)return`SCENE ${total} OF ${total} — CLOSING. Final illustration for “${book.title}”, depicting the actual outcome and emotional state described by the story. Preserve the established setting and time of day; do not force night, sleep, celebration or generic cosiness unless the closing text calls for it. Depict a specific moment from this closing text: ${excerpt(book.closing)}. Story art direction: ${book.pages[book.pages.length-1]?.illustration_prompt||''}. Stage the genuine closing beat distinctly without changing what happens.`;
+ if(index===0)return`SCENE 1 OF ${total} — OPENING. Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. Depict a specific moment from this text: ${excerpt(book.opening)}. Story art direction: ${book.pages[0]?.illustration_prompt||''}. This must be visually distinct from all later scenes.`;
+ if(index===total-1)return`SCENE ${total} OF ${total} — CLOSING. Warm, satisfying final scene for “${book.title}”, showing the characters safe and content after the adventure. Preserve the setting and time of day established by the story; do not turn the scene into nighttime, sleep or bedtime unless the closing text actually requires it. Depict a specific moment from this closing text: ${excerpt(book.closing)}. Story art direction: ${book.pages[book.pages.length-1]?.illustration_prompt||''}. Do not reuse the composition of the previous scene.`;
  const page=book.pages[index-1]||{};
  const previous=index===1?book.opening:(book.pages[index-2]?.text||'');
  return `SCENE ${index+1} OF ${total}. Illustrate THIS page, not a generic recurring scene.
 CURRENT PAGE TEXT: ${excerpt(page.text)}
 SCENE DIRECTION: ${page.illustration_prompt||'Depict the specific action and setting described on this page.'}
 PREVIOUS PAGE CONTEXT (for continuity only; DO NOT re-illustrate it): ${excerpt(previous,260)}
-Represent the CURRENT story beat faithfully. Use a fresh camera angle, framing, pose, scale or focal emphasis where useful, but do not invent, relocate or accelerate story events merely to make the image different. Never simply repeat the previous illustration.`
+Make this composition clearly different from the previous page: advance the action, choose a fresh camera angle or framing, and show the distinctive event/location/object from the current page. Never repeat a previous illustration.`
 }
 function prefetchIllustrations(index,ahead=1){const book=currentBook;if(!book||book.isSaved)return;const total=book.pages.length+2;const i=index+1;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}
 function isPhonePortrait(){return window.matchMedia('(max-width:700px) and (orientation:portrait)').matches}
