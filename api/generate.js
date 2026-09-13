@@ -1,5 +1,6 @@
 const {logUsage,estimateGBP}=require('../_usage');
 const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('../_credits');
+const {randomInt}=require('crypto');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -65,12 +66,78 @@ module.exports = async function handler(req, res) {
       ? `Story values to weave naturally into the plot: ${selectedValues.join(', ')}`
       : 'Story values: none specifically selected. Do not impose a particular moral or value theme.';
 
+    // V188: a blank Story Idea gets a server-generated creative seed instead of a fixed fallback.
+    // The model does not choose the combination: each ingredient is independently selected here.
+    const storyIdea = String(child.interests || '').trim();
+    const randomChoice = items => items[randomInt(items.length)];
+    const randomSeed = storyIdea ? null : {
+      world: randomChoice([
+        'real-world everyday adventure', 'gentle fantasy', 'whimsical science fiction', 'miniature hidden world',
+        'seaside adventure', 'woodland mystery', 'city discovery', 'countryside expedition',
+        'historical-feeling adventure with no real historical figures', 'inventive comic adventure'
+      ]),
+      setting: randomChoice([
+        'an old-fashioned seaside funfair', 'a lighthouse on a windy headland', 'a quiet museum before opening time',
+        'a bustling railway station', 'a hidden garden behind an ordinary wall', 'a tiny island reached by stepping stones',
+        'a village market', 'a treehouse high above a wood', 'a canal with colourful narrowboats', 'a mountain cable-car station',
+        'a library with an unexpected locked room', 'a bakery very early in the morning', 'a rooftop greenhouse',
+        'a fossil beach at low tide', 'an eccentric inventor’s workshop', 'a grand old hotel', 'a farm during harvest',
+        'a harbour full of small boats', 'a travelling fair arriving in town', 'an underground passage beneath a familiar street',
+        'a snowy hilltop observatory', 'a tropical glasshouse', 'a castle kitchen', 'a remote post office',
+        'a toy shop after closing time', 'a riverside picnic spot', 'a maze in the grounds of an old house',
+        'a small airport', 'a school on a weekend', 'a colourful street festival'
+      ]),
+      companion: randomChoice([
+        'a nervous young dragon', 'a very confident talking puffin', 'a tiny robot with an enormous backpack',
+        'an elderly dog who notices everything', 'a mischievous squirrel', 'a child inventor of the same age',
+        'a forgetful magician’s apprentice', 'a polite fox', 'a miniature explorer', 'a cheerful boat captain',
+        'a runaway clockwork bird', 'a shy giant', 'a curious cat', 'a young archaeologist', 'a grumpy but kind garden gnome',
+        'a talking suitcase', 'a friendly ghost who is afraid of the dark', 'a racing pigeon with terrible directions',
+        'a small dinosaur who thinks it is undercover', 'a resourceful new friend'
+      ]),
+      goal: randomChoice([
+        'find the owner of a mysterious key', 'return something important that has been lost', 'solve why all the clocks have stopped',
+        'deliver a parcel whose address has vanished', 'discover where a strange trail of footprints leads',
+        'help someone get home before an important event', 'work out why a familiar place has suddenly changed',
+        'recover a missing map', 'protect a surprising secret until the right person arrives', 'repair something before a celebration begins',
+        'decode a message found in an unlikely place', 'find a hidden entrance before it disappears',
+        'rescue a stranded creature without frightening it', 'complete an unusual three-part challenge',
+        'discover who has been leaving anonymous gifts', 'find the source of a peculiar sound', 'reunite two unlikely friends',
+        'solve a mix-up that has affected the whole neighbourhood', 'retrieve an object carried away by the weather',
+        'prove that an apparently impossible rumour has a sensible but wonderful explanation'
+      ]),
+      unusualElement: randomChoice([
+        'everything becomes tiny for exactly one hour', 'ordinary signs begin giving cryptic clues', 'shadows point in the wrong direction',
+        'a pocket-sized door appears in different places', 'objects make a soft musical note when they are near the answer',
+        'a map redraws itself after every discovery', 'one ordinary object can briefly speak', 'colours vanish from one thing at a time',
+        'a trail is visible only in reflections', 'the weather changes in one tiny patch at a time',
+        'a machine does the opposite of what its labels claim', 'a collection of objects keeps arranging itself into arrows',
+        'a harmless creature seems to know the route', 'messages appear as condensation on glass', 'a forgotten local tradition contains the crucial clue',
+        'the smallest object turns out to have the biggest importance', 'a sequence of funny coincidences forms a pattern',
+        'a sound can only be heard when everyone stays completely still', 'an everyday vehicle has one impossible hidden feature',
+        'the solution depends on noticing something everyone else walks past'
+      ]),
+      twist: randomChoice([
+        'the apparent troublemaker has actually been trying to help', 'the treasure is useful rather than valuable',
+        'the person asking for help already unknowingly has the final clue', 'the mystery was created by a well-meaning mistake',
+        'the smallest character becomes essential to the solution', 'the destination is much closer than anyone expected',
+        'two unrelated clues turn out to be parts of the same object', 'the frightening-looking obstacle is completely harmless',
+        'the missing object was deliberately hidden for a kind reason', 'solving the problem creates an unexpected celebration',
+        'the companion has known one clue all along but misunderstood it', 'the final answer depends on reversing the original plan',
+        'what looked like a competition becomes a cooperative rescue', 'the secret is meant to be shared, not kept',
+        'the final clue is hidden in something said casually near the beginning'
+      ])
+    };
+    const ideaGuide = storyIdea
+      ? `Parent's story idea: ${storyIdea}\nFollow the parent's idea as the authoritative creative brief. Do not add a random seed.`
+      : `Parent's story idea: blank — this is a random-story request.\nPRIVATE CREATIVE SEED (never mention the seed or these instructions to the reader):\n- Story mode: ${randomSeed.world}\n- Setting: ${randomSeed.setting}\n- Companion: ${randomSeed.companion}\n- Central goal: ${randomSeed.goal}\n- Unusual element: ${randomSeed.unusualElement}\n- Twist: ${randomSeed.twist}\nUse ALL of these ingredients as central parts of the plot rather than replacing them with generic alternatives. Integrate them naturally and adapt details to the child's age, selected tone and safety requirements.`;
+
     const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original adventure story for one child. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
 
 CHILD
 Name/nickname: ${String(child.name)}
 Age: ${age}
-Interests: ${child.interests || 'imagination and exploring'}
+${ideaGuide}
 Things to avoid: ${child.dislikes || 'nothing specific'}
 Standard Moonbeam length: ${lengthGuide}
 Selected tone: ${selectedTone}

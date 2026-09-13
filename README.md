@@ -409,3 +409,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - The mobile demo image now uses its intrinsic 1312×1199 aspect ratio (`height:auto`) instead of `height:100%` against a flex-calculated parent height. This removes the fragile percentage-height dependency that could resolve incorrectly in mobile Safari.
 - The existing mobile demo container, crop/overflow behaviour, homepage composition and all product/setup/reader functionality are unchanged.
 - Bumps client cache keys to V187. No database migration is required.
+
+
+## V188 — varied random stories for blank Story Idea
+- A blank Story Idea now receives a private server-side creative seed assembled independently from controlled pools for story mode, setting, companion, goal, unusual element and twist.
+- The AI does not choose the seed combination and is instructed to use every selected ingredient as a central part of the plot.
+- A parent-entered Story Idea remains authoritative and bypasses random seeding entirely.
+- The seed is never shown in the interface or returned as part of the story.
+- No database migration is required. Client build/cache metadata is bumped to V188.
