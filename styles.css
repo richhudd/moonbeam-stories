@@ -2310,3 +2310,40 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
   }
   body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .profile-status{font-size:9px!important;margin-top:4px!important}
 }
+\n\n/* V159 — restore comfortable desktop Child proportions while retaining no-scroll fit. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"]{
+    padding:20px 20px 17px!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-page-heading{margin-bottom:12px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-page-heading h2{font-size:26px!important;line-height:1.12!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-setup-grid{
+    grid-template-columns:minmax(230px,.59fr) minmax(180px,.41fr)!important;
+    column-gap:22px!important;row-gap:12px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-chooser{padding:0 0 12px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-chooser-label{font-size:13px!important;margin:0 0 7px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{gap:9px!important;padding:1px 1px 3px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-tile{
+    flex-basis:132px!important;min-width:132px!important;height:62px!important;min-height:62px!important;
+    gap:8px!important;padding:7px 9px!important;border-radius:12px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-avatar{width:44px!important;height:44px!important;flex-basis:44px!important;font-size:19px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-name{font-size:13px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-new-child-icon{font-size:23px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-preview{height:250px!important;min-height:250px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-buttons{gap:6px!important;padding:8px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-buttons button{min-height:37px!important;padding:7px 9px!important;font-size:12px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-toggle{margin:4px 8px 8px!important;padding:9px 10px!important;border-radius:11px!important;font-size:12px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-toggle:before{font-size:16px!important;margin-right:6px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-status{margin:0 8px 7px!important;font-size:10px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid{gap:13px!important;margin:12px 0 0!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid label{font-size:13px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid input{min-height:47px!important;font-size:16px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions{
+    margin:168px 0 0!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .secondary{width:100%!important;min-height:42px!important;font-size:11px!important;padding:7px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .profile-status{grid-column:1 / -1!important}
+}

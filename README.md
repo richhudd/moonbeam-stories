@@ -195,3 +195,9 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Reduced desktop-only spacing, child tiles, photo area, fields and controls in the left Child panel.
 - Child panel now fits within the desktop setup viewport without its own vertical scroll.
 - Mobile layout and V157 Story panel remain unchanged.
+
+
+### V159 — Balanced desktop child panel
+- Restored the visible Remove child control beside Save child profile.
+- Increased desktop child-photo, selector, field and control sizing from V158 while preserving the no-scroll target.
+- Right-hand V157 Story panel and mobile layout remain unchanged.
