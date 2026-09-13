@@ -1,3 +1,7 @@
+# Moonbeam Stories V168
+
+V168 redesigns mobile Step 1 (Child) only. It uses the existing visual child tiles, makes the child photo the visual focus, hides legacy Interests/Things to avoid on phones, and presents only Name/Age plus compact profile actions before the existing Story navigation. Desktop rules and Step 2 are unchanged. No SQL or environment changes.
+
 # Moonbeam Stories V167
 
 V167 is a deliberately tiny Story Idea copy update on top of V166. The Story Idea placeholder now tells parents they can provide an idea, theme or a few keywords, or leave the field blank for a completely random story. The new placeholder is localised across all nine supported locales. No generation logic, layout, database, credits, illustration, narration, saved-story or reader behaviour is changed in this release.

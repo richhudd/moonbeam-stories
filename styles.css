@@ -2473,3 +2473,65 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
     letter-spacing:0!important;
   }
 }
+
+/* V168 — mobile Step 1 redesign only. Desktop (>=701px) is intentionally untouched. */
+@media (max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"]{
+    padding:24px 18px 18px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-page-heading{margin:0 0 18px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-page-heading h2{font-size:30px!important;line-height:1.08!important;margin:8px 0 8px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-page-heading .muted{font-size:16px!important;line-height:1.35!important;margin:0!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-step-label{display:inline-flex!important;padding:7px 11px!important;border-radius:999px!important;font-size:12px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:.04em!important;background:#f0eafb!important;color:#6848ba!important}
+
+  /* Flatten the old two-column DOM only on phones so we can present the new deliberate order. */
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-setup-grid{display:flex!important;flex-direction:column!important;gap:0!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-details-column{display:contents!important}
+
+  /* Saved children become the compact visual selector already proven on desktop. */
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-chooser{display:block!important;order:1!important;padding:0!important;margin:0 0 16px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-chooser-label{font-size:14px!important;font-weight:800!important;margin:0 0 8px!important;color:#30254f!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip-shell{position:relative!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{display:flex!important;gap:9px!important;overflow-x:auto!important;scrollbar-width:none;padding:1px 1px 4px!important;scroll-snap-type:x proximity}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip::-webkit-scrollbar{display:none}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-tile{display:flex!important;flex:0 0 92px!important;min-width:92px!important;height:94px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;padding:7px!important;border:1.5px solid #ded5ee!important;border-radius:15px!important;background:#fff!important;color:#30254f!important;scroll-snap-align:start}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-tile.selected{border:2px solid #6848ba!important;background:#f7f3ff!important;box-shadow:0 0 0 2px rgba(104,72,186,.06)!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-avatar{width:54px!important;height:54px!important;flex:0 0 54px!important;border-radius:50%!important;overflow:hidden!important;display:grid!important;place-items:center!important;background:#eee8fb!important;font-size:24px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-avatar img{width:100%!important;height:100%!important;object-fit:cover!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-name{font-size:11px!important;line-height:1.05!important;font-weight:800!important;max-width:78px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-scroll{display:none!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page #profileTools{display:none!important}
+
+  /* Photo is the hero of Step 1. */
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-column{order:2!important;margin:0 0 18px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-column>h3,
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-copy{display:none!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-card{display:block!important;margin:0!important;padding:0!important;border:1px solid #e1d8ee!important;border-radius:18px!important;background:#faf8ff!important;overflow:hidden!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-controls{display:block!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-preview{height:300px!important;min-height:300px!important;margin:0!important;border:0!important;border-radius:0!important;background:#f8f5fc!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-preview img{width:100%!important;height:100%!important;object-fit:cover!important;border-radius:0!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-buttons{display:flex!important;gap:8px!important;padding:10px!important;background:#fff!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-buttons button{flex:1!important;min-height:44px!important;margin:0!important;padding:9px 10px!important;font-size:13px!important;border-radius:12px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-toggle{margin:0 10px 10px!important;padding:10px 12px!important;border-radius:12px!important;background:#f2ecff!important;font-size:13px!important;font-weight:800!important;color:#4a3a70!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .photo-status{margin:0 10px 8px!important;font-size:11px!important}
+
+  /* Only the two profile fields retained by the approved redesign. */
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid{order:3!important;display:grid!important;grid-template-columns:minmax(0,1fr) 92px!important;gap:10px!important;margin:0 0 12px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid label{font-size:13px!important;font-weight:800!important;color:#30254f!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basic-grid input{height:48px!important;min-height:48px!important;margin-top:6px!important;padding:10px 12px!important;border-radius:13px!important;font-size:16px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .about-grid,
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .mobile-comfort-copy{display:none!important}
+
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions{order:4!important;display:flex!important;gap:8px!important;margin:0 0 8px!important;flex-wrap:wrap!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions.hidden{display:none!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .secondary{flex:1 1 145px!important;min-height:40px!important;padding:8px 10px!important;font-size:12px!important;border-radius:11px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .profile-status{flex-basis:100%!important;margin:0!important}
+
+  /* Existing navigation remains functional, but reads as one clear mobile action row. */
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-card-nav{order:5!important;position:static!important;margin-top:8px!important;padding:14px 0 4px!important;background:none!important;border-top:1px solid #ebe4f2!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-card-nav .setup-card-enter{flex:1!important;max-width:none!important;width:auto!important;min-width:0!important;min-height:50px!important;border-radius:14px!important;font-size:16px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-card-nav .setup-home{min-width:104px!important;width:104px!important;max-width:104px!important;min-height:50px!important;border-radius:14px!important;font-size:13px!important}
+}
