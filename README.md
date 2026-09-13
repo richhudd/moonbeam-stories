@@ -294,3 +294,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Older cloud photo versions are cleaned up after a successful replacement upload.
 - No new Supabase migration is required; V170 Storage policies already permit the versioned files.
 - No desktop/mobile layout, Step 2, reader, generation, narration, credits, or Saved Stories changes.
+
+
+## V173 — mobile saved-child thumbnail crop refinement
+- Adjusts only the small saved-child selector photographs on phones so portrait crops favour the upper part of the image and preserve headroom.
+- The large child reference photo is unchanged.
+- Desktop layout and thumbnails, Story Step 2, photo sync, reader, generation, narration, credits and Saved Stories are unchanged.
+- No database migration is required.
+
