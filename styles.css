@@ -2554,3 +2554,12 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
 @media (prefers-reduced-motion:reduce){.child-photo-loading-spinner{animation:none;border-top-color:rgba(104,72,186,.55)}}
 
 /* V174 — restore the proven centred crop for saved-child thumbnails. */
+
+/* V175 — mobile saved-child thumbnails show the complete reference photo instead of cropping it. */
+@media (max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-avatar img{
+    object-fit:contain!important;
+    object-position:center center!important;
+    background:#eee8fb!important;
+  }
+}

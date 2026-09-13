@@ -309,3 +309,10 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Restores the proven centred `object-fit: cover` thumbnail behaviour from V172.
 - The large profile photo, desktop layout, photo synchronisation, Story Step 2, reader, generation, narration, credits and Saved Stories are unchanged.
 - No database migration is required.
+
+## V175 — mobile saved-child thumbnails no longer crop the photo
+- Fixes the remaining mobile child-selector thumbnail problem visible in V174.
+- On phones only, saved-child avatar images now use `object-fit: contain` so the complete reference photograph fits inside the circular thumbnail instead of `cover` enlarging and cutting off the top/bottom.
+- Keeps the thumbnail circle, tile dimensions, child names and New Child tile unchanged.
+- Desktop thumbnails, the large profile photo, stored/cloud reference photos, photo synchronisation, Story Step 2, reader, generation, narration, credits and Saved Stories are unchanged.
+- No database migration is required.
