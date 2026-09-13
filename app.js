@@ -581,7 +581,7 @@ async function generateStory(){
    resolvedReferencePhoto=currentChildPhoto||await childPhotoGet(currentPhotoKey());
    if(resolvedReferencePhoto)currentChildPhoto=resolvedReferencePhoto;
  }
- const child={name:$('name').value.trim(),age:Number($('age').value),interests:($('desktopStoryIdea')?.value||'').trim(),dislikes:$('dislikes').value.trim(),length:'standard',tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:resolvedReferencePhoto};
+ const child={name:$('name').value.trim(),age:Number($('age').value),storyIdea:($('desktopStoryIdea')?.value||'').trim(),dislikes:$('dislikes').value.trim(),length:'standard',tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:resolvedReferencePhoto};
  if(!currentUser){$('status').innerHTML='<span class="error">Sign in or create a parent account to make a story.</span>';if(isPhonePortrait())goSetupPage(0);return}
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}

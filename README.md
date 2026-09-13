@@ -1,3 +1,18 @@
+# Moonbeam Stories V191
+
+## V191 — age-safe true-random story blueprints
+- Replaced the V189/V190 blank-prompt architecture with a cryptographically random, age-gated blueprint generator.
+- Blank Story Idea requests now select the premise in server code before the writing model runs: story family, reality rule, magic level, setting, plot engine, companion type, optional special object, naming mode, twist and ending type.
+- Added hard age bands (3–5, 6–8, 9–12) controlling permitted stakes, prose complexity and excluded subject matter. Age safety overrides tone and creative choices.
+- Removed the obsolete generation-path use of `child.interests`; the client now sends `child.storyIdea`. Existing profile-schema compatibility fields remain untouched.
+- Removed generic house-prompt instructions that forced mysteries/secrets/quests/discoveries into unrelated stories.
+- Strict-realism blueprints now explicitly forbid magic, supernatural beings, talking animals and enchanted objects. “Magical” tone becomes a sense of wonder rather than literal magic when realism is selected.
+- Companion absence and special-object absence are hard constraints rather than suggestions.
+- Repair-model calls now receive the same blueprint and age-safety constraints, closing the V190 repair-path loophole.
+- Expanded the setting space substantially and removed the dedicated miniature-world/bakery architecture that was contributing to repetitive tiny-magical-creature stories.
+- V190 story-matched illustration families remain intact and are now mapped to the new V191 story families.
+- No Supabase SQL changes required.
+
 # Moonbeam Stories V190
 ## V190 — Story-matched illustration art direction
 - Added ten controlled Moonbeam visual families: Classic Moonbeam, Cinematic Storybook, Painterly Fantasy, Watercolour & Gouache, Graphic Comedy, Naturalist Adventure, Retro Adventure, Cinematic Sci-Fi, Miniature Macro and Dreamlike Surreal.
