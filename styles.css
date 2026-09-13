@@ -2347,3 +2347,15 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
   body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .secondary{width:100%!important;min-height:42px!important;font-size:11px!important;padding:7px!important}
   body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions .profile-status{grid-column:1 / -1!important}
 }
+
+
+/* V160 — only make the desktop child portrait longer; retain V159 sizing elsewhere. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .child-photo-preview{
+    height:320px!important;
+    min-height:320px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions{
+    margin-top:98px!important;
+  }
+}

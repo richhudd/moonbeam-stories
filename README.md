@@ -201,3 +201,16 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Restored the visible Remove child control beside Save child profile.
 - Increased desktop child-photo, selector, field and control sizing from V158 while preserving the no-scroll target.
 - Right-hand V157 Story panel and mobile layout remain unchanged.
+
+
+### V160 — Taller child portrait + deletion cache refresh
+- Desktop Child panel: increased only the portrait height, preserving the surrounding V159 control sizing.
+- Retains the proven Remove child confirmation guard and bumps app.js to v160 so browsers cannot reuse the regressed cached script.
+- Right-hand Story panel and mobile layout unchanged.
+
+
+### V161 — Restore Remove child click handler
+- Fixed the actual Remove child regression: the visible `#removeProfile` button had no click listener.
+- Wired `#removeProfile` directly to the existing, proven `deleteChildProfile` function.
+- Retains the V160 taller desktop portrait and all V157 Story-panel behaviour.
+- No API, database, reader, narration, sharing or mobile-layout changes.

@@ -148,6 +148,7 @@ $('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStrip
 $('desktopChildStrip')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
 window.addEventListener('resize',updateDesktopChildScrollButtons);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
+$('removeProfile')?.addEventListener('click',deleteChildProfile);
 $('chooseChildPhoto')?.addEventListener('click',()=>$('childPhotoInput')?.click());
 $('childPhotoInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)chooseChildPhoto(f);e.target.value=''});
 // V80: desktop drag-and-drop uses the same validated/resized photo pipeline as Choose photo.
