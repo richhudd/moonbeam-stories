@@ -1,3 +1,15 @@
+# Moonbeam Stories V197
+
+## V197 — require narrative progression for visually varied books
+- Keeps the V193 Moonbeam house illustration-style specification unchanged and keeps V194 recurring-character continuity unchanged.
+- Keeps V196's exact-child-name lock and illustration-side composition variation.
+- Adds a story-generation hard rule that every displayed spread must materially advance the narrative, rather than repeating variations of the same action in the same spot.
+- Progression can come from changed action, objective, obstacle, interaction, discovery, position within the setting, visual circumstances or consequences.
+- Does not force arbitrary location changes: a story may remain at one lake, stadium, spaceship, castle, etc., but the action and situation must genuinely progress within it.
+- Requires opening + four middle pages + closing to form a visual narrative arc in the story text itself, so adjacent spreads naturally call for materially different pictures.
+- Applies the same progression requirement to the JSON repair pass so repair cannot flatten the story back into repetitive beats.
+- No Supabase SQL changes required.
+
 ## V195 — rebalance the mobile homepage vertically
 - Mobile homepage only; desktop and product/story screens are untouched.
 - Redistributes the existing single-screen height instead of shrinking the page or demo.
