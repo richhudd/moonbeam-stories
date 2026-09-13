@@ -2535,3 +2535,20 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
   body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-card-nav .setup-card-enter{flex:1!important;max-width:none!important;width:auto!important;min-width:0!important;min-height:50px!important;border-radius:14px!important;font-size:16px!important}
   body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .setup-card-nav .setup-home{min-width:104px!important;width:104px!important;max-width:104px!important;min-height:50px!important;border-radius:14px!important;font-size:13px!important}
 }
+
+
+/* V171 — child-photo loading state while local/cloud profile photos resolve. */
+.child-photo-loading-spinner{
+  display:inline-block;
+  width:30px;
+  height:30px;
+  border:3px solid rgba(104,72,186,.18);
+  border-top-color:#6848ba;
+  border-radius:50%;
+  animation:moonbeam-photo-spin .8s linear infinite;
+}
+.desktop-child-avatar .child-photo-loading-spinner{width:22px;height:22px;border-width:2px}
+.desktop-child-tile.photo-loading .desktop-child-avatar{background:#f3eefc!important}
+.child-photo-preview .child-photo-loading-spinner+small{margin-top:12px;color:#8b819f}
+@keyframes moonbeam-photo-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.child-photo-loading-spinner{animation:none;border-top-color:rgba(104,72,186,.55)}}

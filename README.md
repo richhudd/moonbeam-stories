@@ -277,3 +277,10 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Updates child-photo privacy wording to describe private account storage accurately.
 - Run SUPABASE_V170_CHILD_PROFILE_PHOTOS.sql before deploying V170.
 - No API functions added; story reader, generation, credits and Saved Stories behaviour are unchanged.
+
+
+## V171 — child photo loading state
+- Shows an explicit loading spinner instead of the crescent/no-photo state while a saved child photo is being resolved from the local cache or private Supabase Storage.
+- Saved-child selector tiles render immediately with loading avatars, then replace them with the saved photo (or the normal no-photo crescent) when retrieval finishes.
+- Localises the main “Loading photo…” message in all nine supported locales.
+- No database migration, desktop layout redesign, Story Step 2, reader, generation, narration, credits, or Saved Stories behaviour changes.
