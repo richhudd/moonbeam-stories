@@ -321,7 +321,12 @@ async function selectCloudProfile(){
  const p=cloudProfiles.find(x=>x.id===activeProfileId);if(!p)return;$('name').value=p.name||'';$('age').value=p.age||7;$('dislikes').value=p.dislikes||'';await loadCurrentChildPhoto();
 }
 async function loadCloudProfiles(){
- if(!currentUser)return;const {data,error}=await supabaseClient.from('child_profiles').select('id,name,age,interests,dislikes,created_at').order('created_at',{ascending:true});if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}cloudProfiles=data||[];if(activeProfileId&&!cloudProfiles.some(p=>p.id===activeProfileId))activeProfileId=null;renderProfileSelect()
+ if(!currentUser)return;const {data,error}=await supabaseClient.from('child_profiles').select('id,name,age,interests,dislikes,created_at').order('created_at',{ascending:true});if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}cloudProfiles=data||[];if(activeProfileId&&!cloudProfiles.some(p=>p.id===activeProfileId))activeProfileId=null;
+ // V184: when no child is currently selected, default to the first saved child (oldest/leftmost).
+ // New child remains the default only when there are no saved profiles, or when the user explicitly selects it.
+ if(!activeProfileId&&cloudProfiles.length)activeProfileId=cloudProfiles[0].id;
+ renderProfileSelect();
+ if(activeProfileId){const sel=$('profileSelect');if(sel)sel.value=activeProfileId;await selectCloudProfile();renderProfileSelect()}
 }
 async function saveChildProfile(){
  if(!currentUser)return;const c=formChild();if(!c.name){$('profileStatus').textContent=t().errorName;return}if(c.age<3||c.age>12){$('profileStatus').textContent=t().errorAge;return}$('profileStatus').textContent=t().saving;

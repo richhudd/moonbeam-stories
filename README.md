@@ -379,3 +379,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - A successful **Save story** action now changes the end-page button to the completed translated “Story saved” state and gives it a filled purple treatment, so the save is visibly acknowledged. Already-saved stories render in that completed state immediately.
 - The reader page counter is hidden on **The End** page only, preventing it from overlapping the **New story** button on mobile. It remains unchanged on all actual story pages.
 - V182's mobile 60:40 illustration/text split and independently scrolling text panel are unchanged. No database migration is required.
+
+
+## V184 — default to first saved child
+- On a fresh/reloaded Create Story screen, if one or more saved child profiles exist, Moonbeam now automatically selects and loads the first saved child (the leftmost tile, using the existing `created_at` ascending order).
+- **New child** remains the default only when there are no saved child profiles, and it can still be selected explicitly at any time.
+- The selected child's existing profile fields and reference photo load through the same `selectCloudProfile()` path as a manual tile selection; no duplicate profile-loading logic is introduced.
+- Child ordering, V178 mobile thumbnail positioning, V180 per-story Story idea behaviour, V179 mobile Story page, V182 reader scrolling/split and V183 end-page changes are unchanged.
+- Bumps client cache keys to V184. No database migration is required.
