@@ -340,3 +340,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Extends the image box by the same 8px so moving it upward cannot expose an empty gap at the bottom of the circle.
 - Changes only the mobile saved-child thumbnail rendering; desktop thumbnails, stored photos, cloud sync, large profile photo, Story Step 2, reader, generation, narration, credits and Saved Stories are unchanged.
 - Bumps the stylesheet cache key to V178. No database migration is required.
+
+## V179 — mobile Story page matches the canonical desktop Story panel
+- Replaces the simplified mobile Story Preferences presentation with a responsive version of the existing desktop right-hand Story panel.
+- Mobile Page 2 now shows the same story-idea textarea and grey placeholder, the same four visual Story tone choices, and the same eight value choices with their existing selected states and handlers.
+- Keeps the legacy `#tone` select and `#interests` field as hidden canonical state carriers because the existing generation code still reads them; no duplicate generation path or second Generate button is introduced.
+- Keeps the existing credit status, Buy story credits, purchase-consent flow, `#generate` button, `generateStory()` function and `/api/generate` path unchanged.
+- The desktop Story panel is unchanged. Mobile Page 1 and the V178 8px child-thumbnail lift are unchanged.
+- Bumps the stylesheet cache key to V179. No database migration is required.
