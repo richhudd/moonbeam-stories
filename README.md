@@ -1,3 +1,10 @@
+## V192 — restore the consistent Moonbeam illustration style
+- Keeps V191's age-safe random story-blueprint architecture intact, including `storyIdea`, strict reality/magic constraints and blueprint-aware repair.
+- Removes V190's variable visual-style catalogue and style selection from story generation, saved-story metadata, client illustration requests and cache identity.
+- Restores `api/illustrate.js` exactly to the proven pre-V190 (V189) illustration generator, so every new book uses the established consistent Moonbeam hand-painted storybook treatment.
+- Restores the pre-V190 cover art direction while using the current `storyIdea` field rather than the obsolete child `interests` concept.
+- Existing saved artwork is left untouched. No database migration is required.
+
 # Moonbeam Stories V191
 
 ## V191 — age-safe true-random story blueprints

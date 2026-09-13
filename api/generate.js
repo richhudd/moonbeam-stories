@@ -171,27 +171,6 @@ module.exports = async function handler(req, res) {
       endingType:randomChoice(['comic payoff','quiet satisfaction','triumphant solution','surprising practical resolution','warm reunion','successful discovery','celebratory finish','clever reversal']),
       twist:randomChoice(['an early ordinary detail becomes important later','the first plan must be reversed','two problems turn out to share one cause','the obstacle becomes useful','somebody already has the needed information without realising it','the child succeeds by noticing something others missed','a mistaken assumption is corrected','the simplest explanation turns out to be right'])
     };
-    // V190: controlled visual art direction. Blank stories choose from styles compatible with
-    // the selected narrative architecture; parent-written ideas let the story model choose from
-    // the same approved catalogue. The chosen style is locked for the whole book.
-    const approvedVisualStyles = ['classic_moonbeam','cinematic_storybook','painterly_fantasy','watercolour_gouache','graphic_comedy','naturalist_adventure','retro_adventure','cinematic_scifi','miniature_macro','dreamlike_surreal'];
-    const visualStylesForFamily = familyId => {
-      const map={
-        everyday_problem:['cinematic_storybook','classic_moonbeam','watercolour_gouache','retro_adventure'],
-        family_comedy:['graphic_comedy','classic_moonbeam','watercolour_gouache'],
-        logical_mystery:['retro_adventure','cinematic_storybook','classic_moonbeam'],
-        expedition:['naturalist_adventure','cinematic_storybook','watercolour_gouache','retro_adventure'],
-        nature:['naturalist_adventure','watercolour_gouache','cinematic_storybook'],
-        invention:['cinematic_storybook','classic_moonbeam','graphic_comedy'],
-        sports_challenge:['cinematic_storybook','classic_moonbeam','graphic_comedy'],
-        historical_adventure:['retro_adventure','watercolour_gouache','cinematic_storybook'],
-        science_fiction:['cinematic_scifi','cinematic_storybook','classic_moonbeam'],
-        fantasy:['painterly_fantasy','classic_moonbeam','dreamlike_surreal'],
-        surreal_rule:['dreamlike_surreal','watercolour_gouache','graphic_comedy']
-      };
-      return map[familyId]||['classic_moonbeam'];
-    };
-    const selectedVisualStyle = storyIdea ? null : randomChoice(visualStylesForFamily(randomSeed.familyId));
 
     const hardBlueprint = storyIdea ? '' : `STORY BLUEPRINT — HARD CONSTRAINTS, NOT SUGGESTIONS
 STORY_FAMILY: ${randomSeed.mode}
@@ -267,15 +246,9 @@ Age suitability overrides tone, parent detail and random blueprint if any confli
 GENERAL SAFETY
 No politics, religion, sexual content, graphic violence, dangerous instructions or adult themes. Keep the experience emotionally safe for age ${age}. When story values are selected, let them emerge through action rather than announcing a moral. Avoid clichés, generic filler and repetitive phrasing.
 
-VISUAL ART DIRECTION — V190
-Moonbeam has a controlled catalogue of illustration families. Choose exactly one visual_style_id for this entire book and never invent another style name.
-Allowed IDs: classic_moonbeam, cinematic_storybook, painterly_fantasy, watercolour_gouache, graphic_comedy, naturalist_adventure, retro_adventure, cinematic_scifi, miniature_macro, dreamlike_surreal.
-${storyIdea ? 'Choose the visual style that best fits the actual story, tone, setting and subject. Do not automatically choose classic_moonbeam. Prefer realistic/naturalistic treatments when they genuinely suit a realistic, nature, expedition, historical or older-child story.' : `For this random story the art director has already chosen: ${selectedVisualStyle}. Return exactly that visual_style_id.`}
-The visual_style_id controls rendering only. Illustration prompts should describe the scene, characters, action, setting, weather, lighting and composition rather than repeatedly restating a generic cartoon style.
-
 OUTPUT
 Return JSON only, with exactly this shape:
-{"title":"string","opening":"string","character_bible":"string","visual_style_id":"approved_style_id","pages":[...exactly ${pageCount} page objects...],"closing":"string"}
+{"title":"string","opening":"string","character_bible":"string","pages":[...exactly ${pageCount} page objects...],"closing":"string"}
 
 The opening, exactly ${pageCount} story pages and closing must together form one continuous story of the requested length. The page count is mandatory: exactly 4 story pages, plus the opening and closing, for 6 displayed reading spreads in total.
 
@@ -379,7 +352,6 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
         character_bible: typeof story.character_bible === 'string' && story.character_bible.trim()
           ? story.character_bible.trim()
           : `Keep ${String(child.name)} visually consistent throughout the book, age ${age}, with the same hair, facial features and clothing unless the story explicitly changes clothing.`,
-        visual_style_id: selectedVisualStyle || (approvedVisualStyles.includes(String(story.visual_style_id||'').trim()) ? String(story.visual_style_id).trim() : 'classic_moonbeam'),
         pages,
         closing: typeof story.closing === 'string' ? story.closing.trim() : ''
       };
@@ -400,7 +372,7 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
     // If the model produced almost-JSON, ask it to repair its own output once rather than
     // showing the reader a formatting error. This also catches missing required fields.
     if (!story) {
-      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible, BUT the creative brief and age rules below remain mandatory during repair.\n\n${storyIdea ? `PARENT STORY IDEA: ${storyIdea}` : hardBlueprint}\n\nAGE RULES: Child age ${age}, band ${ageBand}. ${ageProfile.writing} Forbidden: ${ageProfile.forbidden}.\n\nEnsure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","visual_style_id":"approved_style_id","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
+      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible, BUT the creative brief and age rules below remain mandatory during repair.\n\n${storyIdea ? `PARENT STORY IDEA: ${storyIdea}` : hardBlueprint}\n\nAGE RULES: Child age ${age}, band ${ageBand}. ${ageProfile.writing} Forbidden: ${ageProfile.forbidden}.\n\nEnsure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
       try {
         const repairedOutput = await callStoryModel(repairInput, 5000);
         story = normaliseStory(parseStoryOutput(repairedOutput));
