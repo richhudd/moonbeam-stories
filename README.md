@@ -332,3 +332,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Bumps the stylesheet cache key in `index.html` to V177 so phones cannot continue using the cached V174 thumbnail CSS.
 - Changes no avatar dimensions, stored photos, cloud synchronisation, desktop thumbnails, large profile photo, Story Step 2, reader, generation, narration, credits or Saved Stories behaviour.
 - No database migration is required.
+
+
+## V178 — raise mobile child photos inside the avatar circles
+- Keeps the existing circular, full-bleed mobile child thumbnails.
+- Physically raises each saved-child photograph by 8px inside the circular mask instead of relying on `object-position`.
+- Extends the image box by the same 8px so moving it upward cannot expose an empty gap at the bottom of the circle.
+- Changes only the mobile saved-child thumbnail rendering; desktop thumbnails, stored photos, cloud sync, large profile photo, Story Step 2, reader, generation, narration, credits and Saved Stories are unchanged.
+- Bumps the stylesheet cache key to V178. No database migration is required.

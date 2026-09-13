@@ -2566,3 +2566,21 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
     background:transparent!important;
   }
 }
+
+/* V178 — physically raise mobile saved-child photos inside their circular masks. */
+@media (max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-avatar{
+    position:relative!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-avatar img{
+    position:absolute!important;
+    left:0!important;
+    top:-8px!important;
+    width:100%!important;
+    height:calc(100% + 8px)!important;
+    object-fit:cover!important;
+    object-position:center center!important;
+    display:block!important;
+  }
+}
