@@ -302,3 +302,10 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Desktop layout and thumbnails, Story Step 2, photo sync, reader, generation, narration, credits and Saved Stories are unchanged.
 - No database migration is required.
 
+
+
+## V174 — restore saved-child thumbnail crop
+- Removes the V173 mobile-only `object-position: center 30%` override that caused the top of portrait thumbnails to be cropped incorrectly.
+- Restores the proven centred `object-fit: cover` thumbnail behaviour from V172.
+- The large profile photo, desktop layout, photo synchronisation, Story Step 2, reader, generation, narration, credits and Saved Stories are unchanged.
+- No database migration is required.
