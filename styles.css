@@ -2700,3 +2700,38 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
     width:50%!important;max-width:230px!important;min-height:50px!important;border-radius:14px!important;font-size:14px!important;
   }
 }
+
+/* V182 — restore authoritative 60:40 portrait-mobile reader split while preserving independent text scrolling. */
+@media (max-width:700px) and (orientation:portrait){
+  body.story-mode #book.show-mobile-spread{
+    grid-template-rows:60% 40%!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page{
+    top:0!important;
+    height:60%!important;
+    max-height:60%!important;
+  }
+  body.story-mode #book.show-mobile-spread .left-page{
+    top:60%!important;
+    bottom:0!important;
+    height:40%!important;
+    max-height:40%!important;
+    overflow:hidden!important;
+  }
+  body.story-mode #book.show-mobile-spread .left-page .page-content{
+    height:100%!important;
+    min-height:0!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+    touch-action:pan-y!important;
+  }
+  body.story-mode #book.show-mobile-spread .left-page .story-text,
+  body.story-mode #book.show-mobile-spread .left-page .story-text.compact-text,
+  body.story-mode #book.show-mobile-spread .left-page .story-text.roomy-text{
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+}

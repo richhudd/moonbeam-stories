@@ -358,3 +358,18 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - New child profiles initialise the legacy `interests` column as empty for database compatibility.
 - V179 mobile Page 2 layout and V178 mobile child-thumbnail positioning are unchanged.
 - Bumps the application JavaScript cache key to V180 so mobile and desktop receive the state fix. No database migration is required.
+
+## V181 — localise Remove child
+- Fixes the child-profile removal button remaining in English when Moonbeam is used in another language.
+- Adds a dedicated `removeChild` UI translation in all nine supported locales and wires `#removeProfile` into the existing localisation refresh map.
+- Spanish now shows “Eliminar niño/a”; equivalent native labels are supplied for French, German, Italian, Brazilian Portuguese and Polish, with English retained for both English locales.
+- No layout, child-profile deletion logic, Story page, generation, credits, reader, photo handling or database behaviour is changed.
+- Bumps the application and i18n cache keys to V181 so deployed clients receive the localisation patch. No database migration is required.
+
+
+## V182 — restore mobile reader 60:40 split without losing text scrolling
+- Restores the portrait-mobile live reader to an explicit 60% illustration / 40% text-panel split.
+- Keeps the prose panel as its own `overflow-y:auto` scroll viewport with momentum scrolling, so long story text remains independently scrollable inside the 40% text area.
+- Leaves story text at its existing size and flow; no font shrinking, clipping or page expansion is introduced.
+- Desktop reader, story generation, mobile setup pages, child profiles/photos, localisation, credits, narration and Saved Stories are unchanged.
+- Bumps stylesheet/application cache keys to V182 so mobile Safari cannot reuse the older reader CSS. No database migration is required.
