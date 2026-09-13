@@ -489,3 +489,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - A parent-entered Story Idea remains authoritative and bypasses random seeding entirely.
 - The seed is never shown in the interface or returned as part of the story.
 - No database migration is required. Client build/cache metadata is bumped to V188.
+
+## V196 — exact child names and varied visual storyboarding
+- Locks the protagonist name to the exact child name supplied by the parent. Moonbeam must not invent or append a surname, middle name, nickname, honorific or alternative form, including in the book title.
+- Adds a mandatory visual-storyboard rule: every displayed illustration must depict a materially different story beat and composition, varying framing, viewpoint, pose, action and focal emphasis instead of repeating the same setup from slightly different angles.
+- Adds the same composition-progression requirement to JSON repair and illustration generation, so repair cannot collapse the storyboard back into repeated scenes.
+- Preserves V194 recurring-character continuity rules.
+- Preserves the V193 Moonbeam house illustration style verbatim; realism, painterly treatment and stylistic preferences are unchanged.
+- V191/V192 age-safe random story architecture and V195 mobile homepage spacing are unchanged. No database migration is required.

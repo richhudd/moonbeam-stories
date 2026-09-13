@@ -58,6 +58,9 @@ RECURRING CHARACTER CONTINUITY — IMMUTABLE ACROSS THE ENTIRE BOOK
 ${characterContinuity || 'Keep every recurring non-photo character exactly consistent across all scenes.'}
 For every recurring non-photo character, treat the supplied description as a fixed model sheet. The same named or recurring character must remain the same person, animal, robot or creature in every illustration: preserve exact apparent age, sex where specified, facial structure, skin/fur/material colours, eye colour, hair/fur colour and texture, hairstyle, height/build, body proportions, distinctive features and established clothing/accessories. Never age a recurring character up or down. Never redesign, reinterpret or substitute them with a different-looking character. Unless the story explicitly changes clothing or appearance, preserve it exactly. If a recurring character is a child, they must remain visibly the stated age in every scene. Character continuity is higher priority than novelty of casting, but it must NOT change or override the fixed Moonbeam rendering style above.
 
+VISUAL STORYTELLING — COMPOSITION MUST PROGRESS
+Character identity and rendering style stay rigidly consistent, but composition must not. Treat the supplied scene direction as a distinct storyboard panel. Do not recycle the same camera position, crop, pose, staging or character/object arrangement used for another scene merely to preserve continuity. Use the action in THIS scene to create a materially different composition, varying camera distance, viewpoint, body pose, foreground/background emphasis and focal action as appropriate. Continuity means the same characters and world, not the same picture repeated. Do not invent new events solely for variety; vary the visual staging of the actual story beat.
+
 SCENE CONTENT — CONTENT ONLY; IT MUST NOT OVERRIDE THE FIXED HOUSE STYLE ABOVE
 ${prompt}
 
