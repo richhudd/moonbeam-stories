@@ -349,9 +349,26 @@ function renderStoryCredits(balance=storyCreditBalance){
 'it-IT':{free:'<strong>1 storia gratis</strong> quando crei o accedi al tuo account genitore.',checking:'Controllo dei crediti…',none:'<strong>Nessun credito rimasto.</strong> Le storie salvate restano gratuite da rileggere.',left:n=>`<strong>Restano ${n} credit${n===1?'o':'i'} storia.</strong> Una nuova storia usa un credito.`},
 'pt-BR':{free:'<strong>1 história grátis</strong> ao criar ou entrar na sua conta de responsável.',checking:'Verificando créditos…',none:'<strong>Nenhum crédito restante.</strong> Suas histórias salvas continuam gratuitas para reler.',left:n=>`<strong>Restam ${n} crédito${n===1?'':'s'} de histórias.</strong> Uma nova história usa um crédito.`},
 'pl-PL':{free:'<strong>1 darmowa historia</strong> po utworzeniu konta rodzica lub zalogowaniu.',checking:'Sprawdzanie kredytów…',none:'<strong>Brak kredytów na historie.</strong> Zapisane historie nadal możesz czytać bezpłatnie.',left:n=>`<strong>Pozostało ${n} kredytów na historie.</strong> Jedna nowa historia wykorzystuje jeden kredyt.`}}[language]||null;
- if(!currentUser){el.innerHTML=creditCopy.free;return}
- if(storyCreditBalance===null){el.textContent=creditCopy.checking;return}
- if(storyCreditBalance===0){el.innerHTML=creditCopy.none;return}
+ const generateButton=$('generate');
+ const noCreditGenerateCopy={
+  'en-GB':'No story credits — buy credits to continue',
+  'en-US':'No story credits — buy credits to continue',
+  'es-ES':'No quedan créditos — compra créditos para continuar',
+  'es-419':'No quedan créditos — compra créditos para continuar',
+  'fr-FR':'Aucun crédit — achetez des crédits pour continuer',
+  'de-DE':'Kein Guthaben — kaufe Guthaben, um fortzufahren',
+  'it-IT':'Nessun credito — acquista crediti per continuare',
+  'pt-BR':'Sem créditos — compre créditos para continuar',
+  'pl-PL':'Brak kredytów — kup kredyty, aby kontynuować'
+ }[language]||'No story credits — buy credits to continue';
+ if(!currentUser){if(generateButton){generateButton.disabled=false;generateButton.classList.remove('no-story-credits');generateButton.textContent=t().generate}el.innerHTML=creditCopy.free;return}
+ if(storyCreditBalance===null){if(generateButton){generateButton.disabled=true;generateButton.classList.remove('no-story-credits');generateButton.textContent=creditCopy.checking}el.textContent=creditCopy.checking;return}
+ if(storyCreditBalance===0){
+  el.innerHTML=creditCopy.none;
+  if(generateButton){generateButton.disabled=true;generateButton.classList.add('no-story-credits');generateButton.textContent=noCreditGenerateCopy}
+  return
+ }
+ if(generateButton&&!generateButton.classList.contains('is-generating')){generateButton.disabled=false;generateButton.classList.remove('no-story-credits');generateButton.textContent=t().generate}
  el.innerHTML=creditCopy.left(storyCreditBalance);
 }
 function moonbeamDeviceId(){

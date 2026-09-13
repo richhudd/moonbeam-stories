@@ -1,3 +1,11 @@
+# Moonbeam Stories V164
+
+V164 makes the zero-credit state clear before the user tries to generate. When the signed-in story-credit balance is 0, the main generation button is disabled and changes from “Make Tonight’s Story” to “No story credits — buy credits to continue” (localized in all supported languages). The existing credit panel and Buy story credits button remain unchanged, so the user has an obvious next action without relying on the tiny post-click error message.
+
+V163’s Tone/Values redesign and generation-prompt improvements are retained unchanged. No database migration is required. V164 still contains exactly 12 `/api/*.js` Serverless Functions.
+
+---
+
 # Moonbeam Stories V163
 
 V163 keeps the V162 Child layout and reader behaviour unchanged while polishing the existing functional desktop Story controls. Tone choices are still the real controls connected to `#tone`, but now use larger illustrated cards and clearer selected states. The existing Story Values buttons remain the real `selected`-set controls, with larger card styling, icons and clearer selected states.
