@@ -284,3 +284,13 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Saved-child selector tiles render immediately with loading avatars, then replace them with the saved photo (or the normal no-photo crescent) when retrieval finishes.
 - Localises the main “Loading photo…” message in all nine supported locales.
 - No database migration, desktop layout redesign, Story Step 2, reader, generation, narration, credits, or Saved Stories behaviour changes.
+
+
+## V172 — authoritative cross-device profile photo refresh
+- Treats the private Supabase copy as the authoritative saved child profile photo and IndexedDB as a local cache.
+- Replacing a child photo now uploads a uniquely versioned Storage object, preventing a device or CDN cache from continuing to serve the previous image at the same path.
+- Each profile-photo resolution compares lightweight cloud object metadata with the locally cached object version; if another device has selected a newer photo, Moonbeam downloads it and replaces the local cache automatically.
+- Existing V170 `reference.jpg` photos remain compatible and are upgraded naturally the next time the photo is replaced.
+- Older cloud photo versions are cleaned up after a successful replacement upload.
+- No new Supabase migration is required; V170 Storage policies already permit the versioned files.
+- No desktop/mobile layout, Step 2, reader, generation, narration, credits, or Saved Stories changes.
