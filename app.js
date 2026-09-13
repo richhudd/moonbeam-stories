@@ -331,7 +331,7 @@ function renderDesktopStoryPanel(){
  }[language]||null;
  if(copy){setText('#desktopStoryTitle',copy[0]);setText('#desktopStoryIntro',copy[1]);if(idea)idea.placeholder=copy[2];setText('#desktopToneTitle',copy[3]);setText('#desktopToneHelp',copy[4]);setText('#desktopValuesTitle',copy[5]);setText('#desktopOptional',copy[6]);setText('#desktopValuesHelp',copy[7])}
  if(idea&&interests){idea.value=interests.value;idea.oninput=()=>{interests.value=idea.value}}
- if(tone&&choices){const icons={'cosy and funny':'☾','magical':'✦','adventurous':'▲','calm and dreamy':'☁'};choices.innerHTML=[...tone.options].map(o=>`<button type="button" class="desktop-tone-choice${o.value===tone.value?' active':''}" data-tone="${escapeHtml(o.value)}"><span>${icons[o.value]||'✦'}</span><b>${escapeHtml(o.textContent)}</b></button>`).join('');choices.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tone.value=b.dataset.tone;tone.dispatchEvent(new Event('change',{bubbles:true}));renderDesktopStoryPanel()}))}
+ if(tone&&choices){const icons={'cosy and funny':'🌿','magical':'⭐','adventurous':'⛰️','calm and dreamy':'☁️'};choices.innerHTML=[...tone.options].map(o=>`<button type="button" class="desktop-tone-choice${o.value===tone.value?' active':''}" data-tone="${escapeHtml(o.value)}"><span>${icons[o.value]||'✦'}</span><b>${escapeHtml(o.textContent)}</b></button>`).join('');choices.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tone.value=b.dataset.tone;tone.dispatchEvent(new Event('change',{bubbles:true}));renderDesktopStoryPanel()}))}
 }
 function renderStoryCredits(balance=storyCreditBalance){
  storyCreditBalance=Number.isFinite(Number(balance))?Number(balance):null;

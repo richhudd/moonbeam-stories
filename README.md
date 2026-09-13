@@ -1,3 +1,11 @@
+# Moonbeam Stories V163
+
+V163 keeps the V162 Child layout and reader behaviour unchanged while polishing the existing functional desktop Story controls. Tone choices are still the real controls connected to `#tone`, but now use larger illustrated cards and clearer selected states. The existing Story Values buttons remain the real `selected`-set controls, with larger card styling, icons and clearer selected states.
+
+Story generation is also strengthened in `api/generate.js`: the selected tone now receives explicit writing guidance so it noticeably affects mood, pacing, description and dialogue. Selected values are still woven naturally into character actions rather than stated as morals. If the parent selects no values, the API no longer silently restores Kindness and Curiosity; no specific value theme is imposed.
+
+No database migration is required. V163 still contains exactly 12 `/api/*.js` Serverless Functions.
+
 # Moonbeam Stories V133
 
 V133 reapplies the V132 localization audit on the proven V131 baseline while removing the early `renderStoryCredits()` call that caused startup to abort before homepage/auth handlers were attached. Credit localization remains handled after credit state initialization.

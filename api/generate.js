@@ -53,6 +53,17 @@ module.exports = async function handler(req, res) {
     const pageCount = 4;
     const lengthGuide = lengthConfig.totalWords;
     const targetPerScreen = '105-125 words';
+    const selectedTone = String(child.tone || 'cosy and funny');
+    const toneGuide = {
+      'cosy and funny': 'Warm, playful and gently humorous, with amusing situations and reassuring stakes.',
+      'magical': 'Create a strong sense of wonder, enchantment and discovery, with extraordinary things emerging naturally from the story world.',
+      'adventurous': 'Energetic and exciting, with exploration, obstacles, discoveries and mild age-appropriate peril.',
+      'calm and dreamy': 'Gentle, atmospheric and unhurried, with softer conflict, beautiful imagery and a particularly soothing ending.'
+    }[selectedTone] || 'Let the selected tone noticeably shape the mood, pacing, descriptions and dialogue throughout the story.';
+    const selectedValues = Array.isArray(child.values) ? child.values.filter(v => String(v || '').trim()) : [];
+    const valuesGuide = selectedValues.length
+      ? `Story values to weave naturally into the plot: ${selectedValues.join(', ')}`
+      : 'Story values: none specifically selected. Do not impose a particular moral or value theme.';
 
     const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original adventure story for one child. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
 
@@ -62,10 +73,11 @@ Age: ${age}
 Interests: ${child.interests || 'imagination and exploring'}
 Things to avoid: ${child.dislikes || 'nothing specific'}
 Standard Moonbeam length: ${lengthGuide}
-Tone: ${child.tone || 'cosy and funny'}
+Selected tone: ${selectedTone}
+Tone guidance: ${toneGuide}
 Language: ${language}
 Language guidance: ${languageGuide}
-Story values to weave naturally into the plot: ${(Array.isArray(child.values) && child.values.length ? child.values : ['Kindness', 'Curiosity']).join(', ')}
+${valuesGuide}
 
 MOONBEAM HOUSE STYLE
 Create an original classic children's adventure feel. The selected language variant is part of the reading experience; write naturally for that audience rather than translating word-for-word from another language. Use clear, elegant, highly readable prose; vivid but economical descriptions; lively dialogue; warmth; gentle humour; memorable characters; and a strong sense of curiosity and anticipation. Make familiar places feel as though they might contain a secret. Give the story a real beginning, middle and satisfying ending rather than a sequence of disconnected events.
@@ -84,7 +96,7 @@ Choose the setting and time of day naturally from the child's interests, the plo
 
 Do NOT imitate or reproduce the wording, characters, plots, or distinctive passages of any existing author or book. This must be an original Moonbeam story. Do not mention authors or literary styles in the story itself.
 
-For age ${age}, use vocabulary, sentence length, emotional complexity and independence appropriate to the child. Never talk down to the child. Let the story value emerge through what the characters do; never announce a moral or lecture the reader. Avoid clichés, generic filler, repetitive phrasing and endings that simply say everyone learned a lesson.
+For age ${age}, use vocabulary, sentence length, emotional complexity and independence appropriate to the child. Never talk down to the child. When story values are selected, let them emerge through what the characters do; never announce a moral or lecture the reader. Avoid clichés, generic filler, repetitive phrasing and endings that simply say everyone learned a lesson.
 
 SAFETY
 No politics, religion, sexual content, graphic violence, horror, dangerous instructions, adult themes, or genuinely frightening material. Mild peril is fine when appropriate for the age, but keep the overall experience safe and comforting.

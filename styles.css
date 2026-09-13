@@ -2366,3 +2366,38 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
     margin-top:168px!important;
   }
 }
+
+
+/* V163 — richer desktop tone/value controls; existing buttons and handlers remain functional. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .desktop-tone-choices{gap:10px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .desktop-tone-choice{
+    height:76px!important;padding:10px 6px!important;border:1px solid #ddd7ea!important;border-radius:14px!important;
+    background:linear-gradient(180deg,#fff,#fdfbff)!important;box-shadow:0 4px 12px rgba(48,37,79,.045)!important;
+    gap:7px!important;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease,background .15s ease!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .desktop-tone-choice:hover{transform:translateY(-1px);border-color:#b9a9df!important;box-shadow:0 6px 16px rgba(48,37,79,.08)!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .desktop-tone-choice span{font-size:23px!important;line-height:1!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .desktop-tone-choice b{font-size:11px!important;line-height:1.1!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .desktop-tone-choice.active{
+    border:2px solid #6848ba!important;background:linear-gradient(180deg,#faf7ff,#f2ecff)!important;padding:9px 5px!important;box-shadow:0 0 0 3px rgba(104,72,186,.07)!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values{grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip{
+    min-height:48px!important;padding:8px 8px!important;border:1px solid #ddd7ea!important;border-radius:13px!important;
+    background:#fff!important;color:#40365e!important;font-size:10px!important;font-weight:650!important;text-align:left!important;
+    display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;box-shadow:0 3px 10px rgba(48,37,79,.035)!important;
+    transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease,background .15s ease!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:hover{transform:translateY(-1px);border-color:#b9a9df!important;box-shadow:0 5px 13px rgba(48,37,79,.07)!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip.active{border:2px solid #6848ba!important;background:#f5f0ff!important;color:#30254f!important;padding:7px!important;box-shadow:0 0 0 2px rgba(104,72,186,.055)!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip::before{font-size:17px;line-height:1;flex:0 0 auto}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:nth-child(1)::before{content:'💗'}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:nth-child(2)::before{content:'🛡️'}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:nth-child(3)::before{content:'🔎'}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:nth-child(4)::before{content:'🕊️'}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:nth-child(5)::before{content:'🎨'}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:nth-child(6)::before{content:'⭐'}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:nth-child(7)::before{content:'🤝'}
+  body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#values .chip:nth-child(8)::before{content:'🌱'}
+}
