@@ -58,8 +58,8 @@ RECURRING CHARACTER CONTINUITY — IMMUTABLE ACROSS THE ENTIRE BOOK
 ${characterContinuity || 'Keep every recurring non-photo character exactly consistent across all scenes.'}
 For every recurring non-photo character, treat the supplied description as a fixed model sheet. The same named or recurring character must remain the same person, animal, robot or creature in every illustration: preserve exact apparent age, sex where specified, facial structure, skin/fur/material colours, eye colour, hair/fur colour and texture, hairstyle, height/build, body proportions, distinctive features and established clothing/accessories. Never age a recurring character up or down. Never redesign, reinterpret or substitute them with a different-looking character. Unless the story explicitly changes clothing or appearance, preserve it exactly. If a recurring character is a child, they must remain visibly the stated age in every scene. Character continuity is higher priority than novelty of casting, but it must NOT change or override the fixed Moonbeam rendering style above.
 
-VISUAL STORYTELLING — COMPOSITION MUST PROGRESS
-Character identity and rendering style stay rigidly consistent, but composition must not. Treat the supplied scene direction as a distinct storyboard panel. Do not recycle the same camera position, crop, pose, staging or character/object arrangement used for another scene merely to preserve continuity. Use the action in THIS scene to create a materially different composition, varying camera distance, viewpoint, body pose, foreground/background emphasis and focal action as appropriate. Continuity means the same characters and world, not the same picture repeated. Do not invent new events solely for variety; vary the visual staging of the actual story beat.
+VISUAL STORYTELLING — VARIETY WITHOUT PLOT DISTORTION
+Character identity and rendering style stay rigidly consistent. Treat the supplied scene direction as the authoritative story beat. Use composition — camera distance, viewpoint, pose, foreground/background emphasis, scale and focal action — to make the image visually useful and, where natural, distinct from neighbouring scenes. Continuity means the same characters and world, not necessarily the same composition. Never invent, relocate, accelerate or alter story events solely to manufacture visual variety. If two genuine story beats occur in the same place, preserve that place and distinguish the images through truthful staging rather than changing the plot.
 
 SCENE CONTENT — CONTENT ONLY; IT MUST NOT OVERRIDE THE FIXED HOUSE STYLE ABOVE
 ${prompt}
@@ -72,7 +72,7 @@ IMPORTANT
 - Preserve the fixed Moonbeam realism level above; do not drift toward either photography or cartoon/animation rendering.
 - Compose the scene as a beautiful book illustration with clear focal characters and readable silhouettes.
 - Keep character appearance consistent with the description in the scene and, when supplied, the attached identity reference.
-- Every page in a story must be a genuinely new illustration. If the scene prompt identifies a page/scene number or previous-page context, use that information to advance the visual action and avoid repeating the previous composition, pose, camera angle or background staging.
+- Every page receives its own illustration of the actual supplied story beat. Use previous-page context only to preserve continuity and avoid accidental duplication; never advance or alter the story beyond the current text for the sake of image variety.
 - ONE continuous scene only: never create a collage, contact sheet, comic strip, grid, split screen, diptych, triptych, multiple panels, inset pictures or multiple frames.
 - The finished output must look like one uninterrupted full-page painting viewed through one camera/composition.
 - Square composition suitable for the right-hand page of a children's book.`;
