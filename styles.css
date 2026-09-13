@@ -2359,3 +2359,10 @@ body.product-active:not(.story-mode) .app-product > #savedStoriesView.hidden{
     margin-top:98px!important;
   }
 }
+
+/* V162 — keep V160 portrait length; place profile actions below the Age field. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .basics-profile-actions{
+    margin-top:168px!important;
+  }
+}

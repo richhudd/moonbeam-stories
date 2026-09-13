@@ -214,3 +214,9 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Wired `#removeProfile` directly to the existing, proven `deleteChildProfile` function.
 - Retains the V160 taller desktop portrait and all V157 Story-panel behaviour.
 - No API, database, reader, narration, sharing or mobile-layout changes.
+
+
+## V162
+- Desktop Child panel: moved Save child profile / Remove child controls below the Age field.
+- Retains V160/V161 320px portrait height.
+- Retains the corrected child-profile deletion JavaScript and click handler.
