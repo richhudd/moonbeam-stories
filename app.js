@@ -315,20 +315,25 @@ async function selectCloudProfile(){
  const sel=$('profileSelect');
  if(sel?.value==='__delete_profile__'){sel.value=activeProfileId||'';await deleteChildProfile();return}
  activeProfileId=sel?.value||null;$('profileStatus').textContent='';
- if(!activeProfileId){$('name').value='';$('age').value=7;$('interests').value='';$('dislikes').value='';syncDesktopStoryIdea();await loadCurrentChildPhoto();return}
- const p=cloudProfiles.find(x=>x.id===activeProfileId);if(!p)return;$('name').value=p.name||'';$('age').value=p.age||7;$('interests').value=p.interests||'';$('dislikes').value=p.dislikes||'';syncDesktopStoryIdea();await loadCurrentChildPhoto();
+ // V180: the Story idea is per-story state, not child-profile state. Never restore legacy profile interests into it.
+ $('interests').value='';if($('desktopStoryIdea'))$('desktopStoryIdea').value='';
+ if(!activeProfileId){$('name').value='';$('age').value=7;$('dislikes').value='';await loadCurrentChildPhoto();return}
+ const p=cloudProfiles.find(x=>x.id===activeProfileId);if(!p)return;$('name').value=p.name||'';$('age').value=p.age||7;$('dislikes').value=p.dislikes||'';await loadCurrentChildPhoto();
 }
 async function loadCloudProfiles(){
  if(!currentUser)return;const {data,error}=await supabaseClient.from('child_profiles').select('id,name,age,interests,dislikes,created_at').order('created_at',{ascending:true});if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}cloudProfiles=data||[];if(activeProfileId&&!cloudProfiles.some(p=>p.id===activeProfileId))activeProfileId=null;renderProfileSelect()
 }
 async function saveChildProfile(){
  if(!currentUser)return;const c=formChild();if(!c.name){$('profileStatus').textContent=t().errorName;return}if(c.age<3||c.age>12){$('profileStatus').textContent=t().errorAge;return}$('profileStatus').textContent=t().saving;
- let result;if(activeProfileId)result=await supabaseClient.from('child_profiles').update(c).eq('id',activeProfileId).select().single();else result=await supabaseClient.from('child_profiles').insert({...c,parent_id:currentUser.id}).select().single();
+ // V180: do not save the current Story idea into the legacy child_profiles.interests column.
+ const profileData={name:c.name,age:c.age,dislikes:c.dislikes};
+ let result;if(activeProfileId)result=await supabaseClient.from('child_profiles').update(profileData).eq('id',activeProfileId).select().single();else result=await supabaseClient.from('child_profiles').insert({...profileData,interests:'',parent_id:currentUser.id}).select().single();
  if(result.error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(result.error.message)}</span>`;if($('profileStatusBasics'))$('profileStatusBasics').innerHTML=`<span class="error">${escapeHtml(result.error.message)}</span>`;return}const wasNew=!activeProfileId;const draftKey=currentPhotoKey(null);activeProfileId=result.data.id;if(wasNew&&currentChildPhoto){await childPhotoPut(currentPhotoKey(activeProfileId),currentChildPhoto);await childPhotoDelete(draftKey);await uploadCloudChildPhoto(activeProfileId,currentChildPhoto)}await loadCloudProfiles();$('profileSelect').value=activeProfileId;renderProfileSelect();$('profileStatus').textContent=t().profileSaved;if($('profileStatusBasics'))$('profileStatusBasics').textContent=t().profileSaved;
 }
 async function ensureCloudProfile(child){
- if(!currentUser)return null;if(activeProfileId&&cloudProfiles.some(p=>p.id===activeProfileId)){const {error}=await supabaseClient.from('child_profiles').update({name:child.name,age:child.age,interests:child.interests,dislikes:child.dislikes}).eq('id',activeProfileId);if(!error)return activeProfileId}
- const draftKey=currentPhotoKey(null);const {data,error}=await supabaseClient.from('child_profiles').insert({parent_id:currentUser.id,name:child.name,age:child.age,interests:child.interests,dislikes:child.dislikes}).select('id').single();if(error)throw error;activeProfileId=data.id;if(currentChildPhoto){await childPhotoPut(currentPhotoKey(activeProfileId),currentChildPhoto);await childPhotoDelete(draftKey);await uploadCloudChildPhoto(activeProfileId,currentChildPhoto)}await loadCloudProfiles();return data.id
+ if(!currentUser)return null;if(activeProfileId&&cloudProfiles.some(p=>p.id===activeProfileId)){const {error}=await supabaseClient.from('child_profiles').update({name:child.name,age:child.age,dislikes:child.dislikes}).eq('id',activeProfileId);if(!error)return activeProfileId}
+ // V180: a newly-created profile starts with an empty legacy interests field; the Story idea is never persisted here.
+ const draftKey=currentPhotoKey(null);const {data,error}=await supabaseClient.from('child_profiles').insert({parent_id:currentUser.id,name:child.name,age:child.age,interests:'',dislikes:child.dislikes}).select('id').single();if(error)throw error;activeProfileId=data.id;if(currentChildPhoto){await childPhotoPut(currentPhotoKey(activeProfileId),currentChildPhoto);await childPhotoDelete(draftKey);await uploadCloudChildPhoto(activeProfileId,currentChildPhoto)}await loadCloudProfiles();return data.id
 }
 async function deleteChildProfile(){
  if(!currentUser||!activeProfileId)return;const doomed=cloudProfiles.find(p=>p.id===activeProfileId);const deleteProfileText=t().deleteProfile;const confirmText=typeof deleteProfileText==='function'?deleteProfileText(doomed?.name):`Delete ${doomed?.name||'this child'}’s profile? Saved stories will remain in your library.`;if(!confirm(confirmText))return;const doomedProfileId=activeProfileId,oldPhotoKey=currentPhotoKey(activeProfileId);const {error}=await supabaseClient.from('child_profiles').delete().eq('id',activeProfileId);if(error){$('profileStatus').innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}await childPhotoDelete(oldPhotoKey);await deleteCloudChildPhoto(doomedProfileId);activeProfileId=null;await loadCloudProfiles();await selectCloudProfile();$('profileStatus').textContent=t().profileDeleted
@@ -350,7 +355,7 @@ function renderHeaderCredits(){
  if(buy){buy.classList.toggle('hidden',!currentUser);buy.classList.toggle('no-credits-attention',!!currentUser&&storyCreditBalance===0)}
  const mobileSignOut=$('appMobileSignOut');if(mobileSignOut)mobileSignOut.classList.toggle('hidden',!currentUser);
 }
-function syncDesktopStoryIdea(){const idea=$('desktopStoryIdea'),interests=$('interests');if(idea&&interests&&idea.value!==interests.value)idea.value=interests.value}
+function syncDesktopStoryIdea(){const idea=$('desktopStoryIdea'),interests=$('interests');if(idea&&interests&&interests.value!==idea.value)interests.value=idea.value}
 function renderDesktopStoryPanel(){
  const idea=$('desktopStoryIdea'),interests=$('interests'),tone=$('tone'),choices=$('desktopToneChoices');
  const copy={
@@ -365,7 +370,7 @@ function renderDesktopStoryPanel(){
   'pl-PL':['O czym ma być ta historia?','Opowiedz Moonbeam swój pomysł, a potem wybierz nastrój i opcjonalnie wartości.','Podaj pomysł, temat lub kilka słów kluczowych albo zostaw puste pole, aby otrzymać całkowicie losową historię.','Nastrój historii','Wybierz nastrój swojej historii.','Wartości do uwzględnienia','opcjonalnie','Wybierz jeden lub kilka tematów.']
  }[language]||null;
  if(copy){setText('#desktopStoryTitle',copy[0]);setText('#desktopStoryIntro',copy[1]);if(idea)idea.placeholder=copy[2];setText('#desktopToneTitle',copy[3]);setText('#desktopToneHelp',copy[4]);setText('#desktopValuesTitle',copy[5]);setText('#desktopOptional',copy[6]);setText('#desktopValuesHelp',copy[7])}
- if(idea&&interests){idea.value=interests.value;idea.oninput=()=>{interests.value=idea.value}}
+ if(idea&&interests){idea.oninput=()=>{interests.value=idea.value}}
  if(tone&&choices){const icons={'cosy and funny':'🌿','magical':'⭐','adventurous':'⛰️','calm and dreamy':'☁️'};choices.innerHTML=[...tone.options].map(o=>`<button type="button" class="desktop-tone-choice${o.value===tone.value?' active':''}" data-tone="${escapeHtml(o.value)}"><span>${icons[o.value]||'✦'}</span><b>${escapeHtml(o.textContent)}</b></button>`).join('');choices.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tone.value=b.dataset.tone;tone.dispatchEvent(new Event('change',{bubbles:true}));renderDesktopStoryPanel()}))}
 }
 function renderStoryCredits(balance=storyCreditBalance){
@@ -571,7 +576,7 @@ async function generateStory(){
    resolvedReferencePhoto=currentChildPhoto||await childPhotoGet(currentPhotoKey());
    if(resolvedReferencePhoto)currentChildPhoto=resolvedReferencePhoto;
  }
- const child={name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim(),length:'standard',tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:resolvedReferencePhoto};
+ const child={name:$('name').value.trim(),age:Number($('age').value),interests:($('desktopStoryIdea')?.value||'').trim(),dislikes:$('dislikes').value.trim(),length:'standard',tone:$('tone').value,language,languageName:languageNames[language],values:[...selected],profileId:activeProfileId||null,referencePhoto:resolvedReferencePhoto};
  if(!currentUser){$('status').innerHTML='<span class="error">Sign in or create a parent account to make a story.</span>';if(isPhonePortrait())goSetupPage(0);return}
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}

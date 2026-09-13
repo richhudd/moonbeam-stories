@@ -348,3 +348,13 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Keeps the existing credit status, Buy story credits, purchase-consent flow, `#generate` button, `generateStory()` function and `/api/generate` path unchanged.
 - The desktop Story panel is unchanged. Mobile Page 1 and the V178 8px child-thumbnail lift are unchanged.
 - Bumps the stylesheet cache key to V179. No database migration is required.
+
+
+## V180 — Story idea is per-story, not child-profile state
+- Fixes the old Story idea returning after it is deleted and the page is refreshed.
+- Stops loading the legacy `child_profiles.interests` value into the Story idea box when a child profile is selected or restored.
+- `#desktopStoryIdea` is now the canonical Story idea input used by `generateStory()`; the hidden legacy `#interests` field is no longer a source for the visible prompt.
+- Saving a child profile or saving a generated story no longer writes that night's Story idea into `child_profiles.interests`; existing legacy values are left untouched but ignored by the Story interface.
+- New child profiles initialise the legacy `interests` column as empty for database compatibility.
+- V179 mobile Page 2 layout and V178 mobile child-thumbnail positioning are unchanged.
+- Bumps the application JavaScript cache key to V180 so mobile and desktop receive the state fix. No database migration is required.
