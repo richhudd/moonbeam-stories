@@ -1,4 +1,15 @@
 # Moonbeam Stories V169
+## V189 — Genuine blank-story narrative variety
+- Rebuilt the blank Story Idea randomiser around **story architecture first**, rather than independently mixing generic ingredients.
+- Added ten distinct story modes including realistic everyday, family comedy, logical mystery, expedition, science fiction, historical-feeling, nature, full fantasy, miniature-world and surreal single-premise adventures.
+- Each mode now draws only from compatible settings, companions, goals and special features.
+- A companion is no longer compulsory; many seeds explicitly require no sidekick.
+- Magic is no longer the default. Non-magical modes explicitly remain non-magical.
+- Special objects are optional; some seeds explicitly require none.
+- Added anti-repetition guidance against the recurring Pip / glowing blue ball / magical marble / generic luminous-object pattern and against replacing the selected architecture with a generic magical quest.
+- Parent-entered Story Ideas remain authoritative and bypass the random architecture entirely.
+- Server-side only; no Supabase SQL changes required.
+
 
 V169 is a surgical mobile Step 1 correction. Saved-child selector tiles now resolve each profile's locally stored IndexedDB photo, with a compatibility fallback for older photo keys and automatic migration back to the current canonical key. No desktop layout, Step 2, reader, Saved Stories, API, database, Stripe, or Supabase changes.
 

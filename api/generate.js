@@ -66,71 +66,110 @@ module.exports = async function handler(req, res) {
       ? `Story values to weave naturally into the plot: ${selectedValues.join(', ')}`
       : 'Story values: none specifically selected. Do not impose a particular moral or value theme.';
 
-    // V188: a blank Story Idea gets a server-generated creative seed instead of a fixed fallback.
-    // The model does not choose the combination: each ingredient is independently selected here.
+    // V189: blank Story Ideas use a story architecture first, then compatible ingredients.
+    // This prevents mathematically different seeds from collapsing into the same magical-companion plot.
     const storyIdea = String(child.interests || '').trim();
     const randomChoice = items => items[randomInt(items.length)];
+    const storyModes = [
+      {
+        mode: 'realistic everyday adventure — no magic or supernatural events',
+        shapes: ['a practical problem that grows through a chain of small complications','an unexpected responsibility that must be handled before a deadline','a misunderstanding that the child patiently untangles','a plan that goes wrong in funny, believable ways'],
+        settings: ['a busy railway station','a village market','a bakery very early in the morning','a school on a weekend','a harbour full of small boats','a farm during harvest','a small airport','a colourful street festival','a canal with narrowboats','a community sports day'],
+        companions: ['no companion — let the child carry the story','a resourceful new friend','an elderly dog who notices everything','a child inventor of the same age','a cheerful boat captain','a grandparent with an unexpected practical skill','a slightly older cousin','a friendly shopkeeper','a neighbour who needs a hand'],
+        goals: ['return an important lost item','deliver something to the correct person before closing time','solve a neighbourhood mix-up','help someone get home before an important event','repair something simple before a celebration','work out who has been leaving anonymous gifts','find the source of a peculiar but ordinary sound','organise a rescue for a harmless stranded animal'],
+        features: ['no special object or supernatural element','a handwritten list with one puzzling entry','a badly drawn map','a set of footprints after rain','a forgotten photograph','a mislabelled parcel','a bicycle with a loose basket','a sequence of funny coincidences']
+      },
+      {
+        mode: 'comic family or neighbourhood story — entirely non-magical',
+        shapes: ['a ridiculous mix-up that keeps escalating','a well-meant plan that causes comic chaos','a friendly competition that gets unexpectedly complicated','preparations for an event where almost everything goes slightly wrong'],
+        settings: ['a family picnic by a river','a garden during a barbecue','a village fête','a busy kitchen before a party','a local pet show','a jumble sale','a rainy campsite','a community hall','a seaside promenade','a crowded supermarket'],
+        companions: ['no companion — focus on the child and the ensemble','a sibling','a best friend','a mischievous but ordinary dog','a grandparent','a neighbour of the same age','an overly enthusiastic uncle or aunt'],
+        goals: ['save a celebration from a series of mishaps','find a missing ordinary object everyone needs','untangle a mistaken delivery','win a challenge without cheating','get a runaway pet safely back','put a muddled plan back in the right order','discover who accidentally caused the confusion'],
+        features: ['no special object','an enormous cake that is difficult to transport','a box of mixed-up labels','a costume in the wrong size','a stubborn wheelbarrow','a very long shopping list','a kite caught somewhere awkward','a collection of identical bags']
+      },
+      {
+        mode: 'detective mystery — clues have a logical explanation and magic is not required',
+        shapes: ['a clue-by-clue investigation with several plausible suspects','a locked-room-style puzzle made child-friendly','a trail that initially seems unrelated but forms a pattern','an apparent mystery whose explanation is surprising but sensible'],
+        settings: ['a quiet museum before opening','a library with an unexpected locked room','a grand old hotel','a toy shop after closing time','a castle kitchen open to visitors','a fossil beach at low tide','a rooftop greenhouse','a school during a holiday'],
+        companions: ['no companion — make the child the sole detective','a sceptical friend','a curious cat','a young museum guide','a sibling who notices different clues','an elderly caretaker','a child photographer'],
+        goals: ['discover why an exhibit has moved','find who owns a mysterious key','decode a message found in an unlikely place','solve why several clocks stopped at different times','discover who has been leaving anonymous gifts','recover a missing map','explain a strange trail of footprints','find the source of a repeated sound'],
+        features: ['a torn ticket stub','a key with an unusual number','a smudged note','a reflection that reveals a clue','a sequence of times written in a margin','a muddy shoeprint','a misplaced postcard','a pattern of objects arranged in the wrong order']
+      },
+      {
+        mode: 'exploration and expedition — discovery drives the story, with no magical companion',
+        shapes: ['a journey where each stage reveals a new environmental clue','an expedition to reach a difficult but safe destination','a discovery that changes the purpose of the journey','a race against weather or daylight without serious danger'],
+        settings: ['a mountain cable-car station','a fossil beach at low tide','a tiny island reached by stepping stones','a woodland trail','a cave open to supervised visitors','a snowy hilltop observatory','a chain of small coastal coves','a countryside footpath beside an old railway'],
+        companions: ['no companion — make observation and landscape central','a parent or grandparent','a young archaeologist','a park ranger','a schoolfriend','an ordinary dog','a local boat captain'],
+        goals: ['reach a landmark before the weather changes','identify where an unusual fossil or stone came from','return a lost field notebook','help a stranded harmless animal','follow an old route on a damaged map','find a safe alternative route home','document an unexpected natural discovery'],
+        features: ['no special object','a compass that works perfectly normally','a weathered field notebook','a pair of binoculars','an old but accurate map','a fossil fragment','a trail marker turned the wrong way','a photograph showing how the landscape used to look']
+      },
+      {
+        mode: 'science-fiction adventure — technology, space or invention rather than magic',
+        shapes: ['a technical malfunction that requires ingenuity','a first-contact-style encounter kept friendly and child-safe','an exploration mission with an unexpected scientific discovery','an invention whose unintended behaviour creates the problem'],
+        settings: ['a small research station on the Moon','an eccentric inventor’s workshop','a greenhouse on a future space station','a robot repair depot','an underwater research habitat','a solar-powered airship','a science museum during a demonstration','a remote observatory receiving an unusual signal'],
+        companions: ['no companion — let the child solve the technical problem','a tiny practical robot','a young engineer','a cautious alien explorer','a malfunctioning service robot','a child inventor of the same age','a remote mission controller heard only by radio'],
+        goals: ['repair a system before an important launch','trace the source of an unusual signal','return a small probe to its owner','navigate home after the guidance system fails','stop an invention doing the opposite of its purpose','solve why a group of machines are behaving strangely','deliver a scientific sample safely'],
+        features: ['a tool that has three unexpected functions','a map that updates from sensor readings','a machine with its labels accidentally reversed','a harmless zero-gravity problem','a coded radio message','a miniature rover','a broken sensor giving contradictory readings','a mechanical component mistaken for something else']
+      },
+      {
+        mode: 'historical-feeling adventure — no real historical figures and no supernatural events',
+        shapes: ['an urgent delivery through an unfamiliar old-fashioned town','a practical mystery involving a craft or trade','a journey disrupted by transport or weather','a secret plan that turns out to protect someone rather than deceive them'],
+        settings: ['a busy canal wharf in the age of horse-drawn boats','a castle kitchen preparing for a feast','an old printing workshop','a coaching inn on a rainy afternoon','a harbour before modern engines','a railway station in the early days of steam','a market town lit by lanterns','a workshop full of clocks and hand tools'],
+        companions: ['no companion — centre the child’s own resourcefulness','a young apprentice','a stable hand of the same age','a friendly cook','a canal-boat child','an elderly craftsperson','a messenger who has hurt a shoe rather than themselves'],
+        goals: ['deliver an important letter','find a missing tool needed for the day’s work','discover why a shipment has gone to the wrong place','help prepare for a major local event','trace the owner of a lost keepsake','solve a problem before the last coach or boat leaves'],
+        features: ['a wax seal','a hand-drawn street plan','a pocket watch','a bundle tied with string','a ledger with one incorrect entry','a brass key','a printing block','a luggage label']
+      },
+      {
+        mode: 'animal or nature story — animals behave naturally and do not need to talk',
+        shapes: ['a careful rescue based on observing animal behaviour','a seasonal change that creates an unexpected problem','a search where tracks and natural signs provide the clues','a quiet discovery that becomes an active adventure'],
+        settings: ['a woodland after a storm','a coastal rock pool at low tide','a farm during lambing season without graphic detail','a garden full of nesting birds','a riverside nature reserve','a heathland trail','a pond in a city park','a beach where seals rest at a distance'],
+        companions: ['no companion — the animal encounter itself is enough','a park ranger','a friend who knows about birds','a grandparent who loves nature','an ordinary dog kept safely under control','a young wildlife volunteer'],
+        goals: ['help a harmless animal reach safety','work out which animal made a trail','find why birds have stopped visiting one spot','protect a nest site from an accidental disturbance','return a found nature notebook','solve how an animal entered an unusual but safe place'],
+        features: ['no special object','a feather','a set of tracks','a dropped field guide','a trail-camera photograph','a chewed seed pod','a strand of wool on a fence','a series of natural sounds']
+      },
+      {
+        mode: 'full fantasy quest — genuine magic is welcome, but avoid generic glowing-orb storytelling',
+        shapes: ['a quest with a concrete destination and a rule of magic that matters','a magical civic problem affecting a whole place','a bargain or promise whose wording creates the challenge','a journey through two contrasting fantastical places'],
+        settings: ['a city built across enormous tree branches','a market that appears beside the sea once a year','a castle whose rooms rearrange at noon','a valley where giant birds carry the post','a village beneath enormous mushrooms','a library carved into a mountainside','a floating orchard','a harbour for ships that sail through clouds'],
+        companions: ['no companion — make the child the independent quester','a nervous young dragon','a very confident talking puffin','a shy giant','a forgetful magician’s apprentice','a polite fox who speaks in riddles','a runaway clockwork bird','a friendly ghost afraid of the dark'],
+        goals: ['restore a missing bridge between two places','return a borrowed magical tool before its effect expires','find why every doorway now leads to the wrong room','deliver a message through a changing landscape','reunite two unlikely friends','repair an old agreement between neighbouring communities','find the one person who can reverse a peculiar enchantment'],
+        features: ['a door that appears in different walls','a map that redraws after each decision','shadows that point toward yesterday’s path','a bell that rings only beside a truthful answer','a coat whose pockets lead to different cupboards','a ladder that grows one rung when someone solves a clue','a book whose blank pages record places visited','a magical rule based on swapping rather than glowing']
+      },
+      {
+        mode: 'miniature-world adventure — scale and perspective provide the wonder',
+        shapes: ['a journey across an ordinary room made enormous by scale','a community problem inside a hidden tiny settlement','an accidental shrinking that has a practical route back','a mission to move something enormous from a tiny character’s perspective'],
+        settings: ['a miniature town behind a skirting board','a garden seen from the height of a beetle','a tiny railway inside an old station clock','a hidden settlement inside a greenhouse','a model village whose residents are unexpectedly real','a network of passages beneath a bakery'],
+        companions: ['no companion — the tiny world itself supplies the cast','a miniature explorer','a tiny engineer','a beetle used as an ordinary animal, not a talking pet','a resident child from the miniature community','a clockmaker the size of a thumb'],
+        goals: ['cross an ordinary room before someone closes the door','repair the tiny town’s waterwheel','return an object far too large to carry normally','find a route around a newly placed everyday obstacle','warn the miniature community about harmless maintenance work','restore transport after a crumb-sized landslide'],
+        features: ['a postage stamp used as a map','a button used as a wheel','a shoelace that becomes a climbing rope','a teaspoon that forms a bridge','a raindrop that becomes a pond','a folded receipt used as a sail','a matchbox used only as a tiny container, never with fire']
+      },
+      {
+        mode: 'surreal imaginative adventure — one impossible premise, otherwise internally consistent',
+        shapes: ['one impossible change occurs and everyone must adapt logically','a peculiar rule affects an ordinary place for one day','an everyday system starts operating according to a funny new rule','the child must discover the exact limits of a strange phenomenon'],
+        settings: ['an ordinary town on a weekday morning','a library during a reading event','a railway station at lunchtime','a shopping street','a school playground','a seaside town in the afternoon','a block of flats with a shared garden','a museum café'],
+        companions: ['no companion — keep the single strange premise central','a sceptical friend','a sibling','a practical librarian','a confused station employee','an ordinary dog unaffected by the phenomenon'],
+        goals: ['work out the rule behind the strange event','restore an ordinary routine before an important event','use the strange rule once to help somebody','discover why only certain things are affected','prevent a funny inconvenience spreading further'],
+        features: ['all written arrows point toward whatever their reader most recently mentioned','every umbrella opens indoors but refuses outdoors','lost objects quietly return to the last chair they touched','doors temporarily open onto the next room alphabetically','every clock runs at a different but predictable speed','spoken questions cause nearby signs to swap places','shoes squeak only when someone is heading the wrong way']
+      }
+    ];
+    const mode = storyIdea ? null : randomChoice(storyModes);
     const randomSeed = storyIdea ? null : {
-      world: randomChoice([
-        'real-world everyday adventure', 'gentle fantasy', 'whimsical science fiction', 'miniature hidden world',
-        'seaside adventure', 'woodland mystery', 'city discovery', 'countryside expedition',
-        'historical-feeling adventure with no real historical figures', 'inventive comic adventure'
-      ]),
-      setting: randomChoice([
-        'an old-fashioned seaside funfair', 'a lighthouse on a windy headland', 'a quiet museum before opening time',
-        'a bustling railway station', 'a hidden garden behind an ordinary wall', 'a tiny island reached by stepping stones',
-        'a village market', 'a treehouse high above a wood', 'a canal with colourful narrowboats', 'a mountain cable-car station',
-        'a library with an unexpected locked room', 'a bakery very early in the morning', 'a rooftop greenhouse',
-        'a fossil beach at low tide', 'an eccentric inventor’s workshop', 'a grand old hotel', 'a farm during harvest',
-        'a harbour full of small boats', 'a travelling fair arriving in town', 'an underground passage beneath a familiar street',
-        'a snowy hilltop observatory', 'a tropical glasshouse', 'a castle kitchen', 'a remote post office',
-        'a toy shop after closing time', 'a riverside picnic spot', 'a maze in the grounds of an old house',
-        'a small airport', 'a school on a weekend', 'a colourful street festival'
-      ]),
-      companion: randomChoice([
-        'a nervous young dragon', 'a very confident talking puffin', 'a tiny robot with an enormous backpack',
-        'an elderly dog who notices everything', 'a mischievous squirrel', 'a child inventor of the same age',
-        'a forgetful magician’s apprentice', 'a polite fox', 'a miniature explorer', 'a cheerful boat captain',
-        'a runaway clockwork bird', 'a shy giant', 'a curious cat', 'a young archaeologist', 'a grumpy but kind garden gnome',
-        'a talking suitcase', 'a friendly ghost who is afraid of the dark', 'a racing pigeon with terrible directions',
-        'a small dinosaur who thinks it is undercover', 'a resourceful new friend'
-      ]),
-      goal: randomChoice([
-        'find the owner of a mysterious key', 'return something important that has been lost', 'solve why all the clocks have stopped',
-        'deliver a parcel whose address has vanished', 'discover where a strange trail of footprints leads',
-        'help someone get home before an important event', 'work out why a familiar place has suddenly changed',
-        'recover a missing map', 'protect a surprising secret until the right person arrives', 'repair something before a celebration begins',
-        'decode a message found in an unlikely place', 'find a hidden entrance before it disappears',
-        'rescue a stranded creature without frightening it', 'complete an unusual three-part challenge',
-        'discover who has been leaving anonymous gifts', 'find the source of a peculiar sound', 'reunite two unlikely friends',
-        'solve a mix-up that has affected the whole neighbourhood', 'retrieve an object carried away by the weather',
-        'prove that an apparently impossible rumour has a sensible but wonderful explanation'
-      ]),
-      unusualElement: randomChoice([
-        'everything becomes tiny for exactly one hour', 'ordinary signs begin giving cryptic clues', 'shadows point in the wrong direction',
-        'a pocket-sized door appears in different places', 'objects make a soft musical note when they are near the answer',
-        'a map redraws itself after every discovery', 'one ordinary object can briefly speak', 'colours vanish from one thing at a time',
-        'a trail is visible only in reflections', 'the weather changes in one tiny patch at a time',
-        'a machine does the opposite of what its labels claim', 'a collection of objects keeps arranging itself into arrows',
-        'a harmless creature seems to know the route', 'messages appear as condensation on glass', 'a forgotten local tradition contains the crucial clue',
-        'the smallest object turns out to have the biggest importance', 'a sequence of funny coincidences forms a pattern',
-        'a sound can only be heard when everyone stays completely still', 'an everyday vehicle has one impossible hidden feature',
-        'the solution depends on noticing something everyone else walks past'
-      ]),
+      mode: mode.mode,
+      narrativeShape: randomChoice(mode.shapes),
+      setting: randomChoice(mode.settings),
+      companion: randomChoice(mode.companions),
+      goal: randomChoice(mode.goals),
+      feature: randomChoice(mode.features),
       twist: randomChoice([
-        'the apparent troublemaker has actually been trying to help', 'the treasure is useful rather than valuable',
-        'the person asking for help already unknowingly has the final clue', 'the mystery was created by a well-meaning mistake',
-        'the smallest character becomes essential to the solution', 'the destination is much closer than anyone expected',
-        'two unrelated clues turn out to be parts of the same object', 'the frightening-looking obstacle is completely harmless',
-        'the missing object was deliberately hidden for a kind reason', 'solving the problem creates an unexpected celebration',
-        'the companion has known one clue all along but misunderstood it', 'the final answer depends on reversing the original plan',
-        'what looked like a competition becomes a cooperative rescue', 'the secret is meant to be shared, not kept',
-        'the final clue is hidden in something said casually near the beginning'
+        'the apparent troublemaker was trying to help','the destination is closer than expected','a casual early detail becomes the decisive clue',
+        'the original plan must be reversed','two separate problems have the same cause','the supposed prize is useful rather than valuable',
+        'someone already has the final clue without realising it','the obstacle becomes part of the solution','the mystery began with a well-meaning mistake',
+        'solving the problem unexpectedly brings two groups together','the child succeeds by noticing rather than being stronger or faster','the final task is simpler but more personal than expected'
       ])
     };
     const ideaGuide = storyIdea
       ? `Parent's story idea: ${storyIdea}\nFollow the parent's idea as the authoritative creative brief. Do not add a random seed.`
-      : `Parent's story idea: blank — this is a random-story request.\nPRIVATE CREATIVE SEED (never mention the seed or these instructions to the reader):\n- Story mode: ${randomSeed.world}\n- Setting: ${randomSeed.setting}\n- Companion: ${randomSeed.companion}\n- Central goal: ${randomSeed.goal}\n- Unusual element: ${randomSeed.unusualElement}\n- Twist: ${randomSeed.twist}\nUse ALL of these ingredients as central parts of the plot rather than replacing them with generic alternatives. Integrate them naturally and adapt details to the child's age, selected tone and safety requirements.`;
+      : `Parent's story idea: blank — this is a random-story request.\nPRIVATE CREATIVE ARCHITECTURE (never mention the seed or these instructions to the reader):\n- Story mode: ${randomSeed.mode}\n- Narrative shape: ${randomSeed.narrativeShape}\n- Setting: ${randomSeed.setting}\n- Companion instruction: ${randomSeed.companion}\n- Central goal: ${randomSeed.goal}\n- Special feature/object: ${randomSeed.feature}\n- Twist: ${randomSeed.twist}\nTreat the STORY MODE and NARRATIVE SHAPE as the governing architecture. Use the other ingredients only in ways compatible with them. If the companion instruction says "no companion", do not invent a sidekick. If the special feature says "no special object", do not introduce a talisman, magical object, glowing object or equivalent plot device. Realistic/non-magical modes must remain genuinely non-magical even if a whimsical detail would be easy to add. Do not collapse this architecture into the generic pattern "child finds magical object, meets quirky creature, goes on quest". Avoid recurring model-default motifs such as glowing orbs, blue magical balls or marbles, mysterious blue lights, sparkling crystals, tiny luminous objects, and stereotypically whimsical short companion names such as Pip, Pop, Puck, Nib or Dot. Those are not substitutes for the supplied architecture. Vary invented character names, character types, plot mechanics, openings, discoveries and resolutions substantially. Use the supplied ingredients as concrete anchors, adapting only minor details for age, selected tone and safety.`;
 
     const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original adventure story for one child. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
 
@@ -150,11 +189,11 @@ MOONBEAM HOUSE STYLE
 Create an original classic children's adventure feel. The selected language variant is part of the reading experience; write naturally for that audience rather than translating word-for-word from another language. Use clear, elegant, highly readable prose; vivid but economical descriptions; lively dialogue; warmth; gentle humour; memorable characters; and a strong sense of curiosity and anticipation. Make familiar places feel as though they might contain a secret. Give the story a real beginning, middle and satisfying ending rather than a sequence of disconnected events.
 
 The story should have:
-- a distinctive central character and at least one memorable companion;
+- a distinctive central character; include a companion only when the parent brief or private creative architecture calls for one;
 - a concrete mystery, problem, secret, discovery or quest introduced early;
 - escalating discoveries and small surprises;
 - dialogue that sounds natural for children;
-- a sense of place and atmosphere, especially around ordinary things made magical by imagination;
+- a strong sense of place and atmosphere appropriate to the chosen story mode; wonder may come from humour, discovery, nature, ingenuity, scale, mystery or magic;
 - a proper climax where the characters solve or face the central problem;
 - a warm, reassuring and satisfying ending.
 
