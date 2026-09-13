@@ -236,3 +236,17 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Desktop Child panel: moved Save child profile / Remove child controls below the Age field.
 - Retains V160/V161 320px portrait height.
 - Retains the corrected child-profile deletion JavaScript and click handler.
+
+
+### V165 — Desktop setup palette polish
+- Brought the signed-in desktop setup canvas closer to the warm Moonbeam homepage palette with a deeper aubergine/plum background.
+- Added a restrained warm lilac/ivory glow around the two setup cards.
+- Shifted the card surfaces subtly toward warm ivory while preserving the established white-card clarity.
+- No layout, controls, generation behaviour, mobile styling, reader behaviour, or API logic changed.
+
+
+### V166 — Consistent Moonbeam wordmark
+- Standardised the product/app header wordmark to the homepage Moonbeam Stories branding.
+- Uses the same thin crescent treatment, purple, Georgia wordmark, weight and proportions.
+- The app retains its ivory rounded navigation container; only the brand mark itself is standardised.
+- No functional, API, generation, reader, payment or mobile-flow changes.

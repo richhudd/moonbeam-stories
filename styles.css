@@ -2417,3 +2417,59 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
 @media(max-width:700px){
   body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#generate.no-story-credits{min-height:48px!important}
 }
+
+/* V165 — desktop setup palette polish.
+   Keep the established white workspace cards, but bring the warm Moonbeam
+   homepage palette into the surrounding product canvas. Desktop only. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode){
+    background:
+      radial-gradient(ellipse at 50% 42%,rgba(117,78,196,.22) 0%,rgba(75,49,132,.10) 34%,rgba(23,19,45,0) 68%),
+      radial-gradient(circle at 16% 0%,#352660 0%,#241a45 31%,#17132d 68%,#120f25 100%)!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .app-product{
+    background:transparent!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell{
+    position:relative;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell:before{
+    content:"";
+    position:absolute;
+    z-index:0;
+    inset:-14px -18px -18px;
+    pointer-events:none;
+    border-radius:42px;
+    background:radial-gradient(ellipse at 50% 48%,rgba(255,248,235,.11),rgba(225,211,255,.055) 43%,rgba(255,255,255,0) 72%);
+    filter:blur(10px);
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell>.setup-nav{
+    position:relative;
+    z-index:1;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"],
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    background:linear-gradient(180deg,#fffefa 0%,#fffdf9 100%)!important;
+    box-shadow:0 20px 48px rgba(9,6,24,.24),0 0 0 1px rgba(255,255,255,.18)!important;
+  }
+}
+
+/* V166 — one consistent Moonbeam wordmark across landing and product headers. */
+.app-header-brand .logo{
+  font-family:Georgia,'Times New Roman',serif!important;
+  font-weight:400!important;
+  color:#6848ba!important;
+}
+@media (min-width:701px){
+  body.product-active .app-header-brand{gap:7px!important}
+  body.product-active .app-header-brand .logo{font-size:32px!important;line-height:1!important}
+  body.product-active .app-header-brand h1{
+    font-family:Georgia,'Times New Roman',serif!important;
+    font-size:24px!important;
+    font-weight:700!important;
+    line-height:1!important;
+    color:#30254f!important;
+    letter-spacing:0!important;
+  }
+}
