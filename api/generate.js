@@ -167,6 +167,26 @@ module.exports = async function handler(req, res) {
         'solving the problem unexpectedly brings two groups together','the child succeeds by noticing rather than being stronger or faster','the final task is simpler but more personal than expected'
       ])
     };
+    // V190: controlled visual art direction. Blank stories choose from styles compatible with
+    // the selected narrative architecture; parent-written ideas let the story model choose from
+    // the same approved catalogue. The chosen style is locked for the whole book.
+    const approvedVisualStyles = ['classic_moonbeam','cinematic_storybook','painterly_fantasy','watercolour_gouache','graphic_comedy','naturalist_adventure','retro_adventure','cinematic_scifi','miniature_macro','dreamlike_surreal'];
+    const visualStylesForMode = modeName => {
+      const m=String(modeName||'');
+      if(m.startsWith('realistic everyday')) return ['cinematic_storybook','cinematic_storybook','classic_moonbeam','watercolour_gouache','retro_adventure'];
+      if(m.startsWith('comic family')) return ['graphic_comedy','graphic_comedy','classic_moonbeam','watercolour_gouache'];
+      if(m.startsWith('detective mystery')) return ['retro_adventure','cinematic_storybook','classic_moonbeam','watercolour_gouache'];
+      if(m.startsWith('exploration and expedition')) return ['naturalist_adventure','cinematic_storybook','watercolour_gouache','retro_adventure'];
+      if(m.startsWith('science-fiction')) return ['cinematic_scifi','cinematic_scifi','cinematic_storybook','classic_moonbeam'];
+      if(m.startsWith('historical-feeling')) return ['retro_adventure','retro_adventure','watercolour_gouache','cinematic_storybook'];
+      if(m.startsWith('animal or nature')) return ['naturalist_adventure','watercolour_gouache','watercolour_gouache','cinematic_storybook'];
+      if(m.startsWith('full fantasy')) return ['painterly_fantasy','painterly_fantasy','classic_moonbeam','dreamlike_surreal'];
+      if(m.startsWith('miniature-world')) return ['miniature_macro','miniature_macro','painterly_fantasy','cinematic_storybook'];
+      if(m.startsWith('surreal imaginative')) return ['dreamlike_surreal','dreamlike_surreal','painterly_fantasy','watercolour_gouache'];
+      return ['classic_moonbeam'];
+    };
+    const selectedVisualStyle = storyIdea ? null : randomChoice(visualStylesForMode(randomSeed.mode));
+
     const ideaGuide = storyIdea
       ? `Parent's story idea: ${storyIdea}\nFollow the parent's idea as the authoritative creative brief. Do not add a random seed.`
       : `Parent's story idea: blank — this is a random-story request.\nPRIVATE CREATIVE ARCHITECTURE (never mention the seed or these instructions to the reader):\n- Story mode: ${randomSeed.mode}\n- Narrative shape: ${randomSeed.narrativeShape}\n- Setting: ${randomSeed.setting}\n- Companion instruction: ${randomSeed.companion}\n- Central goal: ${randomSeed.goal}\n- Special feature/object: ${randomSeed.feature}\n- Twist: ${randomSeed.twist}\nTreat the STORY MODE and NARRATIVE SHAPE as the governing architecture. Use the other ingredients only in ways compatible with them. If the companion instruction says "no companion", do not invent a sidekick. If the special feature says "no special object", do not introduce a talisman, magical object, glowing object or equivalent plot device. Realistic/non-magical modes must remain genuinely non-magical even if a whimsical detail would be easy to add. Do not collapse this architecture into the generic pattern "child finds magical object, meets quirky creature, goes on quest". Avoid recurring model-default motifs such as glowing orbs, blue magical balls or marbles, mysterious blue lights, sparkling crystals, tiny luminous objects, and stereotypically whimsical short companion names such as Pip, Pop, Puck, Nib or Dot. Those are not substitutes for the supplied architecture. Vary invented character names, character types, plot mechanics, openings, discoveries and resolutions substantially. Use the supplied ingredients as concrete anchors, adapting only minor details for age, selected tone and safety.`;
@@ -207,9 +227,15 @@ For age ${age}, use vocabulary, sentence length, emotional complexity and indepe
 SAFETY
 No politics, religion, sexual content, graphic violence, horror, dangerous instructions, adult themes, or genuinely frightening material. Mild peril is fine when appropriate for the age, but keep the overall experience safe and comforting.
 
+VISUAL ART DIRECTION — V190
+Moonbeam has a controlled catalogue of illustration families. Choose exactly one visual_style_id for this entire book and never invent another style name.
+Allowed IDs: classic_moonbeam, cinematic_storybook, painterly_fantasy, watercolour_gouache, graphic_comedy, naturalist_adventure, retro_adventure, cinematic_scifi, miniature_macro, dreamlike_surreal.
+${storyIdea ? 'Choose the visual style that best fits the actual story, tone, setting and subject. Do not automatically choose classic_moonbeam. Prefer realistic/naturalistic treatments when they genuinely suit a realistic, nature, expedition, historical or older-child story.' : `For this random story the art director has already chosen: ${selectedVisualStyle}. Return exactly that visual_style_id.`}
+The visual_style_id controls rendering only. Illustration prompts should describe the scene, characters, action, setting, weather, lighting and composition rather than repeatedly restating a generic cartoon style.
+
 OUTPUT
 Return JSON only, with exactly this shape:
-{"title":"string","opening":"string","character_bible":"string","pages":[...exactly ${pageCount} page objects...],"closing":"string"}
+{"title":"string","opening":"string","character_bible":"string","visual_style_id":"approved_style_id","pages":[...exactly ${pageCount} page objects...],"closing":"string"}
 
 The opening, exactly ${pageCount} story pages and closing must together form one continuous story of the requested length. The page count is mandatory: exactly 4 story pages, plus the opening and closing, for 6 displayed reading spreads in total.
 
@@ -313,6 +339,7 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
         character_bible: typeof story.character_bible === 'string' && story.character_bible.trim()
           ? story.character_bible.trim()
           : `Keep ${String(child.name)} visually consistent throughout the book, age ${age}, with the same hair, facial features and clothing unless the story explicitly changes clothing.`,
+        visual_style_id: selectedVisualStyle || (approvedVisualStyles.includes(String(story.visual_style_id||'').trim()) ? String(story.visual_style_id).trim() : 'classic_moonbeam'),
         pages,
         closing: typeof story.closing === 'string' ? story.closing.trim() : ''
       };
@@ -333,7 +360,7 @@ Each pages array item MUST have exactly this shape: {"text":"string","illustrati
     // If the model produced almost-JSON, ask it to repair its own output once rather than
     // showing the reader a formatting error. This also catches missing required fields.
     if (!story) {
-      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible. Ensure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
+      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible. Ensure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","visual_style_id":"approved_style_id","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
       try {
         const repairedOutput = await callStoryModel(repairInput, 5000);
         story = normaliseStory(parseStoryOutput(repairedOutput));

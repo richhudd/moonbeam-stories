@@ -1,4 +1,14 @@
-# Moonbeam Stories V169
+# Moonbeam Stories V190
+## V190 — Story-matched illustration art direction
+- Added ten controlled Moonbeam visual families: Classic Moonbeam, Cinematic Storybook, Painterly Fantasy, Watercolour & Gouache, Graphic Comedy, Naturalist Adventure, Retro Adventure, Cinematic Sci-Fi, Miniature Macro and Dreamlike Surreal.
+- Blank random stories choose a visual family from a weighted shortlist compatible with the V189 story architecture.
+- Parent-written story ideas are classified into the same approved visual catalogue; the model cannot invent arbitrary styles.
+- The chosen visual family is locked across the cover and every interior illustration in that book.
+- More naturalistic families can approach cinematic/photographic realism while remaining premium storybook illustration.
+- Child-photo identity direction remains separate from rendering style so changing art treatment does not intentionally change the child.
+- Existing/legacy stories without a style ID safely fall back to the established Classic Moonbeam look.
+- The style ID is persisted inside the existing saved-story pages JSON, so no Supabase schema change is required.
+
 ## V189 — Genuine blank-story narrative variety
 - Rebuilt the blank Story Idea randomiser around **story architecture first**, rather than independently mixing generic ingredients.
 - Added ten distinct story modes including realistic everyday, family comedy, logical mystery, expedition, science fiction, historical-feeling, nature, full fantasy, miniature-world and surreal single-premise adventures.

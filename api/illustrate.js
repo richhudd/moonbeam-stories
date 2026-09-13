@@ -17,7 +17,23 @@ module.exports = async function handler(req, res) {
     const prompt = String(body.prompt || '').trim();
     const generationRunId = String(body.generationRunId || '').trim();
     const style = String(body.style || '').trim();
+    const visualStyle = String(body.visualStyle || 'classic_moonbeam').trim();
     const referenceImage = typeof body.referenceImage === 'string' ? body.referenceImage : '';
+    // V190: one approved art family is locked for the whole book. Unknown/legacy values
+    // fall back to the established Moonbeam look rather than failing illustration generation.
+    const visualStyleDirections = {
+      classic_moonbeam: 'Warm, charming premium children’s storybook painting; polished hand-painted feel, expressive characters, gentle lighting, rich but soft detail, appealing shapes and timeless warmth. Clearly illustrated rather than photographic.',
+      cinematic_storybook: 'Cinematic storybook realism: natural human proportions and expressions, believable skin/hair/fabric/environment detail, sophisticated composition, depth and realistic light. Highly naturalistic and almost photographic in observation, but still unmistakably a premium illustrated book rather than a literal photograph.',
+      painterly_fantasy: 'Lush painterly fantasy illustration with rich traditional-media texture, atmospheric depth, dramatic but child-friendly light, imaginative environments and elegant detail. Avoid generic plastic cartoon rendering.',
+      watercolour_gouache: 'Traditional watercolour-and-gouache children’s book illustration: visible painterly texture, graceful brushwork, soft edges mixed with crisp focal detail, natural colour relationships and an intimate handmade quality.',
+      graphic_comedy: 'Premium graphic-comedy children’s illustration: energetic shapes, expressive poses and faces, lively visual timing, bold readable composition and playful exaggeration, while retaining sophisticated book-publishing finish rather than cheap TV-cartoon styling.',
+      naturalist_adventure: 'Naturalistic adventure-book illustration with carefully observed landscapes, animals, weather, geology and physical detail; believable proportions and cinematic light; richly painted and realistic without becoming a literal photograph.',
+      retro_adventure: 'Classic painted adventure-book illustration with a subtle mid-century/vintage publishing character: confident draughtsmanship, natural proportions, textured paint, atmospheric locations and dramatic narrative composition. Do not imitate any named artist or existing book.',
+      cinematic_scifi: 'Cinematic science-fiction storybook illustration: convincing technology and environments, realistic scale, materials and lighting, spectacular depth and clean visual storytelling, softened by warm child-friendly character work. Illustrated realism, not glossy 3D CGI.',
+      miniature_macro: 'Miniature-world macro illustration: extraordinary close-up material detail, convincing tiny scale, shallow-depth photographic sensibility, tactile surfaces and dramatic perspective, while remaining a crafted storybook illustration rather than an actual photograph.',
+      dreamlike_surreal: 'Dreamlike painterly storybook illustration with imaginative scale and perspective, poetic visual surprises, atmospheric colour and elegant surrealism. Keep characters emotionally readable and the result beautiful rather than strange or frightening.'
+    };
+    const visualDirection = visualStyleDirections[visualStyle] || visualStyleDirections.classic_moonbeam;
     if (!prompt) return res.status(400).json({ error: 'An illustration prompt is required.' });
     if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
     const moonbeamUser = await verifyMoonbeamUser(req);
@@ -28,13 +44,14 @@ module.exports = async function handler(req, res) {
 
     const hasReference = /^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage);
     const identityDirection = hasReference
-      ? `\nIDENTITY REFERENCE\nAn attached photograph shows the real child who is the main hero. Preserve the child's recognisable identity across the illustration: face shape, eyes, nose, smile, hair colour, hair texture, approximate skin tone and age. Translate the child naturally into the storybook painting style rather than making the result photographic. Do not copy the photograph's background, clothing or pose unless the scene calls for them. Identity preservation is a primary requirement: the illustrated child must be recognisably the same real child, not merely a generic child of similar age or hair colour. The child should clearly look like the same person in every illustration.`
+      ? `\nIDENTITY REFERENCE\nAn attached photograph shows the real child who is the main hero. Preserve the child's recognisable identity across the illustration: face shape, eyes, nose, smile, hair colour, hair texture, approximate skin tone and age. Translate the child naturally into the selected storybook art style. Even in the most naturalistic family, preserve identity without merely copying the source photograph. Do not copy the photograph's background, clothing or pose unless the scene calls for them. Identity preservation is a primary requirement: the illustrated child must be recognisably the same real child, not merely a generic child of similar age or hair colour. The child should clearly look like the same person in every illustration.`
       : '';
 
     const finalPrompt = `Create a single full-page illustration for a premium children's storybook.
 
 ART DIRECTION
-${style || 'Warm, charming, timeless British storybook illustration; painterly traditional feel, expressive characters, gentle lighting, rich but soft detail, magical without being frightening.'}
+${visualDirection}
+${style ? `CONTINUITY NOTES\n${style}` : ''}
 ${identityDirection}
 
 SCENE
@@ -45,12 +62,12 @@ IMPORTANT
 - Keep the mood warm, adventurous and reassuring.
 - Follow the scene's actual setting, weather and time of day. Do NOT infer nighttime, moonlight, stars, darkness, sleep, bedrooms, pyjamas or bedtime imagery merely because this is a children's story. Use night only when the supplied scene genuinely calls for it.
 - No words, letters, captions, signs, logos or typography anywhere in the image.
-- Do not make it photorealistic, 3D-rendered or cartoonishly plastic.
+- Follow the selected art family faithfully. Naturalistic families may approach cinematic/photographic realism in observation, lighting and detail, but the result must remain a deliberate premium book illustration. Never use glossy 3D-rendered or cartoonishly plastic styling.
 - Compose the scene as a beautiful book illustration with clear focal characters and readable silhouettes.
 - Keep character appearance consistent with the description in the scene and, when supplied, the attached identity reference.
 - Every page in a story must be a genuinely new illustration. If the scene prompt identifies a page/scene number or previous-page context, use that information to advance the visual action and avoid repeating the previous composition, pose, camera angle or background staging.
 - ONE continuous scene only: never create a collage, contact sheet, comic strip, grid, split screen, diptych, triptych, multiple panels, inset pictures or multiple frames.
-- The finished output must look like one uninterrupted full-page painting viewed through one camera/composition.
+- The finished output must look like one uninterrupted full-page artwork viewed through one camera/composition.
 - Square composition suitable for the right-hand page of a children's book.`;
 
     let r;
@@ -103,7 +120,7 @@ IMPORTANT
       return res.status(502).json({ error: 'The image service returned no image.' });
     }
 
-    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasReference}),metadata:{reference:hasReference,user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasReference}),metadata:{reference:hasReference,visual_style:visualStyle,user_id:moonbeamUser.id,generation_run_id:generationRunId}});
     slotReserved=false;
     return res.status(200).json({ image: `data:image/webp;base64,${item.b64_json}`, usedReferencePhoto: hasReference });
   } catch (e) {
