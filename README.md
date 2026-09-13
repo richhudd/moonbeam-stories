@@ -1,3 +1,11 @@
+# Moonbeam Stories V167
+
+V167 is a deliberately tiny Story Idea copy update on top of V166. The Story Idea placeholder now tells parents they can provide an idea, theme or a few keywords, or leave the field blank for a completely random story. The new placeholder is localised across all nine supported locales. No generation logic, layout, database, credits, illustration, narration, saved-story or reader behaviour is changed in this release.
+
+**Deployment:** replace the current site files with the complete contents of this folder and let Vercel deploy. No SQL, Stripe or environment-variable changes are required.
+
+---
+
 # Moonbeam Stories V164
 
 V164 makes the zero-credit state clear before the user tries to generate. When the signed-in story-credit balance is 0, the main generation button is disabled and changes from “Make Tonight’s Story” to “No story credits — buy credits to continue” (localized in all supported languages). The existing credit panel and Buy story credits button remain unchanged, so the user has an obvious next action without relying on the tiny post-click error message.
