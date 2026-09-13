@@ -373,3 +373,9 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Leaves story text at its existing size and flow; no font shrinking, clipping or page expansion is introduced.
 - Desktop reader, story generation, mobile setup pages, child profiles/photos, localisation, credits, narration and Saved Stories are unchanged.
 - Bumps stylesheet/application cache keys to V182 so mobile Safari cannot reuse the older reader CSS. No database migration is required.
+
+
+## V183 — mobile end-page save acknowledgement and page-counter cleanup
+- A successful **Save story** action now changes the end-page button to the completed translated “Story saved” state and gives it a filled purple treatment, so the save is visibly acknowledged. Already-saved stories render in that completed state immediately.
+- The reader page counter is hidden on **The End** page only, preventing it from overlapping the **New story** button on mobile. It remains unchanged on all actual story pages.
+- V182's mobile 60:40 illustration/text split and independently scrolling text panel are unchanged. No database migration is required.

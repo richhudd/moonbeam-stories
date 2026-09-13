@@ -2735,3 +2735,15 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
     overflow:visible!important;
   }
 }
+
+
+/* V183 — end-page save acknowledgement and counter cleanup. */
+.end-save.saved-state,
+.end-save.saved-state:disabled{
+  background:#5b3fc4!important;
+  border-color:#5b3fc4!important;
+  color:#fff!important;
+  opacity:1!important;
+  box-shadow:0 7px 20px rgba(62,44,79,.18)!important;
+}
+.page-indicator.end-hidden{display:none!important;}
