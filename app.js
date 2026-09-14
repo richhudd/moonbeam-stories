@@ -239,10 +239,9 @@ $('accountChangeEmailToggle')?.addEventListener('click',()=>setAccountEmailEdito
 $('accountCancelEmail')?.addEventListener('click',()=>setAccountEmailEditor216(false));
 $('accountSaveEmail')?.addEventListener('click',changeAccountEmail216);
 $('profileSelect')?.addEventListener('change',selectCloudProfile);
-$('desktopChildScrollLeft')?.addEventListener('click',()=>{$('desktopChildStripViewport')?.scrollBy({left:-260,behavior:'smooth'})});
-$('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStripViewport')?.scrollBy({left:260,behavior:'smooth'})});
-$('desktopChildStripViewport')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
-
+$('desktopChildScrollLeft')?.addEventListener('click',()=>{$('desktopChildStrip')?.scrollBy({left:-260,behavior:'smooth'})});
+$('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStrip')?.scrollBy({left:260,behavior:'smooth'})});
+$('desktopChildStrip')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
 window.addEventListener('resize',updateDesktopChildScrollButtons);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
 $('removeProfile')?.addEventListener('click',deleteChildProfile);
@@ -382,18 +381,12 @@ async function renderDesktopProfileTiles(){
  strip.innerHTML=tiles+`<button type="button" class="desktop-child-tile desktop-new-child${!activeProfileId?' selected':''}" data-profile-id="" aria-pressed="${!activeProfileId?'true':'false'}"><span class="desktop-child-avatar desktop-new-child-icon">＋</span><span class="desktop-child-name">${escapeHtml(t().newChild||'New child')}</span></button>`;
  strip.querySelectorAll('.desktop-child-tile').forEach(btn=>btn.addEventListener('click',async()=>{
   const sel=$('profileSelect');if(!sel)return;sel.value=btn.dataset.profileId||'';await selectCloudProfile();renderProfileSelect();
-  requestAnimationFrame(()=>{
-   const selectedTile=strip.querySelector('.desktop-child-tile.selected'),viewport=$('desktopChildStripViewport');
-   if(selectedTile&&viewport){
-    const target=Math.max(0,selectedTile.offsetLeft-(viewport.clientWidth-selectedTile.offsetWidth)/2);
-    viewport.scrollTo({left:target,behavior:'smooth'});
-   }
-  });
+  requestAnimationFrame(()=>strip.querySelector('.desktop-child-tile.selected')?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'}));
  }));
  updateDesktopChildScrollButtons();
 }
 function updateDesktopChildScrollButtons(){
- const strip=$('desktopChildStripViewport'),left=$('desktopChildScrollLeft'),right=$('desktopChildScrollRight');if(!strip||!left||!right)return;
+ const strip=$('desktopChildStrip'),left=$('desktopChildScrollLeft'),right=$('desktopChildScrollRight');if(!strip||!left||!right)return;
  const overflow=strip.scrollWidth>strip.clientWidth+2;left.classList.toggle('visible',overflow&&strip.scrollLeft>2);right.classList.toggle('visible',overflow&&strip.scrollLeft<strip.scrollWidth-strip.clientWidth-2);
 }
 function renderProfileSelect(){
@@ -581,49 +574,8 @@ async function loadStoryCredits(){
  refreshStoryCreditConsentUI().catch(()=>{});
  return storyCreditBalance;
 }
-function accessTokenNeedsRefresh229(token){
- try{
-   const payload=JSON.parse(atob(String(token||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-   return !Number.isFinite(Number(payload?.exp)) || Number(payload.exp)*1000 <= Date.now()+60000;
- }catch{return true}
-}
 async function currentAccessToken(){
- if(!supabaseClient)return '';
- try{
-   let {data:{session},error}=await supabaseClient.auth.getSession();
-   if(error)console.warn('getSession',error);
-   // V229: do not leave the UI in a "signed-in" zombie state with a cached
-   // user/credit balance but no usable JWT. Refresh explicitly when the token
-   // is missing or close to expiry.
-   if(!session?.access_token || accessTokenNeedsRefresh229(session.access_token)){
-     const refreshed=await supabaseClient.auth.refreshSession();
-     if(refreshed?.error)console.warn('refreshSession',refreshed.error);
-     session=refreshed?.data?.session||session;
-   }
-   if(session?.access_token && !accessTokenNeedsRefresh229(session.access_token)){
-     currentUser=session.user||currentUser;
-     document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
-     return session.access_token;
-   }
-   // If refresh genuinely failed, reconcile the whole interface with the real
-   // auth state instead of continuing to show credits for a user who cannot
-   // authenticate API calls.
-   if(currentUser)await applyAuthSession(null);
-   return '';
- }catch(e){
-   console.warn('currentAccessToken',e);
-   try{
-     const refreshed=await supabaseClient.auth.refreshSession();
-     const session=refreshed?.data?.session;
-     if(session?.access_token && !accessTokenNeedsRefresh229(session.access_token)){
-       currentUser=session.user||currentUser;
-       document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
-       return session.access_token;
-     }
-   }catch(refreshError){console.warn('refreshSession retry',refreshError)}
-   if(currentUser)await applyAuthSession(null);
-   return '';
- }
+ const {data:{session}}=await supabaseClient.auth.getSession();return session?.access_token||'';
 }
 
 function showCheckoutNotice(message,kind=''){
@@ -756,7 +708,7 @@ async function generateStory(){
  if(!currentUser){$('status').innerHTML='<span class="error">Sign in or create a parent account to make a story.</span>';if(isPhonePortrait())goSetupPage(0);return}
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
- const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';if(isPhonePortrait())goSetupPage(0);return}
+ const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
  if(!(await prepareStoryCreditConsent(accessToken)))return;
  const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy');
  $('status').textContent='';button.disabled=true;button.classList.add('is-generating');
