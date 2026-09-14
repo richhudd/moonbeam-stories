@@ -1388,9 +1388,16 @@ function recalledAppSection219(){
 }
 function restoreAppSection219(){
  const section=recalledAppSection219();
+ if(section!=='account'&&section!=='saved')return false;
+ // V220: on a full reload the public landing page is the initial shell.
+ // Restoring only the internal Account/Saved panel is not enough: explicitly
+ // re-enter the signed-in app shell before revealing the remembered section.
+ $('landing')?.classList.add('hidden');
+ $('productApp')?.classList.remove('hidden');
+ document.body.classList.add('product-active');
+ $('story')?.classList.add('hidden');
  if(section==='account'){showAccountView213();return true}
- if(section==='saved'){showSavedStoriesView();return true}
- return false;
+ showSavedStoriesView();return true;
 }
 
 function showSavedStoriesView(){

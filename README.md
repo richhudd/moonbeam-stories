@@ -1,3 +1,14 @@
+# Moonbeam Stories V220
+
+## V220 — correctly restore Account/Saved Stories after refresh
+- Fixes the V219 reload bug where the remembered Account/Saved Stories section was restored internally but the public homepage shell remained visible.
+- On full page reload, Moonbeam now explicitly re-enters the signed-in application shell before restoring the remembered Account or Saved Stories section.
+- Refresh on Account returns to Account.
+- Refresh on Saved Stories returns to Saved Stories.
+- The remembered section remains user-scoped and session-scoped, and is cleared by Create Story or Sign out exactly as in V219.
+- V215 tab-focus persistence, V218 email verification guidance, mobile demo motion and reader behaviour are unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V219
 
 ## V219 — preserve Account/Saved Stories across page refresh
