@@ -1,3 +1,20 @@
+# Moonbeam Stories V234
+
+## V234 — desktop Account Sign out is directly linked to Create Story login
+- Built directly from V233.
+- On desktop, clicking Sign out in Account now immediately opens Create Story setup page 0, which is the original login page.
+- This navigation happens at button-click time, before Supabase sign-out callbacks can run.
+- A route lock prevents Account from reopening during the sign-out sequence.
+- The lock is enforced by:
+  - the Account renderer;
+  - the Account view opener;
+  - the Account session re-check;
+  - the auth-session cleanup;
+  - the final sign-out completion.
+- The lock is only cleared when a genuine signed-in user session exists again.
+- Mobile sign-out behaviour is unchanged.
+- No changes to story generation, credits, reader, saved stories, child-profile swipe, APIs or Supabase schema.
+
 # Moonbeam Stories V233
 
 ## V233 — definitive desktop logout destination
