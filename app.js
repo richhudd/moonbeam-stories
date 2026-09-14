@@ -290,6 +290,19 @@ document.querySelectorAll('[data-buy-credits]').forEach(b=>b.addEventListener('c
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('creditShop')?.classList.contains('hidden'))closeCreditShop()});
 initSupabase();
 
+let desktopLogoutToLegacyLogin233=false;
+
+function showLegacyLoginAfterDesktopSignOut233(){
+ $('landing')?.classList.add('hidden');
+ $('productApp')?.classList.remove('hidden');
+ document.body.classList.add('product-active');
+ $('accountView')?.classList.add('hidden');
+ $('savedStoriesView')?.classList.add('hidden');
+ $('story')?.classList.add('hidden');
+ showCreateStoryView();
+ goSetupPage(0,true);
+}
+
 async function initSupabase(){
  const sharedToken=shareTokenFromLocation();if(sharedToken){await loadSharedStory(sharedToken);return}
  if(!supabaseClient){$('authStatus').textContent='Account service could not load.';return}
@@ -318,6 +331,7 @@ async function applyAuthSession(session){
  const nextUser=session?.user||null;
  const sameSignedInUser=!!previousUserId&&!!nextUser&&previousUserId===nextUser.id;
  currentUser=nextUser;
+ if(currentUser)desktopLogoutToLegacyLogin233=false;
  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
@@ -343,10 +357,18 @@ async function applyAuthSession(session){
    draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];
    renderProfileSelect();renderLibrary();
    storyCreditBalance=null;renderStoryCredits(null);
-   // Render signed-out Account before any ancillary photo cleanup, so a failure there
-   // can never leave the stale signed-in controls visible.
-   renderAccountView213();
+
+   // V233: desktop Account logout has a fixed destination: the original setup login page.
+   // Supabase may emit SIGNED_OUT more than once, so never let a later auth callback
+   // reopen Account while this guard is active.
+   if(desktopLogoutToLegacyLogin233){
+     showLegacyLoginAfterDesktopSignOut233();
+   }else{
+     renderAccountView213();
+   }
+
    try{await loadCurrentChildPhoto()}catch(e){console.warn('signed-out photo cleanup',e)}
+   if(desktopLogoutToLegacyLogin233)showLegacyLoginAfterDesktopSignOut233();
    return;
  }
  renderAccountView213();
@@ -397,30 +419,33 @@ async function signInParent(){
 }
 async function signOutParent(){
  if(!supabaseClient)return;
+ const desktop=!isPhonePortrait()&&!document.body.classList.contains('phone-landscape');
+
+ // Set this BEFORE Supabase signOut. Its SIGNED_OUT callback may fire immediately.
+ desktopLogoutToLegacyLogin233=desktop;
+
  try{
   const {error}=await supabaseClient.auth.signOut();
-  if(error){console.warn('Sign out',error);return}
+  if(error){
+   desktopLogoutToLegacyLogin233=false;
+   console.warn('Sign out',error);
+   return;
+  }
 
-  // Immediately clear signed-in UI state.
   currentUser=null;
   storyCreditBalance=null;
   document.body.classList.remove('moonbeam-signed-in');
-  renderAccountView213();
 
-  // Finish the normal signed-out cleanup.
+  // Finish normal cleanup. applyAuthSession itself now honours the destination guard.
   await applyAuthSession(null);
 
-  // V232 rebuilt from V231:
-  // On desktop, signing out from Account returns to the original setup login page.
-  // On mobile, keep the existing Account-page signed-out behaviour.
-  if(!isPhonePortrait() && !document.body.classList.contains('phone-landscape')){
-   $('accountView')?.classList.add('hidden');
-   showCreateStoryView();
-   goSetupPage(0,true);
+  if(desktop){
+   showLegacyLoginAfterDesktopSignOut233();
   }else{
    showAccountView213();
   }
  }catch(e){
+  desktopLogoutToLegacyLogin233=false;
   console.warn('Sign out',e);
  }
 }
@@ -1486,7 +1511,8 @@ async function syncAccountAuthState229(){
   document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
   if(!currentUser){
    storyCreditBalance=null;
-   renderAccountView213();
+   if(desktopLogoutToLegacyLogin233)showLegacyLoginAfterDesktopSignOut233();
+   else renderAccountView213();
    return;
   }
   if(changed || storyCreditBalance==null){
@@ -1495,7 +1521,9 @@ async function syncAccountAuthState229(){
   renderAccountView213();
  }catch(e){
   console.warn('Account session sync',e);
-  currentUser=null;storyCreditBalance=null;document.body.classList.remove('moonbeam-signed-in');renderAccountView213();
+  currentUser=null;storyCreditBalance=null;document.body.classList.remove('moonbeam-signed-in');
+  if(desktopLogoutToLegacyLogin233)showLegacyLoginAfterDesktopSignOut233();
+  else renderAccountView213();
  }
 }
 

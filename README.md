@@ -1,3 +1,19 @@
+# Moonbeam Stories V233
+
+## V233 — definitive desktop logout destination
+- Built directly from the rebuilt V232 that itself came from clean V231.
+- Desktop Account logout now sets a logout-destination guard BEFORE Supabase signOut is called.
+- This matters because Supabase can emit SIGNED_OUT before signOut() resolves.
+- Every signed-out path now honours the same guard:
+  - the Supabase auth-state callback;
+  - applyAuthSession(null);
+  - the Account page's asynchronous getSession() re-check;
+  - the final signOut completion.
+- While the guard is active, those paths all open the original setup/login page and are prevented from reopening the signed-out Account page.
+- The guard is cleared only when a genuine signed-in session exists again, or if sign-out itself fails.
+- Mobile logout behaviour remains unchanged.
+- No story generation, credits, reader, saved stories, child-profile swipe, API or Supabase schema changes.
+
 # Moonbeam Stories V232
 
 ## V232 — desktop logout returns to the original login page
