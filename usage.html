@@ -1,7 +1,7 @@
 <!doctype html>
 <meta name="viewport" content="width=device-width">
 <title>Moonbeam Usage</title>
-<link rel="stylesheet" href="/styles.css?v=238">
+<link rel="stylesheet" href="/styles.css?v=239">
 <main class="usage-page">
   <h1>Moonbeam developer usage</h1>
   <div id="u">Loading…</div>
@@ -10,62 +10,57 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (async()=>{
-  const u=document.getElementById('u');
-  const c=supabase.createClient(
-    'https://quwjfjojeibaxnnpykaf.supabase.co',
-    'sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q'
-  );
-  const s=(await c.auth.getSession()).data.session;
-  if(!s){u.textContent='Sign into Moonbeam first';return}
+ const u=document.getElementById('u');
+ const c=supabase.createClient('https://quwjfjojeibaxnnpykaf.supabase.co','sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q');
+ const s=(await c.auth.getSession()).data.session;
+ if(!s){u.textContent='Sign into Moonbeam first';return}
+ const r=await fetch('/api/usage-summary',{headers:{Authorization:'Bearer '+s.access_token}});
+ const d=await r.json(); if(!r.ok){u.textContent=d.error||'Could not load usage';return}
 
-  const r=await fetch('/api/usage-summary',{
-    headers:{Authorization:'Bearer '+s.access_token}
-  });
-  const d=await r.json();
-  if(!r.ok){u.textContent=d.error||'Could not load usage';return}
+ const money=n=>n==null?'—':'$'+Number(n).toFixed(4);
+ const num=n=>n==null?'—':Number(n).toLocaleString('en-GB');
+ const baseline=new Date(d.baselineUTC).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/London',timeZoneName:'short'});
+ const P=d.periods||{};
+ const cols=[['allTime','All-time'],['sinceBaseline','Since baseline'],['today','Today'],['last7Days','Last 7 days']];
+ const row=(label,key,fmt=num)=>`<tr><th>${label}</th>${cols.map(([k])=>`<td>${fmt(P[k]?.[key])}</td>`).join('')}</tr>`;
+ const support=(d.supportAttempts||[]);
+ const supportRows=support.length?support.map(a=>`
+   <tr>
+    <td>${new Date(a.createdAt).toLocaleString('en-GB')}</td>
+    <td>${esc(a.email)}</td><td>${esc(a.status)}</td>
+    <td>${a.creditDeducted?'Yes':'No'}</td><td>${a.creditRefunded?'Yes':'No'}</td>
+    <td>${a.imagesGenerated}</td><td>${esc(a.errorCode||'—')}</td>
+    <td>${a.durationMs?Math.round(a.durationMs/1000)+'s':'—'}</td>
+   </tr>`).join(''):`<tr><td colspan="8">No generation attempts logged yet. New attempts will appear here from V239 onward.</td></tr>`;
 
-  const money=n=>n==null?'—':'$'+Number(n).toFixed(4);
-  const baseline=new Date(d.baselineUTC);
-  const baselineText=baseline.toLocaleString('en-GB',{
-    day:'numeric',month:'short',year:'numeric',
-    hour:'2-digit',minute:'2-digit',
-    timeZone:'Europe/London',timeZoneName:'short'
-  });
+ const costNote=d.openai?.available
+   ? `Actual OpenAI Costs API data${d.openai.projectFiltered?' filtered to the configured Moonbeam project':''}.`
+   : `<strong>OpenAI cost unavailable:</strong> ${esc(d.openai?.error||'Unknown error')}`;
 
-  const all=d.allTime||{};
-  const fresh=d.sinceBaseline||{};
-  const costMessage=d.openai?.available
-    ? `<p class="usage-note">OpenAI cost is read from the organisation Costs API${d.openai.projectFiltered?' and filtered to the configured Moonbeam project':''}. OpenAI reporting can lag slightly behind generation.</p>`
-    : `<p class="usage-warning"><strong>OpenAI cost not connected yet.</strong> ${d.openai?.error||'Add OPENAI_ADMIN_KEY in Vercel.'}</p>`;
+ u.innerHTML=`
+  <section class="usage-section">
+   <div class="usage-section-head"><h2>Usage & economics</h2><p>Baseline: ${baseline}. Historical totals are preserved; the “Since baseline” column excludes earlier activity.</p></div>
+   <div class="usage-table-wrap"><table class="usage-economics">
+    <thead><tr><th>Metric</th>${cols.map(([,label])=>`<th>${label}</th>`).join('')}</tr></thead>
+    <tbody>
+     ${row('Stories','stories')}
+     ${row('Images','images')}
+     ${row('Narrations','narrations')}
+     ${row('OpenAI cost','openAICostUSD',money)}
+     ${row('Cost / story','averageStoryCostUSD',money)}
+    </tbody>
+   </table></div>
+   <p class="${d.openai?.available?'usage-note':'usage-warning'}">${costNote}</p>
+   <p class="usage-note">Registered accounts: <strong>${num(P.allTime?.registeredUsers)}</strong></p>
+  </section>
 
-  u.innerHTML=`
-    <section class="usage-section">
-      <div class="usage-section-head">
-        <h2>All-time usage</h2>
-        <p>Historical Moonbeam activity is preserved.</p>
-      </div>
-      <div class="usage-grid">
-        <div><b>${all.registeredUsers??'—'}</b><span>accounts</span></div>
-        <div><b>${all.stories??0}</b><span>stories</span></div>
-        <div><b>${all.images??0}</b><span>images</span></div>
-        <div><b>${all.narrations??0}</b><span>narrations</span></div>
-      </div>
-    </section>
-
-    <section class="usage-section usage-baseline-section">
-      <div class="usage-section-head">
-        <h2>Cost tracking — since baseline</h2>
-        <p>Baseline: ${baselineText}. Historical usage above is not included in these calculations.</p>
-      </div>
-      <div class="usage-grid">
-        <div><b>${fresh.stories??0}</b><span>stories</span></div>
-        <div><b>${fresh.images??0}</b><span>images</span></div>
-        <div><b>${fresh.narrations??0}</b><span>narrations</span></div>
-        <div><b>${money(fresh.openAICostUSD)}</b><span>OpenAI cost</span></div>
-        <div><b>${money(fresh.averageStoryCostUSD)}</b><span>cost/story</span></div>
-      </div>
-      ${costMessage}
-    </section>
-  `;
+  <section class="usage-section usage-baseline-section">
+   <div class="usage-section-head"><h2>Generation support log</h2><p>Operational evidence for refund/support queries. Story text and user prompts are not stored here.</p></div>
+   <div class="usage-table-wrap"><table class="usage-support">
+    <thead><tr><th>Time</th><th>Account</th><th>Result</th><th>Credit deducted</th><th>Credit refunded</th><th>Images</th><th>Error</th><th>Duration</th></tr></thead>
+    <tbody>${supportRows}</tbody>
+   </table></div>
+  </section>`;
+ function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 })()
 </script>

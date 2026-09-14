@@ -5,189 +5,133 @@ const PUBLISHABLE_KEY =
 
 const DEFAULT_BASELINE_UTC = '2026-09-14T21:25:06Z';
 
-function unixSeconds(iso) {
-  const ms = Date.parse(String(iso || ''));
-  return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+function unixSeconds(v) {
+  const ms=Date.parse(String(v||''));
+  return Number.isFinite(ms)?Math.floor(ms/1000):null;
+}
+function startOfUtcDaySeconds(d=new Date()){
+  return Math.floor(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())/1000);
 }
 
-async function verifyDeveloper(req) {
-  if (!SECRET_KEY) {
-    return { error: [503, 'Set SUPABASE_SERVICE_ROLE_KEY in Vercel.'] };
-  }
+async function verifyDeveloper(req){
+  if(!SECRET_KEY)return {error:[503,'Set SUPABASE_SERVICE_ROLE_KEY in Vercel.']};
+  const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
+  if(!token)return {error:[401,'Sign in required.']};
+  const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{apikey:PUBLISHABLE_KEY,Authorization:`Bearer ${token}`}});
+  if(!r.ok)return {error:[401,'Invalid or expired Moonbeam session.']};
+  const user=await r.json();
+  const allowed=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
+  if(!allowed||String(user.email||'').toLowerCase()!==allowed)return {error:[403,'Developer access only.']};
+  return {user};
+}
 
-  const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return { error: [401, 'Sign in required.'] };
-
-  const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: {
-      apikey: PUBLISHABLE_KEY,
-      Authorization: `Bearer ${token}`
+async function fetchOpenAICostUSD(startTime,endTime){
+  const adminKey=String(process.env.OPENAI_ADMIN_KEY||'').trim();
+  if(!adminKey)return {available:false,totalUSD:null,error:'OPENAI_ADMIN_KEY is not configured in Vercel.'};
+  const projectId=String(process.env.OPENAI_PROJECT_ID||'').trim();
+  let totalUSD=0,page='',safety=0;
+  do{
+    const qs=new URLSearchParams({start_time:String(startTime),end_time:String(endTime),bucket_width:'1d',limit:'180'});
+    if(projectId)qs.append('project_ids',projectId);
+    if(page)qs.set('page',page);
+    const r=await fetch(`https://api.openai.com/v1/organization/costs?${qs}`,{
+      headers:{Authorization:`Bearer ${adminKey}`,'Content-Type':'application/json'}
+    });
+    if(!r.ok){
+      const detail=await r.text(); console.error('OpenAI cost query failed',r.status,detail);
+      return {available:false,totalUSD:null,error:`OpenAI cost query failed (${r.status}).`};
     }
-  });
-
-  if (!userResponse.ok) {
-    return { error: [401, 'Invalid or expired Moonbeam session.'] };
-  }
-
-  const user = await userResponse.json();
-  const allowed = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
-  if (!allowed || String(user.email || '').toLowerCase() !== allowed) {
-    return { error: [403, 'Developer access only.'] };
-  }
-
-  return { user };
+    const payload=await r.json();
+    for(const bucket of Array.isArray(payload.data)?payload.data:[]){
+      for(const result of Array.isArray(bucket.results)?bucket.results:[]){
+        if(String(result?.amount?.currency||'usd').toLowerCase()!=='usd')continue;
+        const n=Number(result?.amount?.value); if(Number.isFinite(n))totalUSD+=n;
+      }
+    }
+    page=payload.has_more?String(payload.next_page||''):'';
+    safety++;
+  }while(page&&safety<50);
+  return {available:true,totalUSD,projectFiltered:!!projectId};
 }
 
-async function fetchOpenAICostUSD(startTime, endTime) {
-  const adminKey = String(process.env.OPENAI_ADMIN_KEY || '').trim();
-  if (!adminKey) {
-    return {
-      available: false,
-      totalUSD: null,
-      currency: 'usd',
-      error: 'OPENAI_ADMIN_KEY is not configured in Vercel.'
-    };
+function count(list,type){return list.filter(x=>x.event_type===type).length}
+function usageFor(events,startMs){
+  const list=startMs==null?events:events.filter(x=>Date.parse(String(x.created_at||''))>=startMs);
+  return {stories:count(list,'story'),images:count(list,'image'),narrations:count(list,'narration')};
+}
+
+module.exports=async function handler(req,res){
+  res.setHeader('Cache-Control','no-store');
+  if(req.method!=='GET')return res.status(405).json({error:'GET only'});
+  const verified=await verifyDeveloper(req);
+  if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
+
+  const baselineUTC=String(process.env.MOONBEAM_USAGE_BASELINE_UTC||DEFAULT_BASELINE_UTC).trim();
+  const baselineSeconds=unixSeconds(baselineUTC);
+  if(!baselineSeconds)return res.status(500).json({error:'MOONBEAM_USAGE_BASELINE_UTC is invalid.'});
+  const now=Math.floor(Date.now()/1000);
+
+  const er=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?select=event_type,created_at,metadata&order=created_at.asc`,{headers:adminHeaders()});
+  if(!er.ok){console.error('usage events failed',er.status,await er.text());return res.status(500).json({error:'Could not read Moonbeam usage events.'})}
+  const events=await er.json();
+
+  const ar=await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`,{headers:adminHeaders()});
+  let users=[],registeredUsers=null;
+  if(ar.ok){const x=await ar.json();users=Array.isArray(x.users)?x.users:[];registeredUsers=users.length}
+  else console.error('usage users failed',ar.status,await ar.text());
+  const emailById=new Map(users.map(u=>[String(u.id),String(u.email||'')]));
+
+  const firstEventSeconds=events.length?Math.floor(Date.parse(events[0].created_at)/1000):baselineSeconds;
+  const today=startOfUtcDaySeconds();
+  const sevenDays=today-(6*86400);
+
+  const periods={
+    allTime:usageFor(events,null),
+    sinceBaseline:usageFor(events,baselineSeconds*1000),
+    today:usageFor(events,today*1000),
+    last7Days:usageFor(events,sevenDays*1000)
+  };
+  periods.allTime.registeredUsers=registeredUsers;
+
+  const [allCost,baseCost,todayCost,sevenCost]=await Promise.all([
+    fetchOpenAICostUSD(firstEventSeconds,now),
+    fetchOpenAICostUSD(baselineSeconds,now),
+    fetchOpenAICostUSD(today,now),
+    fetchOpenAICostUSD(sevenDays,now)
+  ]);
+  const costs={allTime:allCost,sinceBaseline:baseCost,today:todayCost,last7Days:sevenCost};
+  for(const key of Object.keys(periods)){
+    const c=costs[key];
+    periods[key].openAICostUSD=c.totalUSD;
+    periods[key].averageStoryCostUSD=c.available&&periods[key].stories>0?c.totalUSD/periods[key].stories:null;
   }
 
-  const projectId = String(process.env.OPENAI_PROJECT_ID || '').trim();
-  let totalUSD = 0;
-  let page = '';
-  let safety = 0;
-
-  do {
-    const qs = new URLSearchParams({
-      start_time: String(startTime),
-      end_time: String(endTime),
-      bucket_width: '1d',
-      limit: '180'
-    });
-    if (projectId) qs.append('project_ids', projectId);
-    if (page) qs.set('page', page);
-
-    const r = await fetch(`https://api.openai.com/v1/organization/costs?${qs.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${adminKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!r.ok) {
-      const detail = await r.text();
-      console.error('OpenAI cost query failed', r.status, detail);
+  const supportAttempts=events
+    .filter(x=>x.event_type==='generation_attempt')
+    .slice(-100).reverse()
+    .map(x=>{
+      const m=x.metadata||{};
       return {
-        available: false,
-        totalUSD: null,
-        currency: 'usd',
-        error: `OpenAI cost query failed (${r.status}).`
+        createdAt:x.created_at,
+        email:emailById.get(String(m.user_id||''))||'—',
+        status:m.status||'—',
+        creditDeducted:!!m.credit_deducted,
+        creditRefunded:!!m.credit_refunded,
+        generationRunId:m.generation_run_id||null,
+        imagesGenerated:Number(m.images_generated||0),
+        errorCode:m.error_code||null,
+        durationMs:Number(m.duration_ms||0)
       };
-    }
-
-    const payload = await r.json();
-    for (const bucket of Array.isArray(payload.data) ? payload.data : []) {
-      for (const result of Array.isArray(bucket.results) ? bucket.results : []) {
-        const currency = String(result?.amount?.currency || 'usd').toLowerCase();
-        if (currency !== 'usd') continue;
-        const value = Number(result?.amount?.value);
-        if (Number.isFinite(value)) totalUSD += value;
-      }
-    }
-
-    page = payload.has_more ? String(payload.next_page || '') : '';
-    safety += 1;
-  } while (page && safety < 50);
-
-  return {
-    available: true,
-    totalUSD,
-    currency: 'usd',
-    projectFiltered: !!projectId
-  };
-}
-
-module.exports = async function handler(req, res) {
-  res.setHeader('Cache-Control', 'no-store');
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'GET only' });
-  }
-
-  const verified = await verifyDeveloper(req);
-  if (verified.error) {
-    return res.status(verified.error[0]).json({ error: verified.error[1] });
-  }
-
-  const baselineUTC =
-    String(process.env.MOONBEAM_USAGE_BASELINE_UTC || DEFAULT_BASELINE_UTC).trim();
-  const baselineSeconds = unixSeconds(baselineUTC);
-
-  if (!baselineSeconds) {
-    return res.status(500).json({ error: 'MOONBEAM_USAGE_BASELINE_UTC is invalid.' });
-  }
-
-  const nowSeconds = Math.floor(Date.now() / 1000);
-
-  const eventsResponse = await fetch(
-    `${SUPABASE_URL}/rest/v1/api_usage_events?select=event_type,created_at&order=created_at.asc`,
-    { headers: adminHeaders() }
-  );
-
-  if (!eventsResponse.ok) {
-    const detail = await eventsResponse.text();
-    console.error('usage summary events failed', eventsResponse.status, detail);
-    return res.status(500).json({ error: 'Could not read Moonbeam usage events.' });
-  }
-
-  const events = await eventsResponse.json();
-
-  const accountsResponse = await fetch(
-    `${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`,
-    { headers: adminHeaders() }
-  );
-
-  let registeredUsers = null;
-  if (accountsResponse.ok) {
-    const payload = await accountsResponse.json();
-    registeredUsers = Array.isArray(payload.users) ? payload.users.length : null;
-  } else {
-    console.error('usage summary users failed', accountsResponse.status, await accountsResponse.text());
-  }
-
-  const countType = (list, type) => list.filter(x => x.event_type === type).length;
-  const sinceEvents = events.filter(x => {
-    const t = Date.parse(String(x.created_at || ''));
-    return Number.isFinite(t) && t >= baselineSeconds * 1000;
-  });
-
-  const allTime = {
-    registeredUsers,
-    stories: countType(events, 'story'),
-    images: countType(events, 'image'),
-    narrations: countType(events, 'narration')
-  };
-
-  const sinceBaseline = {
-    stories: countType(sinceEvents, 'story'),
-    images: countType(sinceEvents, 'image'),
-    narrations: countType(sinceEvents, 'narration')
-  };
-
-  const openai = await fetchOpenAICostUSD(baselineSeconds, nowSeconds);
-
-  sinceBaseline.openAICostUSD = openai.totalUSD;
-  sinceBaseline.averageStoryCostUSD =
-    openai.available && sinceBaseline.stories > 0
-      ? openai.totalUSD / sinceBaseline.stories
-      : null;
+    });
 
   return res.status(200).json({
     baselineUTC,
-    allTime,
-    sinceBaseline,
-    openai: {
-      available: openai.available,
-      currency: openai.currency,
-      projectFiltered: !!openai.projectFiltered,
-      error: openai.error || null
+    periods,
+    supportAttempts,
+    openai:{
+      available:baseCost.available,
+      projectFiltered:!!baseCost.projectFiltered,
+      error:baseCost.error||null
     }
   });
 };

@@ -3464,3 +3464,12 @@ body:not(.moonbeam-signed-in) #accountView:not(.hidden){
 .usage-baseline-section{padding-top:22px;border-top:1px solid rgba(23,19,45,.14)}
 .usage-note,.usage-warning{margin-top:12px}
 .usage-warning{padding:12px 14px;border:1px solid rgba(165,104,0,.28);border-radius:12px;background:rgba(255,193,7,.08)}
+
+/* V239 developer economics + support tables */
+.usage-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px}
+.usage-economics,.usage-support{width:100%;border-collapse:collapse;background:#fff}
+.usage-economics th,.usage-economics td,.usage-support th,.usage-support td{padding:11px 12px;border-bottom:1px solid rgba(23,19,45,.11);text-align:right;white-space:nowrap}
+.usage-economics th:first-child,.usage-support th,.usage-support td{text-align:left}
+.usage-economics thead th,.usage-support thead th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:#655f72}
+.usage-economics tbody th{font-weight:600;text-align:left}
+.usage-support{font-size:.88rem}

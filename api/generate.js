@@ -11,6 +11,29 @@ module.exports = async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'OPENAI_API_KEY is not configured in Vercel.' });
 
   let reservedUserId=null, reservedBatchId=null, creditReserved=false;
+  const supportStartedAt=Date.now();
+  let supportUserId=null;
+  let supportLogged=false;
+  const logSupportAttempt=async(status,extra={})=>{
+    if(supportLogged)return;
+    supportLogged=true;
+    try{
+      await logUsage({
+        event_type:'generation_attempt',
+        estimated_cost_gbp:0,
+        metadata:{
+          user_id:supportUserId||reservedUserId||null,
+          status,
+          credit_deducted:!!extra.credit_deducted,
+          credit_refunded:!!extra.credit_refunded,
+          generation_run_id:extra.generation_run_id||null,
+          error_code:extra.error_code||null,
+          images_generated:Number(extra.images_generated||0),
+          duration_ms:Date.now()-supportStartedAt
+        }
+      });
+    }catch(e){console.error('support generation log failed',e)}
+  };
   const refundOuterReservation=async()=>{if(!creditReserved||!reservedUserId)return;creditReserved=false;try{await refundReservedStoryCredit(reservedUserId,reservedBatchId)}catch(refundError){console.error('credit refund error',refundError)}};
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
@@ -24,6 +47,7 @@ module.exports = async function handler(req, res) {
 
     // V50: every new Moonbeam story has the same predictable length and cost.
     const moonbeamUser = await verifyMoonbeamUser(req);
+    supportUserId=moonbeamUser.id;
     let creditsRemaining;
     try {
       const reservation = await reserveStoryCredit(moonbeamUser.id);
@@ -476,6 +500,7 @@ The photographed main child's identity comes from the supplied photo, so do not 
 
     const generationRunId = await createGenerationRun(moonbeamUser.id);
     await logUsage({event_type:'story',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    await logSupportAttempt('success',{credit_deducted:true,credit_refunded:false,generation_run_id:generationRunId});
     creditReserved = false;
     return res.status(200).json({
       creditsRemaining,
@@ -493,7 +518,13 @@ The photographed main child's identity comes from the supplied photo, so do not 
     });
   } catch (e) {
     console.error('generate error', e);
+    const hadReservedCredit=creditReserved;
     await refundOuterReservation();
+    await logSupportAttempt('failed',{
+      credit_deducted:hadReservedCredit,
+      credit_refunded:hadReservedCredit,
+      error_code:e?.code||e?.status||'GENERATION_ERROR'
+    });
     return res.status(500).json({ error: String(e && e.message ? e.message : e) });
   }
 };

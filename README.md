@@ -1,3 +1,20 @@
+# Moonbeam Stories V239
+
+## V239 — economics table + generation support trail
+- Built from V238, which itself was built from clean V231.
+- Leaves the parked desktop Account logout and mobile child-strip issues untouched.
+- Replaces the usage summary cards with a separate economics table.
+- Economics columns: All-time, Since baseline, Today, Last 7 days. “Since baseline” is immediately next to All-time.
+- Rows: stories, images, narrations, actual OpenAI cost, actual cost/story.
+- Uses the same OpenAI Costs API connection introduced in V238.
+- Adds a developer-only generation support log for new generation attempts from V239 onward.
+- Support log records: account email (resolved server-side from user ID), timestamp, success/failure, whether a credit was deducted/refunded, generation run ID internally, error code, image count field and duration.
+- Does NOT store story text or user prompts in the support log.
+- Uses the existing api_usage_events table; no Supabase schema change required.
+- Historical story/image/narration usage remains intact.
+- Baseline remains 14 September 2026 21:25:06 UTC / 22:25:06 BST.
+- No reader, save, child-strip, Account UI, story content, illustration style or narration behaviour changed.
+
 # Moonbeam Stories V238
 
 ## V238 — live OpenAI cost-per-story dashboard, built from clean V231
