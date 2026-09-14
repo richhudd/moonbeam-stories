@@ -1,3 +1,17 @@
+# Moonbeam Stories V226
+
+## V226 — isolated mobile child-profile horizontal scroller
+- Rebuilt directly from V225; the previous V226 experiment was discarded.
+- The child chooser now has a dedicated `desktop-child-strip-viewport` wrapper.
+- The surrounding setup page remains responsible for vertical scrolling.
+- Only the isolated child-profile viewport owns horizontal scrolling and `pan-x` touch gestures.
+- The inner child-card track is `max-content`, so additional child profiles extend inside the horizontal scroller rather than overflowing the setup page itself.
+- Desktop carousel arrows now scroll the same isolated viewport, preserving the existing desktop behaviour.
+- Selecting a child scrolls only the child-profile viewport and no longer relies on `scrollIntoView`, which could also move the outer setup page.
+- Removes V225's manual touch-event interception.
+- V224 Account vertical swipe scrolling and passive double-chevron cue remain unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V225
 
 ## V225 — reliable mobile child-profile swipe
