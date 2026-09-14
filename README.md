@@ -1,3 +1,16 @@
+# Moonbeam Stories V242
+
+## V242 — fixed Moonbeam all-time cost start
+- Built directly from V241.
+- Defines Moonbeam “All-time” as 8 September 2026 00:00 BST (7 September 2026 23:00 UTC) through now.
+- All-time stories, images and narrations now use that same fixed start.
+- All-time OpenAI cost queries the Costs API over that same fixed period.
+- All-time cost/story is therefore cost and successful story count over the same fixed period.
+- Keeps Since baseline, This month, Today and Last 7 days.
+- Keeps Users and generation support log.
+- No Supabase schema change.
+- Leaves parked desktop Account logout and mobile child-strip issues untouched.
+
 # Moonbeam Stories V241
 
 ## V241 — verifiable OpenAI cost windows

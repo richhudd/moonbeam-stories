@@ -1,7 +1,7 @@
 <!doctype html>
 <meta name="viewport" content="width=device-width">
 <title>Moonbeam Usage</title>
-<link rel="stylesheet" href="/styles.css?v=241">
+<link rel="stylesheet" href="/styles.css?v=242">
 <main class="usage-page">
   <h1>Moonbeam developer usage</h1>
   <div id="u">Loading…</div>
@@ -20,10 +20,11 @@
  const money=n=>n==null?'—':'$'+Number(n).toFixed(4);
  const num=n=>n==null?'—':Number(n).toLocaleString('en-GB');
  const baseline=new Date(d.baselineUTC).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/London',timeZoneName:'short'});
+ const allTimeStart=new Date(d.allTimeStartUTC).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/London',timeZoneName:'short'});
  const P=d.periods||{};
  const cols=[['allTime','All-time'],['sinceBaseline','Since baseline'],['thisMonth','This month'],['today','Today'],['last7Days','Last 7 days']];
  const row=(label,key,fmt=num)=>`<tr><th>${label}</th>${cols.map(([k])=>`<td>${fmt(P[k]?.[key])}</td>`).join('')}</tr>`;
- const costRow=(label,key)=>`<tr><th>${label}</th>${cols.map(([k])=>`<td>${k==='allTime'?'—':money(P[k]?.[key])}</td>`).join('')}</tr>`;
+ const costRow=(label,key)=>`<tr><th>${label}</th>${cols.map(([k])=>`<td>${money(P[k]?.[key])}</td>`).join('')}</tr>`;
  const users=(d.users||[]);
  const userRows=users.length?users.map(x=>`
    <tr>
@@ -61,7 +62,7 @@
      ${costRow('Cost / story','averageStoryCostUSD')}
     </tbody>
    </table></div>
-   <p class="${d.openai?.available?'usage-note':'usage-warning'}">${costNote} <strong>This month</strong> uses the start of the current UTC month to now and is the column to compare with OpenAI Platform's monthly spend. All-time cost is deliberately left blank rather than showing a misleading partial total.</p>
+   <p class="${d.openai?.available?'usage-note':'usage-warning'}">${costNote} <strong>All-time</strong> is fixed from ${allTimeStart}. <strong>This month</strong> uses the start of the current UTC month to now and is the column to compare with OpenAI Platform's monthly spend.</p>
    <p class="usage-note">Registered accounts: <strong>${num(P.allTime?.registeredUsers)}</strong></p>
   </section>
 

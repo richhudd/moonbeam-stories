@@ -4,6 +4,7 @@ const PUBLISHABLE_KEY =
   String(process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q').trim();
 
 const DEFAULT_BASELINE_UTC = '2026-09-14T21:25:06Z';
+const MOONBEAM_ALL_TIME_START_UTC = '2026-09-07T23:00:00Z'; // 8 Sep 2026 00:00 BST
 
 function unixSeconds(v) {
   const ms=Date.parse(String(v||''));
@@ -84,12 +85,13 @@ module.exports=async function handler(req,res){
   else console.error('usage users failed',ar.status,await ar.text());
   const emailById=new Map(users.map(u=>[String(u.id),String(u.email||'')]));
 
+  const allTimeStart=unixSeconds(MOONBEAM_ALL_TIME_START_UTC);
   const today=startOfUtcDaySeconds();
   const thisMonth=startOfUtcMonthSeconds();
   const sevenDays=today-(6*86400);
 
   const periods={
-    allTime:usageFor(events,null),
+    allTime:usageFor(events,allTimeStart*1000),
     sinceBaseline:usageFor(events,baselineSeconds*1000),
     thisMonth:usageFor(events,thisMonth*1000),
     today:usageFor(events,today*1000),
@@ -97,14 +99,15 @@ module.exports=async function handler(req,res){
   };
   periods.allTime.registeredUsers=registeredUsers;
 
-  const [monthCost,baseCost,todayCost,sevenCost]=await Promise.all([
+  const [allCost,monthCost,baseCost,todayCost,sevenCost]=await Promise.all([
+    fetchOpenAICostUSD(allTimeStart,now),
     fetchOpenAICostUSD(thisMonth,now),
     fetchOpenAICostUSD(baselineSeconds,now),
     fetchOpenAICostUSD(today,now),
     fetchOpenAICostUSD(sevenDays,now)
   ]);
   const costs={
-    allTime:{available:false,totalUSD:null},
+    allTime:allCost,
     sinceBaseline:baseCost,
     thisMonth:monthCost,
     today:todayCost,
@@ -167,6 +170,7 @@ module.exports=async function handler(req,res){
 
   return res.status(200).json({
     baselineUTC,
+    allTimeStartUTC:MOONBEAM_ALL_TIME_START_UTC,
     periods,
     users:userSummaries,
     supportAttempts,
