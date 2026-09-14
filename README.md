@@ -1,3 +1,15 @@
+# Moonbeam Stories V210
+
+## V210 — landscape reader rebuilt in-place from V207
+- Rebuilt directly from the known-good V207 package.
+- The existing V207 phone-landscape CSS block was edited in place instead of appending a new override block.
+- Keeps V207's rotation state lock so rotating never leaves the current story/page.
+- Phone landscape hides the app chrome and makes the live story fill the viewport.
+- Text remains on the left, illustration on the right, with compact floating navigation.
+- Portrait reader behaviour is unchanged.
+- V206 interrupted-illustration recovery remains intact.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V207
 
 ## V207 — mobile reader rotation state lock

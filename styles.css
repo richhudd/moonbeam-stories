@@ -2880,9 +2880,26 @@ body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTr
 body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupShell>.setup-nav{display:none!important}
 body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) .setup-step-label{display:inline-flex!important}
 
-/* Landscape phone reader: explicitly keep the live story above the library/setup
-   and use the desktop left-text/right-illustration spread. */
-body.phone-landscape.story-mode #story:not(.hidden){display:block!important;visibility:visible!important;opacity:1!important;z-index:100!important}
-body.phone-landscape.story-mode #book:not(.hidden){display:grid!important;grid-template-columns:1fr 1fr!important;grid-template-rows:1fr!important}
+/* Landscape phone reader: preserve the live reader and make the story itself
+   fill the viewport. This replaces the original V205 landscape rules in place. */
+body.phone-landscape.story-mode{overflow:hidden!important}
+body.phone-landscape.story-mode #productApp{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;margin:0!important;padding:0!important;overflow:hidden!important}
+body.phone-landscape.story-mode #productApp>header,
+body.phone-landscape.story-mode #setupShell,
+body.phone-landscape.story-mode #savedStoriesView,
+body.phone-landscape.story-mode #productApp>.site-legal-footer{display:none!important}
+body.phone-landscape.story-mode #story:not(.hidden){display:block!important;position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;margin:0!important;padding:0!important;overflow:hidden!important;visibility:visible!important;opacity:1!important;z-index:500!important}
+body.phone-landscape.story-mode #story .book-shell{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;margin:0!important;padding:0!important;border-radius:0!important;box-shadow:none!important}
+body.phone-landscape.story-mode #story .book-cover-head,
+body.phone-landscape.story-mode #story .book-shell>.actions{display:none!important}
+body.phone-landscape.story-mode #book:not(.hidden){display:grid!important;position:absolute!important;inset:0!important;grid-template-columns:1fr 1fr!important;grid-template-rows:1fr!important;width:100%!important;height:100%!important;margin:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important}
+body.phone-landscape.story-mode #book .paper{height:100dvh!important;min-height:0!important}
 body.phone-landscape.story-mode #book .left-page{grid-column:1!important;grid-row:1!important}
-body.phone-landscape.story-mode #book .right-page{grid-column:2!important;grid-row:1!important}
+body.phone-landscape.story-mode #book .right-page{grid-column:2!important;grid-row:1!important;padding:0!important}
+body.phone-landscape.story-mode #book .illustration-frame,
+body.phone-landscape.story-mode #book .illustration-frame img{width:100%!important;height:100%!important;max-height:none!important;border-radius:0!important}
+body.phone-landscape.story-mode #book .illustration-frame img{object-fit:cover!important}
+body.phone-landscape.story-mode #bookControls:not(.hidden){display:flex!important;position:fixed!important;left:50%!important;right:auto!important;bottom:max(8px,env(safe-area-inset-bottom))!important;transform:translateX(-50%)!important;z-index:700!important;width:auto!important;padding:5px!important;gap:7px!important;align-items:center!important;border-radius:999px!important;background:rgba(255,253,247,.9)!important;box-shadow:0 4px 18px #0003!important}
+body.phone-landscape.story-mode #bookControls button{position:static!important;transform:none!important;width:auto!important;min-width:92px!important;height:34px!important;min-height:34px!important;margin:0!important;padding:0 14px!important;border-radius:999px!important;font-size:12px!important}
+body.phone-landscape.story-mode #bookControls .page-indicator{position:static!important;transform:none!important;min-width:42px!important;padding:0!important;background:transparent!important;box-shadow:none!important;font-size:11px!important}
+body.phone-landscape.story-mode:not(.shared-story-mode) #storyExit{display:grid!important;position:fixed!important;top:max(8px,env(safe-area-inset-top))!important;left:max(8px,env(safe-area-inset-left))!important;z-index:800!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;margin:0!important;padding:0!important;place-items:center!important;border-radius:999px!important}
