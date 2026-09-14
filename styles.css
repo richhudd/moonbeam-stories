@@ -3043,3 +3043,21 @@ body.phone-landscape.story-mode #book.show-mobile-spread .mobile-scroll-cue{disp
   .account-password-grid{grid-template-columns:1fr}
   .account-credit-row{align-items:flex-start;flex-direction:column}
 }
+
+
+/* V215 — account polish and mobile homepage demo motion. */
+#accountEmailValue{color:#30254f!important}
+
+/* Match the desktop's gentle hero-demo movement on mobile. */
+@media (max-width:700px){
+  body:not(.product-active) #landing .hero-demo{
+    transform:rotate(1deg)!important;
+    animation:heroFloat 6s ease-in-out infinite!important;
+  }
+}
+@media (max-width:700px) and (prefers-reduced-motion:reduce){
+  body:not(.product-active) #landing .hero-demo{
+    transform:none!important;
+    animation:none!important;
+  }
+}

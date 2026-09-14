@@ -1,3 +1,16 @@
+# Moonbeam Stories V215
+
+## V215 — Account/Saved view persistence + account email colour + mobile demo motion
+- Fixes the Account email value appearing white/pale on the cream Account page by explicitly applying the normal dark Moonbeam account text colour.
+- Fixes Account and Saved Stories snapping back to Create Story/setup when the browser tab loses and regains focus.
+- Root cause: Supabase can emit repeated auth/session events for the already-signed-in user; the app was rerunning setup-draft restoration on those events.
+- Auth/session refreshes for the same signed-in user now refresh cloud/profile/story/credit data without changing the active app section.
+- Initial sign-in/session restoration still restores story/setup drafts exactly as before.
+- Adds the same gentle hero-demo float animation used on desktop to the mobile homepage.
+- Mobile demo motion respects the device's prefers-reduced-motion setting.
+- V212 reader architecture and V214 homepage/startup fix are unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V214
 
 ## V214 — restore homepage → setup navigation

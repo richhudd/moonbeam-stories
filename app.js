@@ -285,11 +285,30 @@ const UI_STATUS_135={
 function uiStatus135(){return UI_STATUS_135[language]||UI_STATUS_135['en-GB']}
 function setAuthStatus(message,isError=false){const el=$('authStatus');if(!el)return;el.innerHTML=isError?`<span class="error">${escapeHtml(message)}</span>`:escapeHtml(message||'')}
 async function applyAuthSession(session){
- currentUser=session?.user||null;
+ const previousUserId=currentUser?.id||null;
+ const nextUser=session?.user||null;
+ const sameSignedInUser=!!previousUserId&&!!nextUser&&previousUserId===nextUser.id;
+ currentUser=nextUser;
  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
- if(currentUser){setAuthStatus('');updateSetupNav();await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}const restoredDraft=await maybeRestoreStoryDraft();const restoredSetup=restoredDraft?false:await maybeRestoreSetupDraft();if(!restoredDraft&&!restoredSetup&&!$('productApp')?.classList.contains('hidden')&&setupPageIndex===0&&$('passwordRecovery')?.classList.contains('hidden'))goSetupPage(1,true)}else{draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
+ if(currentUser){
+   setAuthStatus('');updateSetupNav();
+   await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);
+   await loadCurrentChildPhoto();
+   if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}
+   // V215: Supabase can re-emit auth events when a tab regains focus or a token
+   // refreshes. For the same signed-in user, refresh account data only; never
+   // rerun draft/setup restoration, which would pull Account/Saved Stories back
+   // to the Create Story setup screen.
+   if(!sameSignedInUser){
+     const restoredDraft=await maybeRestoreStoryDraft();
+     const restoredSetup=restoredDraft?false:await maybeRestoreSetupDraft();
+     if(!restoredDraft&&!restoredSetup&&!$('productApp')?.classList.contains('hidden')&&setupPageIndex===0&&$('passwordRecovery')?.classList.contains('hidden'))goSetupPage(1,true)
+   }
+ }else{
+   draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()
+ }
 }
 
 function showPasswordRecovery(){
