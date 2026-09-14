@@ -1,3 +1,15 @@
+# Moonbeam Stories V229
+
+## V229 — repair expired-session / dead Create Story state
+- Built directly from V228.
+- Fixes the state where Moonbeam still displayed the signed-in user's credit balance and enabled Create Story, but API actions failed with “Your Moonbeam session has expired”.
+- `currentAccessToken()` now explicitly refreshes the Supabase session when the JWT is missing or within 60 seconds of expiry instead of immediately returning an empty token.
+- If a refresh succeeds, Create Story, checkout, illustration and sharing API calls receive the renewed access token.
+- If refresh genuinely fails, Moonbeam now reconciles the UI to signed-out state instead of leaving stale account/credit information visible.
+- On portrait phones a genuinely expired session sends the user back to the sign-in step after the Create Story attempt.
+- V228 mobile child-strip sizing/swipe architecture and phone-landscape setup scrolling remain unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V228
 
 ## V228 — restore child-strip width + reliable landscape setup scrolling

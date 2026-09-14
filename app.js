@@ -581,8 +581,49 @@ async function loadStoryCredits(){
  refreshStoryCreditConsentUI().catch(()=>{});
  return storyCreditBalance;
 }
+function accessTokenNeedsRefresh229(token){
+ try{
+   const payload=JSON.parse(atob(String(token||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+   return !Number.isFinite(Number(payload?.exp)) || Number(payload.exp)*1000 <= Date.now()+60000;
+ }catch{return true}
+}
 async function currentAccessToken(){
- const {data:{session}}=await supabaseClient.auth.getSession();return session?.access_token||'';
+ if(!supabaseClient)return '';
+ try{
+   let {data:{session},error}=await supabaseClient.auth.getSession();
+   if(error)console.warn('getSession',error);
+   // V229: do not leave the UI in a "signed-in" zombie state with a cached
+   // user/credit balance but no usable JWT. Refresh explicitly when the token
+   // is missing or close to expiry.
+   if(!session?.access_token || accessTokenNeedsRefresh229(session.access_token)){
+     const refreshed=await supabaseClient.auth.refreshSession();
+     if(refreshed?.error)console.warn('refreshSession',refreshed.error);
+     session=refreshed?.data?.session||session;
+   }
+   if(session?.access_token && !accessTokenNeedsRefresh229(session.access_token)){
+     currentUser=session.user||currentUser;
+     document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
+     return session.access_token;
+   }
+   // If refresh genuinely failed, reconcile the whole interface with the real
+   // auth state instead of continuing to show credits for a user who cannot
+   // authenticate API calls.
+   if(currentUser)await applyAuthSession(null);
+   return '';
+ }catch(e){
+   console.warn('currentAccessToken',e);
+   try{
+     const refreshed=await supabaseClient.auth.refreshSession();
+     const session=refreshed?.data?.session;
+     if(session?.access_token && !accessTokenNeedsRefresh229(session.access_token)){
+       currentUser=session.user||currentUser;
+       document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
+       return session.access_token;
+     }
+   }catch(refreshError){console.warn('refreshSession retry',refreshError)}
+   if(currentUser)await applyAuthSession(null);
+   return '';
+ }
 }
 
 function showCheckoutNotice(message,kind=''){
@@ -715,7 +756,7 @@ async function generateStory(){
  if(!currentUser){$('status').innerHTML='<span class="error">Sign in or create a parent account to make a story.</span>';if(isPhonePortrait())goSetupPage(0);return}
  if(!child.name){$('status').textContent=t().errorName;return}
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
- const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
+ const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';if(isPhonePortrait())goSetupPage(0);return}
  if(!(await prepareStoryCreditConsent(accessToken)))return;
  const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy');
  $('status').textContent='';button.disabled=true;button.classList.add('is-generating');
