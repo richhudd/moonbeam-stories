@@ -1,3 +1,16 @@
+# Moonbeam Stories V237
+
+## V237 — Supabase SIGNED_OUT can no longer reopen Account on desktop
+- Built directly from the exact V236 build that was uploaded.
+- The remaining bug was the asynchronous Supabase onAuthStateChange(SIGNED_OUT) callback.
+- V236 navigated to Create Story page 0, but a later SIGNED_OUT callback could still execute applyAuthSession(null), whose signed-out branch reopened Account.
+- V237 sets a desktop Account-logout destination flag before calling supabase.auth.signOut().
+- The signed-out branch of applyAuthSession now checks that flag and opens Create Story page 0 instead of Account.
+- The flag persists across repeated SIGNED_OUT callbacks and is cleared only when a genuine signed-in session exists again.
+- Desktop signOutParent no longer manually calls applyAuthSession(null), eliminating a duplicate signed-out render.
+- Mobile logout behaviour remains as in V231.
+- No story-generation, credits, reader, saved-story, swipe, API or Supabase schema changes.
+
 # Moonbeam Stories V236
 
 ## V236 — logout goes to Create Story login

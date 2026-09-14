@@ -290,6 +290,13 @@ document.querySelectorAll('[data-buy-credits]').forEach(b=>b.addEventListener('c
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('creditShop')?.classList.contains('hidden'))closeCreditShop()});
 initSupabase();
 
+let desktopAccountLogoutToLogin237=false;
+
+function showOldLoginPage237(){
+ showCreateStoryView();
+ goSetupPage(0,true);
+}
+
 async function initSupabase(){
  const sharedToken=shareTokenFromLocation();if(sharedToken){await loadSharedStory(sharedToken);return}
  if(!supabaseClient){$('authStatus').textContent='Account service could not load.';return}
@@ -318,6 +325,7 @@ async function applyAuthSession(session){
  const nextUser=session?.user||null;
  const sameSignedInUser=!!previousUserId&&!!nextUser&&previousUserId===nextUser.id;
  currentUser=nextUser;
+ if(currentUser?.id)desktopAccountLogoutToLogin237=false;
  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
@@ -343,10 +351,14 @@ async function applyAuthSession(session){
    draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];
    renderProfileSelect();renderLibrary();
    storyCreditBalance=null;renderStoryCredits(null);
-   // Render signed-out Account before any ancillary photo cleanup, so a failure there
-   // can never leave the stale signed-in controls visible.
-   renderAccountView213();
+
+   // V237: if logout came from desktop Account, every SIGNED_OUT callback goes
+   // to the original Create Story login page instead of reopening Account.
+   if(desktopAccountLogoutToLogin237)showOldLoginPage237();
+   else renderAccountView213();
+
    try{await loadCurrentChildPhoto()}catch(e){console.warn('signed-out photo cleanup',e)}
+   if(desktopAccountLogoutToLogin237)showOldLoginPage237();
    return;
  }
  renderAccountView213();
@@ -397,21 +409,33 @@ async function signInParent(){
 }
 async function signOutParent(){
  if(!supabaseClient)return;
+
+ // Desktop Account logout must end on the old Create Story login page.
+ // Set this before calling Supabase because SIGNED_OUT may fire immediately.
+ const desktop=window.matchMedia('(min-width:701px)').matches;
+ if(desktop)desktopAccountLogoutToLogin237=true;
+
  try{
   const {error}=await supabaseClient.auth.signOut();
-  if(error){console.warn('Sign out',error);return}
+  if(error){
+   if(desktop)desktopAccountLogoutToLogin237=false;
+   console.warn('Sign out',error);
+   return;
+  }
 
   currentUser=null;
   storyCreditBalance=null;
   document.body.classList.remove('moonbeam-signed-in');
 
-  await applyAuthSession(null);
-
-  // V236: do not reopen Account after logout.
-  // Send the user to Create Story page 0, which contains the original login form.
-  showCreateStoryView();
-  goSetupPage(0,true);
+  if(desktop){
+   showOldLoginPage237();
+  }else{
+   // Preserve V231 mobile behaviour.
+   await applyAuthSession(null);
+   showAccountView213();
+  }
  }catch(e){
+  if(desktop)desktopAccountLogoutToLogin237=false;
   console.warn('Sign out',e);
  }
 }
