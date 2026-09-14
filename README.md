@@ -1,4 +1,76 @@
-# Moonbeam Stories V197
+# Moonbeam Stories V205
+
+
+## V205 — mobile landscape architecture and rotation persistence
+- Phone landscape reader now uses the desktop-style spread: text left, illustration right.
+- Rotating an open saved or newly generated book is treated purely as a layout change: the same book, page and reading mode remain active.
+- Phone landscape setup deliberately remains the mobile two-step flow rather than merging Child + Story into the desktop two-panel workspace.
+- Rotating during setup preserves the exact current setup step and entered state.
+- No API, database, Supabase schema or story-generation changes.
+
+## V204 — universal homepage story CTA
+
+- Built from V203.
+- The homepage CTA no longer assumes the visitor is creating their first story.
+- English now reads **Create their story →**; all eight other locale variants have been updated equivalently.
+- The logged-out acquisition line **1 story free · No card required** is unchanged.
+- V203 setup-flow recovery, V202 save behaviour, and all existing reader/story-generation behaviour are unchanged.
+- No API, database, Supabase schema, or story-generation changes.
+
+
+
+## V203 — setup flow survives refresh
+
+- Built from V202.
+- Child and Story setup state is now stored locally while setup is in progress.
+- Refreshing or reopening the site during setup restores the same setup page instead of returning to the public homepage.
+- Entered child details, Story Idea, tone, selected values, photo-use choice and selected child profile are restored where applicable.
+- The setup draft is scoped to the signed-in account.
+- Deliberately returning Home clears the setup draft; a successfully generated story clears it as the V201+ story draft takes over.
+- Works on mobile and desktop.
+- No API, database, Supabase or story-generation changes.
+
+## V202 — immediate save feedback and safe in-reader saving
+
+- Built from V201.
+- Save now reacts immediately: the control turns purple and reads the locale-specific “Saving…” while the illustrated book is being uploaded and verified.
+- Users may continue turning story pages while saving; page turns do not interrupt the save.
+- Actions that would destroy the active reader/story state (closing the reader or starting a new story) are blocked with a clear wait-for-save message while saving is active.
+- Browser/tab unload during an active save triggers the browser’s leave-page warning where supported.
+- “Saved” is shown only after the complete illustrated book has been uploaded and verified.
+- V201 draft protection remains in place until permanent save succeeds.
+- No API, database, Supabase schema or story-generation changes.
+
+## V201 — automatic recovery of unsaved stories
+
+- Built from V200.
+- A newly generated story is now stored automatically as a local browser draft as soon as generation completes.
+- The draft survives iPhone Safari tab eviction/reload, browser restarts, and desktop refreshes.
+- On return/reload, Moonbeam automatically reopens the unfinished story for the same signed-in parent account.
+- The current story page, reading mode and mobile text/illustration scroll positions are restored where possible.
+- Existing illustration cache identity is preserved so already-created artwork can be reused after restoration.
+- Pressing Save clears the temporary draft only after the permanent save succeeds.
+- Starting a deliberate New Story clears the previous draft. Simply leaving the reader does not.
+- Drafts are account-scoped and are never restored for a different signed-in account.
+- No API, database, Supabase schema or story-generation changes.
+
+## V200 — mobile double-tap fullscreen illustrations
+
+- Built from V199.
+- Portrait mobile only: double-tap a loaded illustration to open it fullscreen.
+- Double-tap again, or tap ×, to return to the normal two-pane reader.
+- The underlying reader is not re-rendered, preserving illustration and text scroll positions.
+- Desktop reader behaviour is unchanged.
+- No API, database, Supabase or story-generation changes.
+
+## V199 — scrollable illustrations on portrait mobile
+
+- Built cleanly from the proven V197 production baseline; the abandoned V198 Story Engine is not included.
+- Portrait-mobile illustrations now have their own vertical touch-scroll area, matching the independently scrollable text pane.
+- Artwork is shown at the full illustration-pane width with its natural aspect ratio, so users can scroll through parts that do not fit inside the fixed 60% artwork area instead of losing them to `object-fit: cover` cropping.
+- Mobile artwork scrolling uses momentum scrolling, contained overscroll and hidden scrollbars.
+- Desktop reader behavior is unchanged.
+- No API, story-generation, database or Supabase changes.
 
 ## V197 — require narrative progression for visually varied books
 - Keeps the V193 Moonbeam house illustration-style specification unchanged and keeps V194 recurring-character continuity unchanged.

@@ -2787,3 +2787,102 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"]>#sta
   body:not(.product-active) #landing .hero-cta{margin:0 auto 4px!important}
   body:not(.product-active) #landing .hero-demo{margin:5px auto 0!important}
 }
+
+/* V199 — portrait-mobile illustration scrolling.
+   The artwork and story text are independent vertical scroll panes. The image
+   keeps its natural aspect ratio at full pane width so tall artwork can be
+   explored instead of being permanently cropped to the fixed 60% art area. */
+@media (max-width:700px) and (orientation:portrait){
+  body.story-mode #book.show-mobile-spread .right-page{
+    overflow:hidden!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page .illustration-frame{
+    position:relative!important;
+    inset:auto!important;
+    display:block!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+    touch-action:pan-y!important;
+    scrollbar-width:none!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page .illustration-frame::-webkit-scrollbar{
+    display:none!important;
+    width:0!important;
+    height:0!important;
+  }
+  body.story-mode #book.show-mobile-spread .right-page .illustration-frame img{
+    position:relative!important;
+    inset:auto!important;
+    display:block!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    object-fit:contain!important;
+    border-radius:10px!important;
+    touch-action:pan-y!important;
+  }
+}
+
+
+/* V200 — portrait-mobile double-tap fullscreen illustration viewer. */
+.mobile-illustration-fullscreen{display:none}
+@media (max-width:700px) and (orientation:portrait){
+.mobile-illustration-fullscreen{position:fixed!important;inset:0!important;z-index:10000!important;display:none!important;align-items:center!important;justify-content:center!important;width:100vw!important;height:100dvh!important;background:#0b0912!important;overflow:hidden!important;touch-action:manipulation!important}
+.mobile-illustration-fullscreen.open{display:flex!important}
+.mobile-illustration-fullscreen img{display:block!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;object-fit:contain!important;object-position:center!important;user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important}
+.mobile-illustration-fullscreen-close{position:absolute!important;top:max(10px,env(safe-area-inset-top))!important;right:max(12px,env(safe-area-inset-right))!important;z-index:2!important;width:42px!important;height:42px!important;border:0!important;border-radius:999px!important;background:rgba(10,8,18,.64)!important;color:white!important;font:300 32px/38px system-ui,-apple-system,sans-serif!important;padding:0!important}
+body.mobile-illustration-fullscreen-open{overflow:hidden!important}}
+
+/* V202 — immediate save feedback. Saving uses the same strong purple acknowledgement while work continues. */
+.end-save.saving-state,.end-save.saving-state:disabled,#save.saving-state,#save.saving-state:disabled,#mobileSave.saving-state,#mobileSave.saving-state:disabled{background:#5b3fc4!important;border-color:#5b3fc4!important;color:#fff!important;opacity:1!important;box-shadow:0 7px 20px rgba(62,44,79,.18)!important;cursor:wait!important}
+
+/* V205 — phone landscape setup remains the mobile two-step information architecture.
+   The reader intentionally uses desktop-story-mode in landscape. */
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupShell{
+  display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack{
+  display:block!important;width:100%!important;height:100%!important;min-height:0!important;
+  overflow:hidden!important;scroll-snap-type:none!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page{
+  display:none!important;width:100%!important;max-width:none!important;height:100%!important;min-height:0!important;
+  margin:0!important;overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;
+  scroll-snap-align:none!important;justify-content:flex-start!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page.setup-current{
+  display:flex!important;flex-direction:column!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Account"]{
+  display:none!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page.setup-current[data-step="Child"],
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page.setup-current[data-step="Story"]{
+  display:flex!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page.setup-current .setup-card-nav{
+  display:flex!important;position:static!important;inset:auto!important;transform:none!important;float:none!important;clear:both!important;
+  justify-content:center!important;gap:12px!important;margin-top:auto!important;padding:14px 0 4px!important;
+  border-top:1px solid #ebe4f2!important;background:none!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page.setup-current .setup-card-nav button{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;width:118px!important;min-width:118px!important;
+  max-width:118px!important;min-height:44px!important;margin:0!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupShell>.setup-nav{display:none!important}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) .setup-step-label{display:inline-flex!important}
+
+/* Landscape phone reader: explicitly keep the live story above the library/setup
+   and use the desktop left-text/right-illustration spread. */
+body.phone-landscape.story-mode #story:not(.hidden){display:block!important;visibility:visible!important;opacity:1!important;z-index:100!important}
+body.phone-landscape.story-mode #book:not(.hidden){display:grid!important;grid-template-columns:1fr 1fr!important;grid-template-rows:1fr!important}
+body.phone-landscape.story-mode #book .left-page{grid-column:1!important;grid-row:1!important}
+body.phone-landscape.story-mode #book .right-page{grid-column:2!important;grid-row:1!important}

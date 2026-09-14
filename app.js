@@ -42,6 +42,51 @@ if(requestedLanguage&&locales[requestedLanguage])localStorage.setItem('moonbeamL
 let selected = new Set();
 let saved=[]; try{saved=JSON.parse(localStorage.getItem('moonbeamStories')||'[]');if(!Array.isArray(saved))saved=[]}catch{saved=[]}
 let currentBook=null, illustrationCache=new Map();
+// V201 — resilient local draft for newly generated, not-yet-saved stories.
+// The draft survives Safari tab eviction, browser restarts and desktop refreshes.
+const STORY_DRAFT_KEY='moonbeamCurrentStoryDraftV201';
+let draftRestoreAttemptedForUser=null,draftPersistTimer=null;
+function currentDraftOwner(){return currentUser?.id||null}
+function draftStoryPayload(book=currentBook){
+ if(!book||book.isSaved||book.isShared||!currentDraftOwner())return null;
+ const child={...(book.child||{})};delete child.referencePhoto;
+ return {version:201,userId:currentDraftOwner(),savedAt:Date.now(),cacheId:book.cacheId||null,visualCacheId:book.visualCacheId||book.cacheId||null,story:{title:book.title,opening:book.opening,character_bible:book.character_bible,pages:(book.pages||[]).map(x=>({text:x.text||'',illustration_prompt:x.illustration_prompt||''})),closing:book.closing},child,generationRunId:book.generationRunId||null,state:{currentPage:Number.isFinite(book.currentPage)?book.currentPage:-1,readingMode:book.readingMode||'self',mobileSide:book.mobileSide||'text',scroll:book.draftScroll||{}}};
+}
+function persistCurrentDraft(immediate=true){
+ const run=()=>{try{const payload=draftStoryPayload();if(payload)localStorage.setItem(STORY_DRAFT_KEY,JSON.stringify(payload))}catch(e){console.warn('Story draft could not be stored',e)}};
+ if(immediate){if(draftPersistTimer){clearTimeout(draftPersistTimer);draftPersistTimer=null}run();return}
+ if(draftPersistTimer)clearTimeout(draftPersistTimer);draftPersistTimer=setTimeout(()=>{draftPersistTimer=null;run()},120);
+}
+function clearCurrentDraft(){if(draftPersistTimer){clearTimeout(draftPersistTimer);draftPersistTimer=null}try{localStorage.removeItem(STORY_DRAFT_KEY)}catch{}}
+function readCurrentDraft(){try{const x=JSON.parse(localStorage.getItem(STORY_DRAFT_KEY)||'null');return x&&x.version===201&&x.story&&x.child?x:null}catch{return null}}
+function rememberReaderScroll(){
+ if(!currentBook||currentBook.isSaved||currentBook.isShared||currentBook.currentPage<0)return;
+ const key=String(currentBook.currentPage),text=document.querySelector('.left-page .page-content'),art=document.querySelector('.right-page .illustration-frame');
+ currentBook.draftScroll=currentBook.draftScroll||{};currentBook.draftScroll[key]={text:text?.scrollTop||0,art:art?.scrollTop||0};persistCurrentDraft(false)
+}
+function restoreReaderScroll(){
+ if(!currentBook||currentBook.currentPage<0)return;const pos=currentBook.draftScroll?.[String(currentBook.currentPage)];if(!pos)return;
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{const text=document.querySelector('.left-page .page-content'),art=document.querySelector('.right-page .illustration-frame');if(text)text.scrollTop=Number(pos.text)||0;if(art)art.scrollTop=Number(pos.art)||0;updateMobileScrollCue()}))
+}
+function showRestoredDraftPosition(state={}){
+ if(!currentBook)return;currentBook.readingMode=state.readingMode==='narrated'?'narrated':'self';currentBook.mobileSide=state.mobileSide||'text';currentBook.draftScroll=state.scroll||{};
+ const page=Number.isFinite(Number(state.currentPage))?Number(state.currentPage):-1;
+ if(page<0){showCover();persistCurrentDraft();return}
+ const cover=$('coverView'),book=$('book'),controls=$('bookControls');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.setProperty('display','none','important');cover.setAttribute('aria-hidden','true')}if(book){book.classList.remove('hidden');book.hidden=false;book.style.removeProperty('display');book.setAttribute('aria-hidden','false')}if(controls){controls.classList.remove('hidden');controls.hidden=false;controls.style.removeProperty('display');controls.setAttribute('aria-hidden','false')}
+ renderBookPage(page);restoreReaderScroll();
+}
+async function maybeRestoreStoryDraft(){
+ if(!currentUser)return false;if(draftRestoreAttemptedForUser===currentUser.id)return false;draftRestoreAttemptedForUser=currentUser.id;
+ const draft=readCurrentDraft();if(!draft||draft.userId!==currentUser.id)return false;
+ const child={...(draft.child||{}),generationRunId:draft.generationRunId||draft.child?.generationRunId||null};
+ try{if(child.profileId)child.referencePhoto=await childPhotoGetForProfile(child.profileId)||null}catch{}
+ language=(child.language&&locales[child.language])?child.language:language;localStorage.setItem('moonbeamLanguage',language);applyLocale();const lang=$('language');if(lang)lang.value=language;
+ $('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();
+ renderStory(draft.story,null,child,{cacheId:draft.cacheId||null,visualCacheId:draft.visualCacheId||draft.cacheId||null,isDraftRestore:true,draftScroll:draft.state?.scroll||{}});showRestoredDraftPosition(draft.state||{});return true
+}
+window.addEventListener('pagehide',()=>{rememberReaderScroll();persistCurrentDraft()});
+window.addEventListener('beforeunload',e=>{rememberReaderScroll();persistCurrentDraft();if(storySaveInProgress){e.preventDefault();e.returnValue=''}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){rememberReaderScroll();persistCurrentDraft()}});
 const illustrationInflight=new Map();
 const IMAGE_DB_NAME='moonbeam-illustrations-v1', IMAGE_STORE='images', CHILD_PHOTO_STORE='childPhotos', IMAGE_CACHE_LIMIT=160;
 let imageDbPromise=null, imageWrites=0, currentChildPhoto=null;
@@ -132,15 +177,15 @@ const UI132={
 for(const [k,v] of Object.entries(UI132)) Object.assign(locales[k]||(locales[k]={}),v);
 function t(){return {...(locales[language]||locales['en-GB']),...(window.MOONBEAM_UI?.[language]||window.MOONBEAM_UI?.['en-GB']||{})}}
 const LANDING_LOCALES={
-'en-GB':{signIn:'Sign in',kicker:'PERSONALISED BEDTIME MAGIC',headline:'Their world. Their adventure. <em>Their bedtime story.</em>',copy:'Create beautiful illustrated stories inspired by your child, the things they love and the values that matter to you.',start:'Create their first story →',free:'1 story free · No card required',demo:'Moonbeam personalised story demonstration',demoAlt:"A child's photo transformed into personalised Moonbeam story illustrations"},
-'en-US':{signIn:'Sign in',kicker:'PERSONALIZED BEDTIME MAGIC',headline:'Their world. Their adventure. <em>Their bedtime story.</em>',copy:'Create beautiful illustrated stories inspired by your child, the things they love and the values that matter to you.',start:'Create their first story →',free:'1 story free · No card required',demo:'Moonbeam personalized story demonstration',demoAlt:"A child's photo transformed into personalized Moonbeam story illustrations"},
-'es-ES':{signIn:'Iniciar sesión',kicker:'MAGIA PERSONALIZADA PARA LA HORA DE DORMIR',headline:'Su mundo. Su aventura. <em>Su cuento para dormir.</em>',copy:'Crea preciosos cuentos ilustrados inspirados en tu hijo, en lo que le gusta y en los valores que son importantes para ti.',start:'Crear su primer cuento →',free:'1 cuento gratis · Sin tarjeta',demo:'Demostración de un cuento personalizado de Moonbeam',demoAlt:'La foto de un niño transformada en ilustraciones personalizadas de Moonbeam'},
-'es-419':{signIn:'Iniciar sesión',kicker:'MAGIA PERSONALIZADA PARA DORMIR',headline:'Su mundo. Su aventura. <em>Su cuento para dormir.</em>',copy:'Crea hermosos cuentos ilustrados inspirados en tu hijo, en lo que le gusta y en los valores que son importantes para ti.',start:'Crear su primer cuento →',free:'1 cuento gratis · Sin tarjeta',demo:'Demostración de un cuento personalizado de Moonbeam',demoAlt:'La foto de un niño transformada en ilustraciones personalizadas de Moonbeam'},
-'fr-FR':{signIn:'Se connecter',kicker:'UNE MAGIE PERSONNALISÉE POUR LE COUCHER',headline:'Son monde. Son aventure. <em>Son histoire du soir.</em>',copy:'Créez de magnifiques histoires illustrées inspirées de votre enfant, de ce qu’il aime et des valeurs qui comptent pour vous.',start:'Créer sa première histoire →',free:'1 histoire gratuite · Sans carte bancaire',demo:'Démonstration d’une histoire personnalisée Moonbeam',demoAlt:'La photo d’un enfant transformée en illustrations personnalisées Moonbeam'},
-'de-DE':{signIn:'Anmelden',kicker:'PERSONALISIERTE MAGIE ZUR SCHLAFENSZEIT',headline:'Seine Welt. Sein Abenteuer. <em>Seine Gute-Nacht-Geschichte.</em>',copy:'Erstelle wunderschön illustrierte Geschichten, inspiriert von deinem Kind, seinen Interessen und den Werten, die dir wichtig sind.',start:'Erste Geschichte erstellen →',free:'1 Geschichte kostenlos · Keine Karte nötig',demo:'Beispiel einer personalisierten Moonbeam-Geschichte',demoAlt:'Das Foto eines Kindes wird zu personalisierten Moonbeam-Illustrationen'},
-'it-IT':{signIn:'Accedi',kicker:'MAGIA PERSONALIZZATA DELLA BUONANOTTE',headline:'Il suo mondo. La sua avventura. <em>La sua storia della buonanotte.</em>',copy:'Crea splendide storie illustrate ispirate a tuo figlio, a ciò che ama e ai valori importanti per te.',start:'Crea la sua prima storia →',free:'1 storia gratis · Nessuna carta richiesta',demo:'Dimostrazione di una storia personalizzata Moonbeam',demoAlt:'La foto di un bambino trasformata in illustrazioni personalizzate Moonbeam'},
-'pt-BR':{signIn:'Entrar',kicker:'MAGIA PERSONALIZADA NA HORA DE DORMIR',headline:'O mundo da criança. A aventura dela. <em>A história de dormir dela.</em>',copy:'Crie lindas histórias ilustradas inspiradas na criança, no que ela ama e nos valores importantes para você.',start:'Criar a primeira história →',free:'1 história grátis · Sem cartão',demo:'Demonstração de uma história personalizada Moonbeam',demoAlt:'A foto de uma criança transformada em ilustrações personalizadas Moonbeam'},
-'pl-PL':{signIn:'Zaloguj się',kicker:'SPERSONALIZOWANA MAGIA NA DOBRANOC',headline:'Jego świat. Jego przygoda. <em>Jego opowieść na dobranoc.</em>',copy:'Twórz piękne ilustrowane historie inspirowane Twoim dzieckiem, tym, co kocha, oraz wartościami, które są dla Ciebie ważne.',start:'Stwórz pierwszą historię →',free:'1 historia gratis · Bez karty',demo:'Prezentacja spersonalizowanej historii Moonbeam',demoAlt:'Zdjęcie dziecka przekształcone w spersonalizowane ilustracje Moonbeam'}
+'en-GB':{signIn:'Sign in',kicker:'PERSONALISED BEDTIME MAGIC',headline:'Their world. Their adventure. <em>Their bedtime story.</em>',copy:'Create beautiful illustrated stories inspired by your child, the things they love and the values that matter to you.',start:'Create their story →',free:'1 story free · No card required',demo:'Moonbeam personalised story demonstration',demoAlt:"A child's photo transformed into personalised Moonbeam story illustrations"},
+'en-US':{signIn:'Sign in',kicker:'PERSONALIZED BEDTIME MAGIC',headline:'Their world. Their adventure. <em>Their bedtime story.</em>',copy:'Create beautiful illustrated stories inspired by your child, the things they love and the values that matter to you.',start:'Create their story →',free:'1 story free · No card required',demo:'Moonbeam personalized story demonstration',demoAlt:"A child's photo transformed into personalized Moonbeam story illustrations"},
+'es-ES':{signIn:'Iniciar sesión',kicker:'MAGIA PERSONALIZADA PARA LA HORA DE DORMIR',headline:'Su mundo. Su aventura. <em>Su cuento para dormir.</em>',copy:'Crea preciosos cuentos ilustrados inspirados en tu hijo, en lo que le gusta y en los valores que son importantes para ti.',start:'Crear su cuento →',free:'1 cuento gratis · Sin tarjeta',demo:'Demostración de un cuento personalizado de Moonbeam',demoAlt:'La foto de un niño transformada en ilustraciones personalizadas de Moonbeam'},
+'es-419':{signIn:'Iniciar sesión',kicker:'MAGIA PERSONALIZADA PARA DORMIR',headline:'Su mundo. Su aventura. <em>Su cuento para dormir.</em>',copy:'Crea hermosos cuentos ilustrados inspirados en tu hijo, en lo que le gusta y en los valores que son importantes para ti.',start:'Crear su cuento →',free:'1 cuento gratis · Sin tarjeta',demo:'Demostración de un cuento personalizado de Moonbeam',demoAlt:'La foto de un niño transformada en ilustraciones personalizadas de Moonbeam'},
+'fr-FR':{signIn:'Se connecter',kicker:'UNE MAGIE PERSONNALISÉE POUR LE COUCHER',headline:'Son monde. Son aventure. <em>Son histoire du soir.</em>',copy:'Créez de magnifiques histoires illustrées inspirées de votre enfant, de ce qu’il aime et des valeurs qui comptent pour vous.',start:'Créer son histoire →',free:'1 histoire gratuite · Sans carte bancaire',demo:'Démonstration d’une histoire personnalisée Moonbeam',demoAlt:'La photo d’un enfant transformée en illustrations personnalisées Moonbeam'},
+'de-DE':{signIn:'Anmelden',kicker:'PERSONALISIERTE MAGIE ZUR SCHLAFENSZEIT',headline:'Seine Welt. Sein Abenteuer. <em>Seine Gute-Nacht-Geschichte.</em>',copy:'Erstelle wunderschön illustrierte Geschichten, inspiriert von deinem Kind, seinen Interessen und den Werten, die dir wichtig sind.',start:'Geschichte erstellen →',free:'1 Geschichte kostenlos · Keine Karte nötig',demo:'Beispiel einer personalisierten Moonbeam-Geschichte',demoAlt:'Das Foto eines Kindes wird zu personalisierten Moonbeam-Illustrationen'},
+'it-IT':{signIn:'Accedi',kicker:'MAGIA PERSONALIZZATA DELLA BUONANOTTE',headline:'Il suo mondo. La sua avventura. <em>La sua storia della buonanotte.</em>',copy:'Crea splendide storie illustrate ispirate a tuo figlio, a ciò che ama e ai valori importanti per te.',start:'Crea la sua storia →',free:'1 storia gratis · Nessuna carta richiesta',demo:'Dimostrazione di una storia personalizzata Moonbeam',demoAlt:'La foto di un bambino trasformata in illustrazioni personalizzate Moonbeam'},
+'pt-BR':{signIn:'Entrar',kicker:'MAGIA PERSONALIZADA NA HORA DE DORMIR',headline:'O mundo da criança. A aventura dela. <em>A história de dormir dela.</em>',copy:'Crie lindas histórias ilustradas inspiradas na criança, no que ela ama e nos valores importantes para você.',start:'Criar a história →',free:'1 história grátis · Sem cartão',demo:'Demonstração de uma história personalizada Moonbeam',demoAlt:'A foto de uma criança transformada em ilustrações personalizadas Moonbeam'},
+'pl-PL':{signIn:'Zaloguj się',kicker:'SPERSONALIZOWANA MAGIA NA DOBRANOC',headline:'Jego świat. Jego przygoda. <em>Jego opowieść na dobranoc.</em>',copy:'Twórz piękne ilustrowane historie inspirowane Twoim dzieckiem, tym, co kocha, oraz wartościami, które są dla Ciebie ważne.',start:'Stwórz historię →',free:'1 historia gratis · Bez karty',demo:'Prezentacja spersonalizowanej historii Moonbeam',demoAlt:'Zdjęcie dziecka przekształcone w spersonalizowane ilustracje Moonbeam'}
 };
 function applyLandingLocale(){const x=LANDING_LOCALES[language]||LANDING_LOCALES['en-GB'];const sign=$('landingSignIn'),kick=$('landingKicker'),head=$('landingHeadline'),copy=$('landingCopy'),start=$('landingStart'),free=$('landingFree'),demo=document.querySelector('.hero-demo'),img=document.querySelector('.hero-demo img');if(sign)sign.textContent=x.signIn;if(kick)kick.textContent=x.kicker;if(head)head.innerHTML=x.headline;if(copy)copy.textContent=x.copy;if(start)start.textContent=x.start;if(free)free.textContent=x.free;if(demo)demo.setAttribute('aria-label',x.demo);if(img)img.alt=x.demoAlt;const landing=$('landingLanguage');if(landing)landing.value=language;}
 function applyLocale(){
@@ -166,7 +211,7 @@ function applyInterfaceLocale(){const x=t();
 function renderValues(){const vals=t().valuesList; const old=selected.size?selected:new Set(['Kindness','Curiosity']); selected=new Set(); const defaults={'en-GB':['Kindness','Curiosity'],'en-US':['Kindness','Curiosity'],'es-ES':['Amabilidad','Curiosidad'],'es-419':['Amabilidad','Curiosidad'],'fr-FR':['Gentillesse','Curiosité'],'de-DE':['Freundlichkeit','Neugier'],'it-IT':['Gentilezza','Curiosità'],'pt-BR':['Bondade','Curiosidade'],'pl-PL':['Życzliwość','Ciekawość']}; const chosen=old.size?old:defaults[language]; vals.forEach(v=>{if(chosen.has(v)||(!old.size&&defaults[language]?.includes(v)))selected.add(v)}); $('values').innerHTML=''; vals.forEach(v=>{const b=document.createElement('button');b.type='button';b.className='chip'+(selected.has(v)?' active':'');b.textContent=v;b.onclick=()=>{selected.has(v)?selected.delete(v):selected.add(v);b.classList.toggle('active')};$('values').appendChild(b)});}
 
 $('language').value=language;
-$('language').addEventListener('change',()=>{language=$('language').value;localStorage.setItem('moonbeamLanguage',language);selected=new Set();applyLocale();updateSetupNav();renderStoryCredits();if(!$('shareStoryDialog')?.classList.contains('hidden'))applyShareDialogLocale();if(currentBook&&!$('story')?.classList.contains('hidden'))renderBookPage(currentBook.currentPage);});
+$('language').addEventListener('change',()=>{language=$('language').value;localStorage.setItem('moonbeamLanguage',language);selected=new Set();applyLocale();updateSetupNav();renderStoryCredits();if(!$('shareStoryDialog')?.classList.contains('hidden'))applyShareDialogLocale();if(currentBook&&!$('story')?.classList.contains('hidden'))renderBookPage(currentBook.currentPage);persistSetupDraft(false);});
 applyLocale();
 $('generate').onclick=generateStory;
 $('signIn')?.addEventListener('click',signInParent);
@@ -228,7 +273,7 @@ async function applyAuthSession(session){
  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('signOut')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
- if(currentUser){setAuthStatus('');updateSetupNav();await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}if(!$('productApp')?.classList.contains('hidden')&&setupPageIndex===0&&$('passwordRecovery')?.classList.contains('hidden'))goSetupPage(1,true)}else{updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
+ if(currentUser){setAuthStatus('');updateSetupNav();await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}const restoredDraft=await maybeRestoreStoryDraft();const restoredSetup=restoredDraft?false:await maybeRestoreSetupDraft();if(!restoredDraft&&!restoredSetup&&!$('productApp')?.classList.contains('hidden')&&setupPageIndex===0&&$('passwordRecovery')?.classList.contains('hidden'))goSetupPage(1,true)}else{draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
 }
 
 function showPasswordRecovery(){
@@ -350,7 +395,44 @@ function dataUrlToBlob(dataUrl){const m=String(dataUrl||'').match(/^data:([^;]+)
 async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,book.child?.referencePhoto||null);book.artwork.pages[index]=image}return image}
 async function finishedCoverForSave(book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.cover)return book.artwork.cover;const key=coverKey(book);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image)image=book.artwork?.pages?.[0]||await finishedImageForSave(0,book);return image}
 async function uploadSavedBookArt(storyId,book=currentBook){if(!currentUser||!book)throw new Error('Sign in to save the complete book.');const total=book.pages.length+2,assets={version:2,cover:null,pages:[]},base=`${currentUser.id}/${storyId}`;const cover=await finishedCoverForSave(book),coverPath=`${base}/cover.webp`;let r=await supabaseClient.storage.from('saved-story-art').upload(coverPath,dataUrlToBlob(cover),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.cover=coverPath;for(let i=0;i<total;i++){const image=await finishedImageForSave(i,book),path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}return assets}
-async function saveCurrentStory(){if(!currentBook)return;const bookToSave=currentBook;const button=$('endSave')||$('mobileSave')||$('save');if(button)button.disabled=true;try{const cleanPages=currentBook.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));if(currentUser){const childId=await ensureCloudProfile(currentBook.child);const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:currentBook.title,language:currentBook.child?.language||language,length:currentBook.child?.length||null,tone:currentBook.child?.tone||null,values:currentBook.child?.values||[],opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing,generation_run_id:currentBook.generationRunId||null}).select('id').single();if(insert.error)throw insert.error;try{const assets=await uploadSavedBookArt(insert.data.id,bookToSave);const update=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',insert.data.id).select('saved_assets').single();if(update.error)throw update.error;if(!update.data?.saved_assets?.cover||update.data.saved_assets.pages?.length!==bookToSave.pages.length+2)throw new Error('Moonbeam could not verify the saved illustrations.');bookToSave.isSaved=true;bookToSave.savedStoryId=insert.data.id;bookToSave.savedAssets=update.data.saved_assets;bookToSave.visualCacheId=`saved:${insert.data.id}`;}catch(assetError){await supabaseClient.storage.from('saved-story-art').remove([`${currentUser.id}/${insert.data.id}/cover.webp`,...Array.from({length:currentBook.pages.length+2},(_,i)=>`${currentUser.id}/${insert.data.id}/page-${i}.webp`)]);await supabaseClient.from('saved_stories').delete().eq('id',insert.data.id);throw new Error('The complete illustrated book could not be saved. Nothing was added to your library. '+(assetError.message||assetError))}await loadCloudStories();if(button){button.textContent=t().storySaved||t().savedBtn;button.disabled=true;button.classList.add('saved-state')}const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn;return insert.data.id}const savedChild={...(currentBook.child||{})};delete savedChild.referencePhoto;saved.unshift({title:currentBook.title,story:{title:currentBook.title,opening:currentBook.opening,character_bible:currentBook.character_bible,pages:cleanPages,closing:currentBook.closing},image:null,child:savedChild,generationRunId:currentBook.generationRunId||null,at:new Date().toISOString()});saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();bookToSave.isSaved=true;if(button){button.textContent=t().storySaved||t().savedBtn;button.disabled=true;button.classList.add('saved-state')}const desktopSave=$('save');if(desktopSave)desktopSave.textContent=t().savedBtn}catch(e){console.error(e);if(button){button.textContent=t().save;button.classList.remove('saved-state')}alert('The story could not be saved: '+(e.message||e))}finally{if(button&&!bookToSave?.isSaved)button.disabled=false}}
+let storySaveInProgress=false;
+function setStorySaveUi(state){
+ const buttons=[$('save'),$('endSave'),$('mobileSave')].filter(Boolean);
+ for(const b of buttons){
+  if(state==='saving'){b.disabled=true;b.textContent=t().saving||'Saving…';b.classList.add('saving-state');b.classList.remove('saved-state');b.setAttribute('aria-busy','true')}
+  else if(state==='saved'){b.disabled=true;b.textContent=t().storySaved||t().savedBtn;b.classList.remove('saving-state');b.classList.add('saved-state');b.removeAttribute('aria-busy')}
+  else{b.disabled=false;b.textContent=t().save;b.classList.remove('saving-state','saved-state');b.removeAttribute('aria-busy')}
+ }
+}
+function savingLeaveWarning(){alert(t().savingLeave||'Your story is still saving. Please wait a few seconds before leaving this story. You can keep turning pages while it saves.')}
+async function saveCurrentStory(){
+ if(!currentBook||storySaveInProgress)return currentBook?.savedStoryId||null;
+ const bookToSave=currentBook;storySaveInProgress=true;setStorySaveUi('saving');persistCurrentDraft();
+ try{
+  const cleanPages=bookToSave.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
+  if(currentUser){
+   const childId=await ensureCloudProfile(bookToSave.child);
+   const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:bookToSave.title,language:bookToSave.child?.language||language,length:bookToSave.child?.length||null,tone:bookToSave.child?.tone||null,values:bookToSave.child?.values||[],opening:bookToSave.opening,character_bible:bookToSave.character_bible,pages:cleanPages,closing:bookToSave.closing,generation_run_id:bookToSave.generationRunId||null}).select('id').single();
+   if(insert.error)throw insert.error;
+   try{
+    const assets=await uploadSavedBookArt(insert.data.id,bookToSave);
+    const update=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',insert.data.id).select('saved_assets').single();
+    if(update.error)throw update.error;
+    if(!update.data?.saved_assets?.cover||update.data.saved_assets.pages?.length!==bookToSave.pages.length+2)throw new Error('Moonbeam could not verify the saved illustrations.');
+    bookToSave.isSaved=true;bookToSave.savedStoryId=insert.data.id;bookToSave.savedAssets=update.data.saved_assets;bookToSave.visualCacheId=`saved:${insert.data.id}`;clearCurrentDraft();
+   }catch(assetError){
+    await supabaseClient.storage.from('saved-story-art').remove([`${currentUser.id}/${insert.data.id}/cover.webp`,...Array.from({length:bookToSave.pages.length+2},(_,i)=>`${currentUser.id}/${insert.data.id}/page-${i}.webp`)]);
+    await supabaseClient.from('saved_stories').delete().eq('id',insert.data.id);
+    throw new Error('The complete illustrated book could not be saved. Nothing was added to your library. '+(assetError.message||assetError));
+   }
+   await loadCloudStories();setStorySaveUi('saved');return insert.data.id;
+  }
+  const savedChild={...(bookToSave.child||{})};delete savedChild.referencePhoto;
+  saved.unshift({title:bookToSave.title,story:{title:bookToSave.title,opening:bookToSave.opening,character_bible:bookToSave.character_bible,pages:cleanPages,closing:bookToSave.closing},image:null,child:savedChild,generationRunId:bookToSave.generationRunId||null,at:new Date().toISOString()});
+  saved=saved.slice(0,12);localStorage.setItem('moonbeamStories',JSON.stringify(saved));renderLibrary();bookToSave.isSaved=true;clearCurrentDraft();setStorySaveUi('saved');
+ }catch(e){console.error(e);setStorySaveUi('idle');alert('The story could not be saved: '+(e.message||e))}
+ finally{storySaveInProgress=false}
+}
 async function deleteCloudStory(id){if(!currentUser)return;if(!confirm(t().deleteStoryConfirm))return;const item=cloudStories.find(x=>x.id===id),paths=[item?.savedAssets?.cover,...(item?.savedAssets?.pages||[])].filter(Boolean);if(paths.length)await supabaseClient.storage.from('saved-story-art').remove(paths);const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
 
 let storyCreditBalance=null;
@@ -603,6 +685,7 @@ async function generateStory(){
    if(!data?.story)throw new Error('The story service did not return a story.');
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
    child.generationRunId=data.generationRunId||null;
+   clearSetupDraft();
    renderStory(data.story,null,child)
  }catch(e){
    console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
@@ -611,7 +694,7 @@ async function generateStory(){
  }
 }
 
-function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},artwork:{cover:null,pages:{}}}}
+function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},artwork:{cover:null,pages:{}}}}
 function renderStory(s,image,child,options={}){
  currentBook=buildBook(s,image,child,options);
  const el=$('story');el.classList.remove('hidden');
@@ -631,6 +714,7 @@ function renderStory(s,image,child,options={}){
  $('save').onclick=saveCurrentStory;
  $('newStory').onclick=()=>startNewStory();
  if(currentBook.isShared){$('save')?.classList.add('hidden');$('newStory')?.classList.add('hidden')}
+ if(!currentBook.isSaved&&!currentBook.isShared)persistCurrentDraft();
 }
 function coverKey(book){return `v45:${book.visualCacheId||book.cacheId}:cover`}
 function getCoverPrompt(book){
@@ -757,7 +841,7 @@ async function loadCoverIllustration(force=false){
    return null;
  }
 }
-function showCover(){if(!currentBook)return;stopNarration();currentBook.currentPage=-1;const cover=$('coverView'),book=$('book'),controls=$('bookControls'),note=$('illustrationNote');if(book){book.classList.add('hidden');book.hidden=true;book.style.setProperty('display','none','important');book.setAttribute('aria-hidden','true')}if(controls){controls.classList.add('hidden');controls.hidden=true;controls.style.setProperty('display','none','important');controls.setAttribute('aria-hidden','true')}if(note){note.classList.add('hidden');note.hidden=true}if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.removeProperty('display');cover.setAttribute('aria-hidden','false')}}
+function showCover(){if(!currentBook)return;stopNarration();rememberReaderScroll();currentBook.currentPage=-1;const cover=$('coverView'),book=$('book'),controls=$('bookControls'),note=$('illustrationNote');if(book){book.classList.add('hidden');book.hidden=true;book.style.setProperty('display','none','important');book.setAttribute('aria-hidden','true')}if(controls){controls.classList.add('hidden');controls.hidden=true;controls.style.setProperty('display','none','important');controls.setAttribute('aria-hidden','true')}if(note){note.classList.add('hidden');note.hidden=true}if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.removeProperty('display');cover.setAttribute('aria-hidden','false')}persistCurrentDraft()}
 function beginStory(mode='self'){if(!currentBook)return;stopNarration();currentBook.readingMode=mode;currentBook.mobileSide='text';const cover=$('coverView'),book=$('book'),controls=$('bookControls');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.setProperty('display','none','important');cover.setAttribute('aria-hidden','true')}if(book){book.classList.remove('hidden');book.hidden=false;book.style.removeProperty('display');book.setAttribute('aria-hidden','false')}if(controls){controls.classList.remove('hidden');controls.hidden=false;controls.style.removeProperty('display');controls.setAttribute('aria-hidden','false')}renderBookPage(0);if(mode==='narrated')scheduleNarration(120)}
 function illustrationKey(book,index,prompt=''){return `v45:${book.visualCacheId||book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
 function previousIllustrationKey(book,index){if(index<=0)return null;return illustrationKey(book,index-1,getIllustrationPrompt(index-1))}
@@ -821,7 +905,8 @@ function updateMobileScrollCue(){
 function setupMobileScrollCue(){
  const content=document.querySelector('.left-page .page-content');
  if(!content)return;
- content.addEventListener('scroll',updateMobileScrollCue,{passive:true});
+ content.addEventListener('scroll',()=>{updateMobileScrollCue();rememberReaderScroll()},{passive:true});
+ const art=document.querySelector('.right-page .illustration-frame');if(art)art.addEventListener('scroll',rememberReaderScroll,{passive:true});
  requestAnimationFrame(()=>requestAnimationFrame(updateMobileScrollCue));
 }
 function fitMobileStoryText(){
@@ -978,6 +1063,7 @@ function updateNarrationHighlight(audio){const spans=[...document.querySelectorA
 async function startNarrationForCurrentPage(){if(!currentBook||currentBook.currentPage<0)return;for(const a of activeNarrationAudios){try{a.pause();a.currentTime=0}catch{}}activeNarrationAudios.clear();narrationAudio=null;const pageAtStart=currentBook.currentPage,run=++narrationRun,text=currentPageText(),key=narrationKey(),button=$('narrationControl');if(button){button.textContent='…';button.classList.add('loading')}try{const src=await getNarration(text,key);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;const audio=new Audio(src);activeNarrationAudios.add(audio);narrationAudio=audio;if(button){button.textContent='⏸';button.classList.remove('loading')}audio.ontimeupdate=()=>{if(currentBook?.currentPage===pageAtStart)updateNarrationHighlight(audio)};audio.onended=()=>{activeNarrationAudios.delete(audio);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;clearNarrationHighlight();if(narrationAudio===audio)narrationAudio=null;if(button)button.textContent='▶';if(currentBook.readingMode==='narrated'&&pageAtStart<=currentBook.pages.length+1){narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;goNextBookPage(true)},500)}};await audio.play()}catch(e){console.error(e);const message=e?.message||t().narrationUnavailable;if(button){button.textContent='▶';button.classList.remove('loading');button.title=message}if(currentBook?.isSaved)alert(message)} }
 function toggleNarration(){if(!currentBook)return;if(narrationAudio&&!narrationAudio.paused){narrationAudio.pause();const b=$('narrationControl');if(b)b.textContent='▶';return}if(narrationAudio&&narrationAudio.paused){narrationAudio.play();const b=$('narrationControl');if(b)b.textContent='⏸';return}startNarrationForCurrentPage()}
 function renderBookPage(index){
+ rememberReaderScroll();
  stopNarration();
  const book=currentBook,total=book.pages.length+3,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;if(!isPhonePortrait())book.mobileSide='text';
  const closingIndex=total-2,isOpening=clamped===0,isClosing=clamped===closingIndex,isEnd=clamped===total-1;
@@ -989,7 +1075,7 @@ function renderBookPage(index){
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator){indicator.textContent='';indicator.classList.add('end-hidden')}
    const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>startNewStory();const sc=$('sharedCreateStory');if(sc)sc.onclick=e=>{e.preventDefault();const nextLanguage=book.child?.language||language||'en-GB';stopNarration();document.body.classList.remove('shared-story-mode','story-mode','desktop-story-mode');location.assign(`/?lang=${encodeURIComponent(nextLanguage)}&fromShare=1`)};
-   applyMobileSide();return;
+   applyMobileSide();persistCurrentDraft();return;
  }
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';
@@ -998,10 +1084,20 @@ function renderBookPage(index){
  const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
  applyMobileSide();setupMobileScrollCue();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,1);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${narrationLanguage(book)}:${clamped+1}`,clamped+1).catch(()=>{})}
+ persistCurrentDraft();restoreReaderScroll();
 }
-function closeReader(){stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode','shared-story-mode');$('story')?.classList.add('hidden')}
+
+// V200 — portrait-mobile illustration fullscreen viewer.
+let illustrationFullscreenLastTap=0;
+function closeIllustrationFullscreen(){const v=document.getElementById('mobileIllustrationFullscreen');if(!v)return;v.classList.remove('open');v.setAttribute('aria-hidden','true');document.body.classList.remove('mobile-illustration-fullscreen-open');illustrationFullscreenLastTap=0}
+function openIllustrationFullscreen(src,alt=''){if(!isPhonePortrait()||!src)return;let v=document.getElementById('mobileIllustrationFullscreen');if(!v){v=document.createElement('div');v.id='mobileIllustrationFullscreen';v.className='mobile-illustration-fullscreen';v.setAttribute('aria-hidden','true');v.innerHTML='<img alt=""><button class="mobile-illustration-fullscreen-close" type="button" aria-label="Close full-screen illustration">×</button>';document.body.appendChild(v);v.querySelector('.mobile-illustration-fullscreen-close').addEventListener('click',e=>{e.stopPropagation();closeIllustrationFullscreen()});let sx=0,sy=0;v.addEventListener('touchstart',e=>{const t=e.changedTouches?.[0];if(t){sx=t.clientX;sy=t.clientY}},{passive:true});v.addEventListener('touchend',e=>{const t=e.changedTouches?.[0];if(!t||Math.hypot(t.clientX-sx,t.clientY-sy)>18)return;const now=Date.now();if(now-illustrationFullscreenLastTap<360){e.preventDefault();closeIllustrationFullscreen();return}illustrationFullscreenLastTap=now},{passive:false})}const img=v.querySelector('img');img.src=src;img.alt=alt||'Story illustration';v.classList.add('open');v.setAttribute('aria-hidden','false');document.body.classList.add('mobile-illustration-fullscreen-open');illustrationFullscreenLastTap=0}
+let illustrationTapStartX=0,illustrationTapStartY=0,illustrationLastTap=0;
+$('story').addEventListener('touchstart',e=>{if(!isPhonePortrait()||document.body.classList.contains('mobile-illustration-fullscreen-open'))return;const img=e.target.closest?.('.illustration-frame img');if(!img)return;const t=e.changedTouches?.[0];if(!t)return;illustrationTapStartX=t.clientX;illustrationTapStartY=t.clientY},{passive:true});
+$('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||document.body.classList.contains('mobile-illustration-fullscreen-open'))return;const img=e.target.closest?.('.illustration-frame img');if(!img)return;const t=e.changedTouches?.[0];if(!t)return;if(Math.hypot(t.clientX-illustrationTapStartX,t.clientY-illustrationTapStartY)>18){illustrationLastTap=0;return}const now=Date.now();if(now-illustrationLastTap<360){e.preventDefault();illustrationLastTap=0;openIllustrationFullscreen(img.currentSrc||img.src,img.alt);return}illustrationLastTap=now},{passive:false});
+
+function closeReader(){if(storySaveInProgress){savingLeaveWarning();return}closeIllustrationFullscreen();stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode','shared-story-mode');$('story')?.classList.add('hidden')}
 function exitStoryHome(){closeReader();showMoonbeamLanding()}
-function startNewStory(){closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
+function startNewStory(){if(storySaveInProgress){savingLeaveWarning();return}clearCurrentDraft();closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
 function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+3;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 let lastStorySwipeAt=0;
@@ -1040,6 +1136,57 @@ window.openSaved=async i=>{const items=currentUser?cloudStories:saved,x=items[i]
 window.deleteSavedStory=id=>deleteCloudStory(id);
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
+
+// V203 — resilient setup-flow persistence.
+// Refreshing/reopening during Child or Story setup returns to the same step with entered choices intact.
+const SETUP_DRAFT_KEY='moonbeam:setup-draft:v203';
+let setupPersistTimer=null,setupRestoreInProgress=false;
+function setupDraftOwner(){return currentUser?.id||'guest'}
+function setupDraftPayload(){
+ const pages=setupPages(),page=pages[setupPageIndex];
+ if(!page||$('productApp')?.classList.contains('hidden')||$('setupShell')?.classList.contains('hidden'))return null;
+ return {version:203,userId:setupDraftOwner(),savedAt:Date.now(),step:page.dataset.step||'',index:setupPageIndex,language,activeProfileId:activeProfileId||null,fields:{name:$('name')?.value||'',age:$('age')?.value||'',interests:$('interests')?.value||'',dislikes:$('dislikes')?.value||'',storyIdea:$('desktopStoryIdea')?.value||'',tone:$('tone')?.value||'cosy and funny',values:[...selected],useChildPhoto:!!$('useChildPhoto')?.checked}};
+}
+function persistSetupDraft(immediate=false){
+ if(setupRestoreInProgress)return;
+ const run=()=>{try{const payload=setupDraftPayload();if(payload)localStorage.setItem(SETUP_DRAFT_KEY,JSON.stringify(payload))}catch(e){console.warn('Setup draft could not be stored',e)}};
+ if(immediate){if(setupPersistTimer){clearTimeout(setupPersistTimer);setupPersistTimer=null}run();return}
+ if(setupPersistTimer)clearTimeout(setupPersistTimer);setupPersistTimer=setTimeout(()=>{setupPersistTimer=null;run()},120);
+}
+function readSetupDraft(){try{const raw=localStorage.getItem(SETUP_DRAFT_KEY);if(!raw)return null;const x=JSON.parse(raw);return x&&x.version===203?x:null}catch{return null}}
+function clearSetupDraft(){if(setupPersistTimer){clearTimeout(setupPersistTimer);setupPersistTimer=null}try{localStorage.removeItem(SETUP_DRAFT_KEY)}catch{}}
+function applySetupDraftFields(draft){
+ const f=draft?.fields||{};
+ if($('name')&&f.name!=null)$('name').value=f.name;
+ if($('age')&&f.age!=null&&String(f.age)!=='')$('age').value=f.age;
+ if($('interests')&&f.interests!=null)$('interests').value=f.interests;
+ if($('dislikes')&&f.dislikes!=null)$('dislikes').value=f.dislikes;
+ if($('desktopStoryIdea')&&f.storyIdea!=null)$('desktopStoryIdea').value=f.storyIdea;
+ if($('tone')&&f.tone&&[...$('tone').options].some(o=>o.value===f.tone))$('tone').value=f.tone;
+ if(Array.isArray(f.values)){selected=new Set(f.values);renderValues();if(!f.values.length){selected.clear();document.querySelectorAll('#values .chip').forEach(b=>b.classList.remove('active'))}}
+ if($('useChildPhoto')&&typeof f.useChildPhoto==='boolean')$('useChildPhoto').checked=f.useChildPhoto;
+ renderDesktopStoryPanel();
+}
+async function maybeRestoreSetupDraft(){
+ const draft=readSetupDraft();if(!draft)return false;
+ if(draft.userId!==setupDraftOwner())return false;
+ const pages=setupPages();if(!pages.length)return false;
+ let index=pages.findIndex(p=>p.dataset.step===draft.step);if(index<0)index=Math.max(0,Math.min(Number(draft.index)||0,pages.length-1));
+ if(currentUser&&index===0)index=Math.min(1,pages.length-1);
+ if(!currentUser&&index>0)return false;
+ setupRestoreInProgress=true;
+ try{
+   $('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();
+   if(draft.activeProfileId&&currentUser&&cloudProfiles.some(p=>p.id===draft.activeProfileId)){activeProfileId=draft.activeProfileId;renderProfileSelect();await loadCurrentChildPhoto()}
+   applySetupDraftFields(draft);goSetupPage(index,true);
+ }finally{setupRestoreInProgress=false}
+ persistSetupDraft(true);return true;
+}
+function bindSetupDraftPersistence(){
+ if(window.__moonbeamSetupDraftBound)return;window.__moonbeamSetupDraftBound=true;
+ const shell=$('setupShell');if(shell){shell.addEventListener('input',()=>persistSetupDraft(false));shell.addEventListener('change',()=>persistSetupDraft(false));shell.addEventListener('click',e=>{if(e.target.closest('.chip,.desktop-tone-choice'))setTimeout(()=>persistSetupDraft(false),0)})}
+ window.addEventListener('beforeunload',()=>persistSetupDraft(true));
+}
 
 // V86 — simplified creation flow. One explicit screen at a time on desktop and mobile.
 let setupPageIndex=0;
@@ -1110,6 +1257,7 @@ function goSetupPage(index,instant=false){
  if(setupPageIndex===storyIndex&&currentUser)refreshStoryCreditConsentUI().catch(()=>{});
  updateSetupNav();
  bindSetupScrollCue();
+ persistSetupDraft(false);
 }
 function initSetupDeck(){
  const track=$('setupTrack');if(!track)return;
@@ -1124,6 +1272,7 @@ function initSetupDeck(){
  updateSetupNav();goSetupPage(setupPageIndex,true);
 }
 initSetupDeck();
+bindSetupDraftPersistence();
 $('appCreateNav')?.addEventListener('click',()=>{showCreateStoryView();const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Child');goSetupPage(i>=0?i:1,true)});
 function showSavedStoriesView(){
  $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.remove('hidden');renderLibrary();
@@ -1145,12 +1294,42 @@ $('appMobileSignOut')?.addEventListener('click',()=>{$('signOut')?.click();close
 document.addEventListener('click',e=>{if(mobileMenu&&!mobileMenu.classList.contains('hidden')&&!e.target.closest('.app-header'))closeAppMobileMenu()});
 
 $('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyConsentCheck').checked)clearStoryConsentAttention()});
-window.addEventListener('resize',()=>requestAnimationFrame(updateSetupScrollCue));
-window.addEventListener('orientationchange',()=>setTimeout(()=>{const open=!!currentBook&&!$('story')?.classList.contains('hidden');document.body.classList.toggle('story-mode',open);document.body.classList.toggle('desktop-story-mode',open&&!isPhonePortrait());goSetupPage(setupPageIndex,true)},120));
+// V205 — orientation is a layout change, never navigation. Phone landscape keeps
+// the mobile two-step setup deck, while an open reader adopts the desktop spread.
+function isPhoneLandscape(){
+ return window.matchMedia('(pointer:coarse) and (orientation:landscape) and (max-height:600px)').matches;
+}
+function syncResponsiveArchitecture(){
+ const open=!!currentBook&&!$('story')?.classList.contains('hidden');
+ document.body.classList.toggle('phone-landscape',isPhoneLandscape());
+ document.body.classList.toggle('story-mode',open);
+ document.body.classList.toggle('desktop-story-mode',open&&!isPhonePortrait());
+ if(open){
+   // Do not touch setup/library state while a book is open. In particular, a saved
+   // book must remain the active view when Safari rotates the viewport.
+   $('story')?.classList.remove('hidden');
+   if(currentBook.currentPage>=0){
+     applyMobileSide();
+     if(!isPhonePortrait()){
+       const book=$('book');
+       if(book){book.style.removeProperty('--mobile-book-height');book.style.removeProperty('--mobile-art-height')}
+       requestAnimationFrame(fitDesktopStoryText);
+     }
+   }
+   return;
+ }
+ // Setup keeps its exact logical step across portrait/landscape rotation.
+ goSetupPage(setupPageIndex,true);
+}
+let responsiveSyncTimer=null;
+function scheduleResponsiveSync(delay=80){clearTimeout(responsiveSyncTimer);responsiveSyncTimer=setTimeout(syncResponsiveArchitecture,delay)}
+window.addEventListener('resize',()=>{requestAnimationFrame(updateSetupScrollCue);scheduleResponsiveSync(80)},{passive:true});
+window.addEventListener('orientationchange',()=>scheduleResponsiveSync(140),{passive:true});
+syncResponsiveArchitecture();
 
 // V65 — public landing and desktop page architecture.
-function enterMoonbeamApp(accountFirst=false){$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
-function showMoonbeamLanding(){stopNarration();$('story')?.classList.add('hidden');$('productApp')?.classList.add('hidden');$('landing')?.classList.remove('hidden');document.body.classList.remove('product-active','story-mode','desktop-story-mode')}
+function enterMoonbeamApp(accountFirst=false){$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true);persistSetupDraft(true)}
+function showMoonbeamLanding(){clearSetupDraft();stopNarration();$('story')?.classList.add('hidden');$('productApp')?.classList.add('hidden');$('landing')?.classList.remove('hidden');document.body.classList.remove('product-active','story-mode','desktop-story-mode')}
 
 // V87 — setup brand is a permanent Home route without signing out.
 const setupBrand=document.querySelector('header');
