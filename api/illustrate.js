@@ -1,4 +1,4 @@
-const {logUsage,estimateGBP}=require('../_usage');
+const {logUsage,countUsageEvents,estimateGBP}=require('../_usage');
 const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('../_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -17,6 +17,8 @@ module.exports = async function handler(req, res) {
     const prompt = String(body.prompt || '').trim();
     const generationRunId = String(body.generationRunId || '').trim();
     const referenceImage = typeof body.referenceImage === 'string' ? body.referenceImage : '';
+    const requiredStoryImage = body.requiredStoryImage === true;
+    const storyImageIndex = Number.isInteger(body.storyImageIndex) ? body.storyImageIndex : null;
     // V194: the client already sends the story's character bible as `style`.
     // It was previously ignored here, so recurring non-photo characters were being
     // re-invented independently on every image request. Treat it only as immutable
@@ -25,9 +27,29 @@ module.exports = async function handler(req, res) {
     if (!prompt) return res.status(400).json({ error: 'An illustration prompt is required.' });
     if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
     const moonbeamUser = await verifyMoonbeamUser(req);
+    let recoverySlot=false;
     try { await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
-    catch(e){ return res.status(e.status||402).json({error:e.message,code:e.code||'GENERATION_LIMIT'}); }
-    slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;
+    catch(e){
+      // V206: the original nine image slots remain the primary anti-abuse budget.
+      // If Safari/navigation discarded an otherwise legitimate required page request,
+      // allow a tightly bounded recovery attempt for that missing story page instead
+      // of permanently stranding the book without an illustration.
+      const validRequiredIndex = requiredStoryImage && Number.isInteger(storyImageIndex) && storyImageIndex >= 0 && storyImageIndex < 12;
+      if(!validRequiredIndex || e.code!=='GENERATION_LIMIT') return res.status(e.status||402).json({error:e.message,code:e.code||'GENERATION_LIMIT'});
+      const runMeta={user_id:moonbeamUser.id,generation_run_id:generationRunId};
+      const [runRecoveries,pageRecoveries]=await Promise.all([
+        countUsageEvents('image_recovery_slot',runMeta),
+        countUsageEvents('image_recovery_slot',{...runMeta,story_image_index:storyImageIndex})
+      ]);
+      // At most nine recovery generations per story run, and at most three for any
+      // single required page. Total exposure therefore remains strictly bounded.
+      if(runRecoveries===null || pageRecoveries===null) return res.status(503).json({error:'Moonbeam could not safely verify the illustration recovery allowance. Please try again.',code:'RECOVERY_CHECK_FAILED'});
+      if(runRecoveries>=9 || pageRecoveries>=3) return res.status(402).json({error:'This story has no image generation allowance remaining.',code:'GENERATION_LIMIT'});
+      const recoveryReservation=await logUsage({event_type:'image_recovery_slot',estimated_cost_gbp:0,metadata:{...runMeta,story_image_index:storyImageIndex,reason:'required_story_image_recovery'}});
+      if(!recoveryReservation) return res.status(503).json({error:'Moonbeam could not reserve an illustration recovery attempt. Please try again.',code:'RECOVERY_CHECK_FAILED'});
+      recoverySlot=true;
+    }
+    if(!recoverySlot){slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;}
     const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(reservedUserId,reservedRunId,'image')}};
 
     const hasReference = /^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage);
@@ -127,7 +149,7 @@ IMPORTANT
       return res.status(502).json({ error: 'The image service returned no image.' });
     }
 
-    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasReference}),metadata:{reference:hasReference,user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasReference}),metadata:{reference:hasReference,user_id:moonbeamUser.id,generation_run_id:generationRunId,required_story_image:requiredStoryImage===true,story_image_index:Number.isInteger(storyImageIndex)?storyImageIndex:null,recovery_slot:recoverySlot===true}});
     slotReserved=false;
     return res.status(200).json({ image: `data:image/webp;base64,${item.b64_json}`, usedReferencePhoto: hasReference });
   } catch (e) {

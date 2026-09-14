@@ -1,5 +1,15 @@
-# Moonbeam Stories V205
+# Moonbeam Stories V206
 
+## V206 — recover interrupted required illustrations
+
+- Required story-page illustrations can now recover after the normal generation-run image allowance has been exhausted by interrupted/discarded requests, such as navigating away or Safari suspending the page during generation.
+- Recovery is deliberately bounded server-side: no more than 9 recovery generations per story run and no more than 3 for any one required story image. The original anti-abuse allowance remains the primary budget.
+- Recovery attempts are recorded in the existing `api_usage_events` table; no Supabase schema migration is required.
+- The client marks only genuine story-page images as eligible for recovery. The optional dedicated cover enhancement does not receive recovery allowance.
+- Recovered drafts and Save-time completion use the same required-image recovery path, while successfully cached illustrations continue to be reused rather than regenerated.
+- When illustration generation has actually stopped, the reader now says “Picture not ready” (localized across all nine languages) instead of misleadingly continuing to say “Painting this page…”.
+- V205 mobile orientation behaviour, V204 homepage CTA, V203 setup recovery, and V202 save behaviour are retained.
+- No database schema, Supabase SQL, story generation, narration, or billing-credit changes.
 
 ## V205 — mobile landscape architecture and rotation persistence
 - Phone landscape reader now uses the desktop-style spread: text left, illustration right.

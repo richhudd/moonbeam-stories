@@ -36,6 +36,33 @@ async function logUsage(event) {
   }
 }
 
+
+async function countUsageEvents(eventType, metadataContains={}) {
+  if (!SECRET_KEY) return null;
+  try {
+    const params = new URLSearchParams();
+    params.set('select', 'id');
+    params.set('event_type', `eq.${String(eventType||'')}`);
+    if (metadataContains && Object.keys(metadataContains).length) params.set('metadata', `cs.${JSON.stringify(metadataContains)}`);
+    params.set('limit', '200');
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?${params.toString()}`, {
+      headers: adminHeaders({ Prefer: 'count=exact' })
+    });
+    if (!r.ok) {
+      console.error('usage count failed', r.status, await r.text());
+      return null;
+    }
+    const range = String(r.headers.get('content-range') || '');
+    const m = range.match(/\/(\d+)$/);
+    if (m) return Number(m[1]) || 0;
+    const rows = await r.json();
+    return Array.isArray(rows) ? rows.length : 0;
+  } catch (e) {
+    console.error('usage count failed', e);
+    return null;
+  }
+}
+
 function estimateGBP(kind, meta={}) {
   if (kind === 'story') return Number(process.env.MOONBEAM_COST_STORY_GBP || 0);
   if (kind === 'image') {
@@ -47,4 +74,4 @@ function estimateGBP(kind, meta={}) {
   return 0;
 }
 
-module.exports = { logUsage, estimateGBP, SUPABASE_URL, SECRET_KEY, adminHeaders };
+module.exports = { logUsage, countUsageEvents, estimateGBP, SUPABASE_URL, SECRET_KEY, adminHeaders };
