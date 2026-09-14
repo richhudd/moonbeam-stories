@@ -3182,3 +3182,90 @@ body.phone-landscape.story-mode #book.show-mobile-spread .mobile-scroll-cue{disp
   body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-scroll-left{left:-6px!important}
   body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-scroll-right{right:-6px!important}
 }
+
+
+/* V224 — Account uses the same native swipe-scroll + passive double-chevron cue as mobile setup. */
+@media(max-width:700px){
+  /* Undo V221 body-scrolling architecture: Account itself is the touch scroll container,
+     just like each mobile setup page. */
+  body.product-active:has(#accountView:not(.hidden)){
+    overflow:hidden!important;
+    height:100dvh!important;
+    min-height:0!important;
+  }
+  body.product-active:has(#accountView:not(.hidden)) #productApp{
+    height:100dvh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  body.product-active:not(.story-mode) #accountView:not(.hidden){
+    position:relative!important;
+    flex:1 1 0!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:10px 12px 28px!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+    touch-action:pan-y!important;
+  }
+
+  /* Remove the V222 clickable controls completely. */
+  #accountView .account-scroll-chevron{display:none!important}
+
+  /* Same visual/behavioural language as .setup-scroll-cue. */
+  #accountView>.account-scroll-cue{
+    position:absolute!important;
+    z-index:30!important;
+    left:50%!important;
+    transform:translateX(-50%)!important;
+    width:42px!important;
+    height:34px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:0!important;
+    pointer-events:none!important;
+    opacity:0!important;
+    visibility:hidden!important;
+    transition:opacity .28s ease!important;
+    filter:drop-shadow(0 1px 2px rgba(255,255,255,.95))!important;
+  }
+  #accountView>.account-scroll-cue::before{
+    content:""!important;
+    position:absolute!important;
+    z-index:-1!important;
+    left:50%!important;
+    bottom:-8px!important;
+    transform:translateX(-50%)!important;
+    width:92px!important;
+    height:58px!important;
+    pointer-events:none!important;
+    background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.92) 62%,rgba(255,255,255,.98))!important;
+  }
+  #accountView>.account-scroll-cue.visible{
+    opacity:.82!important;
+    visibility:visible!important;
+  }
+  #accountView>.account-scroll-cue span{
+    display:block!important;
+    width:12px!important;
+    height:12px!important;
+    border-right:2.5px solid #5f4b83!important;
+    border-bottom:2.5px solid #5f4b83!important;
+    transform:rotate(45deg)!important;
+    margin:-3px 0!important;
+    animation:moonbeamScrollCue 2.15s ease-in-out infinite!important;
+  }
+  #accountView>.account-scroll-cue span+span{animation-delay:.12s!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #accountView>.account-scroll-cue span{animation:none!important}
+}

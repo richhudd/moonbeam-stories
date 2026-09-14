@@ -1317,22 +1317,46 @@ function initSetupDeck(){
 }
 initSetupDeck();
 bindSetupDraftPersistence();
-function updateAccountScrollChevrons222(){
- const view=$('accountView'),up=$('accountScrollChevronUp'),down=$('accountScrollChevronDown');
- if(!view||view.classList.contains('hidden')||innerWidth>700){up?.classList.add('hidden');down?.classList.add('hidden');return}
- const y=window.scrollY||document.documentElement.scrollTop||0;
- const max=Math.max(0,document.documentElement.scrollHeight-innerHeight);
- up?.classList.toggle('hidden',y<18);
- down?.classList.toggle('hidden',max-y<18);
+function ensureAccountScrollCue224(){
+ const view=$('accountView');if(!view)return null;
+ let cue=view.querySelector(':scope > .account-scroll-cue');
+ if(!cue){
+   cue=document.createElement('div');
+   cue.className='account-scroll-cue';
+   cue.setAttribute('aria-hidden','true');
+   cue.innerHTML='<span></span><span></span>';
+   view.appendChild(cue);
+ }
+ return cue;
 }
-function scrollAccount222(direction){
- const amount=Math.max(220,Math.round(innerHeight*.55));
- window.scrollBy({top:direction*amount,behavior:'smooth'});
+function updateAccountScrollCue224(){
+ const view=$('accountView'),cue=ensureAccountScrollCue224();
+ if(!view||!cue)return;
+ const mobile=window.matchMedia('(max-width:700px)').matches;
+ const active=mobile&&!view.classList.contains('hidden');
+ const remaining=view.scrollHeight-view.scrollTop-view.clientHeight;
+ const moreBelow=!!(active&&remaining>6);
+ cue.classList.toggle('visible',moreBelow);
+ cue.setAttribute('aria-hidden',moreBelow?'false':'true');
+ if(moreBelow){
+   const top=Math.max(8,view.scrollTop+view.clientHeight-cue.offsetHeight-10);
+   cue.style.top=top+'px';
+ }
 }
-window.addEventListener('scroll',updateAccountScrollChevrons222,{passive:true});
-window.addEventListener('resize',updateAccountScrollChevrons222,{passive:true});
-$('accountScrollChevronUp')?.addEventListener('click',()=>scrollAccount222(-1));
-$('accountScrollChevronDown')?.addEventListener('click',()=>scrollAccount222(1));
+function bindAccountScrollCue224(){
+ const view=$('accountView');if(!view)return;
+ ensureAccountScrollCue224();
+ if(!view.dataset.scrollCueBound224){
+   view.dataset.scrollCueBound224='1';
+   view.addEventListener('scroll',updateAccountScrollCue224,{passive:true});
+ }
+ if(!window.__moonbeamAccountCueBound224){
+   window.__moonbeamAccountCueBound224=true;
+   window.addEventListener('resize',updateAccountScrollCue224,{passive:true});
+ }
+ requestAnimationFrame(()=>requestAnimationFrame(updateAccountScrollCue224));
+}
+bindAccountScrollCue224();
 
 let pendingAccountEmail216='';
 function renderAccountView213(){
@@ -1343,7 +1367,7 @@ function renderAccountView213(){
  if(pendingValue)pendingValue.textContent=pending||'—';
  pendingBox?.classList.toggle('hidden',!pending);
  if(credits)credits.textContent=storyCreditBalance==null?'—':`${storyCreditBalance} ${storyCreditBalance===1?a.creditOne:a.creditMany}`;
- setTimeout(updateAccountScrollChevrons222,0);
+ setTimeout(updateAccountScrollCue224,0);
 }
 function setAccountEmailEditor216(open){
  const editor=$('accountEmailEditor'),input=$('accountNewEmail'),status=$('accountEmailStatus');
@@ -1375,7 +1399,7 @@ function showAccountView213(){
  rememberAppSection219('account');
  $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.add('hidden');$('accountView')?.classList.remove('hidden');
  $('appCreateNav')?.classList.remove('active');$('appSavedNav')?.classList.remove('active');$('appAccountNav')?.classList.add('active');
- renderAccountView213();setTimeout(updateAccountScrollChevrons222,0);
+ renderAccountView213();setTimeout(updateAccountScrollCue224,0);
 }
 async function changeAccountPassword213(){
  if(!supabaseClient||!currentUser)return;

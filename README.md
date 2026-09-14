@@ -1,3 +1,15 @@
+# Moonbeam Stories V224
+
+## V224 — Account scroll now matches mobile setup
+- Removes V222's clickable up/down Account scroll buttons completely.
+- The mobile Account view is now its own native vertical touch-scroll container, matching the mobile setup pages.
+- Users scroll Account naturally by swiping up/down anywhere in the Account content.
+- Adds only the passive flashing double-down-chevron cue at the bottom of the visible Account area when more content remains below.
+- The cue is non-clickable, disappears automatically at the bottom, and uses the same animation, sizing and scroll-state logic as the established setup-page cue.
+- V223 child-profile horizontal swipe/carousel work is preserved.
+- V220 refresh restoration, email-change functionality and reader behaviour are unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V223
 
 ## V223 — mobile child-profile sideways scrolling
