@@ -1,3 +1,14 @@
+# Moonbeam Stories V228
+
+## V228 — Account sign-out reliably becomes sign-in
+- Built directly from the clean V227 branch.
+- Fixes the stale Account state shown after signing out: blank email, 0 credits and a lingering Sign out button.
+- After Supabase sign-out succeeds, Moonbeam now immediately reconciles local auth state and keeps the user on Account, where the signed-out email/password login panel is shown.
+- Signed-out Account rendering happens before nonessential child-photo cleanup, so an unrelated cleanup failure cannot leave signed-in Account controls visible.
+- Fixes a separate null-credit rendering bug where `null` was being converted to numeric `0`; signed-out/unknown credit state now remains null rather than falsely showing “0 credits remaining”.
+- V227 mobile child-strip swipe handling and V226 Account login form remain intact.
+- No story-generation, reader, save, API or Supabase schema logic changed.
+
 # Moonbeam Stories V227
 
 ## V227 — reliable mobile child-strip swipe

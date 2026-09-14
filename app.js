@@ -339,7 +339,14 @@ async function applyAuthSession(session){
    }
  }else{
    try{sessionStorage.removeItem(APP_SECTION_KEY_219)}catch{}
-   draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()
+   draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];
+   renderProfileSelect();renderLibrary();
+   storyCreditBalance=null;renderStoryCredits(null);
+   // Render signed-out Account before any ancillary photo cleanup, so a failure there
+   // can never leave the stale signed-in controls visible.
+   renderAccountView213();
+   try{await loadCurrentChildPhoto()}catch(e){console.warn('signed-out photo cleanup',e)}
+   return;
  }
  renderAccountView213();
 }
@@ -387,7 +394,17 @@ async function signInParent(){
  if(!email||!password){setAuthStatus('Enter your email and password.',true);return}
  setAuthStatus('Signing in…');const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)setAuthStatus(error.message,true);else setAuthStatus('');
 }
-async function signOutParent(){await supabaseClient.auth.signOut();setAuthStatus('Signed out.')}
+async function signOutParent(){
+ if(!supabaseClient)return;
+ const {error}=await supabaseClient.auth.signOut();
+ if(error){setAuthStatus(error.message,true);return}
+ // V228: immediately reconcile local UI state. The Supabase auth callback may arrive
+ // slightly later (or fail part-way through other signed-out cleanup), but Account
+ // must switch to its login panel as soon as sign-out succeeds.
+ await applyAuthSession(null);
+ showAccountView213();
+ setAuthStatus('Signed out.');
+}
 function formChild(){return{name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim()}}
 let desktopProfileRenderToken=0;
 async function renderDesktopProfileTiles(){
@@ -534,7 +551,7 @@ function renderDesktopStoryPanel(){
  if(tone&&choices){const icons={'cosy and funny':'🌿','magical':'⭐','adventurous':'⛰️','calm and dreamy':'☁️'};choices.innerHTML=[...tone.options].map(o=>`<button type="button" class="desktop-tone-choice${o.value===tone.value?' active':''}" data-tone="${escapeHtml(o.value)}"><span>${icons[o.value]||'✦'}</span><b>${escapeHtml(o.textContent)}</b></button>`).join('');choices.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tone.value=b.dataset.tone;tone.dispatchEvent(new Event('change',{bubbles:true}));renderDesktopStoryPanel()}))}
 }
 function renderStoryCredits(balance=storyCreditBalance){
- storyCreditBalance=Number.isFinite(Number(balance))?Number(balance):null;
+ storyCreditBalance=balance==null?null:(Number.isFinite(Number(balance))?Number(balance):null);
  renderHeaderCredits();renderAccountView213();
  const el=$('creditStatus');if(!el)return;
  el.classList.toggle('empty',storyCreditBalance===0);
