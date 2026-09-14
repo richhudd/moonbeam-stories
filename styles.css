@@ -3440,3 +3440,17 @@ body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) .setup-c
     flex-shrink:0!important;
   }
 }
+
+
+/* V231 — Account is reachable whether signed in or signed out. */
+#appAccountNav,
+#appMobileAccountNav{
+  visibility:visible;
+}
+body:not(.moonbeam-signed-in) #appAccountNav,
+body:not(.moonbeam-signed-in) #appMobileAccountNav{
+  display:flex!important;
+}
+body:not(.moonbeam-signed-in) #accountView:not(.hidden){
+  display:block!important;
+}

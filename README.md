@@ -1,3 +1,28 @@
+# Moonbeam Stories V231
+
+## V231 — Account is no longer signed-in-only
+- Built directly from the clean V230 branch.
+- Decouples Account from the setup-page login flow and from the signed-in-only navigation state.
+- Account is now always reachable from both desktop and mobile navigation.
+- Opening Account while signed out shows the Account login form directly.
+- Opening Account while signed in shows the normal account details, credits, password and sign-out controls.
+- Signing out while on Account keeps the user on Account and switches the same page to the login form.
+- Account no longer depends on having first authenticated through the setup page.
+- Existing setup-page login remains available and unchanged.
+- V227 child-profile swipe work and all story-generation, reader, save, API and Supabase schema logic remain unchanged.
+
+# Moonbeam Stories V230
+
+## V230 — desktop Account uses a valid-session test, not a merely truthy user object
+- Built directly from the clean V229 branch.
+- Fixes the desktop Account state shown in the screenshot: Parent account badge, blank email, 0 credits and a Sign out button even though there is no usable signed-in account.
+- Account now treats a session as signed in only when the Supabase user has both a real user ID and email address.
+- Any incomplete/stale in-memory user object is treated as signed out, so the email/password login panel is shown instead of the signed-in controls.
+- The same valid-session test is used when deciding whether to persist the Account section and when re-checking Supabase on Account open.
+- Mobile Account login behaviour remains unchanged.
+- V227 child-profile swipe work and all story-generation/reader/save/API logic remain unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V229
 
 ## V229 — desktop Account session-state correction
