@@ -3473,3 +3473,40 @@ body:not(.moonbeam-signed-in) #accountView:not(.hidden){
 .usage-economics thead th,.usage-support thead th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:#655f72}
 .usage-economics tbody th{font-weight:600;text-align:left}
 .usage-support{font-size:.88rem}
+
+/* V240 — usage tables: explicit readable colours + users table */
+.usage-economics,
+.usage-support,
+.usage-users{
+  background:#fff!important;
+  color:#211c2d!important;
+}
+.usage-economics tbody th,
+.usage-economics tbody td,
+.usage-support tbody td,
+.usage-users tbody td{
+  color:#211c2d!important;
+  background:#fff!important;
+}
+.usage-economics thead th,
+.usage-support thead th,
+.usage-users thead th{
+  color:#655f72!important;
+  background:#fff!important;
+}
+.usage-users{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.88rem;
+}
+.usage-users th,
+.usage-users td{
+  padding:11px 12px;
+  border-bottom:1px solid rgba(23,19,45,.11);
+  text-align:left;
+  white-space:nowrap;
+}
+.usage-users td:nth-child(4),
+.usage-users th:nth-child(4){
+  text-align:right;
+}

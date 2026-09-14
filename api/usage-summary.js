@@ -106,6 +106,37 @@ module.exports=async function handler(req,res){
     periods[key].averageStoryCostUSD=c.available&&periods[key].stories>0?c.totalUSD/periods[key].stories:null;
   }
 
+
+  const storyEventsByUser=new Map();
+  for(const e of events.filter(x=>x.event_type==='story')){
+    const userId=String(e?.metadata?.user_id||'');
+    if(!userId)continue;
+    const list=storyEventsByUser.get(userId)||[];
+    list.push(e);
+    storyEventsByUser.set(userId,list);
+  }
+
+  const userSummaries=users
+    .map(user=>{
+      const userId=String(user.id||'');
+      const storyEvents=storyEventsByUser.get(userId)||[];
+      let lastGenerationAt=null;
+      for(const e of storyEvents){
+        if(!lastGenerationAt || Date.parse(e.created_at)>Date.parse(lastGenerationAt)){
+          lastGenerationAt=e.created_at;
+        }
+      }
+      return {
+        id:userId,
+        email:String(user.email||''),
+        createdAt:user.created_at||null,
+        lastSignInAt:user.last_sign_in_at||null,
+        storiesGenerated:storyEvents.length,
+        lastGenerationAt
+      };
+    })
+    .sort((a,b)=>Date.parse(b.createdAt||0)-Date.parse(a.createdAt||0));
+
   const supportAttempts=events
     .filter(x=>x.event_type==='generation_attempt')
     .slice(-100).reverse()
@@ -127,6 +158,7 @@ module.exports=async function handler(req,res){
   return res.status(200).json({
     baselineUTC,
     periods,
+    users:userSummaries,
     supportAttempts,
     openai:{
       available:baseCost.available,

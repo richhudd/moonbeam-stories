@@ -1,3 +1,19 @@
+# Moonbeam Stories V240
+
+## V240 — visible usage tables + registered users table
+- Built directly from V239.
+- Fixes the V239 display bug where table body text inherited a very light global text colour and became invisible on white table cells.
+- Explicitly sets readable dark text on the economics, support and users tables.
+- Adds a private developer-only Users section to `/usage.html`.
+- Users table shows: account email, joined date/time, last sign-in, successful stories generated, and last generation time.
+- Story counts are derived from existing `story` usage events matched by `metadata.user_id`.
+- Does not expose passwords, story text or user prompts.
+- Keeps the economics table with columns: All-time, Since baseline, Today, Last 7 days.
+- Keeps the baseline at 14 September 2026 21:25:06 UTC / 22:25:06 BST.
+- Keeps the generation support trail introduced in V239.
+- No Supabase schema change required.
+- Leaves the parked desktop Account logout and mobile child-strip issues untouched.
+
 # Moonbeam Stories V239
 
 ## V239 — economics table + generation support trail

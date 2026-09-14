@@ -1,7 +1,7 @@
 <!doctype html>
 <meta name="viewport" content="width=device-width">
 <title>Moonbeam Usage</title>
-<link rel="stylesheet" href="/styles.css?v=239">
+<link rel="stylesheet" href="/styles.css?v=240">
 <main class="usage-page">
   <h1>Moonbeam developer usage</h1>
   <div id="u">Loading…</div>
@@ -23,6 +23,16 @@
  const P=d.periods||{};
  const cols=[['allTime','All-time'],['sinceBaseline','Since baseline'],['today','Today'],['last7Days','Last 7 days']];
  const row=(label,key,fmt=num)=>`<tr><th>${label}</th>${cols.map(([k])=>`<td>${fmt(P[k]?.[key])}</td>`).join('')}</tr>`;
+ const users=(d.users||[]);
+ const userRows=users.length?users.map(x=>`
+   <tr>
+    <td>${esc(x.email||'—')}</td>
+    <td>${x.createdAt?new Date(x.createdAt).toLocaleString('en-GB'):'—'}</td>
+    <td>${x.lastSignInAt?new Date(x.lastSignInAt).toLocaleString('en-GB'):'—'}</td>
+    <td>${num(x.storiesGenerated)}</td>
+    <td>${x.lastGenerationAt?new Date(x.lastGenerationAt).toLocaleString('en-GB'):'—'}</td>
+   </tr>`).join(''):`<tr><td colspan="5">No registered users found.</td></tr>`;
+
  const support=(d.supportAttempts||[]);
  const supportRows=support.length?support.map(a=>`
    <tr>
@@ -52,6 +62,14 @@
    </table></div>
    <p class="${d.openai?.available?'usage-note':'usage-warning'}">${costNote}</p>
    <p class="usage-note">Registered accounts: <strong>${num(P.allTime?.registeredUsers)}</strong></p>
+  </section>
+
+  <section class="usage-section usage-baseline-section">
+   <div class="usage-section-head"><h2>Users</h2><p>All registered Moonbeam accounts. Story counts are successful generation events recorded against each account.</p></div>
+   <div class="usage-table-wrap"><table class="usage-users">
+    <thead><tr><th>Account</th><th>Joined</th><th>Last sign-in</th><th>Stories generated</th><th>Last generation</th></tr></thead>
+    <tbody>${userRows}</tbody>
+   </table></div>
   </section>
 
   <section class="usage-section usage-baseline-section">
