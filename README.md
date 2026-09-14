@@ -1,3 +1,15 @@
+# Moonbeam Stories V227
+
+## V227 — reliable mobile child-strip swipe
+- Built directly from the clean V226 branch.
+- Keeps the full-width isolated child-profile viewport introduced in the clean V225 rebuild.
+- Adds touch handling to that viewport itself, not to the child-card track and not to the setup page.
+- A clearly horizontal finger drag moves only the child strip.
+- A vertical drag, including one that starts over a child card, is left untouched so the surrounding setup page can continue to scroll vertically.
+- The strip position follows the finger directly and continues to use the existing desktop overflow/arrow-state logic.
+- No authentication, story-generation, credits, save, reader, API or Supabase schema logic changed.
+- V226 Account sign-in/sign-out improvements remain intact.
+
 # Moonbeam Stories V226
 
 ## V226 — sign back in from Account

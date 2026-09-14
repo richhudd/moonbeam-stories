@@ -3414,3 +3414,29 @@ body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) .setup-c
  .account-login-grid{grid-template-columns:1fr}
  .account-login-actions{align-items:flex-start;flex-direction:column}
 }
+
+
+/* V227 — isolated child strip keeps full width; JS owns only clearly horizontal drags.
+   Vertical gestures begun over the strip are left untouched for the setup page. */
+@media(max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip-viewport{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    touch-action:auto!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    width:max-content!important;
+    min-width:max-content!important;
+    max-width:none!important;
+    overflow:visible!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-tile{
+    flex-shrink:0!important;
+  }
+}

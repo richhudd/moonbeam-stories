@@ -242,6 +242,31 @@ $('profileSelect')?.addEventListener('change',selectCloudProfile);
 $('desktopChildScrollLeft')?.addEventListener('click',()=>{$('desktopChildStripViewport')?.scrollBy({left:-260,behavior:'smooth'})});
 $('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStripViewport')?.scrollBy({left:260,behavior:'smooth'})});
 $('desktopChildStripViewport')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
+(function bindChildStripTouch227(){
+ const viewport=$('desktopChildStripViewport');
+ if(!viewport||viewport.dataset.touch227)return;
+ viewport.dataset.touch227='1';
+ let startX=0,startY=0,startLeft=0,mode='';
+ viewport.addEventListener('touchstart',e=>{
+   const t=e.touches?.[0];if(!t)return;
+   startX=t.clientX;startY=t.clientY;startLeft=viewport.scrollLeft;mode='';
+ },{passive:true});
+ viewport.addEventListener('touchmove',e=>{
+   const t=e.touches?.[0];if(!t)return;
+   const dx=t.clientX-startX,dy=t.clientY-startY;
+   if(!mode){
+     if(Math.abs(dx)<6&&Math.abs(dy)<6)return;
+     mode=Math.abs(dx)>Math.abs(dy)*1.08?'x':'y';
+   }
+   if(mode!=='x')return;
+   e.preventDefault();
+   e.stopPropagation();
+   viewport.scrollLeft=startLeft-dx;
+   updateDesktopChildScrollButtons();
+ },{passive:false});
+ viewport.addEventListener('touchend',()=>{mode='';updateDesktopChildScrollButtons()},{passive:true});
+ viewport.addEventListener('touchcancel',()=>{mode=''}, {passive:true});
+})();
 window.addEventListener('resize',updateDesktopChildScrollButtons);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
 $('removeProfile')?.addEventListener('click',deleteChildProfile);
