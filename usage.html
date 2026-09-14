@@ -1,1 +1,71 @@
-<!doctype html><meta name=viewport content="width=device-width"><title>Moonbeam Usage</title><link rel=stylesheet href=styles.css><main class=usage-page><h1>Moonbeam developer usage</h1><div id=u>Loading…</div><p><a href="/">← Moonbeam</a></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(async()=>{let c=supabase.createClient('https://quwjfjojeibaxnnpykaf.supabase.co','sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q'),s=(await c.auth.getSession()).data.session;if(!s)return u.textContent='Sign into Moonbeam first';let r=await fetch('/api/usage-summary',{headers:{Authorization:'Bearer '+s.access_token}}),d=await r.json();if(!r.ok)return u.textContent=d.error;let g=n=>'£'+Number(n||0).toFixed(4);u.innerHTML=`<div class=usage-grid><div><b>${d.registeredUsers}</b><span>accounts</span></div><div><b>${d.stories}</b><span>stories</span></div><div><b>${d.images}</b><span>images</span></div><div><b>${d.narrations}</b><span>narrations</span></div><div><b>${g(d.estimatedCostGBP)}</b><span>estimated cost</span></div><div><b>${g(d.averageStoryCostGBP)}</b><span>avg/story</span></div></div>`})()</script>
+<!doctype html>
+<meta name="viewport" content="width=device-width">
+<title>Moonbeam Usage</title>
+<link rel="stylesheet" href="/styles.css?v=238">
+<main class="usage-page">
+  <h1>Moonbeam developer usage</h1>
+  <div id="u">Loading…</div>
+  <p><a href="/">← Moonbeam</a></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async()=>{
+  const u=document.getElementById('u');
+  const c=supabase.createClient(
+    'https://quwjfjojeibaxnnpykaf.supabase.co',
+    'sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q'
+  );
+  const s=(await c.auth.getSession()).data.session;
+  if(!s){u.textContent='Sign into Moonbeam first';return}
+
+  const r=await fetch('/api/usage-summary',{
+    headers:{Authorization:'Bearer '+s.access_token}
+  });
+  const d=await r.json();
+  if(!r.ok){u.textContent=d.error||'Could not load usage';return}
+
+  const money=n=>n==null?'—':'$'+Number(n).toFixed(4);
+  const baseline=new Date(d.baselineUTC);
+  const baselineText=baseline.toLocaleString('en-GB',{
+    day:'numeric',month:'short',year:'numeric',
+    hour:'2-digit',minute:'2-digit',
+    timeZone:'Europe/London',timeZoneName:'short'
+  });
+
+  const all=d.allTime||{};
+  const fresh=d.sinceBaseline||{};
+  const costMessage=d.openai?.available
+    ? `<p class="usage-note">OpenAI cost is read from the organisation Costs API${d.openai.projectFiltered?' and filtered to the configured Moonbeam project':''}. OpenAI reporting can lag slightly behind generation.</p>`
+    : `<p class="usage-warning"><strong>OpenAI cost not connected yet.</strong> ${d.openai?.error||'Add OPENAI_ADMIN_KEY in Vercel.'}</p>`;
+
+  u.innerHTML=`
+    <section class="usage-section">
+      <div class="usage-section-head">
+        <h2>All-time usage</h2>
+        <p>Historical Moonbeam activity is preserved.</p>
+      </div>
+      <div class="usage-grid">
+        <div><b>${all.registeredUsers??'—'}</b><span>accounts</span></div>
+        <div><b>${all.stories??0}</b><span>stories</span></div>
+        <div><b>${all.images??0}</b><span>images</span></div>
+        <div><b>${all.narrations??0}</b><span>narrations</span></div>
+      </div>
+    </section>
+
+    <section class="usage-section usage-baseline-section">
+      <div class="usage-section-head">
+        <h2>Cost tracking — since baseline</h2>
+        <p>Baseline: ${baselineText}. Historical usage above is not included in these calculations.</p>
+      </div>
+      <div class="usage-grid">
+        <div><b>${fresh.stories??0}</b><span>stories</span></div>
+        <div><b>${fresh.images??0}</b><span>images</span></div>
+        <div><b>${fresh.narrations??0}</b><span>narrations</span></div>
+        <div><b>${money(fresh.openAICostUSD)}</b><span>OpenAI cost</span></div>
+        <div><b>${money(fresh.averageStoryCostUSD)}</b><span>cost/story</span></div>
+      </div>
+      ${costMessage}
+    </section>
+  `;
+})()
+</script>

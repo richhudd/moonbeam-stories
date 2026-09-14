@@ -1,25 +1,19 @@
-# Moonbeam Stories V237
+# Moonbeam Stories V238
 
-## V237 — Supabase SIGNED_OUT can no longer reopen Account on desktop
-- Built directly from the exact V236 build that was uploaded.
-- The remaining bug was the asynchronous Supabase onAuthStateChange(SIGNED_OUT) callback.
-- V236 navigated to Create Story page 0, but a later SIGNED_OUT callback could still execute applyAuthSession(null), whose signed-out branch reopened Account.
-- V237 sets a desktop Account-logout destination flag before calling supabase.auth.signOut().
-- The signed-out branch of applyAuthSession now checks that flag and opens Create Story page 0 instead of Account.
-- The flag persists across repeated SIGNED_OUT callbacks and is cleared only when a genuine signed-in session exists again.
-- Desktop signOutParent no longer manually calls applyAuthSession(null), eliminating a duplicate signed-out render.
-- Mobile logout behaviour remains as in V231.
-- No story-generation, credits, reader, saved-story, swipe, API or Supabase schema changes.
-
-# Moonbeam Stories V236
-
-## V236 — logout goes to Create Story login
-- Rebuilt directly from clean V231.
-- The old V231 logout ended by reopening Account.
-- V236 removes that behavior.
-- After Supabase sign-out and normal cleanup, logout now opens Create Story setup page 0 — the original login page.
-- No V232–V235 logout experiments are included.
-- No story-generation, credits, reader, saved stories, child-profile swipe, API or Supabase schema changes.
+## V238 — live OpenAI cost-per-story dashboard, built from clean V231
+- Built directly from the clean V231 baseline. None of the abandoned V232–V237 logout experiments are included.
+- Leaves the two parked issues untouched: desktop Account logout and mobile child-strip swiping.
+- Preserves all historical Moonbeam usage counts.
+- Adds a separate “Cost tracking — since baseline” section to `/usage.html`.
+- Baseline is 14 September 2026 at 21:25:06 UTC (22:25:06 BST), with optional override via `MOONBEAM_USAGE_BASELINE_UTC`.
+- Since-baseline counters start independently from the historical totals and count stories, images and narrations from Supabase usage events.
+- Connects the developer-only usage endpoint to OpenAI’s organisation Costs API.
+- Shows live OpenAI cost in USD and calculates actual cost/story using the same baseline period.
+- Requires a Vercel environment variable `OPENAI_ADMIN_KEY` containing an OpenAI Admin API key.
+- Optional: set `OPENAI_PROJECT_ID` to restrict cost reporting to the Moonbeam OpenAI project. Without it, the dashboard reports organisation-wide OpenAI cost since the baseline.
+- If `OPENAI_ADMIN_KEY` is missing or rejected, the dashboard shows a clear “not connected yet” message instead of a fake `$0.0000`.
+- No Supabase schema change required.
+- No story-generation, illustration, narration, reader, credits, save, auth or child-strip logic changed.
 
 # Moonbeam Stories V231
 

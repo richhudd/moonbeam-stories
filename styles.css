@@ -3454,3 +3454,13 @@ body:not(.moonbeam-signed-in) #appMobileAccountNav{
 body:not(.moonbeam-signed-in) #accountView:not(.hidden){
   display:block!important;
 }
+
+/* V238 developer usage dashboard */
+.usage-page{max-width:980px}
+.usage-section{margin:0 0 28px}
+.usage-section-head{margin:0 0 12px}
+.usage-section-head h2{margin:0 0 4px;font-size:1.15rem}
+.usage-section-head p,.usage-note,.usage-warning{margin:0;color:#655f72;line-height:1.45}
+.usage-baseline-section{padding-top:22px;border-top:1px solid rgba(23,19,45,.14)}
+.usage-note,.usage-warning{margin-top:12px}
+.usage-warning{padding:12px 14px;border:1px solid rgba(165,104,0,.28);border-radius:12px;background:rgba(255,193,7,.08)}
