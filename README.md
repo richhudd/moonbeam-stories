@@ -1,3 +1,19 @@
+# Moonbeam Stories V212
+
+## V212 — true mobile landscape reader
+- Built from V211.
+- Mobile portrait CSS is untouched.
+- Phone landscape no longer enters `desktop-story-mode`.
+- Landscape now uses the same mobile reader architecture as portrait, rotated horizontally.
+- Illustration is on the left; story text is on the right and scrolls independently.
+- Illustration keeps mobile-style independent scrolling when the artwork is taller than its pane.
+- Desktop Previous / Turn page pill is removed on phone landscape.
+- Landscape uses the same visual language as portrait: circular previous/next arrows, centred page count, and floating close button.
+- V207 rotation-state protection remains intact, so rotation stays on the same book and page.
+- Setup architecture is unchanged.
+- No API, story-generation, save, or illustration-recovery logic changed.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V211
 
 ## V211 — phone landscape scrolling text pane

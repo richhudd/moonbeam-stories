@@ -705,7 +705,7 @@ function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?
 function renderStory(s,image,child,options={}){
  currentBook=buildBook(s,image,child,options);
  const el=$('story');el.classList.remove('hidden');
- document.body.classList.add('story-mode');document.body.classList.toggle('shared-story-mode',!!currentBook.isShared);document.body.classList.toggle('desktop-story-mode',!isPhonePortrait());
+ document.body.classList.add('story-mode');document.body.classList.toggle('shared-story-mode',!!currentBook.isShared);document.body.classList.toggle('desktop-story-mode',!isPhoneReader());
  el.innerHTML=`<div class="book-shell"><button id="storyExit" class="story-exit" type="button" aria-label="Close story" title="Back">×</button><div class="book-cover-head"><span>${escapeHtml(t().title)}</span><span>${escapeHtml(t().childTitle.replace('?',''))}</span></div><div id="coverView" class="story-cover"><div class="cover-art-wrap"><div id="coverPaintedBg" class="cover-painted-bg" aria-hidden="true"></div><div id="coverLoading" class="cover-loading"><div class="spinner"></div><p>${escapeHtml(coverT().creating)}</p><small>${escapeHtml(coverT().creatingSmall)}</small></div><img id="coverImage" class="cover-image" alt="" hidden><div class="cover-shade"></div><div class="cover-copy"><div class="cover-kicker">${escapeHtml(coverT().kicker)}</div><h2>${escapeHtml(currentBook.title)}</h2><p>${escapeHtml(coverT().forChild(currentBook.child?.name||''))}</p></div><div id="coverError" class="cover-error-box" hidden><div class="moon">☾</div><p>${escapeHtml(coverT().failed)}</p><button class="secondary" id="retryCover" type="button">${escapeHtml(coverT().retry)}</button></div></div><div class="mobile-cover-hint">${escapeHtml(t().swipe)}</div><div class="cover-reading-choices"><button class="primary cover-begin" id="beginStory" type="button">📖 ${escapeHtml(t().readSelf)}</button><button class="secondary cover-narrate" id="beginNarrated" type="button">🔊 ${escapeHtml(t().readToMe)}</button></div></div><div id="book" class="book hidden"></div><div id="bookControls" class="book-controls hidden"><button class="secondary" id="prevPage" type="button">${escapeHtml(t().previous)}</button><div class="page-indicator" id="pageIndicator"></div><button class="primary turn" id="nextPage" type="button">${escapeHtml(t().turn)}</button></div><p class="illustration-note hidden" id="illustrationNote">${escapeHtml(t().illustrationNote)}</p><div class="actions"><button class="secondary" id="save" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="newStory" type="button">${escapeHtml(t().newStory)}</button></div></div>`;
  // V82: direct, explicit cover actions. Do not depend on bubbling through overlays.
  const beginSelf=$('beginStory'),beginNarrated=$('beginNarrated'),storyExit=$('storyExit'),prevPage=$('prevPage'),nextPage=$('nextPage');
@@ -883,14 +883,15 @@ Make this composition clearly different from the previous page: advance the acti
 }
 function prefetchIllustrations(index,ahead=1){const book=currentBook;if(!book||book.isSaved)return;const total=book.pages.length+2;const i=index+1;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}
 function isPhonePortrait(){return window.matchMedia('(max-width:700px) and (orientation:portrait)').matches}
+function isPhoneReader(){return isPhonePortrait()||isPhoneLandscape()}
 function mobilePhysicalPageNumber(){if(!currentBook)return 1;return currentBook.currentPage+1}
 function mobilePhysicalTotal(){return currentBook?currentBook.pages.length+3:0}
 function applyMobileSide(){
  const bookEl=$('book');if(!bookEl||!currentBook)return;
  bookEl.classList.toggle('show-mobile-image',false);
  bookEl.classList.toggle('show-mobile-text',false);
- bookEl.classList.toggle('show-mobile-spread',isPhonePortrait());
- if(isPhonePortrait()){
+ bookEl.classList.toggle('show-mobile-spread',isPhoneReader());
+ if(isPhoneReader()){
    const indicator=$('pageIndicator'),isEnd=currentBook.currentPage===currentBook.pages.length+2;
    if(indicator){
      indicator.classList.toggle('end-hidden',isEnd);
@@ -1074,7 +1075,7 @@ function toggleNarration(){if(!currentBook)return;if(narrationAudio&&!narrationA
 function renderBookPage(index){
  rememberReaderScroll();
  stopNarration();
- const book=currentBook,total=book.pages.length+3,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;if(!isPhonePortrait())book.mobileSide='text';
+ const book=currentBook,total=book.pages.length+3,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;if(!isPhoneReader())book.mobileSide='text';
  const closingIndex=total-2,isOpening=clamped===0,isClosing=clamped===closingIndex,isEnd=clamped===total-1;
  const prev=$('prevPage'),next=$('nextPage'),indicator=$('pageIndicator'),bookEl=$('book');
  if(isEnd){
@@ -1107,14 +1108,14 @@ $('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||document.body.
 function closeReader(){if(storySaveInProgress){savingLeaveWarning();return}closeIllustrationFullscreen();stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode','shared-story-mode');$('story')?.classList.add('hidden')}
 function exitStoryHome(){closeReader();showMoonbeamLanding()}
 function startNewStory(){if(orientationNavigationGuardActive())return;if(storySaveInProgress){savingLeaveWarning();return}clearCurrentDraft();closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
-function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+3;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
+function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+3;if(isPhoneReader()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 let lastStorySwipeAt=0;
 $('story').addEventListener('click',e=>{if(Date.now()-lastStorySwipeAt<500&&(e.target.classList.contains('mobile-turn-left')||e.target.classList.contains('mobile-turn-right')))return;if(e.target.id==='beginStory')beginStory('self');if(e.target.id==='beginNarrated')beginStory('narrated');if(e.target.id==='retryCover')loadCoverIllustration(true);if(e.target.id==='prevPage'||e.target.classList.contains('mobile-turn-left'))goPreviousBookPage();if(e.target.id==='nextPage'||e.target.classList.contains('mobile-turn-right'))goNextBookPage()});
 let storyTouchX=null,storyTouchY=null;
 $('story').addEventListener('touchstart',e=>{const t=e.changedTouches?.[0];if(!t)return;storyTouchX=t.clientX;storyTouchY=t.clientY},{passive:true});
-$('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){lastStorySwipeAt=Date.now();stopNarration();if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
-window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0){if(!isPhonePortrait())currentBook.mobileSide='text';applyMobileSide();requestAnimationFrame(fitDesktopStoryText)}});
+$('story').addEventListener('touchend',e=>{if(!isPhoneReader()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){lastStorySwipeAt=Date.now();stopNarration();if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
+window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0){if(!isPhoneReader())currentBook.mobileSide='text';applyMobileSide();if(!isPhoneReader())requestAnimationFrame(fitDesktopStoryText)}});
 function savedLibraryCopy(){return {replay:t().replay,original:t().original||'Original',...(t().savedLibrary||{})}}
 const savedLibraryCoverUrls=new Map();
 function savedStoryDate(x){try{return new Intl.DateTimeFormat(language||'en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(x.at))}catch{return ''}}
@@ -1322,16 +1323,16 @@ function restoreReaderAfterOrientation(){
  $('landing')?.classList.add('hidden');
  $('productApp')?.classList.remove('hidden');
  document.body.classList.add('product-active','story-mode');
- document.body.classList.toggle('desktop-story-mode',!isPhonePortrait());
+ document.body.classList.toggle('desktop-story-mode',!isPhoneReader());
  $('setupShell')?.classList.add('hidden');
  $('savedStoriesView')?.classList.add('hidden');
  $('story')?.classList.remove('hidden');
  currentBook.currentPage=snap.page;
- currentBook.mobileSide=isPhonePortrait()?(snap.side||'text'):'text';
+ currentBook.mobileSide=isPhoneReader()?(snap.side||'text'):'text';
  currentBook.readingMode=snap.mode||'self';
  if(currentBook.currentPage>=0){
    applyMobileSide();
-   if(!isPhonePortrait()){
+   if(!isPhoneReader()){
      const book=$('book');
      if(book){book.style.removeProperty('--mobile-book-height');book.style.removeProperty('--mobile-art-height')}
      requestAnimationFrame(fitDesktopStoryText);
@@ -1346,14 +1347,14 @@ function syncResponsiveArchitecture(){
  const open=readerIsOpen();
  document.body.classList.toggle('phone-landscape',isPhoneLandscape());
  document.body.classList.toggle('story-mode',open);
- document.body.classList.toggle('desktop-story-mode',open&&!isPhonePortrait());
+ document.body.classList.toggle('desktop-story-mode',open&&!isPhoneReader());
  if(open){
    // Do not touch setup/library state while a book is open. In particular, a saved
    // book must remain the active view when Safari rotates the viewport.
    $('story')?.classList.remove('hidden');
    if(currentBook.currentPage>=0){
      applyMobileSide();
-     if(!isPhonePortrait()){
+     if(!isPhoneReader()){
        const book=$('book');
        if(book){book.style.removeProperty('--mobile-book-height');book.style.removeProperty('--mobile-art-height')}
        requestAnimationFrame(fitDesktopStoryText);
