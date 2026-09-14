@@ -1,3 +1,15 @@
+# Moonbeam Stories V229
+
+## V229 — desktop Account session-state correction
+- Built directly from the clean V228 branch.
+- Fixes desktop Account remaining in the stale signed-in layout after sign-out while mobile correctly showed the login form.
+- Every time Account is opened, Moonbeam now asks Supabase for the actual current session and renders the Account panel from that source of truth.
+- If there is no session, Account immediately shows the signed-out email/password login form and clears stale credit display.
+- If a valid session exists, Account keeps the signed-in controls and refreshes visible credit data when needed.
+- Sign-out now clears the in-memory user and credit state immediately before any asynchronous cleanup, so desktop cannot remain on the old signed-in layout.
+- V228 null-credit correction, V227 mobile child swipe and V226 Account login form remain intact.
+- No story-generation, reader, save, API or Supabase schema logic changed.
+
 # Moonbeam Stories V228
 
 ## V228 — Account sign-out reliably becomes sign-in

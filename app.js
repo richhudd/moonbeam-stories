@@ -398,9 +398,8 @@ async function signOutParent(){
  if(!supabaseClient)return;
  const {error}=await supabaseClient.auth.signOut();
  if(error){setAuthStatus(error.message,true);return}
- // V228: immediately reconcile local UI state. The Supabase auth callback may arrive
- // slightly later (or fail part-way through other signed-out cleanup), but Account
- // must switch to its login panel as soon as sign-out succeeds.
+ currentUser=null;storyCreditBalance=null;document.body.classList.remove('moonbeam-signed-in');
+ renderAccountView213();
  await applyAuthSession(null);
  showAccountView213();
  setAuthStatus('Signed out.');
@@ -1446,12 +1445,38 @@ async function changeAccountEmail216(){
    if(immediate)setAccountEmailEditor216(false);
  }finally{if(save)save.disabled=false}
 }
+async function syncAccountAuthState229(){
+ if(!supabaseClient){currentUser=null;storyCreditBalance=null;renderAccountView213();return}
+ try{
+  const {data:{session},error}=await supabaseClient.auth.getSession();
+  if(error)console.warn('Account session check',error);
+  const sessionUser=session?.user||null;
+  const changed=(currentUser?.id||null)!==(sessionUser?.id||null);
+  currentUser=sessionUser;
+  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
+  if(!currentUser){
+   storyCreditBalance=null;
+   renderAccountView213();
+   return;
+  }
+  if(changed || storyCreditBalance==null){
+   try{await loadStoryCredits()}catch(e){console.warn('Account credits refresh',e)}
+  }
+  renderAccountView213();
+ }catch(e){
+  console.warn('Account session sync',e);
+  currentUser=null;storyCreditBalance=null;document.body.classList.remove('moonbeam-signed-in');renderAccountView213();
+ }
+}
+
 function showAccountView213(){
  if(currentUser)rememberAppSection219('account');else try{sessionStorage.removeItem(APP_SECTION_KEY_219)}catch{}
 
  $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.add('hidden');$('accountView')?.classList.remove('hidden');
  $('appCreateNav')?.classList.remove('active');$('appSavedNav')?.classList.remove('active');$('appAccountNav')?.classList.add('active');
- renderAccountView213();setTimeout(updateAccountScrollCue224,0);
+ renderAccountView213();
+ syncAccountAuthState229();
+ setTimeout(updateAccountScrollCue224,0);
 }
 
 async function accountSignIn226(){
