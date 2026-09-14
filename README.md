@@ -1,3 +1,16 @@
+# Moonbeam Stories V211
+
+## V211 — phone landscape scrolling text pane
+- Built from V210.
+- Mobile portrait reader is unchanged.
+- Phone landscape keeps the 50:50 text/illustration spread.
+- The left story pane now scrolls independently vertically at the existing readable type size.
+- The illustration remains fixed in the right half.
+- Extra top/bottom breathing room keeps text clear of Safari chrome and the floating reader controls.
+- V210 fullscreen landscape shell and V207 rotation-state protection are preserved.
+- No JavaScript, API, story-generation, save, illustration-recovery, or portrait-reader logic changed.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V210
 
 ## V210 — landscape reader rebuilt in-place from V207

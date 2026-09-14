@@ -2894,8 +2894,20 @@ body.phone-landscape.story-mode #story .book-cover-head,
 body.phone-landscape.story-mode #story .book-shell>.actions{display:none!important}
 body.phone-landscape.story-mode #book:not(.hidden){display:grid!important;position:absolute!important;inset:0!important;grid-template-columns:1fr 1fr!important;grid-template-rows:1fr!important;width:100%!important;height:100%!important;margin:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important}
 body.phone-landscape.story-mode #book .paper{height:100dvh!important;min-height:0!important}
-body.phone-landscape.story-mode #book .left-page{grid-column:1!important;grid-row:1!important}
-body.phone-landscape.story-mode #book .right-page{grid-column:2!important;grid-row:1!important;padding:0!important}
+body.phone-landscape.story-mode #book .left-page{
+  grid-column:1!important;
+  grid-row:1!important;
+  height:100dvh!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  padding-top:max(46px,env(safe-area-inset-top))!important;
+  padding-bottom:max(64px,calc(env(safe-area-inset-bottom) + 54px))!important;
+}
+body.phone-landscape.story-mode #book .right-page{grid-column:2!important;grid-row:1!important;padding:0!important;overflow:hidden!important}
+body.phone-landscape.story-mode #book .left-page .story-text,
+body.phone-landscape.story-mode #book .left-page p{max-width:none!important}
 body.phone-landscape.story-mode #book .illustration-frame,
 body.phone-landscape.story-mode #book .illustration-frame img{width:100%!important;height:100%!important;max-height:none!important;border-radius:0!important}
 body.phone-landscape.story-mode #book .illustration-frame img{object-fit:cover!important}
