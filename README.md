@@ -1,3 +1,17 @@
+# Moonbeam Stories V226
+
+## V226 — sign back in from Account
+- Built directly from the clean V225-from-V224 branch.
+- Account remains accessible after signing out instead of redirecting the user to the Create Story setup screen.
+- Signed-out Account now shows its own email/password sign-in form.
+- Pressing Enter in the password field also signs in.
+- Forgot password works directly from the signed-out Account view using the entered email address.
+- After successful sign-in the same Account page switches back to the normal signed-in account details, credits, password and session controls.
+- All new Account login labels/messages are translated across all nine supported locales.
+- No story-generation, credit, reader, save, API or Supabase schema logic changed.
+- The clean V225 mobile child-strip and setup scrolling work is preserved.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V225
 
 ## V225 — clean rebuild from V224: mobile setup swiping only

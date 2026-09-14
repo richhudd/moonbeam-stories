@@ -3398,3 +3398,19 @@ body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) .setup-c
   max-width:none!important;
   overflow:visible!important;
 }
+
+
+/* V226 — signed-out login directly inside Account. */
+.account-signed-in,.account-signed-out{display:block}
+.account-signed-in.hidden,.account-signed-out.hidden{display:none!important}
+.account-login-section{display:grid;gap:14px}
+.account-login-intro{margin:0;color:var(--muted,#6f6b78)}
+.account-login-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.account-login-grid label{display:grid;gap:6px;font-weight:700}
+.account-login-grid input{width:100%}
+.account-login-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.account-login-actions .auth-link{margin:0}
+@media(max-width:700px){
+ .account-login-grid{grid-template-columns:1fr}
+ .account-login-actions{align-items:flex-start;flex-direction:column}
+}
