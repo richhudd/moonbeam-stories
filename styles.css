@@ -3016,3 +3016,30 @@ body.phone-landscape.story-mode:not(.shared-story-mode) #storyExit{
 
 /* Hide the portrait-only scroll cue in the horizontal layout. */
 body.phone-landscape.story-mode #book.show-mobile-spread .mobile-scroll-cue{display:none!important}
+
+/* V213 — functional account area and clearer Home affordance. */
+.app-header-brand{position:relative}
+@media (min-width:701px){
+  .app-header-brand:hover,.app-header-brand:focus-visible{background:#f3eefc;border-radius:12px;outline:none}
+  .app-header-brand::after{content:attr(data-home-tooltip);position:absolute;left:50%;top:calc(100% + 7px);transform:translateX(-50%);padding:5px 8px;border-radius:7px;background:#30254f;color:#fff;font:700 11px/1.1 system-ui,-apple-system,Segoe UI,sans-serif;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;z-index:1000}
+  .app-header-brand:hover::after,.app-header-brand:focus-visible::after{opacity:1}
+}
+.account-view{width:min(1064px,calc(100% - 32px));margin:10px auto 24px}
+.account-view-card{background:#fffdf8;border:1px solid #e2d9ef;border-radius:22px;padding:28px;box-shadow:0 12px 34px rgba(32,21,55,.08)}
+.account-view-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:20px;border-bottom:1px solid #eee7f5}
+.account-view-heading h2{margin:0 0 5px;color:#30254f;font-size:28px}.account-view-heading p{margin:0;color:#746d79}
+.account-view-badge{padding:7px 11px;border-radius:999px;background:#eee7fb;color:#5d42a0;font-size:12px;font-weight:800}
+.account-section{padding:22px 0;border-bottom:1px solid #eee7f5}.account-section:last-child{border-bottom:0;padding-bottom:0}
+.account-section h3{margin:0 0 12px;color:#30254f;font-size:17px}.account-section>p{margin:0 0 14px;color:#746d79}
+.account-detail-row,.account-credit-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.account-detail-row span{color:#746d79}.account-detail-row strong{overflow-wrap:anywhere}
+.account-credit-row strong{font-size:18px;color:#30254f}.account-credit-row button,.account-session-section button,.account-save-password{width:auto!important}
+.account-password-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:720px;margin-bottom:14px}
+.account-password-grid label{display:grid;gap:6px;font-weight:750;color:#30254f}.account-password-grid input{width:100%}
+@media(max-width:700px){
+  .account-view{width:100%;margin:0;padding:10px 12px 28px}
+  .account-view-card{border-radius:18px;padding:20px 16px}
+  .account-view-heading{display:block}.account-view-badge{display:inline-block;margin-top:12px}
+  .account-password-grid{grid-template-columns:1fr}
+  .account-credit-row{align-items:flex-start;flex-direction:column}
+}

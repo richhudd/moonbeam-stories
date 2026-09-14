@@ -206,6 +206,8 @@ function applyLocale(){
  renderDesktopStoryPanel(); renderValues(); renderLibrary(); applyInterfaceLocale(); renderProfileSelect(); applyLandingLocale();
 }
 function setText(sel,val){const el=document.querySelector(sel);if(el&&val!=null)el.textContent=val}
+const ACCOUNT_UI_213={"en-GB":{"account":"Account","intro":"Manage your Moonbeam Stories account.","badge":"Parent account","details":"Account details","email":"Email","credits":"Story credits","security":"Login & security","passwordIntro":"Choose a new password for your account.","newPassword":"New password","confirmPassword":"Confirm new password","changePassword":"Change password","session":"Session","signOut":"Sign out","home":"Home","passwordPh":"At least 6 characters","repeatPassword":"Repeat your new password","tooShort":"Use a password of at least 6 characters.","mismatch":"The two passwords do not match.","changing":"Changing password…","changed":"Password changed successfully.","creditOne":"credit remaining","creditMany":"credits remaining"},"en-US":{"account":"Account","intro":"Manage your Moonbeam Stories account.","badge":"Parent account","details":"Account details","email":"Email","credits":"Story credits","security":"Login & security","passwordIntro":"Choose a new password for your account.","newPassword":"New password","confirmPassword":"Confirm new password","changePassword":"Change password","session":"Session","signOut":"Sign out","home":"Home","passwordPh":"At least 6 characters","repeatPassword":"Repeat your new password","tooShort":"Use a password of at least 6 characters.","mismatch":"The two passwords do not match.","changing":"Changing password…","changed":"Password changed successfully.","creditOne":"credit remaining","creditMany":"credits remaining"},"es-ES":{"account":"Cuenta","intro":"Gestiona tu cuenta de Moonbeam Stories.","badge":"Cuenta de padres","details":"Datos de la cuenta","email":"Correo electrónico","credits":"Créditos de historias","security":"Inicio de sesión y seguridad","passwordIntro":"Elige una nueva contraseña para tu cuenta.","newPassword":"Nueva contraseña","confirmPassword":"Confirmar nueva contraseña","changePassword":"Cambiar contraseña","session":"Sesión","signOut":"Cerrar sesión","home":"Inicio","passwordPh":"Al menos 6 caracteres","repeatPassword":"Repite tu nueva contraseña","tooShort":"Usa una contraseña de al menos 6 caracteres.","mismatch":"Las dos contraseñas no coinciden.","changing":"Cambiando contraseña…","changed":"Contraseña cambiada correctamente.","creditOne":"crédito restante","creditMany":"créditos restantes"},"es-419":{"account":"Cuenta","intro":"Administra tu cuenta de Moonbeam Stories.","badge":"Cuenta de padres","details":"Datos de la cuenta","email":"Correo electrónico","credits":"Créditos de historias","security":"Inicio de sesión y seguridad","passwordIntro":"Elige una nueva contraseña para tu cuenta.","newPassword":"Nueva contraseña","confirmPassword":"Confirmar nueva contraseña","changePassword":"Cambiar contraseña","session":"Sesión","signOut":"Cerrar sesión","home":"Inicio","passwordPh":"Al menos 6 caracteres","repeatPassword":"Repite tu nueva contraseña","tooShort":"Usa una contraseña de al menos 6 caracteres.","mismatch":"Las dos contraseñas no coinciden.","changing":"Cambiando contraseña…","changed":"Contraseña cambiada correctamente.","creditOne":"crédito restante","creditMany":"créditos restantes"},"fr-FR":{"account":"Compte","intro":"Gérez votre compte Moonbeam Stories.","badge":"Compte parent","details":"Informations du compte","email":"E-mail","credits":"Crédits histoire","security":"Connexion et sécurité","passwordIntro":"Choisissez un nouveau mot de passe pour votre compte.","newPassword":"Nouveau mot de passe","confirmPassword":"Confirmer le nouveau mot de passe","changePassword":"Modifier le mot de passe","session":"Session","signOut":"Se déconnecter","home":"Accueil","passwordPh":"Au moins 6 caractères","repeatPassword":"Répétez votre nouveau mot de passe","tooShort":"Utilisez un mot de passe d’au moins 6 caractères.","mismatch":"Les deux mots de passe ne correspondent pas.","changing":"Modification du mot de passe…","changed":"Mot de passe modifié avec succès.","creditOne":"crédit restant","creditMany":"crédits restants"},"de-DE":{"account":"Konto","intro":"Verwalte dein Moonbeam-Stories-Konto.","badge":"Elternkonto","details":"Kontodaten","email":"E-Mail","credits":"Story-Guthaben","security":"Anmeldung & Sicherheit","passwordIntro":"Wähle ein neues Passwort für dein Konto.","newPassword":"Neues Passwort","confirmPassword":"Neues Passwort bestätigen","changePassword":"Passwort ändern","session":"Sitzung","signOut":"Abmelden","home":"Startseite","passwordPh":"Mindestens 6 Zeichen","repeatPassword":"Neues Passwort wiederholen","tooShort":"Verwende ein Passwort mit mindestens 6 Zeichen.","mismatch":"Die beiden Passwörter stimmen nicht überein.","changing":"Passwort wird geändert…","changed":"Passwort erfolgreich geändert.","creditOne":"Guthaben übrig","creditMany":"Guthaben übrig"},"it-IT":{"account":"Account","intro":"Gestisci il tuo account Moonbeam Stories.","badge":"Account genitore","details":"Dettagli account","email":"E-mail","credits":"Crediti storia","security":"Accesso e sicurezza","passwordIntro":"Scegli una nuova password per il tuo account.","newPassword":"Nuova password","confirmPassword":"Conferma nuova password","changePassword":"Cambia password","session":"Sessione","signOut":"Esci","home":"Home","passwordPh":"Almeno 6 caratteri","repeatPassword":"Ripeti la nuova password","tooShort":"Usa una password di almeno 6 caratteri.","mismatch":"Le due password non coincidono.","changing":"Modifica della password…","changed":"Password modificata con successo.","creditOne":"credito rimasto","creditMany":"crediti rimasti"},"pt-BR":{"account":"Conta","intro":"Gerencie sua conta Moonbeam Stories.","badge":"Conta dos pais","details":"Dados da conta","email":"E-mail","credits":"Créditos de histórias","security":"Login e segurança","passwordIntro":"Escolha uma nova senha para sua conta.","newPassword":"Nova senha","confirmPassword":"Confirmar nova senha","changePassword":"Alterar senha","session":"Sessão","signOut":"Sair","home":"Início","passwordPh":"Pelo menos 6 caracteres","repeatPassword":"Repita sua nova senha","tooShort":"Use uma senha de pelo menos 6 caracteres.","mismatch":"As duas senhas não coincidem.","changing":"Alterando senha…","changed":"Senha alterada com sucesso.","creditOne":"crédito restante","creditMany":"créditos restantes"},"pl-PL":{"account":"Konto","intro":"Zarządzaj swoim kontem Moonbeam Stories.","badge":"Konto rodzica","details":"Dane konta","email":"E-mail","credits":"Kredyty na historie","security":"Logowanie i bezpieczeństwo","passwordIntro":"Wybierz nowe hasło do swojego konta.","newPassword":"Nowe hasło","confirmPassword":"Potwierdź nowe hasło","changePassword":"Zmień hasło","session":"Sesja","signOut":"Wyloguj się","home":"Strona główna","passwordPh":"Co najmniej 6 znaków","repeatPassword":"Powtórz nowe hasło","tooShort":"Użyj hasła składającego się z co najmniej 6 znaków.","mismatch":"Hasła nie są takie same.","changing":"Zmienianie hasła…","changed":"Hasło zostało zmienione.","creditOne":"kredyt pozostał","creditMany":"kredytów pozostało"}};
+function accountUI213(){return ACCOUNT_UI_213[language]||ACCOUNT_UI_213['en-GB']}
 function applyInterfaceLocale(){const x=t();
  const map={'#appCreateNav':'createStoryNav','#appSavedNav':'savedStoriesNav','#appMobileCreateNav':'createStoryNav','#appMobileSavedNav':'savedStoriesNav','.desktop-child-chooser-label':'chooseChild','#accountTitle':'accountTitle','#accountCopy':'accountCopy','#accountBadge':currentUser?'cloud':'notSigned','#authSignedOut label:nth-of-type(1) span':'email','#authSignedOut label:nth-of-type(2) span':'password','#signIn':'signIn','#signUp':'createAccount','#forgotPassword':'forgot','#signOut':'signOut','#passwordRecovery h3':'newPassword','#passwordRecovery .muted':'newPasswordCopy','#passwordRecovery label:nth-of-type(1) span':'newPasswordLabel','#passwordRecovery label:nth-of-type(2) span':'confirmPassword','#saveNewPassword':'savePassword','#profileTools label span':'savedProfile','.setup-page[data-step=Basics] h2':'aboutChild','#saveProfile':'saveProfile','#removeProfile':'removeChild','.setup-page[data-step=Interests] h2':'love','.setup-page[data-step=Interests] .mobile-comfort-copy':'fewWords','.setup-page[data-step=Photo] h2':'photoTitle','.child-photo-copy h3':'yourPhoto','.optional-pill':'optional','.child-photo-copy>p:not(.photo-privacy)':'photoCopy','.photo-privacy':'photoPrivacy','#chooseChildPhoto':'choosePhoto','#removeChildPhoto':'removePhoto','.photo-toggle span':'usePhoto','#buyCredits':'buyCredits','#headerBuyCredits':'buyCredits','#storySupplyConsent span':'consent','#preparingTitle':'preparing','#preparingCopy':'preparingCopy','#creditShopTitle':'shopTitle','.credit-shop-copy':'shopCopy','.credit-pack-grid .credit-pack:nth-child(1) strong':'stories10','.credit-pack-grid .credit-pack:nth-child(2) strong':'stories25','.credit-pack-grid .credit-pack:nth-child(3) strong':'stories50','.credit-pack-grid .credit-pack:nth-child(2) em':'popular','.credit-pack-grid .credit-pack:nth-child(1) small':'each10','.credit-pack-grid .credit-pack:nth-child(2) small':'each25','.credit-pack-grid .credit-pack:nth-child(3) small':'each50','.credit-shop-secure':'secure','.saved-divider span':'savedReplay','.saved-free-note':'savedReplayFree'};for(const [sel,k] of Object.entries(map))setText(sel,x[k]);
  const pp=document.querySelector('#profileSelect option[value=""]');if(pp)pp.textContent=x.newChild;setText('.setup-page[data-step=Profile] .mobile-comfort-copy',x.profileHint);
@@ -213,6 +215,11 @@ function applyInterfaceLocale(){const x=t();
  const legal=document.querySelector('.credit-shop-legal');if(legal){legal.innerHTML=escapeHtml(x.purchaseLegal).replace('{terms}',`<a href="/terms.html" target="_blank" rel="noopener">${escapeHtml(x.terms)}</a>`).replace('{refunds}',`<a href="/refunds.html" target="_blank" rel="noopener">${escapeHtml(x.refundPolicy)}</a>`).replace('{privacy}',`<a href="/privacy.html" target="_blank" rel="noopener">${escapeHtml(x.privacyPolicy)}</a>`)}
  const foot=document.querySelector('.site-legal-footer');if(foot){const a=foot.querySelectorAll('a');if(a[0])a[0].textContent=x.privacy;if(a[1])a[1].textContent=x.terms;if(a[2])a[2].textContent=x.refunds;if(a[3])a[3].textContent=x.contact}
  const chooser=$('desktopChildChooser');if(chooser)chooser.setAttribute('aria-label',x.chooseChild||'Choose a child');
+ const a=accountUI213();
+ [['#appAccountNav',a.account],['#appMobileAccountNav',a.account],['#accountViewTitle',a.account],['#accountViewIntro',a.intro],['#accountViewBadge',a.badge],['#accountDetailsTitle',a.details],['#accountEmailLabel',a.email],['#accountCreditsTitle',a.credits],['#accountSecurityTitle',a.security],['#accountPasswordIntro',a.passwordIntro],['#accountNewPasswordLabel',a.newPassword],['#accountConfirmPasswordLabel',a.confirmPassword],['#accountSavePassword',a.changePassword],['#accountSessionTitle',a.session],['#accountSignOut',a.signOut]].forEach(([sel,val])=>setText(sel,val));
+ const brand=document.querySelector('.app-header-brand');if(brand){brand.setAttribute('aria-label',a.home);brand.dataset.homeTooltip=a.home}
+ const anp=$('accountNewPassword'),acp=$('accountConfirmPassword');if(anp)anp.placeholder=a.passwordPh;if(acp)acp.placeholder=a.repeatPassword;
+ renderAccountView213();
  renderChildPhoto();
 }
 function renderValues(){const vals=t().valuesList; const old=selected.size?selected:new Set(['Kindness','Curiosity']); selected=new Set(); const defaults={'en-GB':['Kindness','Curiosity'],'en-US':['Kindness','Curiosity'],'es-ES':['Amabilidad','Curiosidad'],'es-419':['Amabilidad','Curiosidad'],'fr-FR':['Gentillesse','Curiosité'],'de-DE':['Freundlichkeit','Neugier'],'it-IT':['Gentilezza','Curiosità'],'pt-BR':['Bondade','Curiosidade'],'pl-PL':['Życzliwość','Ciekawość']}; const chosen=old.size?old:defaults[language]; vals.forEach(v=>{if(chosen.has(v)||(!old.size&&defaults[language]?.includes(v)))selected.add(v)}); $('values').innerHTML=''; vals.forEach(v=>{const b=document.createElement('button');b.type='button';b.className='chip'+(selected.has(v)?' active':'');b.textContent=v;b.onclick=()=>{selected.has(v)?selected.delete(v):selected.add(v);b.classList.toggle('active')};$('values').appendChild(b)});}
@@ -226,6 +233,9 @@ $('signUp')?.addEventListener('click',signUpParent);
 $('signOut')?.addEventListener('click',signOutParent);
 $('forgotPassword')?.addEventListener('click',sendPasswordReset);
 $('saveNewPassword')?.addEventListener('click',saveNewPassword);
+$('accountSavePassword')?.addEventListener('click',changeAccountPassword213);
+$('accountSignOut')?.addEventListener('click',signOutParent);
+$('accountBuyCredits')?.addEventListener('click',openCreditShop);
 $('profileSelect')?.addEventListener('change',selectCloudProfile);
 $('desktopChildScrollLeft')?.addEventListener('click',()=>{$('desktopChildStrip')?.scrollBy({left:-260,behavior:'smooth'})});
 $('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStrip')?.scrollBy({left:260,behavior:'smooth'})});
@@ -278,7 +288,7 @@ function setAuthStatus(message,isError=false){const el=$('authStatus');if(!el)re
 async function applyAuthSession(session){
  currentUser=session?.user||null;
  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
- $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('signOut')?.classList.toggle('hidden',!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
+ $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
  if(currentUser){setAuthStatus('');updateSetupNav();await Promise.all([loadCloudProfiles(),loadCloudStories(),loadStoryCredits()]);await loadCurrentChildPhoto();if(!window.__moonbeamCheckoutHandled){window.__moonbeamCheckoutHandled=true;await handleCheckoutReturn()}const restoredDraft=await maybeRestoreStoryDraft();const restoredSetup=restoredDraft?false:await maybeRestoreSetupDraft();if(!restoredDraft&&!restoredSetup&&!$('productApp')?.classList.contains('hidden')&&setupPageIndex===0&&$('passwordRecovery')?.classList.contains('hidden'))goSetupPage(1,true)}else{draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()}
 }
@@ -447,7 +457,6 @@ function renderHeaderCredits(){
  const balance=$('headerCreditBalance'),buy=$('headerBuyCredits');
  if(balance){balance.classList.toggle('hidden',!currentUser);balance.textContent=`✦ ${storyCreditBalance===null?'—':storyCreditBalance}`;balance.setAttribute('aria-label',storyCreditBalance===null?'Story credits loading':`${storyCreditBalance} story credits`)}
  if(buy){buy.classList.toggle('hidden',!currentUser);buy.classList.toggle('no-credits-attention',!!currentUser&&storyCreditBalance===0)}
- const mobileSignOut=$('appMobileSignOut');if(mobileSignOut)mobileSignOut.classList.toggle('hidden',!currentUser);
 }
 function syncDesktopStoryIdea(){const idea=$('desktopStoryIdea'),interests=$('interests');if(idea&&interests&&interests.value!==idea.value)interests.value=idea.value}
 function renderDesktopStoryPanel(){
@@ -469,7 +478,7 @@ function renderDesktopStoryPanel(){
 }
 function renderStoryCredits(balance=storyCreditBalance){
  storyCreditBalance=Number.isFinite(Number(balance))?Number(balance):null;
- renderHeaderCredits();
+ renderHeaderCredits();renderAccountView213();
  const el=$('creditStatus');if(!el)return;
  el.classList.toggle('empty',storyCreditBalance===0);
  const buy=$('buyCredits');if(buy){buy.classList.toggle('hidden',!currentUser);buy.classList.toggle('no-credits-attention',!!currentUser&&storyCreditBalance===0)}
@@ -1283,16 +1292,39 @@ function initSetupDeck(){
 }
 initSetupDeck();
 bindSetupDraftPersistence();
+function renderAccountView213(){
+ const a=accountUI213(),email=$('accountEmailValue'),credits=$('accountCreditsValue');
+ if(email)email.textContent=currentUser?.email||'—';
+ if(credits)credits.textContent=storyCreditBalance==null?'—':`${storyCreditBalance} ${storyCreditBalance===1?a.creditOne:a.creditMany}`;
+}
+function showAccountView213(){
+ if(!currentUser){showCreateStoryView();goSetupPage(0,true);return}
+ $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.add('hidden');$('accountView')?.classList.remove('hidden');
+ $('appCreateNav')?.classList.remove('active');$('appSavedNav')?.classList.remove('active');$('appAccountNav')?.classList.add('active');
+ renderAccountView213();
+}
+async function changeAccountPassword213(){
+ if(!supabaseClient||!currentUser)return;
+ const a=accountUI213(),password=$('accountNewPassword')?.value||'',confirm=$('accountConfirmPassword')?.value||'',status=$('accountPasswordStatus');
+ if(password.length<6){if(status)status.innerHTML=`<span class="error">${escapeHtml(a.tooShort)}</span>`;return}
+ if(password!==confirm){if(status)status.innerHTML=`<span class="error">${escapeHtml(a.mismatch)}</span>`;return}
+ if(status)status.textContent=a.changing;
+ const {error}=await supabaseClient.auth.updateUser({password});
+ if(error){if(status)status.innerHTML=`<span class="error">${escapeHtml(error.message)}</span>`;return}
+ if($('accountNewPassword'))$('accountNewPassword').value='';if($('accountConfirmPassword'))$('accountConfirmPassword').value='';
+ if(status)status.textContent=a.changed;
+}
 $('appCreateNav')?.addEventListener('click',()=>{if(orientationNavigationGuardActive())return;showCreateStoryView();const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Child');goSetupPage(i>=0?i:1,true)});
 function showSavedStoriesView(){
- $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.remove('hidden');renderLibrary();
- $('appCreateNav')?.classList.remove('active');$('appSavedNav')?.classList.add('active');
+ $('setupShell')?.classList.add('hidden');$('accountView')?.classList.add('hidden');$('savedStoriesView')?.classList.remove('hidden');renderLibrary();
+ $('appCreateNav')?.classList.remove('active');$('appAccountNav')?.classList.remove('active');$('appSavedNav')?.classList.add('active');
 }
 function showCreateStoryView(){
- $('savedStoriesView')?.classList.add('hidden');$('setupShell')?.classList.remove('hidden');
- $('appSavedNav')?.classList.remove('active');$('appCreateNav')?.classList.add('active');
+ $('savedStoriesView')?.classList.add('hidden');$('accountView')?.classList.add('hidden');$('setupShell')?.classList.remove('hidden');
+ $('appSavedNav')?.classList.remove('active');$('appAccountNav')?.classList.remove('active');$('appCreateNav')?.classList.add('active');
 }
 $('appSavedNav')?.addEventListener('click',()=>{if(!orientationNavigationGuardActive())showSavedStoriesView()});
+$('appAccountNav')?.addEventListener('click',()=>{if(!orientationNavigationGuardActive())showAccountView213()});
 // V142 — mobile application header mirrors the proven V141 desktop routes.
 const mobileMenu=$('appMobileMenu'),mobileMenuToggle=$('appMobileMenuToggle');
 function closeAppMobileMenu(){if(!mobileMenu||!mobileMenuToggle)return;mobileMenu.classList.add('hidden');mobileMenuToggle.setAttribute('aria-expanded','false');mobileMenuToggle.setAttribute('aria-label','Open menu')}
@@ -1300,7 +1332,7 @@ function toggleAppMobileMenu(){if(!mobileMenu||!mobileMenuToggle)return;const op
 mobileMenuToggle?.addEventListener('click',e=>{e.stopPropagation();toggleAppMobileMenu()});
 $('appMobileCreateNav')?.addEventListener('click',()=>{$('appCreateNav')?.click();closeAppMobileMenu()});
 $('appMobileSavedNav')?.addEventListener('click',()=>{$('appSavedNav')?.click();closeAppMobileMenu()});
-$('appMobileSignOut')?.addEventListener('click',()=>{$('signOut')?.click();closeAppMobileMenu()});
+$('appMobileAccountNav')?.addEventListener('click',()=>{$('appAccountNav')?.click();closeAppMobileMenu()});
 document.addEventListener('click',e=>{if(mobileMenu&&!mobileMenu.classList.contains('hidden')&&!e.target.closest('.app-header'))closeAppMobileMenu()});
 
 $('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyConsentCheck').checked)clearStoryConsentAttention()});
@@ -1377,7 +1409,7 @@ function showMoonbeamLanding(){clearSetupDraft();stopNarration();$('story')?.cla
 
 // V87 — setup brand is a permanent Home route without signing out.
 const setupBrand=document.querySelector('header');
-if(setupBrand){setupBrand.classList.add('setup-brand-home');setupBrand.setAttribute('title','Moonbeam Stories home');setupBrand.addEventListener('click',e=>{if(e.target.closest('button'))return;showMoonbeamLanding()});}
+if(setupBrand){setupBrand.classList.add('setup-brand-home');setupBrand.setAttribute('title','Moonbeam Stories home');setupBrand.addEventListener('click',e=>{if(e.target.closest('button'))return;showMoonbeamLanding()});const brand=setupBrand.querySelector('.app-header-brand');brand?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showMoonbeamLanding()}})}
 $('landingStart')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landingStartBottom')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landingSignIn')?.addEventListener('click',()=>enterMoonbeamApp(true));
 const landingLanguage=$('landingLanguage');if(landingLanguage){landingLanguage.value=language;landingLanguage.addEventListener('change',()=>{const main=$('language');if(main){main.value=landingLanguage.value;main.dispatchEvent(new Event('change',{bubbles:true}))}})}
 $('language')?.addEventListener('change',()=>{if(landingLanguage)landingLanguage.value=$('language').value});

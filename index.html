@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en-GB">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#17132d"><title>Moonbeam Stories</title><meta name="moonbeam-build" content="212"><script>(function(){if(/^\/shared\/[^/]+/.test(location.pathname)){document.documentElement.classList.add('shared-link-boot')}})();</script><link rel="stylesheet" href="/styles.css?v=212"><style>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#17132d"><title>Moonbeam Stories</title><meta name="moonbeam-build" content="213"><script>(function(){if(/^\/shared\/[^/]+/.test(location.pathname)){document.documentElement.classList.add('shared-link-boot')}})();</script><link rel="stylesheet" href="/styles.css?v=213"><style>
 /* V130 — shared links are hidden before first paint, so the public homepage can never flash. */
 html.shared-link-boot body{margin:0;background:#17132d}
 html.shared-link-boot #landing,html.shared-link-boot #productApp,html.shared-link-boot .site-legal-footer{visibility:hidden!important}
@@ -49,7 +49,7 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
   <section class="landing-pricing"><div class="section-kicker">SIMPLE PREPAID CREDITS</div><h2>Try 1 story free.</h2><p>No subscription. Saved stories are always free to reopen.</p><div class="price-row"><span><b>10</b> stories · £9.99</span><span><b>25</b> stories · £19.99</span><span><b>50</b> stories · £34.99</span></div><button class="primary hero-cta" id="landingStartBottom" type="button">Tonight's adventure is waiting →</button></section>
 </section>
 <main class="app app-product hidden" id="productApp">
-<header class="app-header"><div class="app-header-brand"><div class="logo">☾</div><div><h1 id="taglineTitle">Moonbeam Stories</h1><p id="tagline">Make tonight's story just for them.</p></div></div><nav class="app-desktop-nav" aria-label="Moonbeam"><button id="appCreateNav" type="button">Create Story</button><button id="appSavedNav" type="button">Saved Stories</button></nav><div class="app-header-actions"><div id="headerCreditBalance" class="header-credit-balance hidden" aria-live="polite">✦ —</div><button class="header-buy-credits hidden" id="headerBuyCredits" type="button">＋ Buy credits</button><button class="app-sign-out hidden" id="signOut" type="button">Sign out</button><button class="app-mobile-menu-toggle" id="appMobileMenuToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="appMobileMenu">☰</button></div><nav class="app-mobile-menu hidden" id="appMobileMenu" aria-label="Moonbeam mobile"><button id="appMobileCreateNav" type="button">Create Story</button><button id="appMobileSavedNav" type="button">Saved Stories</button><button id="appMobileSignOut" type="button">Sign out</button></nav></header>
+<header class="app-header"><div class="app-header-brand" role="link" tabindex="0" aria-label="Home" data-home-tooltip="Home"><div class="logo">☾</div><div><h1 id="taglineTitle">Moonbeam Stories</h1><p id="tagline">Make tonight's story just for them.</p></div></div><nav class="app-desktop-nav" aria-label="Moonbeam"><button id="appCreateNav" type="button">Create Story</button><button id="appSavedNav" type="button">Saved Stories</button><button id="appAccountNav" type="button">Account</button></nav><div class="app-header-actions"><div id="headerCreditBalance" class="header-credit-balance hidden" aria-live="polite">✦ —</div><button class="header-buy-credits hidden" id="headerBuyCredits" type="button">＋ Buy credits</button><button class="app-mobile-menu-toggle" id="appMobileMenuToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="appMobileMenu">☰</button></div><nav class="app-mobile-menu hidden" id="appMobileMenu" aria-label="Moonbeam mobile"><button id="appMobileCreateNav" type="button">Create Story</button><button id="appMobileSavedNav" type="button">Saved Stories</button><button id="appMobileAccountNav" type="button">Account</button></nav></header>
 
 <div class="setup-shell" id="setupShell">
   <div class="setup-track" id="setupTrack">
@@ -107,6 +107,15 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
   <div class="saved-stories-heading"><h2 id="savedStoriesTitle">Your Stories</h2><p>Relive your saved Moonbeam adventures. Saved stories are always free to reopen.</p></div>
   <div id="library" class="library saved-stories-library"></div>
 </section>
+<section id="accountView" class="account-view hidden" aria-labelledby="accountViewTitle">
+  <div class="account-view-card">
+    <div class="account-view-heading"><div><h2 id="accountViewTitle">Account</h2><p id="accountViewIntro">Manage your Moonbeam Stories account.</p></div><span class="account-view-badge" id="accountViewBadge">Parent account</span></div>
+    <div class="account-section"><h3 id="accountDetailsTitle">Account details</h3><div class="account-detail-row"><span id="accountEmailLabel">Email</span><strong id="accountEmailValue">—</strong></div></div>
+    <div class="account-section"><h3 id="accountCreditsTitle">Story credits</h3><div class="account-credit-row"><strong id="accountCreditsValue">—</strong><button class="secondary" id="accountBuyCredits" type="button">＋ Buy story credits</button></div></div>
+    <div class="account-section"><h3 id="accountSecurityTitle">Login &amp; security</h3><p id="accountPasswordIntro">Choose a new password for your account.</p><div class="account-password-grid"><label><span id="accountNewPasswordLabel">New password</span><input id="accountNewPassword" type="password" autocomplete="new-password" minlength="6"></label><label><span id="accountConfirmPasswordLabel">Confirm new password</span><input id="accountConfirmPassword" type="password" autocomplete="new-password" minlength="6"></label></div><button class="primary account-save-password" id="accountSavePassword" type="button">Change password</button><p class="status" id="accountPasswordStatus" aria-live="polite"></p></div>
+    <div class="account-section account-session-section"><h3 id="accountSessionTitle">Session</h3><button class="secondary" id="accountSignOut" type="button">Sign out</button></div>
+  </div>
+</section>
 <section id="story" class="story hidden"></section>
 
 <div class="credit-shop-backdrop hidden" id="creditShop" role="dialog" aria-modal="true" aria-labelledby="creditShopTitle">
@@ -125,4 +134,4 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
   </div>
 </div>
 <footer class="site-legal-footer"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refunds.html">Refunds</a><a href="mailto:support@moonbeamstories.co.uk">Contact</a></footer>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/i18n.js?v=212"></script><script src="/app.js?v=212"></script></body></html>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/i18n.js?v=213"></script><script src="/app.js?v=213"></script></body></html>

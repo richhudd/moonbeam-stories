@@ -1,3 +1,18 @@
+# Moonbeam Stories V213
+
+## V213 — functional Account section
+- Adds Account to the desktop title bar beside Saved Stories.
+- Adds Account to the existing mobile hamburger menu.
+- Removes Sign out from the permanent desktop header; Sign out now lives inside Account.
+- Account shows the signed-in email and live story-credit balance.
+- Change password is fully wired to Supabase Auth using the existing signed-in session.
+- Buy story credits opens the existing Stripe credit shop.
+- Sign out uses the existing Supabase sign-out flow.
+- All new Account UI, password validation/success copy, Home label, and navigation labels are translated across all nine supported locales.
+- The Moonbeam brand remains the Home route and now has a clearer desktop hover/focus treatment plus a translated Home tooltip/accessibility label.
+- V212 portrait and landscape reader CSS is unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V212
 
 ## V212 — true mobile landscape reader
