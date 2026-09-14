@@ -1,3 +1,16 @@
+# Moonbeam Stories V216
+
+## V216 — change email address
+- Adds a functional Change email address control to Account.
+- Uses Supabase Auth `updateUser` on the existing signed-in user rather than creating a new account, so the user's Moonbeam user ID is preserved.
+- Credits, saved stories and child profiles therefore remain attached to the same account when the email address changes.
+- Handles both immediate email changes and confirmation-required changes.
+- Shows a pending email address while confirmation is outstanding.
+- Provides translated validation, progress, success, pending-confirmation and reassurance copy across all nine supported locales.
+- Keeps the V215 Account/Saved Stories tab-focus persistence fix.
+- Keeps the V215 mobile homepage demo motion and V212 reader architecture unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V215
 
 ## V215 — Account/Saved view persistence + account email colour + mobile demo motion

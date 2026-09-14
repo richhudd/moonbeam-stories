@@ -3061,3 +3061,22 @@ body.phone-landscape.story-mode #book.show-mobile-spread .mobile-scroll-cue{disp
     animation:none!important;
   }
 }
+
+
+/* V216 — change-email controls inside Account. */
+.account-email-current{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;text-align:right}
+.account-change-email-toggle{width:auto!important;padding:8px 12px!important}
+.account-email-editor{margin-top:16px;padding:16px;border:1px solid #e2d9ef;border-radius:14px;background:#faf7ff}
+.account-email-editor label{display:grid;gap:7px;max-width:540px;font-weight:750;color:#30254f}
+.account-email-editor input{width:100%}
+.account-email-help{margin:9px 0 14px!important;color:#746d79;font-size:13px}
+.account-email-actions{display:flex;gap:10px;flex-wrap:wrap}
+.account-email-actions button{width:auto!important}
+.account-email-pending{display:flex;justify-content:space-between;gap:16px;margin-top:12px;padding:11px 13px;border-radius:11px;background:#f3eefc;color:#5d42a0}
+.account-email-pending span{font-weight:700}.account-email-pending strong{overflow-wrap:anywhere;text-align:right}
+@media(max-width:700px){
+  .account-email-summary{align-items:flex-start}
+  .account-email-current{align-items:flex-end;flex-direction:column}
+  .account-email-pending{align-items:flex-start;flex-direction:column}
+  .account-email-pending strong{text-align:left}
+}
