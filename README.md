@@ -1,3 +1,15 @@
+# Moonbeam Stories V219
+
+## V219 — preserve Account/Saved Stories across page refresh
+- Remembers whether the signed-in user is on Account or Saved Stories for the lifetime of the current browser tab.
+- Refreshing/reloading the page now returns to that same section instead of falling back to Create Story/setup.
+- The remembered section is user-scoped, so it cannot carry across to a different signed-in account.
+- Choosing Create Story clears the remembered Account/Saved state so normal setup-draft restoration continues to work.
+- Signing out clears the remembered section.
+- V215's tab-focus persistence fix remains in place; this V219 change specifically covers full page refresh/reload.
+- V218 email-change guidance and all earlier Account, reader and mobile-demo behaviour are unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V218
 
 ## V218 — pending email verification guidance

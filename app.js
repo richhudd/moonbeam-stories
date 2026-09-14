@@ -305,11 +305,15 @@ async function applyAuthSession(session){
    // rerun draft/setup restoration, which would pull Account/Saved Stories back
    // to the Create Story setup screen.
    if(!sameSignedInUser){
-     const restoredDraft=await maybeRestoreStoryDraft();
-     const restoredSetup=restoredDraft?false:await maybeRestoreSetupDraft();
-     if(!restoredDraft&&!restoredSetup&&!$('productApp')?.classList.contains('hidden')&&setupPageIndex===0&&$('passwordRecovery')?.classList.contains('hidden'))goSetupPage(1,true)
+     const restoredSection=restoreAppSection219();
+     if(!restoredSection){
+       const restoredDraft=await maybeRestoreStoryDraft();
+       const restoredSetup=restoredDraft?false:await maybeRestoreSetupDraft();
+       if(!restoredDraft&&!restoredSetup&&!$('productApp')?.classList.contains('hidden')&&setupPageIndex===0&&$('passwordRecovery')?.classList.contains('hidden'))goSetupPage(1,true)
+     }
    }
  }else{
+   try{sessionStorage.removeItem(APP_SECTION_KEY_219)}catch{}
    draftRestoreAttemptedForUser=null;updateSetupNav();cloudProfiles=[];activeProfileId=null;cloudStories=[];renderProfileSelect();renderLibrary();renderStoryCredits(null);await loadCurrentChildPhoto()
  }
 }
@@ -1350,6 +1354,7 @@ async function changeAccountEmail216(){
 }
 function showAccountView213(){
  if(!currentUser){showCreateStoryView();goSetupPage(0,true);return}
+ rememberAppSection219('account');
  $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.add('hidden');$('accountView')?.classList.remove('hidden');
  $('appCreateNav')?.classList.remove('active');$('appSavedNav')?.classList.remove('active');$('appAccountNav')?.classList.add('active');
  renderAccountView213();
@@ -1366,11 +1371,35 @@ async function changeAccountPassword213(){
  if(status)status.textContent=a.changed;
 }
 $('appCreateNav')?.addEventListener('click',()=>{if(orientationNavigationGuardActive())return;showCreateStoryView();const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Child');goSetupPage(i>=0?i:1,true)});
+const APP_SECTION_KEY_219='moonbeam:app-section:v219';
+function rememberAppSection219(section){
+ try{
+   if(!currentUser){sessionStorage.removeItem(APP_SECTION_KEY_219);return}
+   if(section==='account'||section==='saved')sessionStorage.setItem(APP_SECTION_KEY_219,JSON.stringify({userId:currentUser.id,section}));
+   else sessionStorage.removeItem(APP_SECTION_KEY_219);
+ }catch{}
+}
+function recalledAppSection219(){
+ try{
+   const raw=sessionStorage.getItem(APP_SECTION_KEY_219);if(!raw||!currentUser)return '';
+   const saved=JSON.parse(raw);
+   return saved?.userId===currentUser.id&&(saved.section==='account'||saved.section==='saved')?saved.section:'';
+ }catch{return ''}
+}
+function restoreAppSection219(){
+ const section=recalledAppSection219();
+ if(section==='account'){showAccountView213();return true}
+ if(section==='saved'){showSavedStoriesView();return true}
+ return false;
+}
+
 function showSavedStoriesView(){
+ rememberAppSection219('saved');
  $('setupShell')?.classList.add('hidden');$('accountView')?.classList.add('hidden');$('savedStoriesView')?.classList.remove('hidden');renderLibrary();
  $('appCreateNav')?.classList.remove('active');$('appAccountNav')?.classList.remove('active');$('appSavedNav')?.classList.add('active');
 }
 function showCreateStoryView(){
+ rememberAppSection219('create');
  $('savedStoriesView')?.classList.add('hidden');$('accountView')?.classList.add('hidden');$('setupShell')?.classList.remove('hidden');
  $('appSavedNav')?.classList.remove('active');$('appAccountNav')?.classList.remove('active');$('appCreateNav')?.classList.add('active');
 }
