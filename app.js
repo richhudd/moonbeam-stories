@@ -239,9 +239,9 @@ $('accountChangeEmailToggle')?.addEventListener('click',()=>setAccountEmailEdito
 $('accountCancelEmail')?.addEventListener('click',()=>setAccountEmailEditor216(false));
 $('accountSaveEmail')?.addEventListener('click',changeAccountEmail216);
 $('profileSelect')?.addEventListener('change',selectCloudProfile);
-$('desktopChildScrollLeft')?.addEventListener('click',()=>{$('desktopChildStrip')?.scrollBy({left:-260,behavior:'smooth'})});
-$('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStrip')?.scrollBy({left:260,behavior:'smooth'})});
-$('desktopChildStrip')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
+$('desktopChildScrollLeft')?.addEventListener('click',()=>{$('desktopChildStripViewport')?.scrollBy({left:-260,behavior:'smooth'})});
+$('desktopChildScrollRight')?.addEventListener('click',()=>{$('desktopChildStripViewport')?.scrollBy({left:260,behavior:'smooth'})});
+$('desktopChildStripViewport')?.addEventListener('scroll',updateDesktopChildScrollButtons,{passive:true});
 window.addEventListener('resize',updateDesktopChildScrollButtons);
 $('saveProfile')?.addEventListener('click',saveChildProfile);
 $('removeProfile')?.addEventListener('click',deleteChildProfile);
@@ -381,12 +381,18 @@ async function renderDesktopProfileTiles(){
  strip.innerHTML=tiles+`<button type="button" class="desktop-child-tile desktop-new-child${!activeProfileId?' selected':''}" data-profile-id="" aria-pressed="${!activeProfileId?'true':'false'}"><span class="desktop-child-avatar desktop-new-child-icon">＋</span><span class="desktop-child-name">${escapeHtml(t().newChild||'New child')}</span></button>`;
  strip.querySelectorAll('.desktop-child-tile').forEach(btn=>btn.addEventListener('click',async()=>{
   const sel=$('profileSelect');if(!sel)return;sel.value=btn.dataset.profileId||'';await selectCloudProfile();renderProfileSelect();
-  requestAnimationFrame(()=>strip.querySelector('.desktop-child-tile.selected')?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'}));
+  requestAnimationFrame(()=>{
+   const selectedTile=strip.querySelector('.desktop-child-tile.selected'),viewport=$('desktopChildStripViewport');
+   if(selectedTile&&viewport){
+    const target=Math.max(0,selectedTile.offsetLeft-(viewport.clientWidth-selectedTile.offsetWidth)/2);
+    viewport.scrollTo({left:target,behavior:'smooth'});
+   }
+  });
  }));
  updateDesktopChildScrollButtons();
 }
 function updateDesktopChildScrollButtons(){
- const strip=$('desktopChildStrip'),left=$('desktopChildScrollLeft'),right=$('desktopChildScrollRight');if(!strip||!left||!right)return;
+ const strip=$('desktopChildStripViewport'),left=$('desktopChildScrollLeft'),right=$('desktopChildScrollRight');if(!strip||!left||!right)return;
  const overflow=strip.scrollWidth>strip.clientWidth+2;left.classList.toggle('visible',overflow&&strip.scrollLeft>2);right.classList.toggle('visible',overflow&&strip.scrollLeft<strip.scrollWidth-strip.clientWidth-2);
 }
 function renderProfileSelect(){

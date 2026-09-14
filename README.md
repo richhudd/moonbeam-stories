@@ -1,3 +1,16 @@
+# Moonbeam Stories V225
+
+## V225 — clean rebuild from V224: mobile setup swiping only
+- Built directly from V224. No code from the interrupted/later V225–V230 branch has been carried forward.
+- Adds a structurally isolated child-profile horizontal scroller.
+- The child row uses a dedicated full-width viewport; extra child cards extend inside that viewport rather than overflowing the setup page.
+- On mobile portrait, users swipe the child strip directly left/right. Desktop retains its existing arrow controls, now targeting the same isolated viewport.
+- The setup page remains independently vertically scrollable.
+- Phone-landscape setup explicitly remains a mobile vertical scroll container using Moonbeam's existing `phone-landscape` classification.
+- The child strip remains horizontally scrollable inside that vertically scrollable landscape setup page.
+- No authentication, session-refresh, story-generation, API, credit, save, reader, or Supabase logic has been changed.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V224
 
 ## V224 — Account scroll now matches mobile setup

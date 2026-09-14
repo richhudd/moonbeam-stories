@@ -3269,3 +3269,132 @@ body.phone-landscape.story-mode #book.show-mobile-spread .mobile-scroll-cue{disp
 @media(prefers-reduced-motion:reduce){
   #accountView>.account-scroll-cue span{animation:none!important}
 }
+
+
+/* V225 clean rebuild from V224 — isolated child-profile scroller.
+   The outer setup page keeps its own vertical scrolling; only this viewport scrolls sideways. */
+.desktop-child-strip-viewport{
+  flex:1 1 auto;
+  min-width:0;
+  width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+}
+.desktop-child-strip-viewport::-webkit-scrollbar{display:none}
+.desktop-child-strip-viewport .desktop-child-strip{
+  display:flex;
+  flex-wrap:nowrap;
+  width:max-content;
+  min-width:100%;
+  max-width:none;
+  overflow:visible;
+}
+.desktop-child-strip-viewport .desktop-child-tile{
+  flex-shrink:0;
+}
+
+/* Portrait phone: direct horizontal swipe on the full-width child strip. */
+@media(max-width:700px) and (orientation:portrait){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip-shell{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip-viewport{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-x:contain!important;
+    touch-action:auto!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    width:max-content!important;
+    min-width:max-content!important;
+    max-width:none!important;
+    overflow:visible!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-scroll{
+    display:none!important;
+  }
+}
+
+/* Phone landscape: keep setup as a vertically scrollable mobile page.
+   Use the app's existing phone-landscape body class rather than width breakpoints. */
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode){
+  overflow:hidden!important;
+  height:100dvh!important;
+  min-height:0!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #productApp{
+  height:100dvh!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupShell{
+  display:flex!important;
+  flex:1 1 0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack{
+  display:block!important;
+  flex:1 1 0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  scroll-snap-type:none!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page{
+  display:none!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page.setup-current{
+  display:flex!important;
+  flex-direction:column!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  justify-content:flex-start!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:contain!important;
+  touch-action:auto!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip-shell{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip-viewport{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-x:contain!important;
+  touch-action:auto!important;
+}
+body.phone-landscape.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  width:max-content!important;
+  min-width:max-content!important;
+  max-width:none!important;
+  overflow:visible!important;
+}
