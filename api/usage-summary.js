@@ -12,6 +12,9 @@ function unixSeconds(v) {
 function startOfUtcDaySeconds(d=new Date()){
   return Math.floor(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())/1000);
 }
+function startOfUtcMonthSeconds(d=new Date()){
+  return Math.floor(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1)/1000);
+}
 
 async function verifyDeveloper(req){
   if(!SECRET_KEY)return {error:[503,'Set SUPABASE_SERVICE_ROLE_KEY in Vercel.']};
@@ -81,25 +84,32 @@ module.exports=async function handler(req,res){
   else console.error('usage users failed',ar.status,await ar.text());
   const emailById=new Map(users.map(u=>[String(u.id),String(u.email||'')]));
 
-  const firstEventSeconds=events.length?Math.floor(Date.parse(events[0].created_at)/1000):baselineSeconds;
   const today=startOfUtcDaySeconds();
+  const thisMonth=startOfUtcMonthSeconds();
   const sevenDays=today-(6*86400);
 
   const periods={
     allTime:usageFor(events,null),
     sinceBaseline:usageFor(events,baselineSeconds*1000),
+    thisMonth:usageFor(events,thisMonth*1000),
     today:usageFor(events,today*1000),
     last7Days:usageFor(events,sevenDays*1000)
   };
   periods.allTime.registeredUsers=registeredUsers;
 
-  const [allCost,baseCost,todayCost,sevenCost]=await Promise.all([
-    fetchOpenAICostUSD(firstEventSeconds,now),
+  const [monthCost,baseCost,todayCost,sevenCost]=await Promise.all([
+    fetchOpenAICostUSD(thisMonth,now),
     fetchOpenAICostUSD(baselineSeconds,now),
     fetchOpenAICostUSD(today,now),
     fetchOpenAICostUSD(sevenDays,now)
   ]);
-  const costs={allTime:allCost,sinceBaseline:baseCost,today:todayCost,last7Days:sevenCost};
+  const costs={
+    allTime:{available:false,totalUSD:null},
+    sinceBaseline:baseCost,
+    thisMonth:monthCost,
+    today:todayCost,
+    last7Days:sevenCost
+  };
   for(const key of Object.keys(periods)){
     const c=costs[key];
     periods[key].openAICostUSD=c.totalUSD;
@@ -162,8 +172,10 @@ module.exports=async function handler(req,res){
     supportAttempts,
     openai:{
       available:baseCost.available,
+      thisMonthAvailable:monthCost.available,
+      thisMonthCostUSD:monthCost.totalUSD,
       projectFiltered:!!baseCost.projectFiltered,
-      error:baseCost.error||null
+      error:baseCost.error||monthCost.error||null
     }
   });
 };

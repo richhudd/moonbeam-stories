@@ -1,3 +1,15 @@
+# Moonbeam Stories V241
+
+## V241 — verifiable OpenAI cost windows
+- Built directly from V240.
+- Adds “This month” between Since baseline and Today.
+- “This month” queries OpenAI Costs from the start of the current UTC month to now, so September can be compared directly with OpenAI Platform's September spend.
+- Removes the misleading All-time OpenAI cost and cost/story values; all-time Moonbeam activity remains visible, but those two cost cells show “—”.
+- Keeps Since baseline, Today and Last 7 days as explicit reporting windows.
+- Keeps the V240 Users table and V239 generation support log.
+- No Supabase schema change.
+- Leaves the parked desktop Account logout and mobile child-strip issues untouched.
+
 # Moonbeam Stories V240
 
 ## V240 — visible usage tables + registered users table
