@@ -1,3 +1,15 @@
+# Moonbeam Stories V214
+
+## V214 — restore homepage → setup navigation
+- Fixes a V213 startup regression that prevented the homepage Create Story / sign-in routes from being bound.
+- Root cause: V213 called the new Account renderer during the first localisation pass before the credit-balance variable had been initialised, causing JavaScript startup to stop early.
+- The premature Account render call is removed.
+- Account still refreshes when opened and whenever the credit balance is loaded or changed.
+- No Account functionality has been removed.
+- V212/V213 reader layouts and mobile portrait behaviour are unchanged.
+- No demo-image animation change is included in this repair build.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V213
 
 ## V213 — functional Account section
