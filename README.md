@@ -1,3 +1,14 @@
+# Moonbeam Stories V232
+
+## V232 — desktop logout returns to the original login page
+- Rebuilt directly from clean V231. The earlier experimental V232 is abandoned and is not the base for this build.
+- Desktop Account behaviour only:
+  - when a signed-in user clicks Sign out on Account, Moonbeam signs them out normally;
+  - after sign-out cleanup completes, the app opens the original setup/login page.
+- Mobile Account logout behaviour is left as it was in V231.
+- No changes to Account sign-in, Create Story, child-profile swipe work, story generation, credits, reader, saved stories, APIs or Supabase schema.
+- No code from the abandoned V232 authentication redesign is included.
+
 # Moonbeam Stories V231
 
 ## V231 — Account is no longer signed-in-only

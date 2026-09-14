@@ -397,13 +397,32 @@ async function signInParent(){
 }
 async function signOutParent(){
  if(!supabaseClient)return;
- const {error}=await supabaseClient.auth.signOut();
- if(error){setAuthStatus(error.message,true);return}
- currentUser=null;storyCreditBalance=null;document.body.classList.remove('moonbeam-signed-in');
- renderAccountView213();
- await applyAuthSession(null);
- showAccountView213();
- setAuthStatus('Signed out.');
+ try{
+  const {error}=await supabaseClient.auth.signOut();
+  if(error){console.warn('Sign out',error);return}
+
+  // Immediately clear signed-in UI state.
+  currentUser=null;
+  storyCreditBalance=null;
+  document.body.classList.remove('moonbeam-signed-in');
+  renderAccountView213();
+
+  // Finish the normal signed-out cleanup.
+  await applyAuthSession(null);
+
+  // V232 rebuilt from V231:
+  // On desktop, signing out from Account returns to the original setup login page.
+  // On mobile, keep the existing Account-page signed-out behaviour.
+  if(!isPhonePortrait() && !document.body.classList.contains('phone-landscape')){
+   $('accountView')?.classList.add('hidden');
+   showCreateStoryView();
+   goSetupPage(0,true);
+  }else{
+   showAccountView213();
+  }
+ }catch(e){
+  console.warn('Sign out',e);
+ }
 }
 function formChild(){return{name:$('name').value.trim(),age:Number($('age').value),interests:$('interests').value.trim(),dislikes:$('dislikes').value.trim()}}
 let desktopProfileRenderToken=0;
