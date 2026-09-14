@@ -1,3 +1,22 @@
+# Moonbeam Stories V218
+
+## V218 — pending email verification guidance
+- Adds a clear instruction inside the pending-email box telling the user to check their email for the verification message(s) needed to complete the change.
+- Wording deliberately supports both one-address and two-address Supabase verification configurations.
+- The new guidance is translated across all nine supported locales.
+- V217's empty-pending-state fix is preserved.
+- Email-change functionality, Account/Saved Stories persistence, mobile demo motion and reader architecture are otherwise unchanged.
+- No Supabase SQL/schema change required.
+
+# Moonbeam Stories V217
+
+## V217 — hide empty pending-email state
+- Fixes the V216 Account-page CSS specificity regression that displayed “Pending email change —” even when no email change had been requested.
+- The pending-email row now remains completely hidden unless the Account code has a real pending email address to show.
+- Email-change functionality itself is unchanged.
+- V216 translations, V215 view persistence/mobile demo motion, and V212 reader architecture are unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V216
 
 ## V216 — change email address

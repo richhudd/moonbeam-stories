@@ -3080,3 +3080,12 @@ body.phone-landscape.story-mode #book.show-mobile-spread .mobile-scroll-cue{disp
   .account-email-pending{align-items:flex-start;flex-direction:column}
   .account-email-pending strong{text-align:left}
 }
+
+
+/* V217 — pending email row must obey the shared hidden state. */
+.account-email-pending.hidden{display:none!important}
+
+
+/* V218 — explain what the user must do while an email change is pending. */
+.account-email-pending-copy{display:grid;gap:4px}
+.account-email-pending-copy p{margin:0;color:#746d79;font-size:13px;line-height:1.4;font-weight:500}
