@@ -1,3 +1,29 @@
+# Moonbeam Stories V228
+
+## V228 — restore child-strip width + reliable landscape setup scrolling
+- Built directly from V227.
+- Fixes the portrait mobile child chooser being collapsed to roughly one card wide.
+- Removes V226's forced 92px child-card sizing and gives the isolated horizontal viewport the full chooser width.
+- Mobile child-carousel arrow controls no longer consume strip width; the mobile interaction is direct horizontal swipe.
+- Keeps the inner child track as a horizontally overflowing `max-content` row inside the isolated viewport.
+- Fixes phone-landscape setup scrolling using Moonbeam's existing `phone-landscape` body class rather than relying on a coarse-pointer/media-query test after rotation.
+- In phone landscape, `productApp` and `setupShell` are explicitly height-constrained and the active setup page is explicitly the native vertical scroll container (`overflow-y:scroll`, momentum scrolling, `pan-y`).
+- The nested child-profile viewport remains `pan-x` only.
+- Story reader landscape rules are untouched.
+- No Supabase SQL/schema change required.
+
+# Moonbeam Stories V227
+
+## V227 — vertical setup scrolling on phones in landscape
+- Built directly from V226.
+- Fixes phone landscape setup pages becoming non-scrollable.
+- Root cause: rotating many phones to landscape makes the CSS viewport wider than 700px, so the old `min-width:701px` desktop setup rules could take over even though the device is still a phone.
+- Coarse-pointer landscape devices with a short viewport now keep the mobile sequential setup architecture.
+- The active setup page is the sole vertical scroll container with native iOS momentum scrolling and `pan-y`.
+- The V226 child-profile viewport remains an isolated horizontal `pan-x` scroller nested inside that vertically scrollable setup page.
+- Story reader landscape behaviour is untouched because the override applies only outside story mode.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V226
 
 ## V226 — isolated mobile child-profile horizontal scroller
