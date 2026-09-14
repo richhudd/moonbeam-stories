@@ -3269,3 +3269,23 @@ body.phone-landscape.story-mode #book.show-mobile-spread .mobile-scroll-cue{disp
 @media(prefers-reduced-motion:reduce){
   #accountView>.account-scroll-cue span{animation:none!important}
 }
+
+
+/* V225 — reliable mobile horizontal swipe for the nested child-profile strip. */
+@media(max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{
+    touch-action:pan-y!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip-shell{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+  }
+}

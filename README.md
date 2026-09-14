@@ -1,3 +1,14 @@
+# Moonbeam Stories V225
+
+## V225 — reliable mobile child-profile swipe
+- Fixes the mobile saved-child row not responding to sideways finger swipes.
+- The profile strip is nested inside Moonbeam's horizontally swipeable setup deck, so native same-axis scrolling could be captured by the outer setup container on iPhone.
+- Adds a dedicated touch gesture handler that gives a clearly horizontal drag to the child strip while leaving vertical gestures available for normal setup-page scrolling.
+- The child strip now moves directly with the finger and updates its existing left/right overflow state as it moves.
+- Constrains the strip/shell to the mobile viewport so off-screen children belong to the strip's own scroll area rather than overflowing the setup card.
+- Desktop child carousel, V224 Account swipe scrolling/double-chevron cue, reader behaviour and all Account functionality are unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V224
 
 ## V224 — Account scroll now matches mobile setup
