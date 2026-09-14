@@ -1317,6 +1317,23 @@ function initSetupDeck(){
 }
 initSetupDeck();
 bindSetupDraftPersistence();
+function updateAccountScrollChevrons222(){
+ const view=$('accountView'),up=$('accountScrollChevronUp'),down=$('accountScrollChevronDown');
+ if(!view||view.classList.contains('hidden')||innerWidth>700){up?.classList.add('hidden');down?.classList.add('hidden');return}
+ const y=window.scrollY||document.documentElement.scrollTop||0;
+ const max=Math.max(0,document.documentElement.scrollHeight-innerHeight);
+ up?.classList.toggle('hidden',y<18);
+ down?.classList.toggle('hidden',max-y<18);
+}
+function scrollAccount222(direction){
+ const amount=Math.max(220,Math.round(innerHeight*.55));
+ window.scrollBy({top:direction*amount,behavior:'smooth'});
+}
+window.addEventListener('scroll',updateAccountScrollChevrons222,{passive:true});
+window.addEventListener('resize',updateAccountScrollChevrons222,{passive:true});
+$('accountScrollChevronUp')?.addEventListener('click',()=>scrollAccount222(-1));
+$('accountScrollChevronDown')?.addEventListener('click',()=>scrollAccount222(1));
+
 let pendingAccountEmail216='';
 function renderAccountView213(){
  const a=accountUI213(),email=$('accountEmailValue'),credits=$('accountCreditsValue');
@@ -1326,6 +1343,7 @@ function renderAccountView213(){
  if(pendingValue)pendingValue.textContent=pending||'—';
  pendingBox?.classList.toggle('hidden',!pending);
  if(credits)credits.textContent=storyCreditBalance==null?'—':`${storyCreditBalance} ${storyCreditBalance===1?a.creditOne:a.creditMany}`;
+ setTimeout(updateAccountScrollChevrons222,0);
 }
 function setAccountEmailEditor216(open){
  const editor=$('accountEmailEditor'),input=$('accountNewEmail'),status=$('accountEmailStatus');
@@ -1357,7 +1375,7 @@ function showAccountView213(){
  rememberAppSection219('account');
  $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.add('hidden');$('accountView')?.classList.remove('hidden');
  $('appCreateNav')?.classList.remove('active');$('appSavedNav')?.classList.remove('active');$('appAccountNav')?.classList.add('active');
- renderAccountView213();
+ renderAccountView213();setTimeout(updateAccountScrollChevrons222,0);
 }
 async function changeAccountPassword213(){
  if(!supabaseClient||!currentUser)return;

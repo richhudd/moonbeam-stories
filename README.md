@@ -1,3 +1,24 @@
+# Moonbeam Stories V222
+
+## V222 — mobile Account scroll chevrons
+- Adds mobile up/down scroll chevrons to Account so its scrollability is visually obvious, matching the cue already used on the setup experience.
+- The down chevron appears only while there is more Account content below; the up chevron appears after the user has scrolled down.
+- Tapping a chevron smoothly moves the Account page in the indicated direction.
+- Chevrons update on scrolling, resizing and Account content changes.
+- Desktop Account is unchanged.
+- V221 mobile Account scrolling, V220 refresh restoration and all established reader behaviour are preserved.
+- No Supabase SQL/schema change required.
+
+# Moonbeam Stories V221
+
+## V221 — mobile Account scrolling
+- Fixes the mobile Account page being clipped below the viewport with no way to reach the lower Account controls.
+- When Account is the active mobile section, the app/body can scroll vertically and the Account view is allowed to grow to its full content height.
+- Adds bottom safe-area/toolbar breathing room so the final controls can be scrolled above mobile browser chrome.
+- The rule is scoped specifically to the visible Account view; story readers and their established portrait/landscape scrolling behaviour are untouched.
+- V220 refresh restoration and all prior Account/email functionality are unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V220
 
 ## V220 — correctly restore Account/Saved Stories after refresh
