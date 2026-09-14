@@ -1,3 +1,13 @@
+# Moonbeam Stories V207
+
+## V207 — mobile reader rotation state lock
+- Fixes the remaining iPhone/Safari regression where rotating an open reader could expose Saved Stories or Setup.
+- Rotation now snapshots the exact active book/page before the viewport changes and explicitly restores that reader through Safari's multi-resize orientation sequence.
+- Navigation-like taps/clicks (close reader, New Story, Create Story, Saved Stories) are briefly ignored during the orientation transition so a touch released after the layout moves cannot accidentally navigate.
+- Portrait ↔ landscape remains a layout change only; the same book and page stay open.
+- V206 interrupted-illustration recovery and all earlier behaviour are retained.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V206
 
 ## V206 — recover interrupted required illustrations

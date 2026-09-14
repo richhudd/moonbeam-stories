@@ -711,7 +711,7 @@ function renderStory(s,image,child,options={}){
  const beginSelf=$('beginStory'),beginNarrated=$('beginNarrated'),storyExit=$('storyExit'),prevPage=$('prevPage'),nextPage=$('nextPage');
  if(beginSelf)beginSelf.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();beginStory('self')});
  if(beginNarrated)beginNarrated.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();beginStory('narrated')});
- if(storyExit)storyExit.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(currentBook?.isShared){location.href='/'}else if(currentBook?.returnToSavedLibrary){closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showSavedStoriesView()}else exitStoryHome()});
+ if(storyExit)storyExit.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();if(orientationNavigationGuardActive())return;if(currentBook?.isShared){location.href='/'}else if(currentBook?.returnToSavedLibrary){closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showSavedStoriesView()}else exitStoryHome()});
  // V85: explicit page controls. Navigation is immediate; no animation state or timer.
  if(prevPage)prevPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goPreviousBookPage()});
  if(nextPage)nextPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goNextBookPage()});
@@ -1083,7 +1083,7 @@ function renderBookPage(index){
    const sx=shareT(book.child?.language||language),sharedActions=`<div class="shared-conversion"><h3>${escapeHtml(sx.loved)}</h3><p>${escapeHtml(sx.free)}</p><a class="primary shared-create" id="sharedCreateStory" href="/?lang=${encodeURIComponent(book.child?.language||language)}&fromShare=1">${escapeHtml(sx.create)}</a></div>`;
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator){indicator.textContent='';indicator.classList.add('end-hidden')}
-   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>startNewStory();const sc=$('sharedCreateStory');if(sc)sc.onclick=e=>{e.preventDefault();const nextLanguage=book.child?.language||language||'en-GB';stopNarration();document.body.classList.remove('shared-story-mode','story-mode','desktop-story-mode');location.assign(`/?lang=${encodeURIComponent(nextLanguage)}&fromShare=1`)};
+   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};const sc=$('sharedCreateStory');if(sc)sc.onclick=e=>{e.preventDefault();const nextLanguage=book.child?.language||language||'en-GB';stopNarration();document.body.classList.remove('shared-story-mode','story-mode','desktop-story-mode');location.assign(`/?lang=${encodeURIComponent(nextLanguage)}&fromShare=1`)};
    applyMobileSide();persistCurrentDraft();return;
  }
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
@@ -1106,7 +1106,7 @@ $('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||document.body.
 
 function closeReader(){if(storySaveInProgress){savingLeaveWarning();return}closeIllustrationFullscreen();stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode','shared-story-mode');$('story')?.classList.add('hidden')}
 function exitStoryHome(){closeReader();showMoonbeamLanding()}
-function startNewStory(){if(storySaveInProgress){savingLeaveWarning();return}clearCurrentDraft();closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
+function startNewStory(){if(orientationNavigationGuardActive())return;if(storySaveInProgress){savingLeaveWarning();return}clearCurrentDraft();closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
 function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+3;if(isPhonePortrait()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 let lastStorySwipeAt=0;
@@ -1282,7 +1282,7 @@ function initSetupDeck(){
 }
 initSetupDeck();
 bindSetupDraftPersistence();
-$('appCreateNav')?.addEventListener('click',()=>{showCreateStoryView();const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Child');goSetupPage(i>=0?i:1,true)});
+$('appCreateNav')?.addEventListener('click',()=>{if(orientationNavigationGuardActive())return;showCreateStoryView();const pages=setupPages(),i=pages.findIndex(p=>p.dataset.step==='Child');goSetupPage(i>=0?i:1,true)});
 function showSavedStoriesView(){
  $('setupShell')?.classList.add('hidden');$('savedStoriesView')?.classList.remove('hidden');renderLibrary();
  $('appCreateNav')?.classList.remove('active');$('appSavedNav')?.classList.add('active');
@@ -1291,7 +1291,7 @@ function showCreateStoryView(){
  $('savedStoriesView')?.classList.add('hidden');$('setupShell')?.classList.remove('hidden');
  $('appSavedNav')?.classList.remove('active');$('appCreateNav')?.classList.add('active');
 }
-$('appSavedNav')?.addEventListener('click',showSavedStoriesView);
+$('appSavedNav')?.addEventListener('click',()=>{if(!orientationNavigationGuardActive())showSavedStoriesView()});
 // V142 — mobile application header mirrors the proven V141 desktop routes.
 const mobileMenu=$('appMobileMenu'),mobileMenuToggle=$('appMobileMenuToggle');
 function closeAppMobileMenu(){if(!mobileMenu||!mobileMenuToggle)return;mobileMenu.classList.add('hidden');mobileMenuToggle.setAttribute('aria-expanded','false');mobileMenuToggle.setAttribute('aria-label','Open menu')}
@@ -1303,13 +1303,47 @@ $('appMobileSignOut')?.addEventListener('click',()=>{$('signOut')?.click();close
 document.addEventListener('click',e=>{if(mobileMenu&&!mobileMenu.classList.contains('hidden')&&!e.target.closest('.app-header'))closeAppMobileMenu()});
 
 $('storySupplyConsentCheck')?.addEventListener('change',()=>{if($('storySupplyConsentCheck').checked)clearStoryConsentAttention()});
-// V205 — orientation is a layout change, never navigation. Phone landscape keeps
-// the mobile two-step setup deck, while an open reader adopts the desktop spread.
+// V207 — orientation is a layout-only operation. Mobile Safari can emit several
+// resize/touch/click events while rotating, so preserve the active reader explicitly
+// and suppress navigation-like taps until the viewport has settled.
+let orientationReaderGuardUntil=0,orientationReaderSnapshot=null;
+function readerIsOpen(){return !!currentBook&&!$('story')?.classList.contains('hidden')}
+function beginOrientationReaderGuard(){
+ if(!readerIsOpen())return;
+ orientationReaderGuardUntil=Date.now()+1400;
+ orientationReaderSnapshot={book:currentBook,page:currentBook.currentPage,side:currentBook.mobileSide,mode:currentBook.readingMode};
+}
+function orientationNavigationGuardActive(){return Date.now()<orientationReaderGuardUntil}
+function restoreReaderAfterOrientation(){
+ const snap=orientationReaderSnapshot;
+ if(!snap||!snap.book)return;
+ // If unrelated view code raced during Safari's rotation, restore the exact same book.
+ if(currentBook!==snap.book)currentBook=snap.book;
+ $('landing')?.classList.add('hidden');
+ $('productApp')?.classList.remove('hidden');
+ document.body.classList.add('product-active','story-mode');
+ document.body.classList.toggle('desktop-story-mode',!isPhonePortrait());
+ $('setupShell')?.classList.add('hidden');
+ $('savedStoriesView')?.classList.add('hidden');
+ $('story')?.classList.remove('hidden');
+ currentBook.currentPage=snap.page;
+ currentBook.mobileSide=isPhonePortrait()?(snap.side||'text'):'text';
+ currentBook.readingMode=snap.mode||'self';
+ if(currentBook.currentPage>=0){
+   applyMobileSide();
+   if(!isPhonePortrait()){
+     const book=$('book');
+     if(book){book.style.removeProperty('--mobile-book-height');book.style.removeProperty('--mobile-art-height')}
+     requestAnimationFrame(fitDesktopStoryText);
+   }
+ }
+}
 function isPhoneLandscape(){
  return window.matchMedia('(pointer:coarse) and (orientation:landscape) and (max-height:600px)').matches;
 }
 function syncResponsiveArchitecture(){
- const open=!!currentBook&&!$('story')?.classList.contains('hidden');
+ if(orientationNavigationGuardActive()&&orientationReaderSnapshot)restoreReaderAfterOrientation();
+ const open=readerIsOpen();
  document.body.classList.toggle('phone-landscape',isPhoneLandscape());
  document.body.classList.toggle('story-mode',open);
  document.body.classList.toggle('desktop-story-mode',open&&!isPhonePortrait());
@@ -1333,7 +1367,7 @@ function syncResponsiveArchitecture(){
 let responsiveSyncTimer=null;
 function scheduleResponsiveSync(delay=80){clearTimeout(responsiveSyncTimer);responsiveSyncTimer=setTimeout(syncResponsiveArchitecture,delay)}
 window.addEventListener('resize',()=>{requestAnimationFrame(updateSetupScrollCue);scheduleResponsiveSync(80)},{passive:true});
-window.addEventListener('orientationchange',()=>scheduleResponsiveSync(140),{passive:true});
+window.addEventListener('orientationchange',()=>{beginOrientationReaderGuard();restoreReaderAfterOrientation();scheduleResponsiveSync(180);setTimeout(()=>{restoreReaderAfterOrientation();syncResponsiveArchitecture()},520);setTimeout(()=>{restoreReaderAfterOrientation();syncResponsiveArchitecture();orientationReaderSnapshot=null},1250)},{passive:true});
 syncResponsiveArchitecture();
 
 // V65 — public landing and desktop page architecture.
