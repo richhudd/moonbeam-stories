@@ -1,3 +1,15 @@
+# Moonbeam Stories V223
+
+## V223 — mobile child-profile sideways scrolling
+- Enables deliberate horizontal navigation for the saved-child profile selector on phones.
+- The child row can now be swiped left/right with touch.
+- Reuses the existing profile-carousel chevrons: the right chevron appears when more children are off-screen, and the left chevron appears after scrolling across.
+- Tapping either chevron smoothly moves the child row using the existing carousel handlers.
+- Chevron visibility continues to update from the row's real scroll position.
+- Desktop child-profile carousel behaviour is unchanged.
+- Account scrolling/chevrons, refresh restoration, email-change functionality and reader behaviour are unchanged.
+- No Supabase SQL/schema change required.
+
 # Moonbeam Stories V222
 
 ## V222 — mobile Account scroll chevrons

@@ -3140,3 +3140,45 @@ body.phone-landscape.story-mode #book.show-mobile-spread .mobile-scroll-cue{disp
   .account-scroll-chevron-up{top:168px}
   .account-scroll-chevron-down{bottom:calc(82px + env(safe-area-inset-bottom))}
 }
+
+
+/* V223 — mobile child-profile carousel navigation. */
+@media(max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip-shell{
+    position:relative!important;
+    overflow:visible!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-strip{
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    touch-action:pan-x!important;
+    scroll-behavior:smooth!important;
+    padding-right:10px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-scroll{
+    position:absolute!important;
+    z-index:20!important;
+    top:50%!important;
+    transform:translateY(-50%)!important;
+    width:34px!important;
+    height:34px!important;
+    min-height:34px!important;
+    padding:0!important;
+    margin:0!important;
+    border-radius:50%!important;
+    border:1px solid #d7c9ea!important;
+    background:rgba(255,253,249,.96)!important;
+    color:#5f3caa!important;
+    box-shadow:0 3px 10px rgba(45,33,69,.16)!important;
+    font-size:25px!important;
+    line-height:1!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-scroll.visible{
+    display:grid!important;
+    place-items:center!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-scroll-left{left:-6px!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .setup-child-page .desktop-child-scroll-right{right:-6px!important}
+}
