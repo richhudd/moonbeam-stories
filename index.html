@@ -71,9 +71,14 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
       <div class="cast-section" data-cast-kind="pet"><div class="cast-section-head"><div><h3 id="castPetsTitle">Pets</h3><p id="castPetsCopy">Animal companions</p></div><button class="secondary cast-add" id="castAddPet" type="button">＋ Add pet</button></div><div class="cast-grid" id="castPets"></div></div>
       <div class="cast-editor hidden" id="castEditor" role="dialog" aria-modal="false" aria-labelledby="castEditorTitle"><div class="cast-editor-card"><div class="cast-editor-head"><h3 id="castEditorTitle">Add child</h3><button id="castEditorClose" class="cast-editor-close" type="button" aria-label="Close">×</button></div><div class="cast-editor-photo"><div id="castEditorPhotoPreview" class="cast-avatar cast-avatar-large"><span>☾</span></div><input id="castEditorPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="secondary" id="castEditorPhotoButton" type="button">Add photo</button><button class="secondary danger-lite hidden" id="castEditorRemovePhoto" type="button">Remove photo</button></div><div class="cast-editor-fields"><label><span id="castNameLabel">Name</span><input id="castEditorName" autocomplete="off"></label><label id="castAgeField"><span id="castAgeLabel">Age</span><input id="castEditorAge" type="number" min="3" max="12"></label><label id="castRelationshipField" class="hidden"><span id="castRelationshipLabel">Relationship</span><input id="castEditorRelationship" autocomplete="off"></label><label id="castAnimalField" class="hidden"><span id="castAnimalLabel">Type of animal</span><input id="castEditorAnimal" autocomplete="off"></label></div><div class="cast-editor-actions"><button class="primary" id="castEditorSave" type="button">Save</button><button class="secondary" id="castEditorCancel" type="button">Cancel</button></div><p class="status" id="castEditorStatus"></p></div></div>
       <div class="cast-generation-adapter" hidden aria-hidden="true">
-        <select id="profileSelect"><option value="">New child</option></select><span id="profileStatus"></span>
+        <!-- V246 compatibility bridge: V245 bootstrap/localisation still expects these
+             legacy Child-page nodes. They remain hidden until V247 replaces the
+             setup architecture deliberately. -->
+        <h2 id="childTitle"></h2>
+        <span id="nameLabel"></span><span id="ageLabel"></span><span id="interestsLabel"></span><span id="dislikesLabel"></span>
+        <select id="profileSelect"><option value="">New child</option></select><span id="profileStatus"></span><span id="profileStatusBasics"></span>
         <input id="name"><input id="age" type="number" value="7"><input id="interests"><input id="dislikes">
-        <input id="useChildPhoto" type="checkbox" checked><div id="childPhotoPreview"></div>
+        <input id="useChildPhoto" type="checkbox" checked><div id="childPhotoPreview"></div><span id="photoStatus"></span>
       </div>
     </section>
 

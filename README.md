@@ -997,3 +997,9 @@ Built cleanly from the approved V245 checkpoint. V246 replaces the split child/a
 - Shared-story lookup uses `cast_members`, with a historical `child_profiles` fallback solely for pre-migration compatibility.
 - All Cast UI, validation, save states, photo actions, menus and confirmations are localised across all nine Moonbeam locales.
 - Run `SUPABASE_V246_CAST_MEMBERS.sql` after deployment. The migration is idempotent and is designed to normalise the earlier experimental Cast table if it exists.
+
+### V246 routing/bootstrap correction
+- Restores the hidden V245 Child-page compatibility nodes still required by the proven V245 localisation/bootstrap path.
+- Prevents startup from aborting before homepage Create Story / Sign In handlers are attached.
+- Does not change the visible unified Cast UI, cast_members data model, Account page, Story page, reader, generation, credits, or legal pages.
+- The compatibility bridge is intentionally temporary until V247 replaces the setup architecture as a single controlled change.
