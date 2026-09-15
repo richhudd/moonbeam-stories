@@ -993,3 +993,10 @@ Run `SUPABASE_V246_CAST_MEMBERS.sql` once to enable adult/pet storage.
 
 
 V246 save-handler correction: Cast member Save now waits for confirmed database persistence, displays the localized Saved state, then closes the editor and returns to the refreshed full Cast view. Save errors keep the editor open and display the error.
+
+
+### V246 Cast editor save-state correction
+- Reset Add/Edit Cast editor Save control to the locale's `Save` label every time the editor opens.
+- Reset disabled/aria/state classes whenever the editor closes.
+- Successful save remains Save → Saving… → Saved → close editor → refreshed full Cast page.
+- No routing, setup architecture, generation, reader, credits, legal, or Supabase schema changes.
