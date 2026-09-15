@@ -965,3 +965,15 @@ Built directly from V243.
 - Preserves the V243 legal-page mobile scrolling fix.
 - No changes to generation, illustration, narration, credits, authentication, Account, Saved Stories, reader, developer dashboard, APIs or Supabase schema.
 - Existing non-English legal localisation machinery is retained; legal source documents remain the English canonical versions.
+
+
+## V245 — Cast and simplified Create Story
+- Replaces the horizontal child strip with a vertically expanding Cast layout.
+- Create Story is one vertically scrollable page on phone and desktop; the old mobile two-page / desktop two-panel setup is removed.
+- Main characters use the existing child profiles, simplified to name + age + one optional photo. Interests and avoid-list administration are removed from the visible profile UI.
+- Adds Supporting roles (name + relationship + optional photo) and Pets (name + animal type + optional photo).
+- Each Cast member has a compact three-dot menu for Add/Change photo, Remove photo, and Delete from Cast.
+- Cast sections grow in normal document flow, so adding children automatically pushes supporting roles, pets and story setup downward.
+- Adult/pet records use the new `cast_members` table from `SUPABASE_V245_CAST_MEMBERS.sql`; photos reuse the existing private photo bucket.
+- Story generation remains centred on the selected child in this build; supporting roles and pets are now persistently available for the next story-selection/generation integration.
+- Reader, saved stories, credits, dashboard, legal pages and V244 public homepage are otherwise unchanged.
