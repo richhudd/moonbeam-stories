@@ -3697,3 +3697,66 @@ body:not(.product-active) #landing .hero{min-height:calc(100vh - 76px)!important
     scroll-snap-type:none!important;
   }
 }
+
+/* V246 mobile true-flow correction.
+   The combined Cast + Story setup is now a normal document on signed-in phones,
+   rather than two legacy fixed-height pager pages displayed one after another. */
+@media (max-width:700px){
+  html:has(body.product-active.moonbeam-signed-in:not(.story-mode)),
+  body.product-active.moonbeam-signed-in:not(.story-mode){
+    height:auto!important;
+    min-height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior-y:auto!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .app-product{
+    height:auto!important;
+    min-height:100dvh!important;
+    max-height:none!important;
+    overflow:visible!important;
+    display:block!important;
+    padding-bottom:max(6px,env(safe-area-inset-bottom))!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell{
+    display:block!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack{
+    display:block!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding:0 10px 8px!important;
+    touch-action:pan-y!important;
+    scroll-snap-type:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"],
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    position:relative!important;
+    display:flex!important;
+    flex:none!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    margin:0!important;
+    transform:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"].cast-page{
+    padding-bottom:20px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    margin-top:0!important;
+    padding-top:26px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .site-legal-footer{
+    position:static!important;
+    margin-top:10px!important;
+  }
+}

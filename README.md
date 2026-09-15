@@ -1013,3 +1013,9 @@ On mobile only, the existing Story setup page is rendered immediately below Your
 - Restores vertical touch scrolling on the combined Cast + Story page on mobile.
 - Removes the inherited `touch-action: pan-x` behaviour from the former two-page swipe deck by overriding the combined setup track to `touch-action: pan-y`.
 - No JavaScript, routing, Cast CRUD, photo, generation, API, or Supabase changes.
+
+
+### V246 mobile true-flow correction
+- Replaces the remaining signed-in mobile fixed-height pager geometry with normal document flow.
+- Cast now expands to its real content height; Story begins only after the Pets section, and the footer follows Story normally.
+- Desktop layout and all JavaScript, Cast CRUD, photo, auth, generation, API and Supabase behaviour remain unchanged.
