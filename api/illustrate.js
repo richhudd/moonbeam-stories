@@ -15,6 +15,7 @@ module.exports = async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const prompt = String(body.prompt || '').trim();
+    const referenceImages = Array.isArray(body.referenceImages) ? body.referenceImages.slice(0,8) : [];
     const generationRunId = String(body.generationRunId || '').trim();
     const referenceImage = typeof body.referenceImage === 'string' ? body.referenceImage : '';
     const requiredStoryImage = body.requiredStoryImage === true;
@@ -52,9 +53,10 @@ module.exports = async function handler(req, res) {
     if(!recoverySlot){slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;}
     const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(reservedUserId,reservedRunId,'image')}};
 
-    const hasReference = /^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage);
+    const refs=(Array.isArray(referenceImages)?referenceImages:[]).filter(r=>r&&/^data:image\/(jpeg|png|webp);base64,/i.test(r.image||''));if(!refs.length&&/^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage||''))refs.push({name:'main hero',kind:'child',role:'hero',image:referenceImage});
+    const hasReference = refs.length>0;
     const identityDirection = hasReference
-      ? `\nIDENTITY REFERENCE\nAn attached photograph shows the real child who is the main hero. Preserve the child's recognisable identity across the illustration: face shape, eyes, nose, smile, hair colour, hair texture, approximate skin tone and age. Translate the child naturally into the storybook painting style rather than making the result photographic. Do not copy the photograph's background, clothing or pose unless the scene calls for them. Identity preservation is a primary requirement: the illustrated child must be recognisably the same real child, not merely a generic child of similar age or hair colour. The child should clearly look like the same person in every illustration.`
+      ? `\nIDENTITY REFERENCES — HARD CONSTRAINT\nOne or more attached photographs show specific selected Cast members. Each image is an identity reference for exactly one named character, in the same order as this map: ${refs.map((r,i)=>`Image ${i+1}: ${r.name||'character'} — ${r.kind||'character'} — ${r.role||'supporting'}`).join('; ')}. Preserve each photographed person's recognisable identity: face shape, eyes, nose, smile, hair colour/texture, approximate skin tone and apparent age. Preserve each photographed pet's species/breed appearance, coat, body proportions and relative size. Translate references naturally into the fixed storybook painting style rather than making the result photographic. Do not copy a reference background, clothing or pose unless the scene calls for it. Never merge identities, swap faces, assign one reference to another named character, or treat a reference image as an instruction to add an extra physical copy of that character.`
       : '';
 
     // V193: one literal, immutable Moonbeam house style for every cover and page.
@@ -102,15 +104,10 @@ IMPORTANT
 
     let r;
     if (hasReference) {
-      const match = referenceImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
-      if (!match) { await refundSlot(); return res.status(400).json({ error: 'The child photo could not be read.' }); }
-      const mime = match[1].toLowerCase();
-      const bytes = Buffer.from(match[2], 'base64');
-      const extension = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
       const form = new FormData();
       form.append('model', 'gpt-image-2.5-sunburst');
       form.append('prompt', finalPrompt);
-      form.append('image', new Blob([bytes], { type: mime }), `child-reference.${extension}`);
+      for(let i=0;i<refs.length;i++){const match=String(refs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image',new Blob([bytes],{type:mime}),`cast-reference-${i+1}.${extension}`);}
       form.append('size', '1024x1024');
       form.append('quality', 'low');
       form.append('output_format', 'webp');

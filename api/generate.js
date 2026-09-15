@@ -38,11 +38,11 @@ module.exports = async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const child = body.child || {};
-    if (!child.name || !Number.isFinite(Number(child.age))) {
-      return res.status(400).json({ error: 'Please provide a name and age.' });
-    }
-
-    const age = Number(child.age);
+    const cast = Array.isArray(child.cast) ? child.cast.filter(m=>m&&m.name&&m.role) : [];
+    const heroes = cast.filter(m=>m.role==='hero'&&m.kind==='child');
+    if (!heroes.length && (!child.name || !Number.isFinite(Number(child.age)))) return res.status(400).json({ error: 'Please choose at least one child as a hero.' });
+    const age = heroes.length ? Math.min(...heroes.map(h=>Number(h.age)).filter(Number.isFinite)) : Number(child.age);
+    if(!Number.isFinite(age)) return res.status(400).json({error:'Please provide a valid hero age.'});
     const length = 'standard';
 
     // V50: every new Moonbeam story has the same predictable length and cost.
@@ -78,18 +78,8 @@ module.exports = async function handler(req, res) {
     const pageCount = 4;
     const lengthGuide = lengthConfig.totalWords;
     const targetPerScreen = '105-125 words';
-    const selectedTone = String(child.tone || 'cosy and funny');
-    const toneGuide = {
-      'cosy and funny': 'Warm, playful and gently humorous, with amusing situations and reassuring stakes.',
-      'magical': 'Create a strong sense of wonder, enchantment and discovery, with extraordinary things emerging naturally from the story world.',
-      'adventurous': 'Energetic and exciting, with exploration, obstacles, discoveries and mild age-appropriate peril.',
-      'calm and dreamy': 'Gentle, atmospheric and unhurried, with softer conflict, beautiful imagery and a particularly soothing ending.'
-    }[selectedTone] || 'Let the selected tone noticeably shape the mood, pacing, descriptions and dialogue throughout the story.';
-    const selectedValues = Array.isArray(child.values) ? child.values.filter(v => String(v || '').trim()) : [];
-    const valuesGuide = selectedValues.length
-      ? `Story values to weave naturally into the plot: ${selectedValues.join(', ')}`
-      : 'Story values: none specifically selected. Do not impose a particular moral or value theme.';
 
+    // V248: tone, atmosphere and themes are inferred naturally; no forced values or moral defaults.
     // V191: age-safe cryptographic story blueprint generator.
     // The model does not choose the premise for a blank Story Idea. Code first chooses an
     // age-eligible story family and hard structural constraints, then the model writes that brief.
@@ -229,26 +219,32 @@ Enforcement:
       : `RANDOM STORY REQUEST\n${hardBlueprint}`;
 
 
-    const effectiveToneGuide = (!storyIdea && randomSeed.realityRule === 'STRICT_REALISM' && selectedTone === 'magical')
-      ? 'Create a strong sense of wonder through atmosphere, imagination, discovery, beauty, coincidence or the child’s feelings, but introduce NO literal magic or supernatural event.'
-      : (!storyIdea && randomSeed.realityRule === 'SCIENCE_FICTION' && selectedTone === 'magical')
-        ? 'Create wonder through scale, science, technology and discovery. Do not introduce literal magic or supernatural events.'
-        : toneGuide;
 
-    const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original adventure story for one child. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
+    const castLines = cast.length ? cast.map(m=>{const detail=m.kind==='child'?`child, age ${m.age}`:m.kind==='adult'?`adult, relationship: ${m.relationship||'trusted adult'}`:`${m.animal_type||'pet'}${m.breed?`, breed: ${m.breed}`:''}`;return `- ${m.name} — ${detail} — ${String(m.role).toUpperCase()}`}).join('\n') : `- ${child.name} — child, age ${age} — HERO`;
+    const roleRules = `HERO: central protagonist with agency. If there are multiple heroes, treat them as genuine CO-HEROES with broadly equal narrative importance and agency; do not quietly turn one into the protagonist and the others into sidekicks.
+SUPPORTING_CHILD: participates meaningfully but must not displace the heroes.
+SUPPORTING_ADULT: recognisably adult; may supervise, guide, reassure or help, but should not routinely solve the central challenge for the heroes. An adult Cast relationship, when supplied, is optional general context only and must not be assumed to describe that adult's relationship to every child.
+COMPANION: remains the stated animal. Do not make a pet speak, reason or behave like a human unless the Story Idea or story world genuinely calls for fantasy.
+Do not force every selected character into every scene. Use supporting characters where narratively natural; heroes remain the focus.`;
+    const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original adventure story centred on the selected child hero or co-heroes. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
 
-CHILD
-Name: ${String(child.name)}
-NAME LOCK — HARD CONSTRAINT: The protagonist's name is exactly the supplied Name above. Reproduce it verbatim everywhere, including the title. Never invent or append a surname, middle name, nickname, honorific, pet name or alternative form. If the supplied name is one word, the protagonist has that one-word name only.
-Age: ${age}
+STORY CAST
+${castLines}
+
+ROLE RULES — HARD CONSTRAINTS
+${roleRules}
+
+NAME AND IDENTITY LOCK
+Use every selected character's supplied name exactly as given. Never invent or append surnames, middle names, nicknames, honorifics, pet names or alternative forms unless the parent establishes them in the Story Idea. Explicit relationships and forms of address stated in the Story Idea take precedence over optional adult Cast relationship notes. Do not invent additional family relationships. Where the parent has not defined a relationship or form of address, keep it neutral rather than guessing.
+Youngest hero age for safety calibration: ${age}
 ${ideaGuide}
 Things to avoid: ${child.dislikes || 'nothing specific'}
 Standard Moonbeam length: ${lengthGuide}
-Selected tone: ${selectedTone}
-Tone guidance: ${effectiveToneGuide}
 Language: ${language}
 Language guidance: ${languageGuide}
-${valuesGuide}
+
+TONE, THEMES AND MORALS
+Infer the tone, atmosphere, humour, emotional arc and any themes naturally from the Story Idea, the selected Cast, their ages and the events of the story. There is NO selected tone and there are NO selected values. Do not default to kindness, curiosity, courage or any other predetermined value. A Moonbeam story does not need to teach a lesson or contain a moral. Do not impose an educational message or moral; if a theme emerges naturally from what happens, let it remain implicit rather than announcing it.
 
 MOONBEAM WRITING QUALITY
 Write an original, polished children’s story in natural ${language}. Use clear, elegant prose; vivid but economical description; natural dialogue where useful; warmth; humour when appropriate; and a satisfying narrative arc. The permanent Moonbeam style controls writing quality, NOT plot architecture. Do not automatically add a mystery, secret, quest, magical creature, special object, hidden door, discovery or sidekick. For random stories, the STORY BLUEPRINT alone determines those creative choices.
@@ -271,10 +267,10 @@ Child age: ${age}; band: ${ageBand} (${ageProfile.label}).
 ${ageProfile.writing}
 Permitted stakes: ${ageProfile.stakes}.
 Explicitly excluded for this age band: ${ageProfile.forbidden}.
-Age suitability overrides tone, parent detail and random blueprint if any conflict occurs. Never make an older genre merely less graphic; replace any unsuitable mechanism with an age-appropriate equivalent while preserving the harmless core idea.
+Age suitability overrides parent detail and random blueprint if any conflict occurs. Never make an older genre merely less graphic; replace any unsuitable mechanism with an age-appropriate equivalent while preserving the harmless core idea.
 
 GENERAL SAFETY
-No politics, religion, sexual content, graphic violence, dangerous instructions or adult themes. Keep the experience emotionally safe for age ${age}. When story values are selected, let them emerge through action rather than announcing a moral. Avoid clichés, generic filler and repetitive phrasing.
+No politics, religion, sexual content, graphic violence, dangerous instructions or adult themes. Keep the experience emotionally safe for the youngest hero age ${age}. Do not impose a moral or predetermined value theme. Avoid clichés, generic filler and repetitive phrasing.
 
 OUTPUT
 Return JSON only, with exactly this shape:
@@ -298,9 +294,9 @@ VISUAL STORYBOARD — MANDATORY
 The six displayed illustrations (opening, four story pages, closing) must form a varied visual sequence, not six near-duplicates. Every illustration_prompt must depict a materially different story beat and composition from the preceding and following scenes. Across the book deliberately vary camera distance (wide/medium/close), viewpoint, protagonist pose, action, staging, foreground/background emphasis and visual focal point while preserving all character and style continuity. Do not repeatedly show the protagonist crouching, standing or sitting in the same spot with the same companion/object merely from a slightly different angle. If several consecutive text pages occur in one location, find distinct actions, positions and visual moments within that location. The opening should establish the world; middle scenes should show different actions/developments; the closing should visually demonstrate the outcome. Illustration prompts must be concrete about WHAT is happening and HOW the scene is staged, but must not specify or vary art style.
 
 RECURRING CHARACTER BIBLE — MANDATORY
-Create one concise but precise character_bible for every recurring character. This is a fixed visual model sheet for the illustration system, not prose for the reader. For EACH recurring non-photo character specify: name/role; exact age when human (never an age range); sex where relevant; apparent height/build relative to the main child; skin tone or fur/material colour; eye colour; face shape/distinctive facial features; exact hair/fur colour, length, texture and hairstyle; established clothing colours/items; and any permanent distinctive feature/accessory. For recurring animals, robots or fantastical beings give equally concrete fixed species/body/material/colour/size/features. Do not leave recurring companions as vague phrases such as "a girl of similar age". Once defined, these details are immutable for the entire book unless the STORY itself explicitly requires a change.
+Create one concise but precise character_bible for every recurring character. This is a fixed visual model sheet for the illustration system, not prose for the reader. For EACH recurring non-photo character specify: name/role; exact age when human (never an age range); sex where relevant; apparent height/build relative to the child heroes; skin tone or fur/material colour; eye colour; face shape/distinctive facial features; exact hair/fur colour, length, texture and hairstyle; established clothing colours/items; and any permanent distinctive feature/accessory. For recurring animals, robots or fantastical beings give equally concrete fixed species/body/material/colour/size/features. For every dog, use the supplied breed when present to infer realistic adult/juvenile body proportions and RELATIVE SIZE beside the human characters; a Chihuahua must remain tiny, a Jack Russell small, a Labrador medium-large, an Irish Wolfhound very large/tall, etc. If breed is absent, infer approximate size from any supplied reference photo when possible; otherwise use a plausible medium size. Never arbitrarily rescale a dog between scenes. Do not leave recurring companions as vague phrases such as "a girl of similar age". Once defined, these details are immutable for the entire book unless the STORY itself explicitly requires a change.
 
-The photographed main child's identity comes from the supplied photo, so do not invent conflicting facial characteristics for that child; the bible may record story clothing and continuity details. Every illustration_prompt must use the SAME character names and must not redefine, age, recolour, restyle or change the clothing of recurring characters. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
+For any selected Cast member with a supplied reference photo, identity comes from that photo, so do not invent conflicting facial or physical characteristics; the bible may record story clothing and continuity details. Every illustration_prompt must use the SAME character names and must not redefine, age, recolour, restyle or change the clothing of recurring characters. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
 
     async function callStoryModel(input, maxOutputTokens = 5000) {
       const r = await fetch('https://api.openai.com/v1/responses', {
@@ -410,7 +406,7 @@ The photographed main child's identity comes from the supplied photo, so do not 
     // If the model produced almost-JSON, ask it to repair its own output once rather than
     // showing the reader a formatting error. This also catches missing required fields.
     if (!story) {
-      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible, BUT the creative brief and age rules below remain mandatory during repair.\n\n${storyIdea ? `PARENT STORY IDEA: ${storyIdea}` : hardBlueprint}\n\nAGE RULES: Child age ${age}, band ${ageBand}. ${ageProfile.writing} Forbidden: ${ageProfile.forbidden}.\n\nEnsure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. The protagonist's name is exactly ${String(child.name)}. Never invent or append a surname, middle name, nickname, honorific, pet name or alternative form, including in the title. Preserve or reconstruct a precise character_bible for every recurring non-photo character: exact human age (never an age range), stable face/skin/eyes/hair/build, fixed clothing colours/items and permanent distinctive features; for recurring animals, robots or fantastical beings, fixed species/body/material/colour/size/features. Do not age, redesign or visually redefine recurring characters between illustration prompts. Preserve genuine narrative progression as well as a varied visual storyboard: each successive displayed beat must materially advance the situation through a changed action, objective, obstacle, interaction, discovery, position, visual circumstance or consequence; do not leave the protagonist repeating the same action in the same spot across most of the story. A single overall location is allowed, but progression within it is mandatory. Each illustration_prompt must depict a materially different story beat and composition, varying framing/viewpoint/pose/action rather than repeating the same setup from another angle. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
+      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible, BUT the creative brief and age rules below remain mandatory during repair.\n\n${storyIdea ? `PARENT STORY IDEA: ${storyIdea}` : hardBlueprint}\n\nAGE RULES: Child age ${age}, band ${ageBand}. ${ageProfile.writing} Forbidden: ${ageProfile.forbidden}.\n\nEnsure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. All selected Cast names must be reproduced exactly as supplied. Never invent or append a surname, middle name, nickname, honorific, pet name or alternative form. Preserve or reconstruct a precise character_bible for every recurring non-photo character: exact human age (never an age range), stable face/skin/eyes/hair/build, fixed clothing colours/items and permanent distinctive features; for recurring animals, robots or fantastical beings, fixed species/body/material/colour/size/features. Do not age, redesign or visually redefine recurring characters between illustration prompts. Preserve genuine narrative progression as well as a varied visual storyboard: each successive displayed beat must materially advance the situation through a changed action, objective, obstacle, interaction, discovery, position, visual circumstance or consequence; do not leave the protagonist repeating the same action in the same spot across most of the story. A single overall location is allowed, but progression within it is mandatory. Each illustration_prompt must depict a materially different story beat and composition, varying framing/viewpoint/pose/action rather than repeating the same setup from another angle. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
       try {
         const repairedOutput = await callStoryModel(repairInput, 5000);
         story = normaliseStory(parseStoryOutput(repairedOutput));

@@ -987,7 +987,7 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 
 - Replaces profile management with one `cast_members` source for children, trusted adults and pets.
 - Children: name, age, optional photo. Adults: name, relationship, optional photo. Pets: name, animal type, optional photo.
-- Preserves the proven V245 Account/login/setup/Story navigation shell; V247 remains the setup-layout redesign.
+- Preserves the proven V245 Account/login/setup/Story navigation shell; V248 remains the setup-layout redesign.
 - Keeps only a hidden generation compatibility adapter for the currently selected child; there is no second profile CRUD path.
 - Cast Save is transactional in the UI: Save → Saving… → database confirmation → Saved → close → refreshed Cast. Photo failure is reported separately after a successful profile save.
 - Existing `child_profiles` rows are migrated idempotently with UUIDs preserved, but the legacy table and saved-story relationships are left untouched as a safety copy.
@@ -1044,6 +1044,25 @@ V246 mobile desktop-copy rebuild: signed-in mobile setup now uses the same Cast 
 - No app, generation, save, Cast, API or Supabase changes.
 
 
-## V247 — Mobile Saved Stories repair
+## V248 — Mobile Saved Stories repair
 
 Restores the dedicated Saved Stories view on mobile after the Create Story Cast/Story document-flow changes. The repair is CSS-only and scoped to the state where Saved Stories is visible. Desktop, story data/loading, Cast, generation, saving, legal Back navigation and Supabase logic are unchanged.
+
+
+## V248 — Multi-character story universe
+- Multiple child heroes/co-heroes plus optional supporting children, adults and pets.
+- Structured narrative roles are sent to story generation and illustration continuity.
+- Tone and Values are removed from generation; no default moral/value influence remains.
+- Optional pet breed is stored for realistic dog scale; reference photos also inform pet proportions.
+- Illustration requests can carry identity references for multiple selected Cast members.
+- Run SUPABASE_V248_CAST_BREED.sql once before deploying V248.
+
+
+## V248 final — Cast roles and natural story context
+- Hero selection uses faded miniature Cast cards with an empty selector circle; selected cards become full-colour with a Moonbeam-blue border and blue checked circle. Tapping anywhere on a card toggles it. No hero is preselected.
+- Only children are eligible as heroes. Remaining children, adults and pets can be selected as supporting characters. At least one hero is required.
+- Adult Relationship is now optional free text. It is general context only; explicit relationships/forms of address in Story Idea take precedence, and the generator is told not to invent family relationships.
+- Story Idea placeholder demonstrates relationship context. English uses Jack and Jill; each other locale uses natural example names and wording for that language.
+- Tone and Values remain absent from generation; no default moral/value influence is imposed.
+- Optional pet breed and multi-reference illustration identity/scale rules retained.
+- V247 mobile Saved Stories repair and all earlier save/legal/reader fixes retained.
