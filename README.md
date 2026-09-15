@@ -998,3 +998,9 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Keeps the confirmed-working unified V246 architecture and all existing routing, Cast CRUD, photo handling, SQL and story behaviour unchanged.
 - Makes only the signed-in desktop Your Cast panel explicitly vertically scrollable when its contents exceed the available panel height.
 - Mobile behaviour is unchanged.
+
+## V246 desktop stacking step
+- Desktop only: the existing Story panel is placed immediately below Your Cast in the same white setup surface.
+- Desktop now has one vertical scroll surface for Cast then Story; the separate right-hand Story card is removed visually.
+- Mobile remains the existing V246 two-page Cast → Story setup.
+- No JavaScript, Cast CRUD, photo, auth, routing, generation, API, or Supabase changes.

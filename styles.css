@@ -3574,3 +3574,55 @@ body:not(.product-active) #landing .hero{min-height:calc(100vh - 76px)!important
     justify-content:flex-start!important;
   }
 }
+
+/* V246 desktop stacking step — desktop only.
+   Preserve all V246 behaviour and mobile paging. On authenticated desktop,
+   turn the former two-card Child + Story presentation into one white,
+   vertically scrolling setup surface: Cast first, Story immediately below. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important;
+    gap:0!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior-y:contain!important;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:none!important;
+    padding:0!important;
+    border-radius:24px!important;
+    background:linear-gradient(180deg,#fffefa 0%,#fffdf9 100%)!important;
+    box-shadow:0 20px 48px rgba(9,6,24,.24),0 0 0 1px rgba(255,255,255,.18)!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"],
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    display:flex!important;
+    flex-direction:column!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    height:auto!important;
+    min-height:0!important;
+    margin:0!important;
+    overflow:visible!important;
+    scroll-snap-align:none!important;
+    justify-content:flex-start!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"].cast-page{
+    overflow:visible!important;
+    padding-bottom:26px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    padding:30px 22px 24px!important;
+    border-top:1px solid rgba(91,74,132,.14)!important;
+  }
+}
