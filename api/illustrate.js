@@ -107,7 +107,7 @@ IMPORTANT
       const form = new FormData();
       form.append('model', 'gpt-image-2.5-sunburst');
       form.append('prompt', finalPrompt);
-      for(let i=0;i<refs.length;i++){const match=String(refs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image',new Blob([bytes],{type:mime}),`cast-reference-${i+1}.${extension}`);}
+      for(let i=0;i<refs.length;i++){const match=String(refs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`cast-reference-${i+1}.${extension}`);}
       form.append('size', '1024x1024');
       form.append('quality', 'low');
       form.append('output_format', 'webp');

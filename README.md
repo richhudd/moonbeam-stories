@@ -1,3 +1,12 @@
+# Moonbeam Stories V249
+
+## V249 — multi-reference illustration request fix
+- Built directly from the 44-file V248 Complete Final package.
+- Fixes the reproducible OpenAI image-edit failure `Duplicate parameter: image` when more than one Cast member has a reference photo.
+- Multiple Cast reference photos are now submitted using the API array field `image[]` rather than repeated singular `image` fields.
+- No story-generation, Cast selection, Supabase schema, reader, save, auth, homepage, localisation or illustration-style changes.
+- No new Supabase migration is required.
+
 # Moonbeam Stories V246
 
 ## V245 — localised legal documents
