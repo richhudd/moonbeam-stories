@@ -1004,3 +1004,7 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Desktop now has one vertical scroll surface for Cast then Story; the separate right-hand Story card is removed visually.
 - Mobile remains the existing V246 two-page Cast → Story setup.
 - No JavaScript, Cast CRUD, photo, auth, routing, generation, API, or Supabase changes.
+
+
+## V246 mobile stacking step
+On mobile only, the existing Story setup page is rendered immediately below Your Cast inside the same vertically scrolling setup track. The old second-page presentation and setup navigation are hidden for signed-in Create Story. No JavaScript, API, database, Cast CRUD, photo, auth, generation, reader or Supabase changes.

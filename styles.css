@@ -3626,3 +3626,52 @@ body:not(.product-active) #landing .hero{min-height:calc(100vh - 76px)!important
     border-top:1px solid rgba(91,74,132,.14)!important;
   }
 }
+
+/* V246 mobile stacking step — mobile only.
+   Keep the proven Account/login page separate. Once authenticated, show the
+   existing Cast and Story setup sections as one continuous scrolling page:
+   Cast first, Story immediately below. No second setup page. */
+@media (max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack{
+    display:block!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior-y:contain!important;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Account"]{
+    display:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"],
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    display:flex!important;
+    position:relative!important;
+    flex-direction:column!important;
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    min-height:0!important;
+    margin:0!important;
+    overflow:visible!important;
+    scroll-snap-align:none!important;
+    justify-content:flex-start!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"].cast-page{
+    padding-bottom:20px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    border-top:1px solid rgba(91,74,132,.14)!important;
+    padding-top:26px!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack .setup-step-label,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"] .setup-card-nav,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"] .setup-card-nav,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell>.setup-nav,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupScrollCue{
+    display:none!important;
+  }
+}
