@@ -1035,3 +1035,10 @@ V246 mobile desktop-copy rebuild: signed-in mobile setup now uses the same Cast 
 - While an end-page story save is in progress, shows an explicit warning not to close or leave the page until saving completes; warning disappears when save completes or fails. Localised across all nine locales.
 - Illustration prompt now forbids accidental physical duplication of the same named/recurring character within a single image, while allowing explicit non-physical depictions such as mirror reflections, photographs, portraits, screens, shadows or dreams when the scene requires them.
 - Existing save mechanics, Cast, setup layout, auth, generation structure and Supabase schema are unchanged. No SQL required.
+
+
+## V246 legal-page back micro-upgrade
+- Added an obvious localized Back control to Privacy, Terms and Refunds.
+- Back returns to the previous Moonbeam page when reached internally; direct/external arrivals fall back to the Moonbeam homepage.
+- Logo still links to the homepage.
+- No app, generation, save, Cast, API or Supabase changes.
