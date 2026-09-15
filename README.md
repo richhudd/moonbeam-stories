@@ -962,3 +962,13 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - All new homepage copy is translated across the existing nine locales.
 - Both Create Story CTAs continue to use the existing V243 `enterMoonbeamApp()` route; Sign in remains on the existing route.
 - No Supabase schema change.
+
+
+## V245 — legal-document rewrite
+- Built directly from confirmed-good V244.
+- Rewrote Privacy Policy, Terms of Service and Refund Policy to reduce overlap and use clearer parent-facing language.
+- Privacy now expressly states that family photographs remain theirs and Moonbeam acquires no ownership of a child’s image or likeness.
+- Added clearer UK data-protection rights, lawful-purpose explanation, AI processing disclosure and ICO complaint route.
+- Terms now focus on the service contract; Refund Policy focuses on credits, cancellation, failed generations and statutory remedies.
+- Preserves V243/V244 legal mobile scrolling classes and CSS.
+- No application, homepage, auth, generation, credits, reader, saved-story, dashboard, API or database changes.
