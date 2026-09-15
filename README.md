@@ -1019,3 +1019,6 @@ On mobile only, the existing Story setup page is rendered immediately below Your
 - Replaces the remaining signed-in mobile fixed-height pager geometry with normal document flow.
 - Cast now expands to its real content height; Story begins only after the Pets section, and the footer follows Story normally.
 - Desktop layout and all JavaScript, Cast CRUD, photo, auth, generation, API and Supabase behaviour remain unchanged.
+
+
+V246 mobile desktop-copy rebuild: signed-in mobile setup now uses the same Cast -> Story normal document flow as the proven desktop stacked layout. Legacy mobile pager geometry is overridden; functional JavaScript and Supabase code are unchanged.

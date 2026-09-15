@@ -3760,3 +3760,88 @@ body:not(.product-active) #landing .hero{min-height:calc(100vh - 76px)!important
     margin-top:10px!important;
   }
 }
+
+/* V246 mobile rebuild from the proven desktop stacked setup.
+   Do not use the legacy mobile setup pager geometry. On signed-in phones,
+   render the same Cast -> Story document flow as desktop, adapted to phone width. */
+@media (max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode){
+    height:auto!important;
+    min-height:100dvh!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) .app-product{
+    display:block!important;
+    height:auto!important;
+    min-height:100dvh!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell{
+    display:block!important;
+    position:relative!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important;
+    gap:0!important;
+    position:relative!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    transform:none!important;
+    touch-action:pan-y!important;
+    scroll-snap-type:none!important;
+    padding:0 10px 8px!important;
+    background:transparent!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Account"]{display:none!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"],
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    display:flex!important;
+    flex-direction:column!important;
+    position:relative!important;
+    inset:auto!important;
+    flex:none!important;
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    overflow:visible!important;
+    transform:none!important;
+    scroll-snap-align:none!important;
+    justify-content:flex-start!important;
+    background:linear-gradient(180deg,#fffefa 0%,#fffdf9 100%)!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"].cast-page{
+    padding:18px 14px 24px!important;
+    border-radius:24px 24px 0 0!important;
+    box-shadow:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"]{
+    padding:26px 14px 24px!important;
+    border-top:1px solid rgba(91,74,132,.14)!important;
+    border-radius:0 0 24px 24px!important;
+    box-shadow:none!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack .setup-step-label,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"] .setup-card-nav,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Story"] .setup-card-nav,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell>.setup-nav,
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupScrollCue{display:none!important}
+  body.product-active.moonbeam-signed-in:not(.story-mode) .site-legal-footer{
+    position:static!important;
+    margin-top:10px!important;
+  }
+}
