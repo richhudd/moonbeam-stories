@@ -33,13 +33,11 @@ do $$ declare c record; begin
 end $$;
 
 -- Migrate every existing child into the same Cast table, preserving its UUID.
--- ON CONFLICT makes this idempotent and also repairs an experimental row with the same id.
+-- ON CONFLICT makes this idempotent without overwriting a Cast profile that has already been edited.
 insert into public.cast_members (id,parent_id,kind,name,age,relationship,animal_type,created_at)
 select id,parent_id,'child',name,age,null,null,created_at
 from public.child_profiles
-on conflict (id) do update set
- parent_id=excluded.parent_id, kind='child', name=excluded.name, age=excluded.age,
- relationship=null, animal_type=null;
+on conflict (id) do nothing;
 
 update public.cast_members set kind=lower(trim(kind)) where kind is not null;
 update public.cast_members set kind='adult' where kind in ('trusted adult','trusted_adult','supporting adult','supporting_adult');
@@ -53,15 +51,8 @@ alter table public.cast_members alter column name set not null;
 alter table public.cast_members add constraint cast_members_kind_v246_check check (kind in ('child','adult','pet'));
 alter table public.cast_members add constraint cast_members_child_age_v246_check check (kind <> 'child' or age between 3 and 12);
 
--- saved_stories.child_id historically referenced child_profiles. V246 keeps the same child UUIDs
--- but makes cast_members the live profile source. Remove only that old FK; the story UUID value remains.
-do $$ declare c record; begin
-  for c in
-    select conname from pg_constraint
-    where conrelid='public.saved_stories'::regclass and contype='f'
-      and pg_get_constraintdef(oid) ilike '%child_id%child_profiles%'
-  loop execute format('alter table public.saved_stories drop constraint %I',c.conname); end loop;
-end $$;
+-- V246 deliberately leaves child_profiles and saved_stories relationships untouched.
+-- The legacy child table remains as a dormant safety copy while Cast becomes the live profile source.
 
 alter table public.cast_members enable row level security;
 drop policy if exists "moonbeam cast select own" on public.cast_members;

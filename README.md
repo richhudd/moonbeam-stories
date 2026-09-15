@@ -983,23 +983,13 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - No Supabase schema change.
 
 
-## V246 — unified Your Cast profile architecture
+## V246 — unified Cast profiles (clean rebuild from approved V245)
 
-Built cleanly from the approved V245 checkpoint. V246 replaces the split child/adult/pet profile data model with one `cast_members` source of truth for all Cast members while preserving V245's established Account → Cast → Story setup routing.
-
-- Children: name, age, optional single reference photo.
-- Trusted adults: name, relationship, optional single reference photo.
-- Pets: name, animal type, optional single reference photo.
-- The same Cast card/editor/photo/save/delete machinery is used for all three member types.
-- Existing `child_profiles` rows are migrated into `cast_members` with the same UUIDs, preserving existing saved-story child identifiers and photo paths.
-- The app no longer writes or reads `child_profiles` for live profile management; it remains in Supabase only as dormant historical/rollback data.
-- Existing single-child story generation remains compatible in V246 through a small hidden generation adapter fed from the selected child Cast member. Story-role selection and multi-Cast generation remain deferred to V248/V249.
-- Shared-story lookup uses `cast_members`, with a historical `child_profiles` fallback solely for pre-migration compatibility.
-- All Cast UI, validation, save states, photo actions, menus and confirmations are localised across all nine Moonbeam locales.
-- Run `SUPABASE_V246_CAST_MEMBERS.sql` after deployment. The migration is idempotent and is designed to normalise the earlier experimental Cast table if it exists.
-
-### V246 routing/bootstrap correction
-- Restores the hidden V245 Child-page compatibility nodes still required by the proven V245 localisation/bootstrap path.
-- Prevents startup from aborting before homepage Create Story / Sign In handlers are attached.
-- Does not change the visible unified Cast UI, cast_members data model, Account page, Story page, reader, generation, credits, or legal pages.
-- The compatibility bridge is intentionally temporary until V247 replaces the setup architecture as a single controlled change.
+- Replaces profile management with one `cast_members` source for children, trusted adults and pets.
+- Children: name, age, optional photo. Adults: name, relationship, optional photo. Pets: name, animal type, optional photo.
+- Preserves the proven V245 Account/login/setup/Story navigation shell; V247 remains the setup-layout redesign.
+- Keeps only a hidden generation compatibility adapter for the currently selected child; there is no second profile CRUD path.
+- Cast Save is transactional in the UI: Save → Saving… → database confirmation → Saved → close → refreshed Cast. Photo failure is reported separately after a successful profile save.
+- Existing `child_profiles` rows are migrated idempotently with UUIDs preserved, but the legacy table and saved-story relationships are left untouched as a safety copy.
+- Cast UI, validation, confirmations and save states are localized in all nine Moonbeam locales.
+- `api/share.js`, generation APIs, reader, Saved Stories, credits, legal pages and dashboard are unchanged from V245.
