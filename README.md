@@ -1029,3 +1029,9 @@ V246 mobile desktop-copy rebuild: signed-in mobile setup now uses the same Cast 
 - Removed the explanatory line beneath “What would you like the story to be about?”.
 - Tone/value compatibility controls remain hidden in the DOM so generation/save behaviour is unchanged in this UI-only step.
 - No Supabase/SQL changes.
+
+
+### V246 micro-upgrade: save warning + illustration character uniqueness
+- While an end-page story save is in progress, shows an explicit warning not to close or leave the page until saving completes; warning disappears when save completes or fails. Localised across all nine locales.
+- Illustration prompt now forbids accidental physical duplication of the same named/recurring character within a single image, while allowing explicit non-physical depictions such as mirror reflections, photographs, portraits, screens, shadows or dreams when the scene requires them.
+- Existing save mechanics, Cast, setup layout, auth, generation structure and Supabase schema are unchanged. No SQL required.

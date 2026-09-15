@@ -177,6 +177,18 @@ const UI132={
 'pl-PL':{photoLoading:'Ładowanie zdjęcia…',childIntro:'Wszystko, czego Moonbeam potrzebuje, aby spersonalizować przygodę — w jednym miejscu.',photoHeading:'Niech ilustracje będą podobne do dziecka',shareStory:'✉ Udostępnij historię',buyCredits:'＋ Kup kredyty',storySaved:'✓ Historia zapisana',saving:'Zapisywanie…',profileSaved:'Profil dziecka zapisany.',profileDeleted:'Profil usunięty.',deleteStoryConfirm:'Usunąć tę zapisaną historię?',deleteProfile:n=>`Usunąć profil ${n||'tego dziecka'}? Zapisane historie pozostaną w bibliotece.`,savedReplay:'lub przeczytaj ponownie jedną z zapisanych historii',savedReplayFree:'Zapisane historie nie zużywają kolejnego kredytu.',replay:'Przeczytaj ponownie',deviceTrialUsed:'<strong>Na tym urządzeniu wykorzystano już bezpłatną historię Moonbeam.</strong> Zapisane historie nadal można czytać bezpłatnie; dodaj kredyty, aby tworzyć nowe przygody.'}
 };
 for(const [k,v] of Object.entries(UI132)) Object.assign(locales[k]||(locales[k]={}),v);
+const SAVE_WARNING_MICRO={
+'en-GB':'Please don’t close or leave this page until saving is complete.',
+'en-US':'Please don’t close or leave this page until saving is complete.',
+'es-ES':'No cierres ni salgas de esta página hasta que termine de guardarse.',
+'es-419':'No cierres ni salgas de esta página hasta que termine de guardarse.',
+'fr-FR':'Ne fermez pas cette page et ne la quittez pas tant que l’enregistrement n’est pas terminé.',
+'de-DE':'Bitte schließe oder verlasse diese Seite nicht, bis das Speichern abgeschlossen ist.',
+'it-IT':'Non chiudere né lasciare questa pagina finché il salvataggio non è completato.',
+'pt-BR':'Não feche nem saia desta página até que o salvamento seja concluído.',
+'pl-PL':'Nie zamykaj ani nie opuszczaj tej strony, dopóki zapisywanie się nie zakończy.'
+};
+for(const [k,v] of Object.entries(SAVE_WARNING_MICRO)) (locales[k]||(locales[k]={})).savingPageWarning=v;
 const ILLUSTRATION_STATUS_V206={
 'en-GB':{pictureNotReady:'Picture not ready'},'en-US':{pictureNotReady:'Picture not ready'},
 'es-ES':{pictureNotReady:'La ilustración no está lista'},'es-419':{pictureNotReady:'La ilustración no está lista'},
@@ -386,6 +398,7 @@ async function uploadSavedBookArt(storyId,book=currentBook){if(!currentUser||!bo
 let storySaveInProgress=false;
 function setStorySaveUi(state){
  const buttons=[$('save'),$('endSave'),$('mobileSave')].filter(Boolean);
+ const warning=$('endSaveWarning');if(warning)warning.hidden=state!=='saving';
  for(const b of buttons){
   if(state==='saving'){b.disabled=true;b.textContent=t().saving||'Saving…';b.classList.add('saving-state');b.classList.remove('saved-state');b.setAttribute('aria-busy','true')}
   else if(state==='saved'){b.disabled=true;b.textContent=t().storySaved||t().savedBtn;b.classList.remove('saving-state');b.classList.add('saved-state');b.removeAttribute('aria-busy')}
@@ -1064,7 +1077,7 @@ function renderBookPage(index){
    const saveButton=`<button class="secondary end-save${book.isSaved?' saved-state':''}" id="endSave" type="button" ${book.isSaved?'disabled':''}>${escapeHtml(book.isSaved?(t().storySaved||t().savedBtn):t().save)}</button>`;
    const ownerActions=`${saveButton}<button class="primary end-share-story" id="endShareStory" type="button">${escapeHtml(t().shareStory)}</button><button class="secondary end-new-story" id="endNewStory" type="button">${escapeHtml(t().newStory)}</button>`;
    const sx=shareT(book.child?.language||language),sharedActions=`<div class="shared-conversion"><h3>${escapeHtml(sx.loved)}</h3><p>${escapeHtml(sx.free)}</p><a class="primary shared-create" id="sharedCreateStory" href="/?lang=${encodeURIComponent(book.child?.language||language)}&fromShare=1">${escapeHtml(sx.create)}</a></div>`;
-   bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div>`}</div></div>`;
+   bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div><p class="end-save-warning" id="endSaveWarning" hidden>${escapeHtml(t().savingPageWarning||'Please don’t close or leave this page until saving is complete.')}</p>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator){indicator.textContent='';indicator.classList.add('end-hidden')}
    const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};const sc=$('sharedCreateStory');if(sc)sc.onclick=e=>{e.preventDefault();const nextLanguage=book.child?.language||language||'en-GB';stopNarration();document.body.classList.remove('shared-story-mode','story-mode','desktop-story-mode');location.assign(`/?lang=${encodeURIComponent(nextLanguage)}&fromShare=1`)};
    applyMobileSide();persistCurrentDraft();return;

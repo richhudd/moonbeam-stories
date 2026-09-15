@@ -94,6 +94,7 @@ IMPORTANT
 - Preserve the fixed Moonbeam realism level above; do not drift toward either photography or cartoon/animation rendering.
 - Compose the scene as a beautiful book illustration with clear focal characters and readable silhouettes.
 - Keep character appearance consistent with the description in the scene and, when supplied, the attached identity reference.
+- CHARACTER UNIQUENESS: never accidentally duplicate a named or recurring character. Each character should have only ONE PHYSICAL INSTANCE in the scene. A second visual depiction is allowed only when the story or scene explicitly requires it, such as a mirror reflection, photograph, portrait, video/screen image, shadow, dream/vision, or another clearly non-physical representation. Never create two physical copies, clones or repeated instances of the same person, child, adult, pet, robot or creature. A reference photo identifies one character, not an instruction to add another physical copy of them.
 - Every page in a story must be a genuinely new illustration. If the scene prompt identifies a page/scene number or previous-page context, use that information to advance the visual action and avoid repeating the previous composition, pose, camera angle or background staging.
 - ONE continuous scene only: never create a collage, contact sheet, comic strip, grid, split screen, diptych, triptych, multiple panels, inset pictures or multiple frames.
 - The finished output must look like one uninterrupted full-page painting viewed through one camera/composition.

@@ -3865,3 +3865,7 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
   white-space:nowrap!important;
   border:0!important;
 }
+
+/* V246 micro-upgrade: explicit save-in-progress navigation warning. */
+.end-save-warning{margin:14px auto 0;width:min(560px,92%);font-size:14px;line-height:1.4;font-weight:700;color:#6a4054;text-align:center}
+.end-save-warning[hidden]{display:none!important}
