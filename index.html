@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en-GB">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#17132d"><title>Moonbeam Stories</title><meta name="moonbeam-build" content="244"><script>(function(){if(/^\/shared\/[^/]+/.test(location.pathname)){document.documentElement.classList.add('shared-link-boot')}})();</script><link rel="stylesheet" href="/styles.css?v=244"><style>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#17132d"><title>Moonbeam Stories</title><meta name="moonbeam-build" content="246"><script>(function(){if(/^\/shared\/[^/]+/.test(location.pathname)){document.documentElement.classList.add('shared-link-boot')}})();</script><link rel="stylesheet" href="/styles.css?v=246"><style>
 /* V130 — shared links are hidden before first paint, so the public homepage can never flash. */
 html.shared-link-boot body{margin:0;background:#17132d}
 html.shared-link-boot #landing,html.shared-link-boot #productApp,html.shared-link-boot .site-legal-footer{visibility:hidden!important}
@@ -63,30 +63,16 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
       <div class="language-inline language-globe hidden internal-language-control" hidden aria-hidden="true"><div class="language-symbol" aria-hidden="true">🌐</div><label><span id="languageLabel" class="sr-only">Language</span><select id="language" aria-label="Language"><option value="en-GB">English (UK)</option><option value="en-US">English (USA)</option><option value="es-ES">Español (España)</option><option value="es-419">Español (Latinoamérica)</option><option value="fr-FR">Français</option><option value="de-DE">Deutsch</option><option value="it-IT">Italiano</option><option value="pt-BR">Português (Brasil)</option><option value="pl-PL">Polski</option></select></label></div>
     </section>
 
-    <section class="card setup-page setup-child-page" data-step="Child">
-      <div class="setup-page-heading"><span class="setup-step-label">1 of 2</span><h2 id="childTitle">Who's tonight's story for?</h2><p class="muted">Everything Moonbeam needs to personalise their adventure, all in one place.</p></div>
-      <div class="child-setup-grid">
-        <div class="child-details-column">
-          <div id="desktopChildChooser" class="desktop-child-chooser" aria-label="Choose a child">
-            <div class="desktop-child-chooser-label">Choose a child</div>
-            <div class="desktop-child-strip-shell">
-              <button class="desktop-child-scroll desktop-child-scroll-left" id="desktopChildScrollLeft" type="button" aria-label="Previous children">‹</button>
-              <div class="desktop-child-strip-viewport" id="desktopChildStripViewport">
-                <div class="desktop-child-strip" id="desktopChildStrip"></div>
-              </div>
-              <button class="desktop-child-scroll desktop-child-scroll-right" id="desktopChildScrollRight" type="button" aria-label="More children">›</button>
-            </div>
-          </div>
-          <div id="profileTools" class="profile-tools hidden"><label><span>Saved child profile</span><select id="profileSelect"><option value="">New child</option></select></label><p class="status profile-status" id="profileStatus"></p></div>
-          <div class="grid basic-grid"><label><span id="nameLabel">Name or nickname</span><input id="name" placeholder="Milo"></label><label><span id="ageLabel">Age</span><input id="age" type="number" min="3" max="12" value="7"></label></div>
-          <div class="grid about-grid"><label><span id="interestsLabel">Interests</span><input id="interests" placeholder="dinosaurs, space, football"></label><label><span id="dislikesLabel">Things to avoid</span><input id="dislikes" placeholder="too scary, spiders"></label></div>
-          <p class="mobile-comfort-copy">A few words are enough — Moonbeam will do the rest.</p>
-          <div id="basicsProfileActions" class="basics-profile-actions hidden"><button class="secondary" id="saveProfile" type="button">Save child profile</button><button class="secondary danger" id="removeProfile" type="button">Remove child</button><p class="status profile-status" id="profileStatusBasics"></p></div>
-        </div>
-        <div class="child-photo-column">
-          <h3>Make the pictures look like them</h3>
-          <div class="child-photo-card" id="childPhotoCard"><div class="child-photo-copy"><h3>Your child's photo <span class="optional-pill">Optional</span></h3><p>Use a clear photo so the illustrated child looks like them.</p><p class="photo-privacy">Kept on this device and sent only when an illustration is created.</p></div><div class="child-photo-controls"><div class="child-photo-preview" id="childPhotoPreview"><span>☾</span><small>No photo selected</small></div><div class="photo-buttons"><input id="childPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="secondary" id="chooseChildPhoto" type="button">Choose photo</button><button class="secondary danger-lite hidden" id="removeChildPhoto" type="button">Remove photo</button></div><label class="photo-toggle"><input id="useChildPhoto" type="checkbox" checked> <span>Use this photo for illustrations</span></label><p class="status photo-status" id="photoStatus"></p></div></div>
-        </div>
+    <section class="card setup-page setup-child-page cast-page" data-step="Child">
+      <div class="setup-page-heading cast-heading"><span class="setup-step-label">1 of 2</span><h2 id="castTitle">Your Cast</h2><p class="muted" id="castIntro">The people and pets who can appear in your Moonbeam stories.</p></div>
+      <div id="castStatus" class="status cast-status" aria-live="polite"></div>
+      <div class="cast-section" data-cast-kind="child"><div class="cast-section-head"><div><h3 id="castChildrenTitle">Main characters</h3><p id="castChildrenCopy">Children</p></div><button class="secondary cast-add" id="castAddChild" type="button">＋ Add child</button></div><div class="cast-grid" id="castChildren"></div></div>
+      <div class="cast-section" data-cast-kind="adult"><div class="cast-section-head"><div><h3 id="castAdultsTitle">Supporting roles</h3><p id="castAdultsCopy">Trusted adults</p></div><button class="secondary cast-add" id="castAddAdult" type="button">＋ Add adult</button></div><div class="cast-grid" id="castAdults"></div></div>
+      <div class="cast-section" data-cast-kind="pet"><div class="cast-section-head"><div><h3 id="castPetsTitle">Pets</h3><p id="castPetsCopy">Animal companions</p></div><button class="secondary cast-add" id="castAddPet" type="button">＋ Add pet</button></div><div class="cast-grid" id="castPets"></div></div>
+      <div class="cast-editor hidden" id="castEditor" role="dialog" aria-modal="false" aria-labelledby="castEditorTitle"><div class="cast-editor-card"><div class="cast-editor-head"><h3 id="castEditorTitle">Add child</h3><button id="castEditorClose" class="cast-editor-close" type="button" aria-label="Close">×</button></div><div class="cast-editor-photo"><div id="castEditorPhotoPreview" class="cast-avatar cast-avatar-large"><span>☾</span></div><input id="castEditorPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="secondary" id="castEditorPhotoButton" type="button">Add photo</button><button class="secondary danger-lite hidden" id="castEditorRemovePhoto" type="button">Remove photo</button></div><div class="cast-editor-fields"><label><span id="castNameLabel">Name</span><input id="castEditorName" autocomplete="off"></label><label id="castAgeField"><span id="castAgeLabel">Age</span><input id="castEditorAge" type="number" min="3" max="12"></label><label id="castRelationshipField" class="hidden"><span id="castRelationshipLabel">Relationship</span><input id="castEditorRelationship" autocomplete="off"></label><label id="castAnimalField" class="hidden"><span id="castAnimalLabel">Type of animal</span><input id="castEditorAnimal" autocomplete="off"></label></div><div class="cast-editor-actions"><button class="primary" id="castEditorSave" type="button">Save</button><button class="secondary" id="castEditorCancel" type="button">Cancel</button></div><p class="status" id="castEditorStatus"></p></div></div>
+      <!-- V246 compatibility controls: the proven single-child generator still reads these fields. -->
+      <div class="cast-legacy-controls" aria-hidden="true">
+       <select id="profileSelect"><option value="">New child</option></select><input id="name"><input id="age" type="number" value="7"><input id="interests"><input id="dislikes"><button id="saveProfile" type="button"></button><button id="removeProfile" type="button"></button><div id="profileStatus"></div><div id="profileStatusBasics"></div><div id="desktopChildStrip"></div><div id="desktopChildStripViewport"></div><button id="desktopChildScrollLeft"></button><button id="desktopChildScrollRight"></button><div id="childPhotoPreview"></div><input id="childPhotoInput" type="file"><button id="chooseChildPhoto"></button><button id="removeChildPhoto"></button><input id="useChildPhoto" type="checkbox" checked><div id="photoStatus"></div>
       </div>
     </section>
 
@@ -163,4 +149,4 @@ html.shared-link-boot #sharedBoot .shared-boot-pulse{width:34px;height:34px;bord
   </div>
 </div>
 <footer class="site-legal-footer"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refunds.html">Refunds</a><a href="mailto:support@moonbeamstories.co.uk">Contact</a></footer>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/i18n.js?v=244"></script><script src="/app.js?v=244"></script></body></html>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/i18n.js?v=246"></script><script src="/app.js?v=246"></script></body></html>
