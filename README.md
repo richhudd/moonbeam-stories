@@ -1,3 +1,11 @@
+# Moonbeam Stories V243
+
+## V243 — mobile legal-page scrolling
+- Built directly from V242.
+- Restores native vertical scrolling on Privacy, Terms and Refunds in phone portrait.
+- The fix is isolated to standalone legal pages and does not alter the app setup or reader.
+- No Supabase schema change.
+
 # Moonbeam Stories V242
 
 ## V242 — fixed Moonbeam all-time cost start

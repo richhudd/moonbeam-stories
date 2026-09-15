@@ -3510,3 +3510,20 @@ body:not(.moonbeam-signed-in) #accountView:not(.hidden){
 .usage-users th:nth-child(4){
   text-align:right;
 }
+
+/* V243 — restore native scrolling on standalone legal pages on phones */
+@media(max-width:700px) and (orientation:portrait){
+  html.legal-html,
+  html.legal-html body.legal-body{
+    height:auto!important;
+    min-height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  html.legal-html body.legal-body{
+    min-height:100dvh!important;
+    touch-action:pan-y!important;
+  }
+}
