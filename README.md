@@ -1,4 +1,4 @@
-# Moonbeam Stories V246
+# Moonbeam Stories V245
 
 ## V245 — localised legal documents
 - Built directly from the confirmed-good V244.
@@ -982,12 +982,11 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Both Create Story CTAs continue to use the existing V243 `enterMoonbeamApp()` route; Sign in remains on the existing route.
 - No Supabase schema change.
 
-## V246 — Your Cast profile management
-- Replaces the visible child-profile manager with a vertically expanding **Your Cast** page.
-- Children: name, age, optional single reference photo.
-- Trusted adults: name, relationship, optional single reference photo.
-- Pets: name, animal type, optional single reference photo.
-- Every Cast card has a working `⋯` menu for add/change/remove photo and delete-from-Cast.
-- All new Cast UI, validation and status copy is localised across all nine Moonbeam locales.
-- Story generation remains deliberately unchanged and continues to use the selected child through the proven V245 single-child generation path.
-- Run `SUPABASE_V246_CAST_MEMBERS.sql` once before using adults/pets. It is written to tolerate an existing experimental `cast_members` table.
+
+## V246 — Your Cast (profile management only)
+
+Built from the confirmed-good V245 without changing the established setup routing architecture. The Account setup page remains page 0, the Child/Cast setup page remains page 1, and Story remains page 2; desktop keeps the existing Child + Story two-panel behavior and mobile keeps the existing sequential setup pages.
+
+The Child profile area is presented as **Your Cast**, with children, trusted adults and pets. Children use name + age + optional photo; adults use name + relationship + optional photo; pets use name + animal type + optional photo. Cast controls are localized across all nine locales. Story generation remains on the existing single-child path in V246.
+
+Run `SUPABASE_V246_CAST_MEMBERS.sql` once to enable adult/pet storage.
