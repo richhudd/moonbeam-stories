@@ -989,3 +989,9 @@ Built directly from V243.
 - The public homepage now explains the Cast proposition: one child, siblings/co-heroes, trusted adults and pets.
 - The Create Story/Cast page remains vertically scrollable on desktop and mobile. No return to the retired horizontal child strip.
 - No Supabase schema change beyond the V245 `cast_members` migration already required.
+
+
+## V247 — Homepage CTA cache fix
+- Corrects the V246 build marker and cache-busting URLs so the V246 Cast-aware application JavaScript and current CSS are loaded with the V246/V247 homepage.
+- Fixes homepage Create Story / Sign in routing after the V246 deployment could continue loading the cached V245 app bundle.
+- No generation, Cast model, reader, auth logic, Supabase schema or legal-document changes.
