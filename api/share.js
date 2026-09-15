@@ -91,8 +91,13 @@ async function publicStory(req,res){
  if(!story)return res.status(404).json({error:'This story is unavailable.'});
  let child={name:'',age:7,interests:'',dislikes:''};
  if(story.child_id){
-  const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/child_profiles?id=eq.${encodeURIComponent(story.child_id)}&select=name,age,interests,dislikes`,{headers:adminHeaders()});
-  if(rows?.[0])child=rows[0];
+  const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/cast_members?id=eq.${encodeURIComponent(story.child_id)}&kind=eq.child&select=name,age`,{headers:adminHeaders()});
+  if(rows?.[0])child={...child,...rows[0]};
+  else {
+   // Historical fallback only: pre-V246 shared stories remain readable during migration.
+   const legacy=await jsonFetch(`${SUPABASE_URL}/rest/v1/child_profiles?id=eq.${encodeURIComponent(story.child_id)}&select=name,age`,{headers:adminHeaders()});
+   if(legacy?.[0])child={...child,...legacy[0]};
+  }
  }
  if(!share.opened_at)fetch(`${SUPABASE_URL}/rest/v1/story_shares?id=eq.${encodeURIComponent(share.id)}`,{method:'PATCH',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),body:JSON.stringify({opened_at:new Date().toISOString()})}).catch(()=>{});
  const pageCount=Array.isArray(story.saved_assets?.pages)?story.saved_assets.pages.length:0;

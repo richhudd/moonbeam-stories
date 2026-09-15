@@ -1,4 +1,4 @@
-# Moonbeam Stories V245
+# Moonbeam Stories V246
 
 ## V245 — localised legal documents
 - Built directly from the confirmed-good V244.
@@ -983,20 +983,17 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - No Supabase schema change.
 
 
-## V246 — Your Cast (profile management only)
+## V246 — unified Your Cast profile architecture
 
-Built from the confirmed-good V245 without changing the established setup routing architecture. The Account setup page remains page 0, the Child/Cast setup page remains page 1, and Story remains page 2; desktop keeps the existing Child + Story two-panel behavior and mobile keeps the existing sequential setup pages.
+Built cleanly from the approved V245 checkpoint. V246 replaces the split child/adult/pet profile data model with one `cast_members` source of truth for all Cast members while preserving V245's established Account → Cast → Story setup routing.
 
-The Child profile area is presented as **Your Cast**, with children, trusted adults and pets. Children use name + age + optional photo; adults use name + relationship + optional photo; pets use name + animal type + optional photo. Cast controls are localized across all nine locales. Story generation remains on the existing single-child path in V246.
-
-Run `SUPABASE_V246_CAST_MEMBERS.sql` once to enable adult/pet storage.
-
-
-V246 save-handler correction: Cast member Save now waits for confirmed database persistence, displays the localized Saved state, then closes the editor and returns to the refreshed full Cast view. Save errors keep the editor open and display the error.
-
-
-### V246 Cast editor save-state correction
-- Reset Add/Edit Cast editor Save control to the locale's `Save` label every time the editor opens.
-- Reset disabled/aria/state classes whenever the editor closes.
-- Successful save remains Save → Saving… → Saved → close editor → refreshed full Cast page.
-- No routing, setup architecture, generation, reader, credits, legal, or Supabase schema changes.
+- Children: name, age, optional single reference photo.
+- Trusted adults: name, relationship, optional single reference photo.
+- Pets: name, animal type, optional single reference photo.
+- The same Cast card/editor/photo/save/delete machinery is used for all three member types.
+- Existing `child_profiles` rows are migrated into `cast_members` with the same UUIDs, preserving existing saved-story child identifiers and photo paths.
+- The app no longer writes or reads `child_profiles` for live profile management; it remains in Supabase only as dormant historical/rollback data.
+- Existing single-child story generation remains compatible in V246 through a small hidden generation adapter fed from the selected child Cast member. Story-role selection and multi-Cast generation remain deferred to V248/V249.
+- Shared-story lookup uses `cast_members`, with a historical `child_profiles` fallback solely for pre-migration compatibility.
+- All Cast UI, validation, save states, photo actions, menus and confirmations are localised across all nine Moonbeam locales.
+- Run `SUPABASE_V246_CAST_MEMBERS.sql` after deployment. The migration is idempotent and is designed to normalise the earlier experimental Cast table if it exists.
