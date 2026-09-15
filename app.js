@@ -1,4 +1,4 @@
-// Moonbeam Stories V133
+// Moonbeam Stories V248
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -31,6 +31,23 @@ const locales = {
 
 const languageNames={ 'en-GB':'English (UK)','en-US':'English (USA)','es-ES':'Español (España)','es-419':'Español (Latinoamérica)','fr-FR':'Français (France)','de-DE':'Deutsch (Deutschland)','it-IT':'Italiano (Italia)','pt-BR':'Português (Brasil)','pl-PL':'Polski' };
 const $ = id => document.getElementById(id);
+// V248 — canonical public-home routing. Bind this near the top of the application
+// so every homepage CTA has one route and cannot be stranded by later setup code.
+function openMoonbeamShell248(step){
+ const landing=$('landing'),product=$('productApp');
+ landing?.classList.add('hidden');product?.classList.remove('hidden');
+ document.body.classList.add('product-active');document.body.classList.remove('story-mode','desktop-story-mode');
+ $('story')?.classList.add('hidden');$('savedStoriesView')?.classList.add('hidden');$('accountView')?.classList.add('hidden');$('setupShell')?.classList.remove('hidden');
+ if(typeof showCreateStoryView==='function')showCreateStoryView();
+ if(typeof goSetupPage==='function')goSetupPage(step,true);
+}
+function openCreateStoryFromLanding248(){openMoonbeamShell248(currentUser?1:0);if(typeof persistSetupDraft==='function')persistSetupDraft(true)}
+function openSignInFromLanding248(){openMoonbeamShell248(0);setTimeout(()=>$('authEmail')?.focus(),0)}
+document.addEventListener('click',e=>{
+ const target=e.target.closest?.('[data-moonbeam-home-route]');if(!target)return;
+ e.preventDefault();e.stopPropagation();
+ if(target.dataset.moonbeamHomeRoute==='signin')openSignInFromLanding248();else openCreateStoryFromLanding248();
+});
 const SUPABASE_URL='https://quwjfjojeibaxnnpykaf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q';
 const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
@@ -1712,13 +1729,13 @@ window.addEventListener('orientationchange',()=>{beginOrientationReaderGuard();r
 syncResponsiveArchitecture();
 
 // V65 — public landing and desktop page architecture.
-function enterMoonbeamApp(accountFirst=false){$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true);persistSetupDraft(true)}
+function enterMoonbeamApp(accountFirst=false){accountFirst?openSignInFromLanding248():openCreateStoryFromLanding248()}
 function showMoonbeamLanding(){clearSetupDraft();stopNarration();$('story')?.classList.add('hidden');$('productApp')?.classList.add('hidden');$('landing')?.classList.remove('hidden');document.body.classList.remove('product-active','story-mode','desktop-story-mode')}
 
 // V87 — setup brand is a permanent Home route without signing out.
 const setupBrand=document.querySelector('header');
 if(setupBrand){setupBrand.classList.add('setup-brand-home');setupBrand.setAttribute('title','Moonbeam Stories home');setupBrand.addEventListener('click',e=>{if(e.target.closest('button'))return;showMoonbeamLanding()});const brand=setupBrand.querySelector('.app-header-brand');brand?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showMoonbeamLanding()}})}
-$('landingStart')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landingStartBottom')?.addEventListener('click',()=>enterMoonbeamApp(true));$('landingSignIn')?.addEventListener('click',()=>enterMoonbeamApp(true));
+// V248: homepage routes are handled once by the delegated data-route listener above.
 const landingLanguage=$('landingLanguage');if(landingLanguage){landingLanguage.value=language;landingLanguage.addEventListener('change',()=>{const main=$('language');if(main){main.value=landingLanguage.value;main.dispatchEvent(new Event('change',{bubbles:true}))}})}
 $('language')?.addEventListener('change',()=>{if(landingLanguage)landingLanguage.value=$('language').value});
 // V86: setup navigation is intentionally button-only; no keyboard-arrow page changes.

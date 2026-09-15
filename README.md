@@ -995,3 +995,11 @@ Built directly from V243.
 - Corrects the V246 build marker and cache-busting URLs so the V246 Cast-aware application JavaScript and current CSS are loaded with the V246/V247 homepage.
 - Fixes homepage Create Story / Sign in routing after the V246 deployment could continue loading the cached V245 app bundle.
 - No generation, Cast model, reader, auth logic, Supabase schema or legal-document changes.
+
+
+## V248 — homepage routing + setup architecture repair
+- Replaced three separate homepage click bindings with one delegated canonical router.
+- Both Create Story CTAs now use the same create route; Sign in explicitly opens Account/login.
+- Removed the obsolete inline desktop pager CSS that contradicted the V245 single scrolling Create Story design.
+- Added final responsive overrides making Account a separate setup state and Cast + story controls one normal vertically scrolling document on desktop and mobile.
+- No generation, Cast prompt, illustration, credit, saved-story, reader, API, database or legal-policy changes.

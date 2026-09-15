@@ -3576,3 +3576,21 @@ body.product-active.moonbeam-signed-in:not(.story-mode):not(.desktop-story-mode)
 @media(max-width:700px){.cast-create-page{padding:18px 14px 110px!important}.cast-section{padding:16px;border-radius:18px;margin-bottom:14px}.cast-section-heading{align-items:center}.cast-section-heading h3{font-size:19px}.cast-section-heading p{font-size:13px}.cast-add{font-size:12px;padding:8px 10px}.cast-grid{grid-template-columns:1fr}.cast-card{grid-template-columns:58px minmax(0,1fr) 34px;min-height:78px}.cast-card-photo{width:58px;height:58px}.cast-editor-fields{grid-template-columns:1fr 92px}.cast-editor-photo{grid-template-columns:94px 1fr}.cast-editor-photo .child-photo-preview{width:94px!important;height:94px!important;min-height:94px!important}.cast-modal-fields{grid-template-columns:1fr}.cast-modal-photo{grid-template-columns:90px 1fr}.cast-modal-preview{width:90px;height:90px}}
 /* V246: simple story-role selection inside the vertically scrolling Cast page. */
 .story-roles-section{padding-bottom:22px}.supporting-picker-heading{margin-top:24px}.story-role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.story-role-choice{display:grid;grid-template-columns:48px 1fr;gap:10px;align-items:center;text-align:left;border:1px solid #ded5ee;border-radius:15px;background:#fff;padding:10px;cursor:pointer}.story-role-choice.selected{border:2px solid #6848ba;background:#f8f5ff}.story-role-choice-avatar{width:48px;height:48px;border-radius:12px;background:#eee8fb;display:grid;place-items:center;overflow:hidden}.story-role-choice-avatar img{width:100%;height:100%;object-fit:cover}.story-role-choice strong,.story-role-choice small{display:block}.story-role-choice small{color:#746c82;margin-top:2px}@media(max-width:700px){.story-role-grid{grid-template-columns:1fr 1fr}.story-role-choice{grid-template-columns:40px 1fr;padding:8px}.story-role-choice-avatar{width:40px;height:40px}.story-role-choice strong{font-size:13px}.story-role-choice small{font-size:11px}}
+
+
+/* V248 — one canonical Create Story document. Retire the old desktop pager/two-panel shell. */
+body.product-active:not(.story-mode) #setupShell{display:block!important;overflow:visible!important;min-height:0!important;height:auto!important}
+body.product-active:not(.story-mode) #setupTrack{display:block!important;width:100%!important;height:auto!important;min-height:0!important;overflow:visible!important;transform:none!important;scroll-snap-type:none!important}
+body.product-active:not(.story-mode) #setupTrack>.setup-page{width:100%!important;max-width:1120px!important;margin:0 auto!important;height:auto!important;min-height:0!important;overflow:visible!important;transform:none!important}
+body.product-active:not(.story-mode) #setupTrack>.setup-page:not(.setup-current){display:none!important}
+body.product-active:not(.story-mode) #setupTrack>.setup-page.setup-current{display:block!important}
+body.product-active:not(.story-mode) #setupShell>.setup-nav{display:none!important}
+body.product-active:not(.story-mode) #setupPrev,body.product-active:not(.story-mode) #setupNext,body.product-active:not(.story-mode) #setupDots{display:none!important}
+body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.cast-create-page.setup-current{display:block!important;height:auto!important;min-height:0!important;overflow:visible!important;padding-bottom:100px!important}
+body.product-active:not(.story-mode){overflow-y:auto!important;overflow-x:hidden!important}
+body.product-active:not(.story-mode) #productApp{min-height:100dvh!important;height:auto!important;overflow:visible!important}
+@media(max-width:700px){
+ body.product-active:not(.story-mode){height:auto!important;min-height:100%!important;overflow-y:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch!important}
+ body.product-active:not(.story-mode) #productApp{height:auto!important;min-height:100dvh!important;overflow:visible!important}
+ body.product-active:not(.story-mode) #setupTrack>.setup-page.setup-current{height:auto!important;overflow:visible!important;touch-action:pan-y!important}
+}
