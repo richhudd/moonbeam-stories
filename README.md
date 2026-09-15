@@ -1042,3 +1042,8 @@ V246 mobile desktop-copy rebuild: signed-in mobile setup now uses the same Cast 
 - Back returns to the previous Moonbeam page when reached internally; direct/external arrivals fall back to the Moonbeam homepage.
 - Logo still links to the homepage.
 - No app, generation, save, Cast, API or Supabase changes.
+
+
+## V247 — Mobile Saved Stories repair
+
+Restores the dedicated Saved Stories view on mobile after the Create Story Cast/Story document-flow changes. The repair is CSS-only and scoped to the state where Saved Stories is visible. Desktop, story data/loading, Cast, generation, saving, legal Back navigation and Supabase logic are unchanged.

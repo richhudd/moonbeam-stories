@@ -3869,3 +3869,42 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 /* V246 micro-upgrade: explicit save-in-progress navigation warning. */
 .end-save-warning{margin:14px auto 0;width:min(560px,92%);font-size:14px;line-height:1.4;font-weight:700;color:#6a4054;text-align:center}
 .end-save-warning[hidden]{display:none!important}
+
+/* V247 — mobile Saved Stories regression repair.
+   The signed-in Create Story document-flow overrides must not collapse the
+   dedicated Saved Stories view. When Saved Stories is visible, restore the
+   product shell to a viewport-height flex column and let the library consume
+   and scroll within the available space. */
+@media (max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode):has(#savedStoriesView:not(.hidden)){
+    height:100dvh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode):has(#savedStoriesView:not(.hidden)) .app-product{
+    display:flex!important;
+    flex-direction:column!important;
+    height:100dvh!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode):has(#savedStoriesView:not(.hidden)) .app-product>#savedStoriesView:not(.hidden){
+    flex:1 1 0!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode):has(#savedStoriesView:not(.hidden)) #savedStoriesView .saved-stories-library{
+    flex:1 1 0!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+}
