@@ -993,3 +993,8 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Existing `child_profiles` rows are migrated idempotently with UUIDs preserved, but the legacy table and saved-story relationships are left untouched as a safety copy.
 - Cast UI, validation, confirmations and save states are localized in all nine Moonbeam locales.
 - `api/share.js`, generation APIs, reader, Saved Stories, credits, legal pages and dashboard are unchanged from V245.
+
+## V246 — desktop Cast scroll fix
+- Keeps the confirmed-working unified V246 architecture and all existing routing, Cast CRUD, photo handling, SQL and story behaviour unchanged.
+- Makes only the signed-in desktop Your Cast panel explicitly vertically scrollable when its contents exceed the available panel height.
+- Mobile behaviour is unchanged.

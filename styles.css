@@ -3562,3 +3562,15 @@ body:not(.product-active) #landing .hero{min-height:calc(100vh - 76px)!important
 .cast-menu{position:absolute;z-index:30;right:8px;top:40px;min-width:170px;padding:6px;background:#fff;border:1px solid rgba(91,74,132,.15);border-radius:12px;box-shadow:0 12px 30px rgba(38,28,62,.14)}.cast-menu button{width:100%;border:0;background:none;text-align:left;padding:9px 10px;border-radius:8px;cursor:pointer}.cast-menu button:hover{background:rgba(91,74,132,.07)}.cast-menu .danger{color:#a53b4a}
 .cast-editor{position:fixed;z-index:200;inset:0;background:rgba(31,25,43,.28);display:grid;place-items:center;padding:18px}.cast-editor.hidden{display:none!important}.cast-editor-card{width:min(560px,100%);max-height:min(720px,90dvh);overflow:auto;background:#fff;border-radius:22px;padding:22px;box-shadow:0 22px 70px rgba(30,22,45,.25)}.cast-editor-head{display:flex;justify-content:space-between;align-items:center}.cast-editor-head h3{margin:0}.cast-editor-close{border:0;background:transparent;font-size:28px;cursor:pointer}.cast-editor-photo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0}.cast-editor-fields{display:grid;gap:12px}.cast-editor-fields label span{display:block;margin-bottom:5px}.cast-editor-actions{display:flex;gap:10px;margin-top:18px}.cast-legacy-controls{display:none!important}
 @media(max-width:700px){.cast-page{padding:18px 14px 36px!important}.cast-section{padding:14px}.cast-section-head{align-items:flex-start}.cast-add{white-space:nowrap}.cast-grid{grid-template-columns:1fr}.cast-editor{padding:10px}.cast-editor-card{padding:18px}}
+
+/* V246 desktop Cast scroll fix — keep the proven two-panel architecture; only the Cast panel scrolls. */
+@media (min-width:701px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack>.setup-page[data-step="Child"].cast-page{
+    min-height:0!important;
+    overflow-x:hidden!important;
+    overflow-y:scroll!important;
+    overscroll-behavior-y:contain!important;
+    -webkit-overflow-scrolling:touch;
+    justify-content:flex-start!important;
+  }
+}

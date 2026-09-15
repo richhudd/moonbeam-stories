@@ -64,4 +64,7 @@ create policy "moonbeam cast insert own" on public.cast_members for insert to au
 create policy "moonbeam cast update own" on public.cast_members for update to authenticated using (parent_id=(select auth.uid())) with check (parent_id=(select auth.uid()));
 create policy "moonbeam cast delete own" on public.cast_members for delete to authenticated using (parent_id=(select auth.uid()));
 create index if not exists cast_members_parent_created_idx on public.cast_members(parent_id,created_at);
+-- Table privileges are required in addition to RLS policies.
+-- RLS remains the security boundary: authenticated users can only access rows whose parent_id is their own auth.uid().
+grant select, insert, update, delete on table public.cast_members to authenticated;
 grant select on table public.cast_members to service_role;
