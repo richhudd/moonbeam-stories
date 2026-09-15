@@ -3675,3 +3675,25 @@ body:not(.product-active) #landing .hero{min-height:calc(100vh - 76px)!important
     display:none!important;
   }
 }
+
+/* V246 mobile combined-page scroll restoration.
+   The legacy two-page swipe deck set touch-action:pan-x on #setupTrack.
+   After stacking Cast + Story vertically, explicitly restore vertical touch
+   gestures and make the combined track the single mobile scroll container. */
+@media (max-width:700px){
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupShell{
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.product-active.moonbeam-signed-in:not(.story-mode) #setupTrack{
+    height:100%!important;
+    min-height:0!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-x:none!important;
+    overscroll-behavior-y:contain!important;
+    touch-action:pan-y!important;
+    scroll-snap-type:none!important;
+  }
+}

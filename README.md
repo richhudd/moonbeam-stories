@@ -1008,3 +1008,8 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 
 ## V246 mobile stacking step
 On mobile only, the existing Story setup page is rendered immediately below Your Cast inside the same vertically scrolling setup track. The old second-page presentation and setup navigation are hidden for signed-in Create Story. No JavaScript, API, database, Cast CRUD, photo, auth, generation, reader or Supabase changes.
+
+### V246 mobile combined-page scroll restoration
+- Restores vertical touch scrolling on the combined Cast + Story page on mobile.
+- Removes the inherited `touch-action: pan-x` behaviour from the former two-page swipe deck by overriding the combined setup track to `touch-action: pan-y`.
+- No JavaScript, routing, Cast CRUD, photo, generation, API, or Supabase changes.
