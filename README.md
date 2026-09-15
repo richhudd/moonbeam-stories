@@ -1022,3 +1022,10 @@ On mobile only, the existing Story setup page is rendered immediately below Your
 
 
 V246 mobile desktop-copy rebuild: signed-in mobile setup now uses the same Cast -> Story normal document flow as the proven desktop stacked layout. Legacy mobile pager geometry is overridden; functional JavaScript and Supabase code are unchanged.
+
+### V246 simplified Story setup UI
+- Removed the visible Story tone section.
+- Removed the visible Values to include section.
+- Removed the explanatory line beneath “What would you like the story to be about?”.
+- Tone/value compatibility controls remain hidden in the DOM so generation/save behaviour is unchanged in this UI-only step.
+- No Supabase/SQL changes.

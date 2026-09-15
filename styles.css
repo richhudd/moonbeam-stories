@@ -3845,3 +3845,23 @@ body:not(.product-active) #landing .hero{min-height:calc(100vh - 76px)!important
     margin-top:10px!important;
   }
 }
+
+/* V246 simplified story setup: story idea only in the visible UI.
+   Legacy tone/value controls remain in the DOM as hidden compatibility inputs so
+   the proven generator/save path is not changed in this layout-only step. */
+body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] #desktopStoryIntro,
+body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .story-tone-select,
+body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .desktop-tone-section,
+body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] .desktop-values-section,
+body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #valuesTitle,
+body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #values {
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  padding:0!important;
+  margin:-1px!important;
+  overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+  border:0!important;
+}
