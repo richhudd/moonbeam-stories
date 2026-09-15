@@ -952,3 +952,16 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Preserves V194 recurring-character continuity rules.
 - Preserves the V193 Moonbeam house illustration style verbatim; realism, painterly treatment and stylistic preferences are unchanged.
 - V191/V192 age-safe random story architecture and V195 mobile homepage spacing are unchanged. No database migration is required.
+
+## V244 — public homepage + parent-first legal rewrite (15 Sep 2026)
+
+Built directly from V243.
+
+- Keeps the existing Moonbeam hero as the opening screen, but converts the public homepage from a deliberately locked single viewport into a responsive vertical-scroll introduction on desktop and mobile.
+- Adds: How it works, personalised-photo example, prominent family/photo trust section, story possibilities, and a final create-story/pricing CTA.
+- The trust section states plainly that photographs remain the family's, photo use is optional, photographs are not sold or made public, and saved reference photos can be removed.
+- Rewrites the English Privacy Policy, Terms of Service and Refund Policy to reduce overlap and make the privacy document parent-first and explicit about photo/image/likeness ownership.
+- Adds lawful-basis language, ICO complaint rights and current OpenAI API training-by-default wording to the Privacy Policy.
+- Preserves the V243 legal-page mobile scrolling fix.
+- No changes to generation, illustration, narration, credits, authentication, Account, Saved Stories, reader, developer dashboard, APIs or Supabase schema.
+- Existing non-English legal localisation machinery is retained; legal source documents remain the English canonical versions.

@@ -3527,3 +3527,39 @@ body:not(.moonbeam-signed-in) #accountView:not(.hidden){
     touch-action:pan-y!important;
   }
 }
+
+/* V244 — scrollable public homepage. Product/setup/reader scrolling rules remain unchanged. */
+body:not(.product-active){overflow-x:hidden!important;overflow-y:auto!important;background:#fbf8ff}
+body:not(.product-active) #landing{height:auto!important;min-height:100vh!important;overflow:visible!important}
+body:not(.product-active) #landing .how,
+body:not(.product-active) #landing .landing-showcase,
+body:not(.product-active) #landing .landing-pricing{display:block!important}
+body:not(.product-active) #landing .hero{min-height:calc(100vh - 76px)!important;height:auto!important}
+.landing-scroll-cue{display:flex;flex-direction:column;align-items:center;gap:2px;margin:-46px auto 12px;position:relative;z-index:4;color:#6b5b78;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
+.landing-scroll-cue b{font:400 30px/1 Georgia,serif;animation:v244Cue 1.7s ease-in-out infinite}
+@keyframes v244Cue{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(6px);opacity:1}}
+.landing-section{box-sizing:border-box}
+.landing-section-intro{max-width:720px;margin:0 auto 30px;color:#706779;line-height:1.7;text-align:center;font-size:1.06rem}
+.showcase-note{font-weight:750;color:#4f3bb5!important}
+.landing-trust{max-width:1180px;margin:28px auto 40px;padding:72px 34px;border-radius:34px;background:linear-gradient(145deg,#211a3a,#332654);color:#fff;box-shadow:0 24px 70px rgba(41,27,68,.16)}
+.landing-trust .section-kicker{color:#d7c9ff}
+.landing-trust h2{color:#fff;font-size:clamp(2.1rem,4vw,3.35rem);margin:.35rem 0 1rem}
+.trust-copy{max-width:720px;margin:0 auto 34px;text-align:center}.trust-copy>p{color:#e8e1f3;line-height:1.7;font-size:1.05rem}
+.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.trust-grid article{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);border-radius:22px;padding:25px}.trust-grid span{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.13);font-size:20px}.trust-grid h3{margin:14px 0 7px;color:#fff}.trust-grid p{margin:0;color:#ded6e9;line-height:1.58}.trust-link{display:block;width:max-content;margin:26px auto 0;color:#fff;font-weight:800;text-underline-offset:4px}
+.landing-possibilities{max-width:960px;margin:0 auto;padding:72px 28px;text-align:center}.landing-possibilities h2{font-size:clamp(2rem,4vw,3.2rem);margin:.4rem 0 12px;color:#493364}.landing-possibilities>p{max-width:720px;margin:0 auto;color:#706779;line-height:1.7;font-size:1.06rem}.possibility-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:28px}.possibility-chips span{padding:11px 16px;border-radius:999px;background:#fff;border:1px solid #e6dcef;box-shadow:0 7px 20px rgba(73,51,100,.07);color:#51455e;font-weight:700}
+body:not(.product-active) .site-legal-footer{background:#17132d;margin-top:0}
+@media(max-width:700px){
+ body:not(.product-active){height:auto!important;min-height:100%!important;overflow-y:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
+ body:not(.product-active) #landing{height:auto!important;min-height:100dvh!important;overflow:visible!important;display:block!important}
+ body:not(.product-active) #landing .hero{height:calc(100dvh - 54px)!important;min-height:610px!important;max-height:none!important;overflow:hidden!important;padding-bottom:52px!important}
+ body:not(.product-active) #landing .how,body:not(.product-active) #landing .landing-showcase,body:not(.product-active) #landing .landing-pricing{display:block!important}
+ .landing-scroll-cue{margin:-42px auto 12px;color:#75657e}
+ .how.landing-section{padding:64px 18px!important}.landing-section-intro{text-align:left;margin-bottom:22px}.how-grid{gap:13px}.how-grid article{padding:22px!important}
+ .landing-showcase.landing-section{display:grid!important;padding:58px 18px!important;gap:24px!important}.landing-showcase img{order:-1}
+ .landing-trust{margin:18px 12px 28px;padding:52px 18px;border-radius:26px}.trust-grid{grid-template-columns:1fr}.trust-copy{text-align:left}.trust-link{margin-left:0}
+ .landing-possibilities{padding:58px 18px}.possibility-chips{justify-content:flex-start}.possibility-chips span{font-size:.9rem}
+ .landing-pricing.landing-section{padding:62px 18px 72px!important}
+}
+@media(prefers-reduced-motion:reduce){.landing-scroll-cue b{animation:none!important}}
+/* V244 — parent-first legal reassurance block. */
+.legal-parent-note{margin:1.2rem 0 2rem;padding:20px 22px;border-radius:18px;background:#f5f0ff;border:1px solid #e4d8ff}.legal-parent-note h2{margin:.1rem 0 .6rem;color:#3c2b66}.legal-parent-note p{color:#463e56}.legal-parent-note strong{color:#30234f}
