@@ -977,3 +977,15 @@ Built directly from V243.
 - Adult/pet records use the new `cast_members` table from `SUPABASE_V245_CAST_MEMBERS.sql`; photos reuse the existing private photo bucket.
 - Story generation remains centred on the selected child in this build; supporting roles and pets are now persistently available for the next story-selection/generation integration.
 - Reader, saved stories, credits, dashboard, legal pages and V244 public homepage are otherwise unchanged.
+
+## V246 — Cast roles in stories + homepage update
+
+- Extended Cast now participates in generated stories.
+- Added the exact story selectors **“Who's this story about?” — “Hero(es)”** and **“Who else is coming along?” — “Supporting roles (optional)”**.
+- One selected child is the hero; selecting several children makes them co-heroes with equal narrative importance.
+- Other children can be supporting characters; trusted adults remain supporting adults and must not take over the child's central challenge; pets remain animal companions unless the parent's explicit Story Idea calls for fantasy behaviour.
+- Story prompts now carry structured Cast roles while preserving the established Moonbeam age bands, story length, random blueprint system, tone/values and safety rules.
+- Illustration requests can carry multiple labelled Cast reference photos. The illustration prompt explicitly locks each reference to its named child/adult/pet, age/type and narrative role.
+- The public homepage now explains the Cast proposition: one child, siblings/co-heroes, trusted adults and pets.
+- The Create Story/Cast page remains vertically scrollable on desktop and mobile. No return to the retired horizontal child strip.
+- No Supabase schema change beyond the V245 `cast_members` migration already required.

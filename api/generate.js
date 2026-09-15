@@ -42,6 +42,23 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Please provide a name and age.' });
     }
 
+    const rawCast = body.cast || child.cast || {};
+    const cleanMember = (m,role) => ({name:String(m?.name||'').trim().slice(0,60),kind:['child','adult','pet'].includes(m?.kind)?m.kind:'child',role,age:Number.isFinite(Number(m?.age))?Number(m.age):null,detail:String(m?.detail||'').trim().slice(0,80)});
+    let heroes = Array.isArray(rawCast.heroes)?rawCast.heroes.map(m=>cleanMember(m,'hero')).filter(m=>m.name):[];
+    let supporting = Array.isArray(rawCast.supporting)?rawCast.supporting.map(m=>cleanMember(m,'supporting')).filter(m=>m.name):[];
+    if(!heroes.length)heroes=[{name:String(child.name),kind:'child',role:'hero',age:Number(child.age),detail:''}];
+    heroes=heroes.filter(m=>m.kind==='child'&&Number.isFinite(m.age)&&m.age>=3&&m.age<=12).slice(0,4);
+    supporting=supporting.slice(0,8);
+    if(!heroes.length)return res.status(400).json({error:'Choose at least one child hero.'});
+    const heroNames=heroes.map(h=>h.name);
+    const castPrompt = `STORY CAST — HARD ROLE CONSTRAINTS
+HERO(ES):
+${heroes.map(h=>`- ${h.name}, child, age ${h.age}. MAIN PROTAGONIST. Give this child meaningful agency, discoveries, decisions and a share of the resolution.`).join('\n')}
+${heroes.length>1?'The selected heroes are CO-PROTAGONISTS. Give them broadly equal narrative importance and agency; do not let one consistently displace the others.':'This is '+heroes[0].name+"'s story. Supporting characters must not displace this child as protagonist."}
+SUPPORTING ROLES:
+${supporting.length?supporting.map(m=>m.kind==='child'?`- ${m.name}, child, age ${m.age}. SUPPORTING CHILD. May participate and have dialogue, but must not take over the hero role.`:m.kind==='adult'?`- ${m.name}, adult, relationship: ${m.detail||'trusted adult'}. SUPPORTING ADULT. Keep recognisably adult; may guide, reassure, supervise and participate, but must not solve the central challenge instead of the child hero(es).`:`- ${m.name}, pet/animal: ${m.detail||'pet'}. COMPANION. Keep this character an animal unless the parent's Story Idea explicitly calls for fantasy behaviour such as talking.`).join('\n'):'- None selected.'}
+Use only selected Cast members when a named family character is needed. Do not invent extra siblings, parents or pets unless essential to the parent's explicit Story Idea. For very young heroes, use selected trusted adults naturally where real-world supervision would be appropriate, without taking away the child's agency.`;
+
     const age = Number(child.age);
     const length = 'standard';
 
@@ -235,12 +252,11 @@ Enforcement:
         ? 'Create wonder through scale, science, technology and discovery. Do not introduce literal magic or supernatural events.'
         : toneGuide;
 
-    const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original adventure story for one child. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
+    const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original adventure story for the selected child hero or heroes. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
 
-CHILD
-Name: ${String(child.name)}
-NAME LOCK — HARD CONSTRAINT: The protagonist's name is exactly the supplied Name above. Reproduce it verbatim everywhere, including the title. Never invent or append a surname, middle name, nickname, honorific, pet name or alternative form. If the supplied name is one word, the protagonist has that one-word name only.
-Age: ${age}
+${castPrompt}
+NAME LOCK — HARD CONSTRAINT: Every supplied Cast name is exact. Reproduce each selected name verbatim. Never invent or append surnames, middle names, nicknames, honorifics, pet names or alternative forms.
+PRIMARY READING AGE: ${age}
 ${ideaGuide}
 Things to avoid: ${child.dislikes || 'nothing specific'}
 Standard Moonbeam length: ${lengthGuide}
@@ -267,7 +283,7 @@ Plan the six displayed beats as a visual narrative arc: opening establishes the 
 Do NOT imitate or reproduce the wording, characters, plots, or distinctive passages of any existing author or book. This must be an original Moonbeam story. Do not mention authors or literary styles in the story itself.
 
 AGE-SUITABILITY — HARD CONSTRAINT
-Child age: ${age}; band: ${ageBand} (${ageProfile.label}).
+Primary hero reading age: ${age}; band: ${ageBand} (${ageProfile.label}).
 ${ageProfile.writing}
 Permitted stakes: ${ageProfile.stakes}.
 Explicitly excluded for this age band: ${ageProfile.forbidden}.
@@ -300,7 +316,7 @@ The six displayed illustrations (opening, four story pages, closing) must form a
 RECURRING CHARACTER BIBLE — MANDATORY
 Create one concise but precise character_bible for every recurring character. This is a fixed visual model sheet for the illustration system, not prose for the reader. For EACH recurring non-photo character specify: name/role; exact age when human (never an age range); sex where relevant; apparent height/build relative to the main child; skin tone or fur/material colour; eye colour; face shape/distinctive facial features; exact hair/fur colour, length, texture and hairstyle; established clothing colours/items; and any permanent distinctive feature/accessory. For recurring animals, robots or fantastical beings give equally concrete fixed species/body/material/colour/size/features. Do not leave recurring companions as vague phrases such as "a girl of similar age". Once defined, these details are immutable for the entire book unless the STORY itself explicitly requires a change.
 
-The photographed main child's identity comes from the supplied photo, so do not invent conflicting facial characteristics for that child; the bible may record story clothing and continuity details. Every illustration_prompt must use the SAME character names and must not redefine, age, recolour, restyle or change the clothing of recurring characters. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
+For any Cast member with a supplied photograph, identity comes from that reference photo: do not invent conflicting facial/body/species characteristics; the bible may record story clothing and continuity details. Preserve each Cast member's stated age/type/role. Every illustration_prompt must use the SAME character names and must not redefine, age, recolour, restyle or change the clothing of recurring characters. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
 
     async function callStoryModel(input, maxOutputTokens = 5000) {
       const r = await fetch('https://api.openai.com/v1/responses', {
@@ -410,7 +426,7 @@ The photographed main child's identity comes from the supplied photo, so do not 
     // If the model produced almost-JSON, ask it to repair its own output once rather than
     // showing the reader a formatting error. This also catches missing required fields.
     if (!story) {
-      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible, BUT the creative brief and age rules below remain mandatory during repair.\n\n${storyIdea ? `PARENT STORY IDEA: ${storyIdea}` : hardBlueprint}\n\nAGE RULES: Child age ${age}, band ${ageBand}. ${ageProfile.writing} Forbidden: ${ageProfile.forbidden}.\n\nEnsure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. The protagonist's name is exactly ${String(child.name)}. Never invent or append a surname, middle name, nickname, honorific, pet name or alternative form, including in the title. Preserve or reconstruct a precise character_bible for every recurring non-photo character: exact human age (never an age range), stable face/skin/eyes/hair/build, fixed clothing colours/items and permanent distinctive features; for recurring animals, robots or fantastical beings, fixed species/body/material/colour/size/features. Do not age, redesign or visually redefine recurring characters between illustration prompts. Preserve genuine narrative progression as well as a varied visual storyboard: each successive displayed beat must materially advance the situation through a changed action, objective, obstacle, interaction, discovery, position, visual circumstance or consequence; do not leave the protagonist repeating the same action in the same spot across most of the story. A single overall location is allowed, but progression within it is mandatory. Each illustration_prompt must depict a materially different story beat and composition, varying framing/viewpoint/pose/action rather than repeating the same setup from another angle. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
+      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible, BUT the creative brief and age rules below remain mandatory during repair.\n\n${storyIdea ? `PARENT STORY IDEA: ${storyIdea}` : hardBlueprint}\n\nAGE RULES: Child age ${age}, band ${ageBand}. ${ageProfile.writing} Forbidden: ${ageProfile.forbidden}.\n\nEnsure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. The selected hero names are exactly ${heroNames.join(', ')}. Preserve the STORY CAST roles: hero(es) remain protagonists; supporting children/adults/pets remain supporting. Never invent or append a surname, middle name, nickname, honorific, pet name or alternative form to any selected Cast name. Preserve or reconstruct a precise character_bible for every recurring non-photo character: exact human age (never an age range), stable face/skin/eyes/hair/build, fixed clothing colours/items and permanent distinctive features; for recurring animals, robots or fantastical beings, fixed species/body/material/colour/size/features. Do not age, redesign or visually redefine recurring characters between illustration prompts. Preserve genuine narrative progression as well as a varied visual storyboard: each successive displayed beat must materially advance the situation through a changed action, objective, obstacle, interaction, discovery, position, visual circumstance or consequence; do not leave the protagonist repeating the same action in the same spot across most of the story. A single overall location is allowed, but progression within it is mandatory. Each illustration_prompt must depict a materially different story beat and composition, varying framing/viewpoint/pose/action rather than repeating the same setup from another angle. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
       try {
         const repairedOutput = await callStoryModel(repairInput, 5000);
         story = normaliseStory(parseStoryOutput(repairedOutput));
