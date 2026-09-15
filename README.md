@@ -1,3 +1,14 @@
+# Moonbeam Stories V250
+
+## V250 — authoritative Cast identity + closed principal cast
+- Built directly from V249.
+- Makes every supplied Cast photo an authoritative named identity reference, with equal identity strength for children, adults and pets. A photographed adult must not be replaced by an invented lookalike or reused later as a different extra person.
+- Strengthens illustration continuity so photo identity overrides conflicting invented character descriptions while preserving the fixed Moonbeam house style.
+- Makes the selected Heroes + Supporting Cast the complete principal story cast. The story generator must not invent extra named, recurring, familial, companion, friend, helper, rival or plot-significant characters.
+- Setting-appropriate anonymous background people remain allowed, but must stay incidental and cannot become a new family unit or take over a selected Cast member's story function.
+- Applies the same closed-cast and photo-identity constraints to the JSON repair path.
+- No Supabase schema change required.
+
 # Moonbeam Stories V249
 
 ## V249 — multi-reference illustration request fix
