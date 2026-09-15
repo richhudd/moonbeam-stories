@@ -952,3 +952,13 @@ V152 — Desktop child selector: visual saved-child tiles with real local profil
 - Preserves V194 recurring-character continuity rules.
 - Preserves the V193 Moonbeam house illustration style verbatim; realism, painterly treatment and stylistic preferences are unchanged.
 - V191/V192 age-safe random story architecture and V195 mobile homepage spacing are unchanged. No database migration is required.
+
+
+## V244 — scrollable public homepage (rebuilt cleanly from V243)
+- Keeps the proven V243 application, setup, auth, reader, generation, credits and legal pages unchanged.
+- Keeps the existing Moonbeam hero as the first homepage screen.
+- Makes only the public homepage vertically scrollable on desktop and mobile.
+- Adds concise How it works, photo-personalisation, family/privacy reassurance and final CTA sections.
+- All new homepage copy is translated across the existing nine locales.
+- Both Create Story CTAs continue to use the existing V243 `enterMoonbeamApp()` route; Sign in remains on the existing route.
+- No Supabase schema change.
