@@ -1680,7 +1680,56 @@ document.addEventListener('click',e=>{if(!e.target.closest('.cast-menu-button')&
 async function openCastEditor246(kind,id=null,openPhoto=false){const x=castText246(),m=id?castMemberBy246(kind,id):null;castEditor246={kind,id,photo:null,existingPhoto:false};$('castEditorName').value=m?.name||'';$('castEditorAge').value=m?.age||7;$('castEditorRelationship').value=m?.relationship||'';$('castEditorAnimal').value=m?.animal_type||'';$('castAgeField').classList.toggle('hidden',kind!=='child');$('castRelationshipField').classList.toggle('hidden',kind!=='adult');$('castAnimalField').classList.toggle('hidden',kind!=='pet');$('castEditorTitle').textContent=id?(kind==='child'?x.editChild:kind==='adult'?x.editAdult:x.editPet):(kind==='child'?x.newChild:kind==='adult'?x.newAdult:x.newPet);$('castEditorStatus').textContent='';$('castEditor').classList.remove('hidden');const photo=id?await castPhoto246(id):null;castEditor246.photo=photo;castEditor246.existingPhoto=!!photo;renderCastEditorPhoto246();if(openPhoto)setTimeout(()=>$('castEditorPhotoInput')?.click(),0);else setTimeout(()=>$('castEditorName')?.focus(),0)}
 function renderCastEditorPhoto246(){const x=castText246(),p=$('castEditorPhotoPreview'),has=!!castEditor246.photo;p.innerHTML=has?`<img src="${castEditor246.photo}" alt="">`:'<span>☾</span>';$('castEditorPhotoButton').textContent=has?x.changePhoto:x.addPhoto;$('castEditorRemovePhoto').classList.toggle('hidden',!has)}
 function closeCastEditor246(){$('castEditor')?.classList.add('hidden');castEditor246={kind:'child',id:null,photo:null,existingPhoto:false}}
-async function saveCastEditor246(){if(!currentUser)return;const x=castText246(),kind=castEditor246.kind,name=$('castEditorName').value.trim(),age=Number($('castEditorAge').value),relationship=$('castEditorRelationship').value.trim(),animal=$('castEditorAnimal').value.trim();if(!name){$('castEditorStatus').textContent=x.required;return}if(kind==='child'&&(age<3||age>12)){$('castEditorStatus').textContent=x.ageError;return}if(kind==='adult'&&!relationship){$('castEditorStatus').textContent=x.relationshipRequired;return}if(kind==='pet'&&!animal){$('castEditorStatus').textContent=x.animalRequired;return}$('castEditorStatus').textContent=x.saving;let id=castEditor246.id;if(kind==='child'){let r;if(id)r=await supabaseClient.from('child_profiles').update({name,age,interests:'',dislikes:''}).eq('id',id).select().single();else r=await supabaseClient.from('child_profiles').insert({parent_id:currentUser.id,name,age,interests:'',dislikes:''}).select().single();if(r.error){$('castEditorStatus').textContent=r.error.message;return}id=r.data.id;activeProfileId=id;await loadCloudProfiles()}else{const payload={parent_id:currentUser.id,kind,name,age:null,relationship:kind==='adult'?relationship:null,animal_type:kind==='pet'?animal:null};let r=id?await supabaseClient.from('cast_members').update(payload).eq('id',id).select().single():await supabaseClient.from('cast_members').insert(payload).select().single();if(r.error){$('castEditorStatus').textContent=/cast_members|schema cache|does not exist/i.test(r.error.message)?x.setupNeeded:r.error.message;return}id=r.data.id;await loadCastMembers246()}if(castEditor246.photo){await childPhotoPut(currentPhotoKey(id),castEditor246.photo);await uploadCloudChildPhoto(id,castEditor246.photo)}else if(castEditor246.existingPhoto){await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id)}closeCastEditor246();if(kind==='child'){const sel=$('profileSelect');if(sel)sel.value=id;await selectCloudProfile();renderProfileSelect()}await renderCast246();$('castStatus').textContent=x.saved;setTimeout(()=>{if($('castStatus')?.textContent===x.saved)$('castStatus').textContent=''},1800)}
+async function saveCastEditor246(){
+ if(!currentUser)return;
+ const x=castText246(),button=$('castEditorSave'),status=$('castEditorStatus');
+ if(button?.disabled)return;
+ const kind=castEditor246.kind,name=$('castEditorName').value.trim(),age=Number($('castEditorAge').value),relationship=$('castEditorRelationship').value.trim(),animal=$('castEditorAnimal').value.trim();
+ if(!name){status.textContent=x.required;return}
+ if(kind==='child'&&(age<3||age>12)){status.textContent=x.ageError;return}
+ if(kind==='adult'&&!relationship){status.textContent=x.relationshipRequired;return}
+ if(kind==='pet'&&!animal){status.textContent=x.animalRequired;return}
+ const originalLabel=x.save;
+ button.disabled=true;button.textContent=x.saving;button.setAttribute('aria-busy','true');status.textContent=x.saving;
+ try{
+  let id=castEditor246.id;
+  if(kind==='child'){
+   const payload={name,age,interests:'',dislikes:''};
+   const r=id
+    ?await supabaseClient.from('child_profiles').update(payload).eq('id',id).select().single()
+    :await supabaseClient.from('child_profiles').insert({...payload,parent_id:currentUser.id}).select().single();
+   if(r.error)throw r.error;
+   id=r.data.id;activeProfileId=id;
+  }else{
+   const payload={parent_id:currentUser.id,kind,name,age:null,relationship:kind==='adult'?relationship:null,animal_type:kind==='pet'?animal:null};
+   const r=id
+    ?await supabaseClient.from('cast_members').update(payload).eq('id',id).select().single()
+    :await supabaseClient.from('cast_members').insert(payload).select().single();
+   if(r.error){if(/cast_members|schema cache|does not exist/i.test(r.error.message||''))throw new Error(x.setupNeeded);throw r.error}
+   id=r.data.id;
+  }
+  if(castEditor246.photo){await childPhotoPut(currentPhotoKey(id),castEditor246.photo);await uploadCloudChildPhoto(id,castEditor246.photo)}
+  else if(castEditor246.existingPhoto){await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id)}
+  if(kind==='child'){
+   await loadCloudProfiles();
+   const sel=$('profileSelect');if(sel)sel.value=id;
+   await selectCloudProfile();renderProfileSelect();
+  }else await loadCastMembers246();
+  await renderCast246();
+  button.textContent=x.saved;button.removeAttribute('aria-busy');status.textContent=x.saved;
+  $('castStatus').textContent=x.saved;
+  await new Promise(resolve=>setTimeout(resolve,550));
+  closeCastEditor246();
+  await renderCast246();
+  setTimeout(()=>{if($('castStatus')?.textContent===x.saved)$('castStatus').textContent=''},1800);
+ }catch(err){
+  console.error('Cast save failed:',err);
+  status.textContent=err?.message||'Unable to save this cast member.';
+ }finally{
+  button.disabled=false;button.removeAttribute('aria-busy');
+  if(!$('castEditor')?.classList.contains('hidden'))button.textContent=originalLabel;
+ }
+}
 async function deleteCastMember246(kind,id,name){const x=castText246();if(!confirm(x.confirmDelete(name)))return;if(kind==='child'){const{error}=await supabaseClient.from('child_profiles').delete().eq('id',id);if(error){$('castStatus').textContent=error.message;return}await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id);if(activeProfileId===id)activeProfileId=null;await loadCloudProfiles();if(activeProfileId){const sel=$('profileSelect');if(sel)sel.value=activeProfileId;await selectCloudProfile()}}else{const{error}=await supabaseClient.from('cast_members').delete().eq('id',id);if(error){$('castStatus').textContent=error.message;return}await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id);await loadCastMembers246()}await renderCast246();$('castStatus').textContent=x.deleted}
 $('castAddChild')?.addEventListener('click',()=>openCastEditor246('child'));$('castAddAdult')?.addEventListener('click',()=>openCastEditor246('adult'));$('castAddPet')?.addEventListener('click',()=>openCastEditor246('pet'));$('castEditorClose')?.addEventListener('click',closeCastEditor246);$('castEditorCancel')?.addEventListener('click',closeCastEditor246);$('castEditorSave')?.addEventListener('click',saveCastEditor246);$('castEditorPhotoButton')?.addEventListener('click',()=>$('castEditorPhotoInput')?.click());$('castEditorPhotoInput')?.addEventListener('change',async e=>{const f=e.target.files?.[0];e.target.value='';if(!f)return;const x=castText246();if(!/^image\/(jpeg|png|webp)$/i.test(f.type)){$('castEditorStatus').textContent=x.photoError;return}try{castEditor246.photo=await resizeChildPhoto(f);renderCastEditorPhoto246();$('castEditorStatus').textContent=x.photoReady}catch(err){$('castEditorStatus').textContent=err?.message||x.photoError}});$('castEditorRemovePhoto')?.addEventListener('click',()=>{castEditor246.photo=null;renderCastEditorPhoto246();$('castEditorStatus').textContent=castText246().photoRemoved});
 

@@ -990,3 +990,6 @@ Built from the confirmed-good V245 without changing the established setup routin
 The Child profile area is presented as **Your Cast**, with children, trusted adults and pets. Children use name + age + optional photo; adults use name + relationship + optional photo; pets use name + animal type + optional photo. Cast controls are localized across all nine locales. Story generation remains on the existing single-child path in V246.
 
 Run `SUPABASE_V246_CAST_MEMBERS.sql` once to enable adult/pet storage.
+
+
+V246 save-handler correction: Cast member Save now waits for confirmed database persistence, displays the localized Saved state, then closes the editor and returns to the refreshed full Cast view. Save errors keep the editor open and display the error.
