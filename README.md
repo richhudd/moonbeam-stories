@@ -1,6 +1,14 @@
-# Moonbeam Stories V250.7
+# Moonbeam Stories V250.8
 
-## V250.7 — Story idea examples + editable Cast names
+## V250.8 — Adult relationship field removed
+
+Built directly from working V250.7.
+
+- Removed the Relationship field from adult Cast add/edit UI.
+- Adult Cast cards and story-role selection no longer display stored relationship text.
+- New/edited adult profiles no longer write relationship data; the existing Supabase column is retained for schema compatibility, so no migration is required.
+- Story generation no longer receives or relies on adult Cast relationship metadata. If a relationship matters to a story, it can still be stated naturally in the Story Idea.
+- All V250.7 functionality is otherwise preserved.
 
 Built directly from the working V250.6.
 

@@ -221,10 +221,10 @@ Enforcement:
 
 
 
-    const castLines = cast.length ? cast.map(m=>{const detail=m.kind==='child'?`child, age ${m.age}`:m.kind==='adult'?`adult, relationship: ${m.relationship||'trusted adult'}`:`${m.animal_type||'pet'}${m.breed?`, breed: ${m.breed}`:''}`;return `- ${m.name} — ${detail} — ${String(m.role).toUpperCase()}`}).join('\n') : `- ${child.name} — child, age ${age} — HERO`;
+    const castLines = cast.length ? cast.map(m=>{const detail=m.kind==='child'?`child, age ${m.age}`:m.kind==='adult'?`adult`:`${m.animal_type||'pet'}${m.breed?`, breed: ${m.breed}`:''}`;return `- ${m.name} — ${detail} — ${String(m.role).toUpperCase()}`}).join('\n') : `- ${child.name} — child, age ${age} — HERO`;
     const roleRules = `HERO: central protagonist with agency. If there are multiple heroes, treat them as genuine CO-HEROES with broadly equal narrative importance and agency; do not quietly turn one into the protagonist and the others into sidekicks.
 SUPPORTING_CHILD: participates meaningfully but must not displace the heroes.
-SUPPORTING_ADULT: recognisably adult; may supervise, guide, reassure or help, but should not routinely solve the central challenge for the heroes. An adult Cast relationship, when supplied, is optional general context only and must not be assumed to describe that adult's relationship to every child.
+SUPPORTING_ADULT: recognisably adult; may supervise, guide, reassure or help, but should not routinely solve the central challenge for the heroes.
 COMPANION: remains the stated animal. Do not make a pet speak, reason or behave like a human unless the Story Idea or story world genuinely calls for fantasy.
 Do not force every selected character into every scene. Use supporting characters where narratively natural; heroes remain the focus.
 CAST IS AUTHORITATIVE: when a structured Story Cast is supplied, the selected Heroes and Supporting Cast are the complete principal cast for the story. Do not invent additional named, recurring, familial, companion, friend, helper, rival or other plot-significant characters. Unnamed incidental/background people may appear when naturally required by the setting (for example staff, passers-by, spectators or a crowd), but they must remain incidental: do not give them a personal subplot, family unit, recurring identity, important dialogue, central action, or a story function that can naturally belong to the selected Cast. Never invent a spouse, partner, child, parent, sibling, relative or friend for a selected Cast member unless the parent explicitly establishes that person in the Story Idea.`;
@@ -237,7 +237,7 @@ ROLE RULES — HARD CONSTRAINTS
 ${roleRules}
 
 NAME AND IDENTITY LOCK
-Use every selected character's supplied name exactly as given. Never invent or append surnames, middle names, nicknames, honorifics, pet names or alternative forms unless the parent establishes them in the Story Idea. Explicit relationships and forms of address stated in the Story Idea take precedence over optional adult Cast relationship notes. Do not invent additional family relationships. Where the parent has not defined a relationship or form of address, keep it neutral rather than guessing.
+Use every selected character's supplied name exactly as given. Never invent or append surnames, middle names, nicknames, honorifics, pet names or alternative forms unless the parent establishes them in the Story Idea. Relationships and forms of address stated in the Story Idea should be respected. Do not invent additional family relationships. Where the parent has not defined a relationship or form of address, keep it neutral rather than guessing.
 Youngest hero age for safety calibration: ${age}
 ${ideaGuide}
 Things to avoid: ${child.dislikes || 'nothing specific'}
