@@ -53,7 +53,7 @@ function currentDraftOwner(){return currentUser?.id||null}
 function draftStoryPayload(book=currentBook){
  if(!book||book.isSaved||book.isShared||!currentDraftOwner())return null;
  const child={...(book.child||{})};delete child.referencePhoto;
- return {version:201,userId:currentDraftOwner(),savedAt:Date.now(),cacheId:book.cacheId||null,visualCacheId:book.visualCacheId||book.cacheId||null,story:{title:book.title,opening:book.opening,character_bible:book.character_bible,pages:(book.pages||[]).map(x=>({text:x.text||'',illustration_prompt:x.illustration_prompt||''})),closing:book.closing},child,generationRunId:book.generationRunId||null,state:{currentPage:Number.isFinite(book.currentPage)?book.currentPage:-1,readingMode:book.readingMode||'self',mobileSide:book.mobileSide||'text',scroll:book.draftScroll||{}}};
+ return {version:201,userId:currentDraftOwner(),savedAt:Date.now(),cacheId:book.cacheId||null,visualCacheId:book.visualCacheId||book.cacheId||null,story:{title:book.title,opening:book.opening,opening_cast:book.opening_cast||[],character_bible:book.character_bible,pages:(book.pages||[]).map(x=>({text:x.text||'',illustration_prompt:x.illustration_prompt||'',scene_cast:x.scene_cast||[]})),closing:book.closing,closing_cast:book.closing_cast||[]},child,generationRunId:book.generationRunId||null,state:{currentPage:Number.isFinite(book.currentPage)?book.currentPage:-1,readingMode:book.readingMode||'self',mobileSide:book.mobileSide||'text',scroll:book.draftScroll||{}}};
 }
 function persistCurrentDraft(immediate=true){
  const run=()=>{try{const payload=draftStoryPayload();if(payload)localStorage.setItem(STORY_DRAFT_KEY,JSON.stringify(payload))}catch(e){console.warn('Story draft could not be stored',e)}};
@@ -164,7 +164,7 @@ async function chooseChildPhoto(file){if(!file)return;const status=$('photoStatu
 async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());if(activeProfileId){await deleteCloudChildPhoto(activeProfileId);await deleteCloudCanonicals251(activeProfileId);}currentChildPhoto=null;renderChildPhoto();if($('photoStatus'))$('photoStatus').textContent='Photo removed.'}
 async function pruneImageCache(){const db=await openImageDb();if(!db)return;try{const rows=await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([])});if(rows.length<=IMAGE_CACHE_LIMIT)return;rows.sort((a,b)=>(b.at||0)-(a.at||0));const remove=rows.slice(IMAGE_CACHE_LIMIT);await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite'),store=tx.objectStore(IMAGE_STORE);remove.forEach(r=>store.delete(r.key));tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 function stableHash(value){let h=2166136261>>>0;for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
-function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'']),c:s.closing||'',n:child?.name||'',a:child?.age||'',r:child?.referenceImages?stableHash(JSON.stringify(child.referenceImages.map(x=>[x.name,x.role,(x.image||'').slice(-400)]))):child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
+function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',oc:s.opening_cast||[],b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'',x.scene_cast||[]]),c:s.closing||'',cc:s.closing_cast||[],n:child?.name||'',a:child?.age||'',r:child?.referenceImages?stableHash(JSON.stringify(child.referenceImages.map(x=>[x.name,x.role,(x.image||'').slice(-400)]))):child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
 async function requestIllustration(key,prompt,style,force=false,referenceImage=null,requiredStoryImage=false,storyImageIndex=null){
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
@@ -414,7 +414,7 @@ async function loadCloudStories(){
  if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:{...(profile||{name:'',age:7,interests:'',dislikes:''}),profileId:row.child_id},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,generationRunId:row.generation_run_id||null,savedAssets:(row.saved_assets&&typeof row.saved_assets==='object')?row.saved_assets:{},at:row.created_at}});renderLibrary()
 }
 function dataUrlToBlob(dataUrl){const m=String(dataUrl||'').match(/^data:([^;]+);base64,(.+)$/);if(!m)throw new Error('A finished illustration is missing.');const binary=atob(m[2]),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new Blob([bytes],{type:m[1]||'image/webp'})}
-async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,book.child?.referenceImages||book.child?.referencePhoto||null,true,index);book.artwork.pages[index]=image}return image}
+async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,referencesForScene252(book,index),true,index);book.artwork.pages[index]=image}return image}
 async function finishedCoverForSave(book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.cover)return book.artwork.cover;const key=coverKey(book);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image)image=book.artwork?.pages?.[0]||await finishedImageForSave(0,book);return image}
 async function uploadSavedBookArt(storyId,book=currentBook){if(!currentUser||!book)throw new Error('Sign in to save the complete book.');const total=book.pages.length+2,assets={version:2,cover:null,pages:[]},base=`${currentUser.id}/${storyId}`;const cover=await finishedCoverForSave(book),coverPath=`${base}/cover.webp`;let r=await supabaseClient.storage.from('saved-story-art').upload(coverPath,dataUrlToBlob(cover),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.cover=coverPath;for(let i=0;i<total;i++){const image=await finishedImageForSave(i,book),path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}return assets}
 let storySaveInProgress=false;
@@ -432,7 +432,7 @@ async function saveCurrentStory(){
  if(!currentBook||storySaveInProgress)return currentBook?.savedStoryId||null;
  const bookToSave=currentBook;storySaveInProgress=true;setStorySaveUi('saving');persistCurrentDraft();
  try{
-  const cleanPages=bookToSave.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
+  const cleanPages=bookToSave.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||'',scene_cast:Array.isArray(p.scene_cast)?p.scene_cast:[]}));
   if(currentUser){
    const childId=await ensureCloudProfile(bookToSave.child);
    const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:bookToSave.title,language:bookToSave.child?.language||language,length:bookToSave.child?.length||null,tone:bookToSave.child?.tone||null,values:bookToSave.child?.values||[],opening:bookToSave.opening,character_bible:bookToSave.character_bible,pages:cleanPages,closing:bookToSave.closing,generation_run_id:bookToSave.generationRunId||null}).select('id').single();
@@ -724,7 +724,7 @@ async function generateStory(){
  }
 }
 
-function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},artwork:{cover:null,pages:{}}}}
+function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',opening_cast:Array.isArray(s.opening_cast)?s.opening_cast:[],character_bible:s.character_bible||'',pages,closing:s.closing||'',closing_cast:Array.isArray(s.closing_cast)?s.closing_cast:[],image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},artwork:{cover:null,pages:{}}}}
 function renderStory(s,image,child,options={}){
  currentBook=buildBook(s,image,child,options);
  const el=$('story');el.classList.remove('hidden');
@@ -745,6 +745,27 @@ function renderStory(s,image,child,options={}){
  $('newStory').onclick=()=>startNewStory();
  if(currentBook.isShared){$('save')?.classList.add('hidden');$('newStory')?.classList.add('hidden')}
  if(!currentBook.isSaved&&!currentBook.isShared)persistCurrentDraft();
+}
+// V252 — scene-specific Cast references. Selected Cast is a palette, not a checklist.
+// Only canonical identities for characters physically present in this scene are sent to the image model.
+function sceneCastNames252(book,index){
+ const total=(book?.pages?.length||0)+2;
+ if(index===0)return Array.isArray(book?.opening_cast)?book.opening_cast:[];
+ if(index===total-1)return Array.isArray(book?.closing_cast)?book.closing_cast:[];
+ return Array.isArray(book?.pages?.[index-1]?.scene_cast)?book.pages[index-1].scene_cast:[];
+}
+function referencesForNames252(book,names){
+ const refs=Array.isArray(book?.child?.referenceImages)?book.child.referenceImages:[];
+ const wanted=new Set((Array.isArray(names)?names:[]).map(x=>String(x||'').trim().toLocaleLowerCase()).filter(Boolean));
+ if(!wanted.size)return null;
+ const selected=refs.filter(r=>wanted.has(String(r?.name||'').trim().toLocaleLowerCase()));
+ return selected.length?selected:null;
+}
+function referencesForScene252(book,index){return referencesForNames252(book,sceneCastNames252(book,index))}
+function referencesForCover252(book){
+ const opening=referencesForScene252(book,0);if(opening)return opening;
+ const heroes=(book?.child?.cast||[]).filter(m=>m?.role==='hero').map(m=>m.name);
+ return referencesForNames252(book,heroes);
 }
 function coverKey(book){return `v45:${book.visualCacheId||book.cacheId}:cover`}
 function getCoverPrompt(book){
@@ -828,7 +849,7 @@ async function loadCoverIllustration(force=false){
        openingPrompt,
        `Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,
        false,
-       book.child?.referenceImages||book.child?.referencePhoto||null,
+       referencesForScene252(book,0),
        true,
        0
      );
@@ -854,7 +875,7 @@ async function loadCoverIllustration(force=false){
      getCoverPrompt(book),
      `Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,
      force,
-     book.child?.referenceImages||book.child?.referencePhoto||null
+     referencesForCover252(book)
    );
    if(currentBook===book){
      await revealCoverImage($('coverImage'),image);
@@ -886,7 +907,7 @@ async function loadIllustration(index,prompt,silent=false,force=false){
  try{
    const prevKey=previousIllustrationKey(book,index);
    const prevImage=prevKey?(illustrationCache.get(prevKey)||await persistentImageGet(prevKey)):null;
-   let image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referenceImages||book.child?.referencePhoto||null,true,index);
+   let image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,referencesForScene252(book,index),true,index);
    // Never spend a second generation slot automatically. In-flight and persistent caching
    // make each physical page deterministic; a rare duplicate can be retried only by explicit user action.
    book.artwork.pages[index]=image;if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image
@@ -894,11 +915,11 @@ async function loadIllustration(index,prompt,silent=false,force=false){
 function getIllustrationPrompt(index){
  const book=currentBook;if(!book)return'';const total=book.pages.length+2;
  const excerpt=(text,max=520)=>String(text||'').replace(/\s+/g,' ').trim().slice(0,max);
- if(index===0)return`SCENE 1 OF ${total} — OPENING. Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. Depict a specific moment from this text: ${excerpt(book.opening)}. Story art direction: ${book.pages[0]?.illustration_prompt||''}. This must be visually distinct from all later scenes.`;
- if(index===total-1)return`SCENE ${total} OF ${total} — CLOSING. Warm, satisfying final scene for “${book.title}”, showing the characters safe and content after the adventure. Preserve the setting and time of day established by the story; do not turn the scene into nighttime, sleep or bedtime unless the closing text actually requires it. Depict a specific moment from this closing text: ${excerpt(book.closing)}. Story art direction: ${book.pages[book.pages.length-1]?.illustration_prompt||''}. Do not reuse the composition of the previous scene.`;
+ if(index===0)return`SCENE 1 OF ${total} — OPENING. SELECTED CAST PHYSICALLY PRESENT IN THIS IMAGE: ${sceneCastNames252(book,index).join(', ')||'none'}. Do not add other selected Cast.  Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. Depict a specific moment from this text: ${excerpt(book.opening)}. Story art direction: ${book.pages[0]?.illustration_prompt||''}. This must be visually distinct from all later scenes.`;
+ if(index===total-1)return`SCENE ${total} OF ${total} — CLOSING. SELECTED CAST PHYSICALLY PRESENT IN THIS IMAGE: ${sceneCastNames252(book,index).join(', ')||'none'}. Do not add other selected Cast.  Warm, satisfying final scene for “${book.title}”, showing the characters safe and content after the adventure. Preserve the setting and time of day established by the story; do not turn the scene into nighttime, sleep or bedtime unless the closing text actually requires it. Depict a specific moment from this closing text: ${excerpt(book.closing)}. Story art direction: ${book.pages[book.pages.length-1]?.illustration_prompt||''}. Do not reuse the composition of the previous scene.`;
  const page=book.pages[index-1]||{};
  const previous=index===1?book.opening:(book.pages[index-2]?.text||'');
- return `SCENE ${index+1} OF ${total}. Illustrate THIS page, not a generic recurring scene.
+ return `SCENE ${index+1} OF ${total}. SELECTED CAST PHYSICALLY PRESENT IN THIS IMAGE: ${sceneCastNames252(book,index).join(', ')||'none'}. Do not add other selected Cast. Illustrate THIS page, not a generic recurring scene.
 CURRENT PAGE TEXT: ${excerpt(page.text)}
 SCENE DIRECTION: ${page.illustration_prompt||'Depict the specific action and setting described on this page.'}
 PREVIOUS PAGE CONTEXT (for continuity only; DO NOT re-illustrate it): ${excerpt(previous,260)}
