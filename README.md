@@ -1,3 +1,9 @@
+# Moonbeam Stories V250.11
+
+## V250.11 — Desktop in-page numbers removed
+
+Built directly from V250.10. On desktop only, the redundant page numbers printed inside the book pages are hidden; the existing bottom page counter remains unchanged. Mobile portrait and landscape reader behaviour is unchanged. No Supabase schema change.
+
 # Moonbeam Stories V250.10
 
 ## V250.10 — Desktop photo drag-and-drop restored + Cast selection note removed

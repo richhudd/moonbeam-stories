@@ -3968,3 +3968,8 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
   #castEditorPhotoPreview{cursor:copy;outline:2px dashed transparent;outline-offset:4px;transition:outline-color .15s ease,transform .15s ease}
   #castEditorPhotoPreview.drag-over{outline-color:currentColor;transform:scale(1.03)}
 }
+
+/* V250.11 — desktop reader already has the bottom page counter; hide redundant in-page folios. */
+@media (hover:hover) and (pointer:fine) and (min-width:901px){
+  body.story-mode .book .page-number{display:none!important;}
+}
