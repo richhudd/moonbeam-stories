@@ -1,3 +1,9 @@
+# Moonbeam Stories V250.2
+
+## V250.2 — mobile shared-story end-page interaction fix
+
+Built directly from V250.1. Public functionality is unchanged except for the mobile shared-story end page. The mobile reader swipe handler now stands down completely on The End and ignores touches that begin on interactive controls. This lets the existing native “Create my story” link receive the same ordinary browser interaction it already receives on desktop. No story generation, image generation, Cast, accounts, credits, Supabase, reader content, sharing data, or API behaviour has been changed. No Supabase schema change is required.
+
 # Moonbeam Stories V250.1
 
 ## V250.1 — mobile shared-story “Create my story” link fix

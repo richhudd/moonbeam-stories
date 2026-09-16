@@ -1108,9 +1108,11 @@ function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=c
 function goPreviousBookPage(){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();if(currentBook.currentPage===0)showCover();else{renderBookPage(currentBook.currentPage-1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
 let lastStorySwipeAt=0;
 $('story').addEventListener('click',e=>{if(Date.now()-lastStorySwipeAt<500&&(e.target.classList.contains('mobile-turn-left')||e.target.classList.contains('mobile-turn-right')))return;if(e.target.id==='beginStory')beginStory('self');if(e.target.id==='beginNarrated')beginStory('narrated');if(e.target.id==='retryCover')loadCoverIllustration(true);if(e.target.id==='prevPage'||e.target.classList.contains('mobile-turn-left'))goPreviousBookPage();if(e.target.id==='nextPage'||e.target.classList.contains('mobile-turn-right'))goNextBookPage()});
-let storyTouchX=null,storyTouchY=null;
-$('story').addEventListener('touchstart',e=>{const t=e.changedTouches?.[0];if(!t)return;storyTouchX=t.clientX;storyTouchY=t.clientY},{passive:true});
-$('story').addEventListener('touchend',e=>{if(!isPhoneReader()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){lastStorySwipeAt=Date.now();stopNarration();if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
+let storyTouchX=null,storyTouchY=null,storyTouchInteractive=false;
+function storyTouchStartsOnInteractiveControl(e){return !!e.target.closest?.('a,button,input,select,textarea,label,[role="button"]')}
+function storyIsEndPage(){return !!currentBook&&currentBook.currentPage===currentBook.pages.length+2}
+$('story').addEventListener('touchstart',e=>{storyTouchInteractive=storyTouchStartsOnInteractiveControl(e);if(storyTouchInteractive||storyIsEndPage()){storyTouchX=storyTouchY=null;return}const t=e.changedTouches?.[0];if(!t)return;storyTouchX=t.clientX;storyTouchY=t.clientY},{passive:true});
+$('story').addEventListener('touchend',e=>{if(storyTouchInteractive||storyIsEndPage()){storyTouchInteractive=false;storyTouchX=storyTouchY=null;return}if(!isPhoneReader()||storyTouchX===null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-storyTouchX,dy=t.clientY-storyTouchY;storyTouchX=storyTouchY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){lastStorySwipeAt=Date.now();stopNarration();if(dx<0)goNextBookPage();else goPreviousBookPage()}},{passive:true});
 window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0){if(!isPhoneReader())currentBook.mobileSide='text';applyMobileSide();if(!isPhoneReader())requestAnimationFrame(fitDesktopStoryText)}});
 function savedLibraryCopy(){return {replay:t().replay,original:t().original||'Original',...(t().savedLibrary||{})}}
 const savedLibraryCoverUrls=new Map();
