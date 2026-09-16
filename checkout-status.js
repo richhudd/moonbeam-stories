@@ -1,5 +1,5 @@
-const { verifyMoonbeamUser } = require('./_credits');
-const { stripeRequest, fulfillPaidSession } = require('./_stripe');
+const { verifyMoonbeamUser } = require('../_credits');
+const { stripeRequest, fulfillPaidSession } = require('../_stripe');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control','no-store');

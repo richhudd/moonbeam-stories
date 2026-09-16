@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const net = require('net');
-const { verifyMoonbeamUser, rpc } = require('./_credits');
-const { SECRET_KEY } = require('./_usage');
+const { verifyMoonbeamUser, rpc } = require('../_credits');
+const { SECRET_KEY } = require('../_usage');
 
 function privateHash(kind, value) {
   const key = SECRET_KEY || 'moonbeam-v52-fallback';
@@ -39,7 +39,7 @@ module.exports = async function handler(req, res) {
   try {
     const user = await verifyMoonbeamUser(req);
     // Supabase exposes email_confirmed_at on the authenticated user object.
-    if (!user.email_confirmed_at) return res.status(403).json({error:'Please verify your email before claiming your free stories.',code:'EMAIL_NOT_VERIFIED'});
+    if (!user.email_confirmed_at) return res.status(403).json({error:'Please verify your email before claiming your free story.',code:'EMAIL_NOT_VERIFIED'});
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const deviceId = String(body.deviceId || '').trim();
     if (deviceId.length < 16 || deviceId.length > 200) return res.status(400).json({error:'This device could not be verified.'});

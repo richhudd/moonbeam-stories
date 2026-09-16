@@ -1,4 +1,4 @@
-const { verifyMoonbeamUser, rpc } = require('./_credits');
+const { verifyMoonbeamUser, rpc } = require('../_credits');
 const { Resend } = require('resend');
 
 const CONSENT_VERSION = 'v60-2026-09-11';

@@ -1,5 +1,5 @@
-const { verifyMoonbeamUser } = require('./_credits');
-const { stripeRequest, packForCredits } = require('./_stripe');
+const { verifyMoonbeamUser } = require('../_credits');
+const { stripeRequest, packForCredits } = require('../_stripe');
 
 function siteOrigin(req) {
   const configured = String(process.env.MOONBEAM_SITE_URL || 'https://www.moonbeamstories.co.uk').replace(/\/$/,'');

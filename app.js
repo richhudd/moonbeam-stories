@@ -53,7 +53,7 @@ function currentDraftOwner(){return currentUser?.id||null}
 function draftStoryPayload(book=currentBook){
  if(!book||book.isSaved||book.isShared||!currentDraftOwner())return null;
  const child={...(book.child||{})};delete child.referencePhoto;
- return {version:201,userId:currentDraftOwner(),savedAt:Date.now(),cacheId:book.cacheId||null,visualCacheId:book.visualCacheId||book.cacheId||null,story:{title:book.title,opening:book.opening,opening_cast:book.opening_cast||[],character_bible:book.character_bible,pages:(book.pages||[]).map(x=>({text:x.text||'',illustration_prompt:x.illustration_prompt||'',scene_cast:x.scene_cast||[]})),closing:book.closing,closing_cast:book.closing_cast||[]},child,generationRunId:book.generationRunId||null,state:{currentPage:Number.isFinite(book.currentPage)?book.currentPage:-1,readingMode:book.readingMode||'self',mobileSide:book.mobileSide||'text',scroll:book.draftScroll||{}}};
+ return {version:201,userId:currentDraftOwner(),savedAt:Date.now(),cacheId:book.cacheId||null,visualCacheId:book.visualCacheId||book.cacheId||null,story:{title:book.title,opening:book.opening,character_bible:book.character_bible,pages:(book.pages||[]).map(x=>({text:x.text||'',illustration_prompt:x.illustration_prompt||''})),closing:book.closing},child,generationRunId:book.generationRunId||null,state:{currentPage:Number.isFinite(book.currentPage)?book.currentPage:-1,readingMode:book.readingMode||'self',mobileSide:book.mobileSide||'text',scroll:book.draftScroll||{}}};
 }
 function persistCurrentDraft(immediate=true){
  const run=()=>{try{const payload=draftStoryPayload();if(payload)localStorage.setItem(STORY_DRAFT_KEY,JSON.stringify(payload))}catch(e){console.warn('Story draft could not be stored',e)}};
@@ -112,27 +112,6 @@ async function listCloudChildPhotos(profileId){const folder=cloudChildPhotoFolde
 async function downloadCloudChildPhoto(profileId,objectName){const folder=cloudChildPhotoFolder(profileId);const path=folder&&objectName?`${folder}/${objectName}`:null;if(!path||!supabaseClient)return null;try{const {data,error}=await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).download(path);if(error||!data)return null;return await blobToDataUrl(data)}catch{return null}}
 async function uploadCloudChildPhoto(profileId,image){const folder=cloudChildPhotoFolder(profileId),path=cloudChildPhotoPath(profileId);if(!folder||!path||!image||!supabaseClient)return false;try{const {error}=await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).upload(path,dataUrlToBlob(image),{contentType:'image/jpeg',upsert:false,cacheControl:'3600'});if(error){console.warn('Child photo cloud upload failed:',error.message);return false}const objectName=path.slice(folder.length+1);await childPhotoPut(currentPhotoKey(profileId),image,{cloudObject:objectName});cloudPhotoResolved.set(profileId,{image,cloudObject:objectName});const older=(await listCloudChildPhotos(profileId)).filter(o=>o.name!==objectName).map(o=>`${folder}/${o.name}`);if(older.length){try{await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).remove(older)}catch{}}return true}catch(e){console.warn('Child photo cloud upload failed:',e?.message||e);return false}}
 async function deleteCloudChildPhoto(profileId){const folder=cloudChildPhotoFolder(profileId);if(!folder||!supabaseClient)return;try{const objects=await listCloudChildPhotos(profileId),paths=objects.map(o=>`${folder}/${o.name}`);if(paths.length){const {error}=await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).remove(paths);if(error)console.warn('Child photo cloud removal failed:',error.message)}}catch{}cloudPhotoResolved.delete(profileId)}
-// V251 — hidden canonical Cast identity. The parent-facing V250 UI is unchanged.
-// A canonical is created lazily only after a story has been successfully generated,
-// then privately reused as that Cast member's image reference in future books.
-function canonicalObjectName251(photo){return `canonical-${stableHash(String(photo||''))}.webp`}
-async function listCloudCanonicals251(profileId){const folder=cloudChildPhotoFolder(profileId);if(!folder||!supabaseClient)return[];try{const {data,error}=await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).list(folder,{limit:30,sortBy:{column:'updated_at',order:'desc'}});if(error)return[];return(data||[]).filter(o=>/^canonical-[a-z0-9]+\.webp$/i.test(o.name||''))}catch{return[]}}
-async function deleteCloudCanonicals251(profileId){const folder=cloudChildPhotoFolder(profileId);if(!folder||!supabaseClient)return;try{const rows=await listCloudCanonicals251(profileId),paths=rows.map(o=>`${folder}/${o.name}`);if(paths.length)await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).remove(paths)}catch{}}
-async function canonicalForCast251(member,accessToken){
- const photo=member?.referencePhoto;if(!member?.id||!photo||!supabaseClient)return photo||null;
- const folder=cloudChildPhotoFolder(member.id),name=canonicalObjectName251(photo),path=folder?`${folder}/${name}`:null;if(!path)return photo;
- try{
-  const existing=await listCloudCanonicals251(member.id);
-  if(existing.some(o=>o.name===name)){const {data,error}=await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).download(path);if(!error&&data)return await blobToDataUrl(data)}
-  const r=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({operation:'canonicalize',name:member.name,kind:member.kind,age:member.age||null,relationship:member.relationship||null,animal_type:member.animal_type||null,breed:member.breed||null,photo})});
-  const d=await r.json().catch(()=>({}));if(!r.ok||!d.image)throw new Error(d.error||'Canonical character generation failed.');
-  const {error}=await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).upload(path,dataUrlToBlob(d.image),{contentType:'image/webp',upsert:true,cacheControl:'3600'});if(error)throw error;
-  const stale=existing.filter(o=>o.name!==name).map(o=>`${folder}/${o.name}`);if(stale.length)try{await supabaseClient.storage.from(CHILD_PHOTO_BUCKET).remove(stale)}catch{}
-  return d.image;
- }catch(e){console.warn('V251 canonical Cast fallback:',e?.message||e);return photo}
-}
-async function canonicaliseStoryCast251(cast,accessToken){return Promise.all((cast||[]).map(async m=>{if(!m.referencePhoto)return m;const canonical=await canonicalForCast251(m,accessToken);return {...m,referencePhoto:canonical||m.referencePhoto}}))}
-
 async function localChildPhotoRecordForProfile(profileId){const exactKey=currentPhotoKey(profileId),exact=await childPhotoRecord(exactKey);if(exact?.image)return exact;const db=await openImageDb();if(!db||!profileId)return null;const suffix=`:${profileId}`;const found=await new Promise(resolve=>{try{const tx=db.transaction(CHILD_PHOTO_STORE,'readonly'),req=tx.objectStore(CHILD_PHOTO_STORE).getAll();req.onsuccess=()=>{const rows=(req.result||[]).filter(r=>String(r.key||'').endsWith(suffix)&&r.image).sort((a,b)=>(b.at||0)-(a.at||0));resolve(rows[0]||null)};req.onerror=()=>resolve(null)}catch{resolve(null)}});if(found)await childPhotoPut(exactKey,found.image,{cloudObject:found.cloudObject||null});return found}
 async function localChildPhotoForProfile(profileId){return(await localChildPhotoRecordForProfile(profileId))?.image||null}
 async function childPhotoGetForProfile(profileId){
@@ -160,11 +139,11 @@ function renderChildPhoto(){const preview=$('childPhotoPreview'),remove=$('remov
 function renderChildPhotoLoading(){const preview=$('childPhotoPreview'),remove=$('removeChildPhoto'),toggle=$('useChildPhoto');if(!preview)return;preview.innerHTML=`<span class="child-photo-loading-spinner" aria-hidden="true"></span><small>${escapeHtml(t().photoLoading||'Loading photo…')}</small>`;remove?.classList.add('hidden');if(toggle)toggle.disabled=true}
 async function loadCurrentChildPhoto(){if(activeProfileId)renderChildPhotoLoading();currentChildPhoto=activeProfileId?await childPhotoGetForProfile(activeProfileId):await childPhotoGet(currentPhotoKey());renderChildPhoto()}
 function resizeChildPhoto(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('Could not read that photo.'));reader.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error('That image format could not be opened.'));img.onload=()=>{const max=768,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',0.84))};img.src=reader.result};reader.readAsDataURL(file)})}
-async function chooseChildPhoto(file){if(!file)return;const status=$('photoStatus');try{if(!/^image\/(jpeg|png|webp)$/i.test(file.type))throw new Error('Please choose a JPG, PNG or WebP photo.');if(status)status.textContent='Preparing photo…';const image=await resizeChildPhoto(file);currentChildPhoto=image;await childPhotoPut(currentPhotoKey(),image);if(activeProfileId){await deleteCloudCanonicals251(activeProfileId);await uploadCloudChildPhoto(activeProfileId,image);}if($('useChildPhoto'))$('useChildPhoto').checked=true;renderChildPhoto();if(status)status.textContent='Photo ready for illustrations.'}catch(e){if(status)status.innerHTML=`<span class="error">${escapeHtml(e.message||e)}</span>`}}
-async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());if(activeProfileId){await deleteCloudChildPhoto(activeProfileId);await deleteCloudCanonicals251(activeProfileId);}currentChildPhoto=null;renderChildPhoto();if($('photoStatus'))$('photoStatus').textContent='Photo removed.'}
+async function chooseChildPhoto(file){if(!file)return;const status=$('photoStatus');try{if(!/^image\/(jpeg|png|webp)$/i.test(file.type))throw new Error('Please choose a JPG, PNG or WebP photo.');if(status)status.textContent='Preparing photo…';const image=await resizeChildPhoto(file);currentChildPhoto=image;await childPhotoPut(currentPhotoKey(),image);if(activeProfileId)await uploadCloudChildPhoto(activeProfileId,image);if($('useChildPhoto'))$('useChildPhoto').checked=true;renderChildPhoto();if(status)status.textContent='Photo ready for illustrations.'}catch(e){if(status)status.innerHTML=`<span class="error">${escapeHtml(e.message||e)}</span>`}}
+async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());if(activeProfileId)await deleteCloudChildPhoto(activeProfileId);currentChildPhoto=null;renderChildPhoto();if($('photoStatus'))$('photoStatus').textContent='Photo removed.'}
 async function pruneImageCache(){const db=await openImageDb();if(!db)return;try{const rows=await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([])});if(rows.length<=IMAGE_CACHE_LIMIT)return;rows.sort((a,b)=>(b.at||0)-(a.at||0));const remove=rows.slice(IMAGE_CACHE_LIMIT);await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite'),store=tx.objectStore(IMAGE_STORE);remove.forEach(r=>store.delete(r.key));tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 function stableHash(value){let h=2166136261>>>0;for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
-function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',oc:s.opening_cast||[],b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'',x.scene_cast||[]]),c:s.closing||'',cc:s.closing_cast||[],n:child?.name||'',a:child?.age||'',r:child?.referenceImages?stableHash(JSON.stringify(child.referenceImages.map(x=>[x.name,x.role,(x.image||'').slice(-400)]))):child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
+function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'']),c:s.closing||'',n:child?.name||'',a:child?.age||'',r:child?.referenceImages?stableHash(JSON.stringify(child.referenceImages.map(x=>[x.name,x.role,(x.image||'').slice(-400)]))):child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
 async function requestIllustration(key,prompt,style,force=false,referenceImage=null,requiredStoryImage=false,storyImageIndex=null){
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
@@ -414,7 +393,7 @@ async function loadCloudStories(){
  if(!currentUser)return;const {data,error}=await supabaseClient.from('saved_stories').select('*').order('created_at',{ascending:false}).limit(50);if(error){console.error(error);return}cloudStories=(data||[]).map(row=>{const profile=cloudProfiles.find(p=>p.id===row.child_id);return{id:row.id,title:row.title,child:{...(profile||{name:'',age:7,interests:'',dislikes:''}),profileId:row.child_id},story:{title:row.title,opening:row.opening||'',character_bible:row.character_bible||'',pages:Array.isArray(row.pages)?row.pages:[],closing:row.closing||''},language:row.language,length:row.length,tone:row.tone,values:row.values,generationRunId:row.generation_run_id||null,savedAssets:(row.saved_assets&&typeof row.saved_assets==='object')?row.saved_assets:{},at:row.created_at}});renderLibrary()
 }
 function dataUrlToBlob(dataUrl){const m=String(dataUrl||'').match(/^data:([^;]+);base64,(.+)$/);if(!m)throw new Error('A finished illustration is missing.');const binary=atob(m[2]),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new Blob([bytes],{type:m[1]||'image/webp'})}
-async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,referencesForScene252(book,index),true,index);book.artwork.pages[index]=image}return image}
+async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,book.child?.referenceImages||book.child?.referencePhoto||null,true,index);book.artwork.pages[index]=image}return image}
 async function finishedCoverForSave(book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.cover)return book.artwork.cover;const key=coverKey(book);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image)image=book.artwork?.pages?.[0]||await finishedImageForSave(0,book);return image}
 async function uploadSavedBookArt(storyId,book=currentBook){if(!currentUser||!book)throw new Error('Sign in to save the complete book.');const total=book.pages.length+2,assets={version:2,cover:null,pages:[]},base=`${currentUser.id}/${storyId}`;const cover=await finishedCoverForSave(book),coverPath=`${base}/cover.webp`;let r=await supabaseClient.storage.from('saved-story-art').upload(coverPath,dataUrlToBlob(cover),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.cover=coverPath;for(let i=0;i<total;i++){const image=await finishedImageForSave(i,book),path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}return assets}
 let storySaveInProgress=false;
@@ -432,7 +411,7 @@ async function saveCurrentStory(){
  if(!currentBook||storySaveInProgress)return currentBook?.savedStoryId||null;
  const bookToSave=currentBook;storySaveInProgress=true;setStorySaveUi('saving');persistCurrentDraft();
  try{
-  const cleanPages=bookToSave.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||'',scene_cast:Array.isArray(p.scene_cast)?p.scene_cast:[]}));
+  const cleanPages=bookToSave.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
   if(currentUser){
    const childId=await ensureCloudProfile(bookToSave.child);
    const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:bookToSave.title,language:bookToSave.child?.language||language,length:bookToSave.child?.length||null,tone:bookToSave.child?.tone||null,values:bookToSave.child?.values||[],opening:bookToSave.opening,character_bible:bookToSave.character_bible,pages:cleanPages,closing:bookToSave.closing,generation_run_id:bookToSave.generationRunId||null}).select('id').single();
@@ -708,12 +687,6 @@ async function generateStory(){
    if(!response.ok){throw new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`)}
    if(!data?.story)throw new Error('The story service did not return a story.');
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
-   // V251: only now that a story was successfully supplied do we incur any one-off canonical cost.
-   // Failure never blocks the story: that Cast member falls back to the original V250 photo.
-   const canonicalCast=await canonicaliseStoryCast251(cast,accessToken);
-   child.cast=canonicalCast;
-   child.referenceImages=canonicalCast.filter(m=>m.referencePhoto).map(m=>({name:m.name,kind:m.kind,role:m.role,image:m.referencePhoto}));
-   child.referencePhoto=canonicalCast.find(m=>m.id===primary.id)?.referencePhoto||child.referencePhoto;
    child.generationRunId=data.generationRunId||null;
    clearSetupDraft();
    renderStory(data.story,null,child)
@@ -724,7 +697,7 @@ async function generateStory(){
  }
 }
 
-function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',opening_cast:Array.isArray(s.opening_cast)?s.opening_cast:[],character_bible:s.character_bible||'',pages,closing:s.closing||'',closing_cast:Array.isArray(s.closing_cast)?s.closing_cast:[],image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},artwork:{cover:null,pages:{}}}}
+function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},artwork:{cover:null,pages:{}}}}
 function renderStory(s,image,child,options={}){
  currentBook=buildBook(s,image,child,options);
  const el=$('story');el.classList.remove('hidden');
@@ -745,27 +718,6 @@ function renderStory(s,image,child,options={}){
  $('newStory').onclick=()=>startNewStory();
  if(currentBook.isShared){$('save')?.classList.add('hidden');$('newStory')?.classList.add('hidden')}
  if(!currentBook.isSaved&&!currentBook.isShared)persistCurrentDraft();
-}
-// V252 — scene-specific Cast references. Selected Cast is a palette, not a checklist.
-// Only canonical identities for characters physically present in this scene are sent to the image model.
-function sceneCastNames252(book,index){
- const total=(book?.pages?.length||0)+2;
- if(index===0)return Array.isArray(book?.opening_cast)?book.opening_cast:[];
- if(index===total-1)return Array.isArray(book?.closing_cast)?book.closing_cast:[];
- return Array.isArray(book?.pages?.[index-1]?.scene_cast)?book.pages[index-1].scene_cast:[];
-}
-function referencesForNames252(book,names){
- const refs=Array.isArray(book?.child?.referenceImages)?book.child.referenceImages:[];
- const wanted=new Set((Array.isArray(names)?names:[]).map(x=>String(x||'').trim().toLocaleLowerCase()).filter(Boolean));
- if(!wanted.size)return null;
- const selected=refs.filter(r=>wanted.has(String(r?.name||'').trim().toLocaleLowerCase()));
- return selected.length?selected:null;
-}
-function referencesForScene252(book,index){return referencesForNames252(book,sceneCastNames252(book,index))}
-function referencesForCover252(book){
- const opening=referencesForScene252(book,0);if(opening)return opening;
- const heroes=(book?.child?.cast||[]).filter(m=>m?.role==='hero').map(m=>m.name);
- return referencesForNames252(book,heroes);
 }
 function coverKey(book){return `v45:${book.visualCacheId||book.cacheId}:cover`}
 function getCoverPrompt(book){
@@ -849,7 +801,7 @@ async function loadCoverIllustration(force=false){
        openingPrompt,
        `Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,
        false,
-       referencesForScene252(book,0),
+       book.child?.referenceImages||book.child?.referencePhoto||null,
        true,
        0
      );
@@ -875,7 +827,7 @@ async function loadCoverIllustration(force=false){
      getCoverPrompt(book),
      `Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,
      force,
-     referencesForCover252(book)
+     book.child?.referenceImages||book.child?.referencePhoto||null
    );
    if(currentBook===book){
      await revealCoverImage($('coverImage'),image);
@@ -907,7 +859,7 @@ async function loadIllustration(index,prompt,silent=false,force=false){
  try{
    const prevKey=previousIllustrationKey(book,index);
    const prevImage=prevKey?(illustrationCache.get(prevKey)||await persistentImageGet(prevKey)):null;
-   let image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,referencesForScene252(book,index),true,index);
+   let image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,force,book.child?.referenceImages||book.child?.referencePhoto||null,true,index);
    // Never spend a second generation slot automatically. In-flight and persistent caching
    // make each physical page deterministic; a rare duplicate can be retried only by explicit user action.
    book.artwork.pages[index]=image;if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image
@@ -915,11 +867,11 @@ async function loadIllustration(index,prompt,silent=false,force=false){
 function getIllustrationPrompt(index){
  const book=currentBook;if(!book)return'';const total=book.pages.length+2;
  const excerpt=(text,max=520)=>String(text||'').replace(/\s+/g,' ').trim().slice(0,max);
- if(index===0)return`SCENE 1 OF ${total} — OPENING. SELECTED CAST PHYSICALLY PRESENT IN THIS IMAGE: ${sceneCastNames252(book,index).join(', ')||'none'}. Do not add other selected Cast.  Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. Depict a specific moment from this text: ${excerpt(book.opening)}. Story art direction: ${book.pages[0]?.illustration_prompt||''}. This must be visually distinct from all later scenes.`;
- if(index===total-1)return`SCENE ${total} OF ${total} — CLOSING. SELECTED CAST PHYSICALLY PRESENT IN THIS IMAGE: ${sceneCastNames252(book,index).join(', ')||'none'}. Do not add other selected Cast.  Warm, satisfying final scene for “${book.title}”, showing the characters safe and content after the adventure. Preserve the setting and time of day established by the story; do not turn the scene into nighttime, sleep or bedtime unless the closing text actually requires it. Depict a specific moment from this closing text: ${excerpt(book.closing)}. Story art direction: ${book.pages[book.pages.length-1]?.illustration_prompt||''}. Do not reuse the composition of the previous scene.`;
+ if(index===0)return`SCENE 1 OF ${total} — OPENING. Opening scene for “${book.title}”. A beautiful establishing illustration introducing the main characters and story world. Depict a specific moment from this text: ${excerpt(book.opening)}. Story art direction: ${book.pages[0]?.illustration_prompt||''}. This must be visually distinct from all later scenes.`;
+ if(index===total-1)return`SCENE ${total} OF ${total} — CLOSING. Warm, satisfying final scene for “${book.title}”, showing the characters safe and content after the adventure. Preserve the setting and time of day established by the story; do not turn the scene into nighttime, sleep or bedtime unless the closing text actually requires it. Depict a specific moment from this closing text: ${excerpt(book.closing)}. Story art direction: ${book.pages[book.pages.length-1]?.illustration_prompt||''}. Do not reuse the composition of the previous scene.`;
  const page=book.pages[index-1]||{};
  const previous=index===1?book.opening:(book.pages[index-2]?.text||'');
- return `SCENE ${index+1} OF ${total}. SELECTED CAST PHYSICALLY PRESENT IN THIS IMAGE: ${sceneCastNames252(book,index).join(', ')||'none'}. Do not add other selected Cast. Illustrate THIS page, not a generic recurring scene.
+ return `SCENE ${index+1} OF ${total}. Illustrate THIS page, not a generic recurring scene.
 CURRENT PAGE TEXT: ${excerpt(page.text)}
 SCENE DIRECTION: ${page.illustration_prompt||'Depict the specific action and setting described on this page.'}
 PREVIOUS PAGE CONTEXT (for continuity only; DO NOT re-illustrate it): ${excerpt(previous,260)}
@@ -1682,7 +1634,7 @@ async function renderCast246(){
  await Promise.all([render(children,castMembers246.filter(m=>m.kind==='child'),x.emptyChild),render(adults,castMembers246.filter(m=>m.kind==='adult'),x.emptyAdult),render(pets,castMembers246.filter(m=>m.kind==='pet'),x.emptyPet)]);await renderStoryRoles248();
 }
 function castMember246(id){return castMembers246.find(m=>m.id===id)||null}
-function bindCastCards246(root){root.querySelectorAll('.cast-member').forEach(card=>{const kind=card.dataset.castKind,id=card.dataset.castId;card.onclick=async e=>{if(e.target.closest('.cast-menu-button')||e.target.closest('.cast-menu'))return;if(kind==='child'){activeProfileId=id;syncGenerationAdapter246();await loadCurrentChildPhoto();await renderCast246()}else await openCastEditor246(kind,id)};card.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();card.click()}};card.querySelector('.cast-menu-button').onclick=async e=>{e.stopPropagation();document.querySelectorAll('.cast-menu').forEach(n=>n.remove());const m=castMember246(id),photo=await castPhoto246(id),x=castText246(),menu=document.createElement('div');menu.className='cast-menu';menu.innerHTML=`<button type="button" data-a="photo">${escapeHtml(photo?x.changePhoto:x.addPhoto)}</button>${photo?`<button type="button" data-a="remove-photo">${escapeHtml(x.removePhoto)}</button>`:''}<button type="button" data-a="delete" class="danger">${escapeHtml(x.deleteCast)}</button>`;card.appendChild(menu);menu.onclick=async ev=>{ev.stopPropagation();const a=ev.target.closest('button')?.dataset.a;if(a==='photo')await openCastEditor246(kind,id,true);if(a==='remove-photo'){await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id);await deleteCloudCanonicals251(id);if(kind==='child'&&activeProfileId===id){currentChildPhoto=null;renderChildPhoto()}await renderCast246()}if(a==='delete')await deleteCastMember246(id,m?.name||'');menu.remove()}}})}
+function bindCastCards246(root){root.querySelectorAll('.cast-member').forEach(card=>{const kind=card.dataset.castKind,id=card.dataset.castId;card.onclick=async e=>{if(e.target.closest('.cast-menu-button')||e.target.closest('.cast-menu'))return;if(kind==='child'){activeProfileId=id;syncGenerationAdapter246();await loadCurrentChildPhoto();await renderCast246()}else await openCastEditor246(kind,id)};card.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();card.click()}};card.querySelector('.cast-menu-button').onclick=async e=>{e.stopPropagation();document.querySelectorAll('.cast-menu').forEach(n=>n.remove());const m=castMember246(id),photo=await castPhoto246(id),x=castText246(),menu=document.createElement('div');menu.className='cast-menu';menu.innerHTML=`<button type="button" data-a="photo">${escapeHtml(photo?x.changePhoto:x.addPhoto)}</button>${photo?`<button type="button" data-a="remove-photo">${escapeHtml(x.removePhoto)}</button>`:''}<button type="button" data-a="delete" class="danger">${escapeHtml(x.deleteCast)}</button>`;card.appendChild(menu);menu.onclick=async ev=>{ev.stopPropagation();const a=ev.target.closest('button')?.dataset.a;if(a==='photo')await openCastEditor246(kind,id,true);if(a==='remove-photo'){await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id);if(kind==='child'&&activeProfileId===id){currentChildPhoto=null;renderChildPhoto()}await renderCast246()}if(a==='delete')await deleteCastMember246(id,m?.name||'');menu.remove()}}})}
 document.addEventListener('click',e=>{if(!e.target.closest('.cast-menu-button')&&!e.target.closest('.cast-menu'))document.querySelectorAll('.cast-menu').forEach(n=>n.remove())})
 async function openCastEditor246(kind,id=null,openPhoto=false){const x=castText246(),m=id?castMember246(id):null,b=$('castEditorSave'),existingPhoto=id?await castPhoto246(id):null;castEditor246={kind,id,photo:existingPhoto,originalPhoto:existingPhoto};b.disabled=false;b.textContent=x.save;b.removeAttribute('aria-busy');$('castEditorName').value=m?.name||'';$('castEditorAge').value=m?.age||7;$('castEditorRelationship').value=m?.relationship||'';$('castEditorAnimal').value=m?.animal_type||'';if($('castEditorBreed'))$('castEditorBreed').value=m?.breed||'';$('castAgeField').classList.toggle('hidden',kind!=='child');$('castRelationshipField').classList.toggle('hidden',kind!=='adult');$('castAnimalField').classList.toggle('hidden',kind!=='pet');$('castBreedField')?.classList.toggle('hidden',kind!=='pet');$('castEditorTitle').textContent=id?(kind==='child'?x.editChild:kind==='adult'?x.editAdult:x.editPet):(kind==='child'?x.newChild:kind==='adult'?x.newAdult:x.newPet);$('castEditorStatus').textContent='';$('castEditor').classList.remove('hidden');renderCastEditorPhoto246();if(openPhoto)setTimeout(()=>$('castEditorPhotoInput')?.click(),0);else setTimeout(()=>$('castEditorName')?.focus(),0)}
 function renderCastEditorPhoto246(){const x=castText246(),has=!!castEditor246.photo;$('castEditorPhotoPreview').innerHTML=has?`<img src="${castEditor246.photo}" alt="">`:'<span>☾</span>';$('castEditorPhotoButton').textContent=has?x.changePhoto:x.addPhoto;$('castEditorRemovePhoto').classList.toggle('hidden',!has)}
@@ -1700,7 +1652,6 @@ async function saveCastEditor246(){
  let photoOk=true;
  try{
   if(photoChanged){
-   await deleteCloudCanonicals251(id);
    if(castEditor246.photo){await childPhotoPut(currentPhotoKey(id),castEditor246.photo);photoOk=await uploadCloudChildPhoto(id,castEditor246.photo)}
    else{await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id)}
   }
@@ -1710,6 +1661,6 @@ async function saveCastEditor246(){
  button.textContent=x.saved;button.removeAttribute('aria-busy');status.textContent=photoOk?x.saved:x.photoSaveError;$('castStatus').textContent=photoOk?x.saved:x.photoSaveError;
  await new Promise(r=>setTimeout(r,450));closeCastEditor246();await renderCast246();setTimeout(()=>{if($('castStatus'))$('castStatus').textContent=''},2200);
 }
-async function deleteCastMember246(id,name){const x=castText246();if(!confirm(x.confirmDelete(name)))return;const{error}=await supabaseClient.from('cast_members').delete().eq('id',id);if(error){$('castStatus').textContent=error.message;return}await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id);await deleteCloudCanonicals251(id);if(activeProfileId===id){activeProfileId=null;currentChildPhoto=null}await loadCastMembers246();$('castStatus').textContent=x.deleted}
+async function deleteCastMember246(id,name){const x=castText246();if(!confirm(x.confirmDelete(name)))return;const{error}=await supabaseClient.from('cast_members').delete().eq('id',id);if(error){$('castStatus').textContent=error.message;return}await childPhotoDelete(currentPhotoKey(id));await deleteCloudChildPhoto(id);if(activeProfileId===id){activeProfileId=null;currentChildPhoto=null}await loadCastMembers246();$('castStatus').textContent=x.deleted}
 $('castAddChild')?.addEventListener('click',()=>openCastEditor246('child'));$('castAddAdult')?.addEventListener('click',()=>openCastEditor246('adult'));$('castAddPet')?.addEventListener('click',()=>openCastEditor246('pet'));$('castEditorClose')?.addEventListener('click',closeCastEditor246);$('castEditorCancel')?.addEventListener('click',closeCastEditor246);$('castEditorSave')?.addEventListener('click',saveCastEditor246);$('castEditorPhotoButton')?.addEventListener('click',()=>$('castEditorPhotoInput')?.click());$('castEditorPhotoInput')?.addEventListener('change',async e=>{const f=e.target.files?.[0];e.target.value='';if(!f)return;const x=castText246();if(!/^image\/(jpeg|png|webp)$/i.test(f.type)){$('castEditorStatus').textContent=x.photoError;return}try{castEditor246.photo=await resizeChildPhoto(f);renderCastEditorPhoto246();$('castEditorStatus').textContent=x.photoReady}catch{$('castEditorStatus').textContent=x.photoError}});$('castEditorRemovePhoto')?.addEventListener('click',()=>{castEditor246.photo=null;renderCastEditorPhoto246();$('castEditorStatus').textContent=castText246().photoRemoved});
 setCastText246();
