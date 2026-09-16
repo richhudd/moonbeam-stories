@@ -1,3 +1,9 @@
+# Moonbeam Stories V250.3
+
+## V250.3 — Mobile shared-story button replacement
+
+Built directly from V250.2. Desktop shared-story behaviour is unchanged. On mobile only, the end-page “Create my story” control inside the swipe-controlled reader is hidden and replaced by a new fixed native button mounted directly under `document.body`, above and outside the reader interaction layer. The button navigates directly to the existing Moonbeam create-story destination. No story generation, image generation, Cast, account, credit, Supabase, sharing-data, or desktop reader logic is changed. No SQL required.
+
 # Moonbeam Stories V250.2
 
 ## V250.2 — mobile shared-story end-page interaction fix

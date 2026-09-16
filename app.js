@@ -1068,7 +1068,24 @@ function keepNarratedSentenceVisible(span,idx){
 function updateNarrationHighlight(audio){const spans=[...document.querySelectorAll('.narration-sentence')];if(!spans.length||!isFinite(audio.duration)||audio.duration<=0)return;const weights=spans.map(s=>Math.max(1,s.textContent.trim().length)),total=weights.reduce((a,b)=>a+b,0);let target=(audio.currentTime/audio.duration)*total,acc=0,idx=0;for(let i=0;i<weights.length;i++){acc+=weights[i];if(target<=acc){idx=i;break}}spans.forEach((s,i)=>s.classList.toggle('speaking',i===idx));keepNarratedSentenceVisible(spans[idx],idx)}
 async function startNarrationForCurrentPage(){if(!currentBook||currentBook.currentPage<0)return;for(const a of activeNarrationAudios){try{a.pause();a.currentTime=0}catch{}}activeNarrationAudios.clear();narrationAudio=null;const pageAtStart=currentBook.currentPage,run=++narrationRun,text=currentPageText(),key=narrationKey(),button=$('narrationControl');if(button){button.textContent='…';button.classList.add('loading')}try{const src=await getNarration(text,key);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;const audio=new Audio(src);activeNarrationAudios.add(audio);narrationAudio=audio;if(button){button.textContent='⏸';button.classList.remove('loading')}audio.ontimeupdate=()=>{if(currentBook?.currentPage===pageAtStart)updateNarrationHighlight(audio)};audio.onended=()=>{activeNarrationAudios.delete(audio);if(run!==narrationRun||!currentBook||currentBook.currentPage!==pageAtStart)return;clearNarrationHighlight();if(narrationAudio===audio)narrationAudio=null;if(button)button.textContent='▶';if(currentBook.readingMode==='narrated'&&pageAtStart<=currentBook.pages.length+1){narrationStartTimeout=setTimeout(()=>{narrationStartTimeout=null;goNextBookPage(true)},500)}};await audio.play()}catch(e){console.error(e);const message=e?.message||t().narrationUnavailable;if(button){button.textContent='▶';button.classList.remove('loading');button.title=message}if(currentBook?.isSaved)alert(message)} }
 function toggleNarration(){if(!currentBook)return;if(narrationAudio&&!narrationAudio.paused){narrationAudio.pause();const b=$('narrationControl');if(b)b.textContent='▶';return}if(narrationAudio&&narrationAudio.paused){narrationAudio.play();const b=$('narrationControl');if(b)b.textContent='⏸';return}startNarrationForCurrentPage()}
+function removeMobileSharedCreateButton(){document.getElementById('mobileSharedCreateStory')?.remove()}
+function mountMobileSharedCreateButton(book,sx){
+ removeMobileSharedCreateButton();
+ if(!book?.isShared||!isPhoneReader())return;
+ const button=document.createElement('button');
+ button.type='button';
+ button.id='mobileSharedCreateStory';
+ button.className='primary mobile-shared-create-button';
+ button.textContent=sx.create;
+ button.setAttribute('aria-label',sx.create);
+ button.addEventListener('click',()=>{
+   const nextLanguage=book.child?.language||language||'en-GB';
+   window.location.href=`/?lang=${encodeURIComponent(nextLanguage)}&fromShare=1`;
+ });
+ document.body.appendChild(button);
+}
 function renderBookPage(index){
+ removeMobileSharedCreateButton();
  rememberReaderScroll();
  stopNarration();
  const book=currentBook,total=book.pages.length+3,clamped=Math.max(0,Math.min(index,total-1));book.currentPage=clamped;if(!isPhoneReader())book.mobileSide='text';
@@ -1081,6 +1098,7 @@ function renderBookPage(index){
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div><p class="end-save-warning" id="endSaveWarning" hidden>${escapeHtml(t().savingPageWarning||'Please don’t close or leave this page until saving is complete.')}</p>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator){indicator.textContent='';indicator.classList.add('end-hidden')}
    const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};/* V250.1: sharedCreateStory deliberately uses its native href. Do not intercept navigation. */
+   if(book.isShared&&isPhoneReader()){const internal=$('sharedCreateStory');if(internal)internal.hidden=true;mountMobileSharedCreateButton(book,sx)}
    applyMobileSide();persistCurrentDraft();return;
  }
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
@@ -1101,7 +1119,7 @@ let illustrationTapStartX=0,illustrationTapStartY=0,illustrationLastTap=0;
 $('story').addEventListener('touchstart',e=>{if(!isPhonePortrait()||document.body.classList.contains('mobile-illustration-fullscreen-open'))return;const img=e.target.closest?.('.illustration-frame img');if(!img)return;const t=e.changedTouches?.[0];if(!t)return;illustrationTapStartX=t.clientX;illustrationTapStartY=t.clientY},{passive:true});
 $('story').addEventListener('touchend',e=>{if(!isPhonePortrait()||document.body.classList.contains('mobile-illustration-fullscreen-open'))return;const img=e.target.closest?.('.illustration-frame img');if(!img)return;const t=e.changedTouches?.[0];if(!t)return;if(Math.hypot(t.clientX-illustrationTapStartX,t.clientY-illustrationTapStartY)>18){illustrationLastTap=0;return}const now=Date.now();if(now-illustrationLastTap<360){e.preventDefault();illustrationLastTap=0;openIllustrationFullscreen(img.currentSrc||img.src,img.alt);return}illustrationLastTap=now},{passive:false});
 
-function closeReader(){if(storySaveInProgress){savingLeaveWarning();return}closeIllustrationFullscreen();stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode','shared-story-mode');$('story')?.classList.add('hidden')}
+function closeReader(){removeMobileSharedCreateButton();if(storySaveInProgress){savingLeaveWarning();return}closeIllustrationFullscreen();stopNarration();if(currentBook?.coverObjectUrl&&String(currentBook.coverObjectUrl).startsWith('blob:')){try{URL.revokeObjectURL(currentBook.coverObjectUrl)}catch{}}currentBook=null;document.body.classList.remove('story-mode','desktop-story-mode','shared-story-mode');$('story')?.classList.add('hidden')}
 function exitStoryHome(){closeReader();showMoonbeamLanding()}
 function startNewStory(){if(orientationNavigationGuardActive())return;if(storySaveInProgress){savingLeaveWarning();return}clearCurrentDraft();closeReader();$('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();goSetupPage(currentUser?1:0,true)}
 function goNextBookPage(fromNarration=false){if(!currentBook)return;const mode=currentBook.readingMode;stopNarration();const total=currentBook.pages.length+3;if(isPhoneReader()&&currentBook.currentPage<0){beginStory(mode);return}if(currentBook.currentPage<total-1){renderBookPage(currentBook.currentPage+1);if(mode==='narrated'&&currentPageText())scheduleNarration(120)}}
