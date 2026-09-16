@@ -1,3 +1,15 @@
+# Moonbeam Stories V250.13
+
+## V250.13 — creative story-engine cleanup
+- Built directly from V250.12.
+- Stage 1 changes story generation only. Illustration generation is deliberately unchanged for the separate Stage 2 reintegration.
+- Removes the V191-era random story-family blueprint system, including strict-realism/magic classifications, fixed settings and plot engines, generated companion types, special objects, impossible-rule limits, naming modes, prescribed twists and ending types.
+- Replaces that machinery with a compact creative brief: fantasy, magic, absurdity, realism, science fiction and other possibilities are all available, but none is compulsory. Blank Story Ideas are invented freely rather than assembled from fixed ingredient pools.
+- Removes behavioural choreography that treated supporting adults as characters who should stand back while child heroes solve the central challenge. Hero/Supporting Cast now describe narrative prominence only; behaviour and agency arise naturally from the story.
+- Preserves the authoritative closed Cast, exact names, maximum-two-Cast server validation, parent Story Idea authority, age suitability, language guidance, output/page contract, character/photo identity continuity and illustration-prompt contract.
+- Simplifies narrative/visual progression instructions so the story must develop but is not forced through camera-driven or predetermined beats. The JSON repair path uses the same cleaned creative assumptions and cannot reinstate the deleted blueprint.
+- No illustration-style changes, UI/layout changes, auth, Supabase, credits, saving, sharing, reader, narration, payment or database changes. No SQL required.
+
 # Moonbeam Stories V250.12
 
 ## V250.12 — Desktop text labels removed + saved-book loading wording
