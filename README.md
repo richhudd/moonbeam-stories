@@ -1,3 +1,12 @@
+# Moonbeam Stories V250.1
+
+## V250.1 — mobile shared-story “Create my story” link fix
+- Built directly from the clean V250 package.
+- Removes only the JavaScript click interception on the shared-story end-page “Create my story” link.
+- The link now follows its existing native `href`, avoiding the mobile navigation failure while preserving the same destination.
+- Desktop shared-story behaviour, story/image generation, accounts, Cast, credits, reader, sharing, Supabase and all other functionality are unchanged.
+- No Supabase schema change required.
+
 # Moonbeam Stories V250
 
 ## V250 — authoritative Cast identity + closed principal cast
