@@ -1,3 +1,19 @@
+# Moonbeam Stories V253
+
+## V253 — Creative Reset
+- Built directly from the clean V250 source. V251/V252 experiments are not included.
+- Completely replaces the accumulated story-generation creative architecture with a deliberately minimal storyteller prompt.
+- Removes random story families/blueprints, plot engines, mandatory narrative progression, fixed beginning-development-climax formulas, equal-page prose targets, overall word-count targets, age-band writing recipes, and creative quality gates from story generation.
+- The storyteller is given the hero age and asked to use its own judgement about age-appropriate language, complexity, emotional intensity and story length.
+- Heroes identify whose story it fundamentally is. Other selected Cast are available familiar people/pets, not compulsory participants and not assigned support duties.
+- Story Idea is optional creative material rather than an assumed plot; a blank idea gives the storyteller full imaginative freedom.
+- The storyteller may choose prose, rhythm or rhyme naturally when it serves the particular story and read-aloud experience.
+- The existing Moonbeam book format remains opening + 4 middle illustrated pages + closing, but those containers no longer impose equal word counts or prescribed story beats; text panes may scroll.
+- JSON shape, age suitability, supplied names, visual continuity metadata and exactly four middle illustration slots remain as product/technical constraints.
+- The only retry remains the existing one-time JSON-format repair; it is not a creative pass/fail quality-control loop.
+- Page layout and controls remain unchanged; only the Story Idea/supporting-Cast explanatory copy is softened to match the new creative model. Accounts, credits, Cast storage/editor behaviour, reader, illustrations, narration, saving, sharing, payments, usage reporting and Supabase schema are unchanged from V250.
+- Exactly 12 Vercel API functions. No Supabase migration required.
+
 # Moonbeam Stories V250
 
 ## V250 — authoritative Cast identity + closed principal cast
