@@ -1,3 +1,11 @@
+# Moonbeam Stories V250.5
+
+## V250.5 — Mobile end-page vertical scrolling
+
+Built directly from the working V250.4. On portrait mobile only, The End page can now scroll vertically whenever its content is taller than the available viewport. The existing V250.4 two-Cast limit and V250.3 rebuilt shared-story mobile Create my story button are preserved. Desktop reader behaviour is unchanged. No Supabase schema change.
+
+---
+
 # Moonbeam Stories V250.4
 
 ## V250.4 — two-Cast story limit
