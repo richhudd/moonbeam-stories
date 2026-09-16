@@ -1,4 +1,16 @@
-# Moonbeam Stories V250
+# Moonbeam Stories V251
+
+## V251 — hidden canonical Cast identity
+- Built directly from the complete V250 package.
+- Keeps the V250 parent-facing layout and Cast workflow unchanged: there is no approval screen, canonical preview, new button or new setup step.
+- A photographed Cast member gets a private canonical Moonbeam identity only after that Cast member is first used in a successfully generated story, avoiding canonical-generation cost for unused profiles.
+- The canonical image is stored privately alongside that profile's existing reference photo and becomes the image reference for that Cast member in subsequent cover/page illustration requests and future books.
+- Changing or removing the profile photo invalidates/removes the old canonical; the next successful story using the replacement photo creates a new canonical automatically.
+- If canonical creation or retrieval fails, story creation remains usable and falls back to the original V250 photo-reference behaviour for that Cast member.
+- Canonical generation is logged as image usage but does not consume one of the story generation run's illustration slots.
+- Canonical generation is handled as a private operation inside the existing `/api/illustrate` endpoint, so V251 remains at exactly 12 serverless API functions for the Vercel deployment limit.
+- Uses the existing private `child-profile-photos` storage bucket; no Supabase schema migration is required.
+- Existing saved stories are untouched.
 
 ## V250 — authoritative Cast identity + closed principal cast
 - Built directly from V249.

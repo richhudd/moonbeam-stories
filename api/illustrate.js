@@ -14,6 +14,44 @@ module.exports = async function handler(req, res) {
   let reservedRunId=null;
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+
+    // V251 — hidden canonical Cast identity shares the existing illustration endpoint
+    // so the deployment remains within Vercel's 12-function limit. This operation is
+    // authenticated and usage-logged, but deliberately does not consume a story image slot.
+    if (body.operation === 'canonicalize') {
+      const moonbeamUser = await verifyMoonbeamUser(req);
+      const photo = String(body.photo || '');
+      if (!/^data:image\/(jpeg|png|webp);base64,/i.test(photo)) return res.status(400).json({ error: 'A valid Cast reference photo is required.' });
+      const name = String(body.name || 'this character').trim().slice(0, 80);
+      const kind = String(body.kind || 'character').trim();
+      const details = kind === 'child'
+        ? `child, age ${Number(body.age) || 7}`
+        : kind === 'adult'
+          ? `adult${body.relationship ? `, relationship: ${String(body.relationship).slice(0,80)}` : ''}`
+          : `pet${body.animal_type ? `, animal: ${String(body.animal_type).slice(0,80)}` : ''}${body.breed ? `, breed: ${String(body.breed).slice(0,80)}` : ''}`;
+      const canonicalPrompt = `Create a private canonical Moonbeam character reference for ${name} (${details}) from the attached photograph. This is an identity model sheet, not a story scene. Preserve the specific individual's recognisable identity with especially strong fidelity to face shape, eyes, nose, mouth/smile, hair colour and texture, approximate skin tone, apparent age and overall proportions; for a pet preserve species/breed, coat, markings and body proportions. Translate the person or pet into Moonbeam's premium contemporary storybook painting style: approximately 80% naturalistic realism and 20% gentle storybook idealisation, believable anatomy, normal-sized eyes, detailed natural hair/fur, softly modelled features, subtle painterly texture and warm neutral light. Show one physical instance only, centred, clearly visible, neutral relaxed expression/pose, simple unobtrusive clothing where applicable, and a plain softly painted neutral background. Do not add text, props, scenery, other people or animals. Do not beautify, age up/down, caricature, cartoonise or redesign the subject. The purpose of this image is to become the stable visual identity reference for all future Moonbeam illustrations featuring this Cast member.`;
+      const match = photo.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
+      const bytes = Buffer.from(match[2], 'base64');
+      const form = new FormData();
+      form.append('model', 'gpt-image-2.5-sunburst');
+      form.append('prompt', canonicalPrompt);
+      form.append('image', new Blob([bytes], { type: match[1].toLowerCase() }), 'cast-photo.jpg');
+      form.append('size', '1024x1024');
+      form.append('quality', 'low');
+      form.append('output_format', 'webp');
+      const canonicalResponse = await fetch('https://api.openai.com/v1/images/edits', { method:'POST', headers:{ Authorization:`Bearer ${apiKey}` }, body:form });
+      const canonicalRaw = await canonicalResponse.text();
+      let canonicalData = {}; try { canonicalData = JSON.parse(canonicalRaw); } catch {}
+      if (!canonicalResponse.ok) {
+        const e = canonicalData?.error;
+        return res.status(502).json({ error:String(typeof e === 'string' ? e : (e?.message || e?.code || e?.type) || `OpenAI returned HTTP ${canonicalResponse.status}`) });
+      }
+      const canonicalItem = Array.isArray(canonicalData.data) ? canonicalData.data[0] : null;
+      if (!canonicalItem?.b64_json) return res.status(502).json({ error:'The image service returned no canonical character image.' });
+      await logUsage({ event_type:'image', estimated_cost_gbp:estimateGBP('image',{reference:true}), metadata:{reference:true,user_id:moonbeamUser.id,canonical_cast:true} });
+      return res.status(200).json({ image:`data:image/webp;base64,${canonicalItem.b64_json}` });
+    }
+
     const prompt = String(body.prompt || '').trim();
     const referenceImages = Array.isArray(body.referenceImages) ? body.referenceImages.slice(0,8) : [];
     const generationRunId = String(body.generationRunId || '').trim();
