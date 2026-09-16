@@ -3921,3 +3921,6 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 @media(pointer:coarse) and (orientation:landscape) and (max-height:600px){
   .mobile-shared-create-button{display:block;position:fixed;z-index:10050;left:50%;right:auto;bottom:max(12px,calc(env(safe-area-inset-bottom) + 8px));transform:translateX(-50%);width:min(420px,calc(100vw - 48px));min-height:46px;padding:10px 16px;touch-action:manipulation;pointer-events:auto}
 }
+
+/* V250.4 — maximum two selected Cast members per story. */
+.story-role-choice.disabled{cursor:not-allowed;opacity:.2;filter:grayscale(1);pointer-events:none}.story-role-choice.disabled:hover{opacity:.2;filter:grayscale(1)}.story-role-limit{margin:2px 4px 0;font-weight:700;color:#5a4674}

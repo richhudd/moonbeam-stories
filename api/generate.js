@@ -40,6 +40,7 @@ module.exports = async function handler(req, res) {
     const child = body.child || {};
     const cast = Array.isArray(child.cast) ? child.cast.filter(m=>m&&m.name&&m.role) : [];
     const heroes = cast.filter(m=>m.role==='hero'&&m.kind==='child');
+    if (cast.length > 2 || (cast.length === 2 && heroes.length < 1)) return res.status(400).json({ error: 'A story can feature a maximum of two Cast members, with at least one hero.' });
     if (!heroes.length && (!child.name || !Number.isFinite(Number(child.age)))) return res.status(400).json({ error: 'Please choose at least one child as a hero.' });
     const age = heroes.length ? Math.min(...heroes.map(h=>Number(h.age)).filter(Number.isFinite)) : Number(child.age);
     if(!Number.isFinite(age)) return res.status(400).json({error:'Please provide a valid hero age.'});

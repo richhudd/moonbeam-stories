@@ -1,3 +1,9 @@
+# Moonbeam Stories V250.4
+
+## V250.4 — two-Cast story limit
+
+Built directly from V250.3. The story-role selector has been rebuilt around one rule: each story may use a maximum of two selected Cast members, with at least one Hero. Valid selections are one Hero, two Heroes, or one Hero plus one Supporting Cast member. The rule is stated explicitly on the page in all nine supported locales. Once the permitted selection is full, remaining choices are disabled rather than allowing an invalid combination. The generation API also rejects more than two Cast members as a server-side safeguard. Cast-library size is unchanged: users may still store any number of children, adults and pets and choose up to two for a particular story. No Supabase schema change is required.
+
 # Moonbeam Stories V250.3
 
 ## V250.3 — Mobile shared-story button replacement
