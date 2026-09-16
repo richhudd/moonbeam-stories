@@ -1,3 +1,15 @@
+# Moonbeam Stories V250.7
+
+## V250.7 — Story idea examples + editable Cast names
+
+Built directly from the working V250.6.
+
+- Replaced the grey story-idea examples in all nine languages so they describe adventure ideas only, do not mention family relationships, and do not suggest more than two story characters.
+- Added a clear Edit profile action to every Cast member menu, including children. Editing updates the existing `cast_members` record in place, so the same profile ID, photo and stored identity remain attached to that Cast member.
+- Existing saved stories are not rewritten when a Cast member is renamed.
+- All V250.6 behaviour is otherwise preserved.
+- No Supabase schema change.
+
 # Moonbeam Stories V250.6
 
 ## V250.6 — Mobile landscape end-page vertical scrolling
