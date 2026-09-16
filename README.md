@@ -1,3 +1,16 @@
+# Moonbeam Stories V250.9
+
+## V250.9 — Two-Hero Cover Dedication
+
+Built directly from V250.8.
+
+- Cover dedication uses all selected Heroes (up to two).
+- One-Hero covers remain unchanged.
+- Two Hero names are joined naturally in all nine supported languages.
+- Supporting Cast is never included.
+- Older saved books fall back safely to their original primary child name.
+- No Supabase schema change.
+
 # Moonbeam Stories V250.8
 
 ## V250.8 — Adult relationship field removed
