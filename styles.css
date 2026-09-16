@@ -3973,3 +3973,9 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 @media (hover:hover) and (pointer:fine) and (min-width:901px){
   body.story-mode .book .page-number{display:none!important;}
 }
+
+
+/* V250.12 — desktop bottom counter makes story text labels redundant. */
+@media (hover:hover) and (pointer:fine) and (min-width:901px){
+  body.story-mode .book .chapter-label{display:none!important;}
+}

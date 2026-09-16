@@ -1,3 +1,11 @@
+# Moonbeam Stories V250.12
+
+## V250.12 — Desktop text labels removed + saved-book loading wording
+
+Built directly from V250.11. On desktop, the in-page story labels such as ‘THE BEGINNING’ and ‘PAGE 1’ are hidden; the bottom reader page counter remains. Saved books now show ‘Loading your book…’ (localized across all nine supported languages) while their existing cover asset loads, rather than wording that implies the cover is being generated. Mobile text-page labels and new-book cover-generation wording are unchanged. No Supabase schema change.
+
+---
+
 # Moonbeam Stories V250.11
 
 ## V250.11 — Desktop in-page numbers removed
