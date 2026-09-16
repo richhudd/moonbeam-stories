@@ -1,4 +1,11 @@
-# Moonbeam Stories V250.5
+# Moonbeam Stories V250.6
+
+## V250.6 — Mobile landscape end-page vertical scrolling
+
+- Extends the proven V250.5 End-page vertical scrolling behaviour to coarse-pointer mobile/tablet landscape readers.
+- Desktop reader behaviour is unchanged.
+- Portrait mobile behaviour from V250.5 is preserved.
+- No API, Supabase, story, image, Cast, account, credit, sharing or generation changes.
 
 ## V250.5 — Mobile end-page vertical scrolling
 
