@@ -1,3 +1,9 @@
+# Moonbeam Stories V250.10
+
+## V250.10 — Desktop photo drag-and-drop restored + Cast selection note removed
+
+Built directly from V250.9. Restores desktop drag-and-drop to the current Add photo / Change photo Cast editor: dropping a JPG, PNG or WebP onto the existing photo area uses the same resize/save path as choosing a file. Mobile photo-picker behaviour is unchanged. Removes the ‘Selected for the current story’ note from child Cast profile cards. No Supabase schema change.
+
 # Moonbeam Stories V250.9
 
 ## V250.9 — Two-Hero Cover Dedication

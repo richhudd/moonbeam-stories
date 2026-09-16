@@ -3962,3 +3962,9 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
     padding-bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px))!important;
   }
 }
+
+/* V250.10 — restore desktop drag-and-drop to the current Cast photo editor. */
+@media (hover:hover) and (pointer:fine){
+  #castEditorPhotoPreview{cursor:copy;outline:2px dashed transparent;outline-offset:4px;transition:outline-color .15s ease,transform .15s ease}
+  #castEditorPhotoPreview.drag-over{outline-color:currentColor;transform:scale(1.03)}
+}
