@@ -1,3 +1,14 @@
+# Moonbeam Stories V250.16
+
+## V250.16 — generation freedom / bias cleanup
+- Built directly from V250.15.
+- Removes repeated creative wording that over-emphasised surprise, impossibility, wonder and extraordinary events, which could bias blank generations toward ordinary modern settings disrupted by strange physical phenomena. No anti-weather rule, genre lottery or replacement story formula is added.
+- Clarifies that selected Cast have fixed supplied identities but are not locked to fixed fictional roles or everyday contemporary circumstances. When the parent has not specified otherwise, period, story world, social context, clothing, role, status, abilities and story-required fictional transformations may arise naturally from the story.
+- Narrows the legacy V196 name lock: supplied personal names remain exact and the generator still cannot invent surnames, middle names, nicknames, pet names or other personal names, while fictional titles, ranks, roles and forms of address are now permitted when natural to the story.
+- Keeps supplied reference photos authoritative for underlying recognisable physical identity while allowing story-world costume, role, abilities and fictional characteristics without treating those as a conflicting identity.
+- Applies the narrowed name/identity rules to the JSON repair path so repair cannot restore the old restriction.
+- Story safety, age suitability, Cast membership/limits, Story Idea authority, language/output contract, illustration rendering system, UI/layout, auth, Supabase, credits, saving, sharing, reader, narration, payments and legal documents are unchanged. No SQL required.
+
 # Moonbeam Stories V250.15
 
 ## V250.15 — illustration expression, scene clarity + recurring visual continuity
