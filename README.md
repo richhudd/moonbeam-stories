@@ -1,12 +1,24 @@
-# Moonbeam Stories V250.14
+# Moonbeam Stories V250.15
 
-## V250.14 — expression freedom for photo-referenced Cast
-- Keeps V250.13 story generation unchanged.
-- Keeps the existing V250 illustration style, image API, reference-photo attachment mechanism and authoritative Cast identity mapping unchanged.
-- Refines only the illustration identity instruction so a profile photograph defines stable identity rather than a fixed facial expression or pose. The illustrator is explicitly told not to copy/lock the reference smile, teeth visibility, mouth position, gaze, head angle or body pose, and to use scene-appropriate facial expressions and body language while preserving recognisable identity.
-- No reader, layout, Cast UI, auth, Supabase, credits, sharing, narration, saved-book, localisation or other structural website behaviour is changed. No database migration is required.
+## V250.15 — illustration expression, scene clarity + recurring visual continuity
+- Built directly from the deployed V250.13 creative-story-cleanup baseline. V250.14 is not used.
+- Keeps the current Moonbeam illustration rendering style and existing Cast/photo identity-reference architecture unchanged.
+- Reference-photo expressions are no longer treated as fixed poses. Expressions may follow the story, but the illustrator must not invent unseen personal facial information: a closed-mouth reference must not acquire invented visible teeth/open-mouth smile; an observed toothy smile may be used when appropriate but is not compulsory.
+- Illustrations now treat page text as context rather than a checklist: choose one strong coherent illustrative moment and, where useful, one or two distinctive supporting details instead of cramming every described item or action into the image.
+- Distinctive recurring objects, vehicles, machines, buildings, creatures and important environments now keep their established defining visual characteristics across the book while still allowing genuine story-driven changes and different viewpoints.
+- Story generation, current rendering style, Cast limits, UI/layout, auth, Supabase, credits, saving, sharing, reader, narration, payments and legal documents are unchanged. No SQL required.
 
----
+# Moonbeam Stories V250.13
+
+## V250.13 — creative story-engine cleanup
+- Built directly from V250.12.
+- Stage 1 changes story generation only. Illustration generation is deliberately unchanged for the separate Stage 2 reintegration.
+- Removes the V191-era random story-family blueprint system, including strict-realism/magic classifications, fixed settings and plot engines, generated companion types, special objects, impossible-rule limits, naming modes, prescribed twists and ending types.
+- Replaces that machinery with a compact creative brief: fantasy, magic, absurdity, realism, science fiction and other possibilities are all available, but none is compulsory. Blank Story Ideas are invented freely rather than assembled from fixed ingredient pools.
+- Removes behavioural choreography that treated supporting adults as characters who should stand back while child heroes solve the central challenge. Hero/Supporting Cast now describe narrative prominence only; behaviour and agency arise naturally from the story.
+- Preserves the authoritative closed Cast, exact names, maximum-two-Cast server validation, parent Story Idea authority, age suitability, language guidance, output/page contract, character/photo identity continuity and illustration-prompt contract.
+- Simplifies narrative/visual progression instructions so the story must develop but is not forced through camera-driven or predetermined beats. The JSON repair path uses the same cleaned creative assumptions and cannot reinstate the deleted blueprint.
+- No illustration-style changes, UI/layout changes, auth, Supabase, credits, saving, sharing, reader, narration, payment or database changes. No SQL required.
 
 # Moonbeam Stories V250.12
 
