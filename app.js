@@ -85,7 +85,7 @@ async function maybeRestoreStoryDraft(){
  try{if(child.profileId)child.referencePhoto=await childPhotoGetForProfile(child.profileId)||null}catch{}
  language=(child.language&&locales[child.language])?child.language:language;localStorage.setItem('moonbeamLanguage',language);applyLocale();const lang=$('language');if(lang)lang.value=language;
  $('landing')?.classList.add('hidden');$('productApp')?.classList.remove('hidden');document.body.classList.add('product-active');showCreateStoryView();
- renderStory(draft.story,null,child,{cacheId:draft.cacheId||null,visualCacheId:draft.visualCacheId||draft.cacheId||null,isDraftRestore:true,draftScroll:draft.state?.scroll||{}});showRestoredDraftPosition(draft.state||{});return true
+ renderStory(draft.story,null,child,{cacheId:draft.cacheId||null,visualCacheId:draft.visualCacheId||draft.cacheId||null,isDraftRestore:true,draftScroll:draft.state?.scroll||{}});showRestoredDraftPosition(draft.state||{});if(matchingPendingStorySave(currentBook))setTimeout(()=>resumePendingStorySave(),0);return true
 }
 window.addEventListener('pagehide',()=>{rememberReaderScroll();persistCurrentDraft()});
 window.addEventListener('beforeunload',e=>{rememberReaderScroll();persistCurrentDraft();if(storySaveInProgress){e.preventDefault();e.returnValue=''}});
@@ -404,10 +404,17 @@ function dataUrlToBlob(dataUrl){const m=String(dataUrl||'').match(/^data:([^;]+)
 async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');image=await requestIllustration(key,prompt,`Character continuity only: ${book.character_bible||'Keep the main child character visually consistent across the book.'}`,false,book.child?.referenceImages||book.child?.referencePhoto||null,true,index);book.artwork.pages[index]=image}return image}
 async function finishedCoverForSave(book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.cover)return book.artwork.cover;const key=coverKey(book);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image)image=book.artwork?.pages?.[0]||await finishedImageForSave(0,book);return image}
 async function uploadSavedBookArt(storyId,book=currentBook){if(!currentUser||!book)throw new Error('Sign in to save the complete book.');const total=book.pages.length+2,assets={version:2,cover:null,pages:[]},base=`${currentUser.id}/${storyId}`;const cover=await finishedCoverForSave(book),coverPath=`${base}/cover.webp`;let r=await supabaseClient.storage.from('saved-story-art').upload(coverPath,dataUrlToBlob(cover),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.cover=coverPath;for(let i=0;i<total;i++){const image=await finishedImageForSave(i,book),path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}return assets}
+const PENDING_STORY_SAVE_KEY='moonbeam:pending-story-save:v25018';
+function readPendingStorySave(){try{const x=JSON.parse(localStorage.getItem(PENDING_STORY_SAVE_KEY)||'null');return x&&x.version===25018&&x.userId&&x.storyId?x:null}catch{return null}}
+function writePendingStorySave(storyId,book=currentBook){if(!currentUser||!storyId||!book)return;try{localStorage.setItem(PENDING_STORY_SAVE_KEY,JSON.stringify({version:25018,userId:currentUser.id,storyId,cacheId:book.cacheId||null,createdAt:Date.now()}))}catch{}}
+function clearPendingStorySave(){try{localStorage.removeItem(PENDING_STORY_SAVE_KEY)}catch{}}
+function matchingPendingStorySave(book=currentBook){const x=readPendingStorySave();return x&&currentUser&&x.userId===currentUser.id&&book&&(!x.cacheId||x.cacheId===book.cacheId)?x:null}
+function ensureStorySaveBanner(){let el=$('storySaveBanner');if(el)return el;el=document.createElement('div');el.id='storySaveBanner';el.className='story-save-banner';el.hidden=true;el.setAttribute('role','status');el.setAttribute('aria-live','assertive');document.body.appendChild(el);return el}
 let storySaveInProgress=false;
 function setStorySaveUi(state){
  const buttons=[$('save'),$('endSave'),$('mobileSave')].filter(Boolean);
  const warning=$('endSaveWarning');if(warning)warning.hidden=state!=='saving';
+ const banner=ensureStorySaveBanner();banner.textContent=t().savingPageWarning||'Please don’t close or leave this page until saving is complete.';banner.hidden=state!=='saving';banner.classList.toggle('is-saving',state==='saving');
  for(const b of buttons){
   if(state==='saving'){b.disabled=true;b.textContent=t().saving||'Saving…';b.classList.add('saving-state');b.classList.remove('saved-state');b.setAttribute('aria-busy','true')}
   else if(state==='saved'){b.disabled=true;b.textContent=t().storySaved||t().savedBtn;b.classList.remove('saving-state');b.classList.add('saved-state');b.removeAttribute('aria-busy')}
@@ -415,8 +422,23 @@ function setStorySaveUi(state){
  }
 }
 function savingLeaveWarning(){alert(t().savingLeave||'Your story is still saving. Please wait a few seconds before leaving this story. You can keep turning pages while it saves.')}
+async function resumePendingStorySave(){
+ const pending=matchingPendingStorySave();if(!pending||!currentBook||storySaveInProgress)return null;
+ storySaveInProgress=true;setStorySaveUi('saving');persistCurrentDraft();
+ try{
+  const existing=await supabaseClient.from('saved_stories').select('id').eq('id',pending.storyId).eq('parent_id',currentUser.id).maybeSingle();
+  if(existing.error)throw existing.error;if(!existing.data){clearPendingStorySave();setStorySaveUi('idle');return null}
+  const assets=await uploadSavedBookArt(pending.storyId,currentBook);
+  const update=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',pending.storyId).eq('parent_id',currentUser.id).select('saved_assets').single();
+  if(update.error)throw update.error;
+  if(!update.data?.saved_assets?.cover||update.data.saved_assets.pages?.length!==currentBook.pages.length+2)throw new Error('Moonbeam could not verify the saved illustrations.');
+  currentBook.isSaved=true;currentBook.savedStoryId=pending.storyId;currentBook.savedAssets=update.data.saved_assets;currentBook.visualCacheId=`saved:${pending.storyId}`;clearPendingStorySave();clearCurrentDraft();await loadCloudStories();setStorySaveUi('saved');return pending.storyId;
+ }catch(e){console.error('Interrupted story save could not yet resume',e);setStorySaveUi('idle');alert('Your book is not fully saved yet. Moonbeam kept the interrupted save so you can try Save again. '+(e.message||e));return null}
+ finally{storySaveInProgress=false}
+}
 async function saveCurrentStory(){
  if(!currentBook||storySaveInProgress)return currentBook?.savedStoryId||null;
+ if(matchingPendingStorySave(currentBook))return resumePendingStorySave();
  const bookToSave=currentBook;storySaveInProgress=true;setStorySaveUi('saving');persistCurrentDraft();
  try{
   const cleanPages=bookToSave.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
@@ -424,15 +446,17 @@ async function saveCurrentStory(){
    const childId=await ensureCloudProfile(bookToSave.child);
    const insert=await supabaseClient.from('saved_stories').insert({parent_id:currentUser.id,child_id:childId,title:bookToSave.title,language:bookToSave.child?.language||language,length:bookToSave.child?.length||null,tone:bookToSave.child?.tone||null,values:bookToSave.child?.values||[],opening:bookToSave.opening,character_bible:bookToSave.character_bible,pages:cleanPages,closing:bookToSave.closing,generation_run_id:bookToSave.generationRunId||null}).select('id').single();
    if(insert.error)throw insert.error;
+   writePendingStorySave(insert.data.id,bookToSave);
    try{
     const assets=await uploadSavedBookArt(insert.data.id,bookToSave);
     const update=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',insert.data.id).select('saved_assets').single();
     if(update.error)throw update.error;
     if(!update.data?.saved_assets?.cover||update.data.saved_assets.pages?.length!==bookToSave.pages.length+2)throw new Error('Moonbeam could not verify the saved illustrations.');
-    bookToSave.isSaved=true;bookToSave.savedStoryId=insert.data.id;bookToSave.savedAssets=update.data.saved_assets;bookToSave.visualCacheId=`saved:${insert.data.id}`;clearCurrentDraft();
+    bookToSave.isSaved=true;bookToSave.savedStoryId=insert.data.id;bookToSave.savedAssets=update.data.saved_assets;bookToSave.visualCacheId=`saved:${insert.data.id}`;clearPendingStorySave();clearCurrentDraft();
    }catch(assetError){
     await supabaseClient.storage.from('saved-story-art').remove([`${currentUser.id}/${insert.data.id}/cover.webp`,...Array.from({length:bookToSave.pages.length+2},(_,i)=>`${currentUser.id}/${insert.data.id}/page-${i}.webp`)]);
     await supabaseClient.from('saved_stories').delete().eq('id',insert.data.id);
+    clearPendingStorySave();
     throw new Error('The complete illustrated book could not be saved. Nothing was added to your library. '+(assetError.message||assetError));
    }
    await loadCloudStories();setStorySaveUi('saved');return insert.data.id;

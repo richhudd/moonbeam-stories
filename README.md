@@ -1,3 +1,16 @@
+# Moonbeam Stories V250.18
+
+## V250.18 — save reliability / interrupted-save recovery
+- Built directly from V250.17 Saved-Art Persistent Cache.
+- Keeps the existing translated “Please don’t close or leave this page until saving is complete.” wording, but makes the active save warning large, fixed, high-contrast and gently pulsing on desktop and mobile for the full save operation. The existing end-page warning is strengthened too.
+- Adds a local pending-save marker immediately after the `saved_stories` row is created and before artwork upload begins.
+- If the browser is refreshed, closed or navigated away while artwork is uploading, the normal V201 story draft and generated-image IndexedDB cache remain intact. On the next restoration of that same story/account, Moonbeam automatically resumes the existing saved-story upload instead of creating a second saved-story row.
+- Pressing Save again on a matching interrupted draft also resumes the same save.
+- Resume verifies that the pending database row still belongs to the signed-in account, re-uploads/repairs the complete cover/page set, verifies `saved_assets`, then marks the book saved and clears the draft/pending marker.
+- If resume itself cannot complete, the pending marker is retained so another retry remains possible. Supabase remains authoritative; no schema change is required.
+- Existing `beforeunload` protection, Moonbeam navigation blocking, V250.17 saved-art cache, story generation, illustration generation, Cast, credits, sharing, reader, narration, payments and legal pages are otherwise unchanged.
+- No Supabase SQL required.
+
 # Moonbeam Stories V250.17
 
 ## V250.17 — persistent saved-art cache
