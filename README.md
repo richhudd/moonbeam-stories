@@ -1,4 +1,12 @@
-# Moonbeam Stories V250.19
+# Moonbeam Stories V250.20
+
+## V250.20 — desktop homepage cleanup
+
+- Removes the redundant **Sign in** button from the desktop homepage title bar.
+- The existing **Create their story** button remains the single homepage entry point: signed-out users continue into authentication, while signed-in users continue directly into story setup.
+- Mobile behaviour is unchanged.
+- No Supabase schema change or SQL is required.
+
 
 ## V250.19 — mobile shared End page + Cast selector fit
 - Built directly from V250.18 Save Reliability.
