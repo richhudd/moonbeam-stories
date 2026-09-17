@@ -1,4 +1,4 @@
-# Moonbeam Stories V250.20
+# Moonbeam Stories V250.21
 
 ## V250.20 — desktop homepage cleanup
 
@@ -1257,3 +1257,9 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Tone and Values remain absent from generation; no default moral/value influence is imposed.
 - Optional pet breed and multi-reference illustration identity/scale rules retained.
 - V247 mobile Saved Stories repair and all earlier save/legal/reader fixes retained.
+
+
+## V250.21 — Desktop homepage Create Story attention cue
+- The main desktop homepage Create Story CTA now gently enlarges/brightens twice shortly after the homepage appears, then becomes completely still.
+- The cue is desktop-homepage-only; mobile and in-app Create Story controls are unchanged.
+- Respects reduced-motion preferences. No Supabase/SQL changes.

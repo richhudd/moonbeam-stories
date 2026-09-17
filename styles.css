@@ -4056,3 +4056,20 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
   .story-role-choice{min-height:68px!important;padding-left:8px!important;padding-right:29px!important;}
   .story-role-choice img,.story-role-choice .role-avatar{width:40px!important;height:40px!important;flex-basis:40px!important;}
 }
+
+/* V250.21 — desktop homepage primary CTA attention cue.
+   A short, gentle arrival pulse draws the eye to the sole story-entry action,
+   then stops completely. Mobile and product-app controls are unchanged. */
+@media (min-width:701px){
+  body:not(.product-active) #landing #landingStart{
+    animation:moonbeamHomepageCtaAttention 1.15s ease-in-out .55s 2;
+    transform-origin:center;
+  }
+}
+@keyframes moonbeamHomepageCtaAttention{
+  0%,100%{transform:scale(1);filter:brightness(1);box-shadow:0 0 0 rgba(104,72,186,0)}
+  50%{transform:scale(1.045);filter:brightness(1.08);box-shadow:0 8px 24px rgba(104,72,186,.24)}
+}
+@media (prefers-reduced-motion:reduce){
+  body:not(.product-active) #landing #landingStart{animation:none!important}
+}
