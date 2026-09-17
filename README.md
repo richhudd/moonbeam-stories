@@ -1,4 +1,16 @@
-# Moonbeam Stories V250.16
+# Moonbeam Stories V250.17
+
+## V250.17 — persistent saved-art cache
+- Built directly from V250.16 Generation Freedom.
+- Saved-book covers and page illustrations now check a dedicated IndexedDB cache before downloading from the private Supabase `saved-story-art` bucket.
+- On a cache miss, the existing Supabase download remains the fallback; a successful download is cached locally for later visits. Cache failure never blocks the Supabase path.
+- Shared-link artwork is deliberately unchanged and continues through the existing authenticated share API.
+- Saved-art cache keys are scoped to the signed-in user and exact Storage path, preventing cross-account or cross-book collisions.
+- Deleting a cloud story also removes its local saved-art cache entries and revokes any in-memory library-cover URL.
+- The existing generated-illustration cache and legacy `recoverMissingSavedStoryArt()` migration path are unchanged; saved cloud artwork uses a separate IndexedDB object store so it cannot evict generation/recovery entries.
+- No Supabase schema/SQL, API, story generation, illustration generation, Cast, credits, reader layout, sharing, legal or localization changes.
+
+## Moonbeam Stories V250.16
 
 ## V250.16 — generation freedom / bias cleanup
 - Built directly from V250.15.

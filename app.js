@@ -91,16 +91,22 @@ window.addEventListener('pagehide',()=>{rememberReaderScroll();persistCurrentDra
 window.addEventListener('beforeunload',e=>{rememberReaderScroll();persistCurrentDraft();if(storySaveInProgress){e.preventDefault();e.returnValue=''}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){rememberReaderScroll();persistCurrentDraft()}});
 const illustrationInflight=new Map();
-const IMAGE_DB_NAME='moonbeam-illustrations-v1', IMAGE_STORE='images', CHILD_PHOTO_STORE='childPhotos', IMAGE_CACHE_LIMIT=160;
+const IMAGE_DB_NAME='moonbeam-illustrations-v1', IMAGE_STORE='images', CHILD_PHOTO_STORE='childPhotos', SAVED_ART_STORE='savedArt', IMAGE_CACHE_LIMIT=160;
 let imageDbPromise=null, imageWrites=0, currentChildPhoto=null;
 function openImageDb(){
  if(!('indexedDB' in window))return Promise.resolve(null);
  if(imageDbPromise)return imageDbPromise;
- imageDbPromise=new Promise(resolve=>{try{const req=indexedDB.open(IMAGE_DB_NAME,2);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(IMAGE_STORE))db.createObjectStore(IMAGE_STORE,{keyPath:'key'});if(!db.objectStoreNames.contains(CHILD_PHOTO_STORE))db.createObjectStore(CHILD_PHOTO_STORE,{keyPath:'key'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>resolve(null)}catch{resolve(null)}});return imageDbPromise
+ imageDbPromise=new Promise(resolve=>{try{const req=indexedDB.open(IMAGE_DB_NAME,3);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(IMAGE_STORE))db.createObjectStore(IMAGE_STORE,{keyPath:'key'});if(!db.objectStoreNames.contains(CHILD_PHOTO_STORE))db.createObjectStore(CHILD_PHOTO_STORE,{keyPath:'key'});if(!db.objectStoreNames.contains(SAVED_ART_STORE))db.createObjectStore(SAVED_ART_STORE,{keyPath:'key'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>resolve(null)}catch{resolve(null)}});return imageDbPromise
 }
 async function persistentImageGet(key){const db=await openImageDb();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).get(key);req.onsuccess=()=>resolve(req.result?.image||null);req.onerror=()=>resolve(null)}catch{resolve(null)}})}
 async function persistentImagePut(key,image){const db=await openImageDb();if(!db||!image)return;try{await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite');tx.objectStore(IMAGE_STORE).put({key,image,at:Date.now()});tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()});imageWrites++;if(imageWrites%12===0)pruneImageCache()}catch{}}
 async function persistentImageFindBySuffix(suffix){const db=await openImageDb();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>{const rows=(req.result||[]).filter(r=>String(r.key||'').endsWith(suffix)).sort((a,b)=>(b.at||0)-(a.at||0));resolve(rows[0]?.image||null)};req.onerror=()=>resolve(null)}catch{resolve(null)}})}
+// V250.17: saved-book artwork has its own disposable persistent cache. Supabase remains authoritative cloud storage.
+function savedArtCacheKey(path){return currentUser&&path?`saved-art:${currentUser.id}:${path}`:null}
+async function savedArtGet(path){const key=savedArtCacheKey(path),db=await openImageDb();if(!key||!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(SAVED_ART_STORE,'readonly'),req=tx.objectStore(SAVED_ART_STORE).get(key);req.onsuccess=()=>resolve(req.result?.blob||null);req.onerror=()=>resolve(null)}catch{resolve(null)}})}
+async function savedArtPut(path,blob){const key=savedArtCacheKey(path),db=await openImageDb();if(!key||!db||!blob)return;try{await new Promise(resolve=>{const tx=db.transaction(SAVED_ART_STORE,'readwrite');tx.objectStore(SAVED_ART_STORE).put({key,blob,at:Date.now()});tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
+async function savedArtDeletePaths(paths){const db=await openImageDb();if(!db||!currentUser||!Array.isArray(paths)||!paths.length)return;try{await new Promise(resolve=>{const tx=db.transaction(SAVED_ART_STORE,'readwrite'),store=tx.objectStore(SAVED_ART_STORE);paths.forEach(path=>{const key=savedArtCacheKey(path);if(key)store.delete(key)});tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
+async function savedArtBlob(path){if(!path||!currentUser)throw new Error('Saved artwork is unavailable.');const cached=await savedArtGet(path);if(cached)return cached;const {data,error}=await supabaseClient.storage.from('saved-story-art').download(path);if(error)throw error;await savedArtPut(path,data);return data}
 async function childPhotoRecord(key){const db=await openImageDb();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(CHILD_PHOTO_STORE,'readonly'),req=tx.objectStore(CHILD_PHOTO_STORE).get(key);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>resolve(null)}catch{resolve(null)}})}
 async function childPhotoGet(key){return (await childPhotoRecord(key))?.image||null}
 const CHILD_PHOTO_BUCKET='child-profile-photos';
@@ -437,7 +443,7 @@ async function saveCurrentStory(){
  }catch(e){console.error(e);setStorySaveUi('idle');alert('The story could not be saved: '+(e.message||e))}
  finally{storySaveInProgress=false}
 }
-async function deleteCloudStory(id){if(!currentUser)return;if(!confirm(t().deleteStoryConfirm))return;const item=cloudStories.find(x=>x.id===id),paths=[item?.savedAssets?.cover,...(item?.savedAssets?.pages||[])].filter(Boolean);if(paths.length)await supabaseClient.storage.from('saved-story-art').remove(paths);const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await loadCloudStories()}
+async function deleteCloudStory(id){if(!currentUser)return;if(!confirm(t().deleteStoryConfirm))return;const item=cloudStories.find(x=>x.id===id),paths=[item?.savedAssets?.cover,...(item?.savedAssets?.pages||[])].filter(Boolean);if(paths.length)await supabaseClient.storage.from('saved-story-art').remove(paths);const {error}=await supabaseClient.from('saved_stories').delete().eq('id',id);if(error){alert(error.message);return}await savedArtDeletePaths(paths);paths.forEach(path=>{const url=savedLibraryCoverUrls.get(path);if(url){try{URL.revokeObjectURL(url)}catch{}savedLibraryCoverUrls.delete(path)}});await loadCloudStories()}
 
 let storyCreditBalance=null;
 function renderHeaderCredits(){
@@ -852,7 +858,7 @@ function showCover(){if(!currentBook)return;stopNarration();rememberReaderScroll
 function beginStory(mode='self'){if(!currentBook)return;stopNarration();currentBook.readingMode=mode;currentBook.mobileSide='text';const cover=$('coverView'),book=$('book'),controls=$('bookControls');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.setProperty('display','none','important');cover.setAttribute('aria-hidden','true')}if(book){book.classList.remove('hidden');book.hidden=false;book.style.removeProperty('display');book.setAttribute('aria-hidden','false')}if(controls){controls.classList.remove('hidden');controls.hidden=false;controls.style.removeProperty('display');controls.setAttribute('aria-hidden','false')}renderBookPage(0);if(mode==='narrated')scheduleNarration(120)}
 function illustrationKey(book,index,prompt=''){return `v45:${book.visualCacheId||book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
 function previousIllustrationKey(book,index){if(index<=0)return null;return illustrationKey(book,index-1,getIllustrationPrompt(index-1))}
-async function savedAssetUrl(path){if(!path||!currentBook?.isSaved)return null;if(currentBook.savedAssetUrls[path])return currentBook.savedAssetUrls[path];if(currentBook.isShared){const kind=String(path).replace(/^share:/,'');const r=await fetch(`/api/share?action=asset&token=${encodeURIComponent(currentBook.shareToken)}&kind=${encodeURIComponent(kind)}`);if(!r.ok)throw new Error(shareT(currentBook?.child?.language||language).illustrationUnavailable);const url=URL.createObjectURL(await r.blob());currentBook.savedAssetUrls[path]=url;return url}const {data,error}=await supabaseClient.storage.from('saved-story-art').download(path);if(error)throw error;const url=URL.createObjectURL(data);currentBook.savedAssetUrls[path]=url;return url}
+async function savedAssetUrl(path){if(!path||!currentBook?.isSaved)return null;if(currentBook.savedAssetUrls[path])return currentBook.savedAssetUrls[path];if(currentBook.isShared){const kind=String(path).replace(/^share:/,'');const r=await fetch(`/api/share?action=asset&token=${encodeURIComponent(currentBook.shareToken)}&kind=${encodeURIComponent(kind)}`);if(!r.ok)throw new Error(shareT(currentBook?.child?.language||language).illustrationUnavailable);const url=URL.createObjectURL(await r.blob());currentBook.savedAssetUrls[path]=url;return url}const data=await savedArtBlob(path);const url=URL.createObjectURL(data);currentBook.savedAssetUrls[path]=url;return url}
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index,prompt);
  const frame=document.querySelector('.illustration-frame');if(!silent&&(!frame||book.currentPage!==index))return;
@@ -1144,7 +1150,7 @@ async function loadSavedLibraryCovers(){
   if(!currentUser||!x?.savedAssets?.cover){img.closest('.saved-story-cover')?.classList.add('no-cover');return}
   try{
    const key=x.savedAssets.cover;let url=savedLibraryCoverUrls.get(key);
-   if(!url){const {data,error}=await supabaseClient.storage.from('saved-story-art').download(key);if(error)throw error;url=URL.createObjectURL(data);savedLibraryCoverUrls.set(key,url)}
+   if(!url){const data=await savedArtBlob(key);url=URL.createObjectURL(data);savedLibraryCoverUrls.set(key,url)}
    img.src=url;img.hidden=false;img.closest('.saved-story-cover')?.classList.remove('no-cover');
   }catch(e){console.warn('Saved cover unavailable',e);img.closest('.saved-story-cover')?.classList.add('no-cover')}
  }))
