@@ -1130,7 +1130,7 @@ function renderBookPage(index){
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div><p class="end-save-warning" id="endSaveWarning" hidden>${escapeHtml(t().savingPageWarning||'Please don’t close or leave this page until saving is complete.')}</p>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator){indicator.textContent='';indicator.classList.add('end-hidden')}
    const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};/* V250.1: sharedCreateStory deliberately uses its native href. Do not intercept navigation. */
-   if(book.isShared&&isPhoneReader()){const internal=$('sharedCreateStory');if(internal)internal.hidden=true;mountMobileSharedCreateButton(book,sx)}
+   if(book.isShared&&isPhoneReader()&&!isPhonePortrait()){const internal=$('sharedCreateStory');if(internal)internal.hidden=true;mountMobileSharedCreateButton(book,sx)}
    applyMobileSide();persistCurrentDraft();return;
  }
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};

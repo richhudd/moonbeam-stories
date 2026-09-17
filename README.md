@@ -1,3 +1,13 @@
+# Moonbeam Stories V250.19
+
+## V250.19 — mobile shared End page + Cast selector fit
+- Built directly from V250.18 Save Reliability.
+- Shared books on mobile portrait now keep the white Previous-page control in its existing fixed reader position while the “Create my story” CTA remains inside the normal vertically scrollable End-page content.
+- The shared mobile portrait End composition is tightened: “The End” is moderately reduced and the stars, flourish, conversion copy and CTA are shifted upward so the CTA is clear of the fixed Previous control at the initial scroll position.
+- Mobile Cast role selectors are constrained and centred within their panels in both orientations; the two-column layout is retained, cards/photos/selection circles are slightly reduced where needed, and long labels cannot force the grid beyond the viewport.
+- Desktop reader/setup, mobile non-shared End pages, save reliability, persistent saved-art cache, story generation, illustrations, credits, sharing, legal pages and database schema are unchanged.
+- No Supabase SQL required.
+
 # Moonbeam Stories V250.18
 
 ## V250.18 — save reliability / interrupted-save recovery

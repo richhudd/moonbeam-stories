@@ -3991,3 +3991,68 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 .end-save-warning:not([hidden]){transform-origin:center;animation-name:moonbeamEndSavePulse}
 @keyframes moonbeamEndSavePulse{0%,100%{opacity:1;filter:brightness(1);transform:scale(1)}50%{opacity:.72;filter:brightness(1.08);transform:scale(1.025)}}
 @media (prefers-reduced-motion:reduce){.story-save-banner.is-saving,.end-save-warning:not([hidden]){animation:none}}
+
+
+/* V250.19 — shared-book portrait End page: CTA belongs to the scrollable page;
+   Previous remains in the existing fixed reader navigation. */
+@media (max-width:700px) and (orientation:portrait){
+  body.shared-story-mode.story-mode #book .end-page .end-page-inner{
+    width:min(620px,90%)!important;
+    padding-top:max(14px,env(safe-area-inset-top))!important;
+    padding-bottom:max(126px,calc(env(safe-area-inset-bottom) + 116px))!important;
+  }
+  body.shared-story-mode.story-mode #book .end-page .end-stars{
+    font-size:clamp(20px,6vw,28px)!important;
+    margin-bottom:8px!important;
+  }
+  body.shared-story-mode.story-mode #book .end-page .end-title{
+    font-size:clamp(50px,17vw,74px)!important;
+    line-height:.88!important;
+  }
+  body.shared-story-mode.story-mode #book .end-page .end-flourish{
+    font-size:clamp(24px,7vw,34px)!important;
+    margin:8px 0 16px!important;
+  }
+  body.shared-story-mode.story-mode #book .shared-conversion{
+    width:min(430px,100%)!important;
+    margin:0 auto!important;
+  }
+  body.shared-story-mode.story-mode #book .shared-conversion h3{
+    font-size:clamp(19px,5.4vw,25px)!important;
+    line-height:1.16!important;
+    margin:0 0 8px!important;
+  }
+  body.shared-story-mode.story-mode #book .shared-conversion p{
+    font-size:clamp(16px,4.5vw,20px)!important;
+    line-height:1.25!important;
+    margin:0 0 14px!important;
+  }
+  body.shared-story-mode.story-mode #book .shared-create{
+    display:block!important;
+    position:static!important;
+    width:100%!important;
+    box-sizing:border-box!important;
+    margin:0 auto!important;
+    min-height:52px!important;
+    padding:14px 18px!important;
+  }
+  body.shared-story-mode .mobile-shared-create-button{display:none!important;}
+}
+
+/* V250.19 — keep the two-column Cast selector wholly inside mobile setup panels. */
+@media (max-width:900px) and (pointer:coarse){
+  .story-cast-roles,.story-role-section,.story-role-grid{min-width:0!important;max-width:100%!important;box-sizing:border-box!important;}
+  .story-role-section{width:100%!important;margin-left:auto!important;margin-right:auto!important;overflow:hidden!important;}
+  .story-role-grid{width:100%!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;}
+  .story-role-choice{width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;gap:8px!important;padding:8px 32px 8px 9px!important;}
+  .story-role-choice>span:not(.role-select-indicator),.story-role-choice>div:not(.role-select-indicator){min-width:0!important;}
+  .story-role-choice strong,.story-role-choice small{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}
+  .story-role-choice img,.story-role-choice .role-avatar{width:44px!important;height:44px!important;flex:0 0 44px!important;}
+  .role-select-indicator{right:8px!important;bottom:8px!important;width:20px!important;height:20px!important;}
+}
+@media (max-width:430px) and (orientation:portrait){
+  .story-role-section{padding:12px!important;}
+  .story-role-grid{gap:7px!important;}
+  .story-role-choice{min-height:68px!important;padding-left:8px!important;padding-right:29px!important;}
+  .story-role-choice img,.story-role-choice .role-avatar{width:40px!important;height:40px!important;flex-basis:40px!important;}
+}
