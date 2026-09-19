@@ -1324,3 +1324,11 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Reuses existing `/api/resend-inbound` and `/api/share`; no additional Vercel API function.
 - Saved WebP covers are converted to JPEG on demand for Instagram publishing.
 - No Supabase schema change and no legal-page change.
+
+
+## V250.30 — Usage Page Cleanup
+
+- Removed the completed Instagram connection and test-publishing controls from the developer Usage page.
+- Moved the Support inbox/email section to the top of the Usage page, above Usage & economics and the statistics tables.
+- The working story-to-Instagram publishing feature and Instagram story gallery from V250.29 are unchanged.
+- No Supabase schema or legal-page changes.
