@@ -205,8 +205,8 @@ async function developerInstagramPublishStory(req,res,body){
     const createdShare=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({owner_id:verified.user.id,saved_story_id:storyId,token_hash:shareTokenHash(token),sender_name:'Moonbeam Stories',recipient_name:token,recipient_email:'instagram@moonbeamstories.co.uk'})});
     shareId=createdShare?.[0]?.id; if(!shareId)throw new Error('Could not create the public story link.');
     const origin='https://www.moonbeamstories.co.uk';
-    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=cover&format=jpeg`;
-    const caption=`${String(story.title||'A Moonbeam Story').trim()} ✨\n\nRead the full illustrated story — link in bio.\n\n${origin}/instagram`;
+    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=cover&titled=1&format=jpeg`;
+    const caption=`${String(story.title||'A Moonbeam Story').trim()} ✨\n\nRead the full illustrated story — link in bio.`;
     const createBody=new URLSearchParams({image_url:imageUrl,caption,access_token:accessToken});
     const created=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}/media`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:createBody.toString()});
     const creationId=String(created?.id||'').trim(); if(!creationId)throw new Error('Instagram did not return a media container ID.');

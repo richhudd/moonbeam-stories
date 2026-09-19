@@ -1340,3 +1340,22 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - A successful story post changes the end-page Instagram button to **✓ Posted**, keeps it disabled, and turns it purple.
 - A failed post restores the active **Post to Instagram** button so it can be retried.
 - No new API function, Supabase/SQL migration, legal-page change, or Vercel environment variable is required.
+
+
+## V250.32 — Instagram Titled Covers + Compact Gallery
+- Instagram story posts now use the genuine saved cover artwork with the actual story title composited onto the posting image; the saved original artwork remains unchanged.
+- The public Instagram gallery uses the same titled cover treatment.
+- Gallery covers are compact Saved Stories-sized thumbnails in a dense responsive grid, with vertical scrolling for a growing library.
+- Gallery order remains newest first (`created_at.desc`), matching Saved Stories chronology.
+- Each gallery cover continues to open the existing complete shared-story reader and its end-page Create Your Own route.
+- Existing successful posting reliability and purple ✓ Posted state are preserved.
+- No Supabase schema or legal-page changes.
+
+
+---
+
+## V250.33 — Reliable Two-Hero Dedication + Instagram Bio Caption
+- Two-Hero names are now persisted with the saved book artwork metadata, so reopening, sharing, or posting a saved two-Hero story retains both Heroes in the cover dedication.
+- One Hero + Supporting Cast still dedicates the cover only to the Hero.
+- Instagram story captions now say **Read the full illustrated story — link in bio.** and no longer print the non-clickable gallery URL.
+- No Supabase schema change.

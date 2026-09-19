@@ -94,6 +94,8 @@ async function publicStory(req,res){
   const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/child_profiles?id=eq.${encodeURIComponent(story.child_id)}&select=name,age,interests,dislikes`,{headers:adminHeaders()});
   if(rows?.[0])child=rows[0];
  }
+ const heroNames=Array.isArray(story.saved_assets?.heroNames)?story.saved_assets.heroNames.map(n=>String(n||'').trim()).filter(Boolean).slice(0,2):[];
+ if(heroNames.length)child.cast=heroNames.map(name=>({name,role:'hero'}));
  if(!share.opened_at)fetch(`${SUPABASE_URL}/rest/v1/story_shares?id=eq.${encodeURIComponent(share.id)}`,{method:'PATCH',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),body:JSON.stringify({opened_at:new Date().toISOString()})}).catch(()=>{});
  const pageCount=Array.isArray(story.saved_assets?.pages)?story.saved_assets.pages.length:0;
  return res.status(200).json({title:story.title,senderName:share.sender_name,language:story.language,child,story:{title:story.title,opening:story.opening||'',character_bible:story.character_bible||'',pages:Array.isArray(story.pages)?story.pages:[],closing:story.closing||''},savedAssets:{cover:'share:cover',pages:Array.from({length:pageCount},(_,i)=>`share:${i}`)}});
@@ -108,7 +110,7 @@ async function instagramGallery(req,res){
  for(const row of (rows||[])){
   const token=String(row.recipient_name||'').trim(); if(!token)continue;
   const story=await getSavedStory(row.saved_story_id); if(!story)continue;
-  stories.push({title:story.title||'Moonbeam Story',language:story.language||'en-GB',createdAt:row.created_at,readerUrl:`${SITE_URL}/shared/${encodeURIComponent(token)}`,coverUrl:`${SITE_URL}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=cover`});
+  stories.push({title:story.title||'Moonbeam Story',language:story.language||'en-GB',createdAt:row.created_at,readerUrl:`${SITE_URL}/shared/${encodeURIComponent(token)}`,coverUrl:`${SITE_URL}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=cover&titled=1`});
  }
  res.setHeader('Cache-Control','public, max-age=60, stale-while-revalidate=300');
  return res.status(200).json({stories});
@@ -128,7 +130,25 @@ async function publicAsset(req,res){
  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/saved-story-art/${objectPath}`,{headers:adminHeaders()});
  if(!r.ok)return res.status(404).send('Image unavailable');
  let bytes=Buffer.from(await r.arrayBuffer());
- if(String(req.query?.format||'').toLowerCase()==='jpeg'){
+ const wantsTitled=kind==='cover' && String(req.query?.titled||'')==='1';
+ if(wantsTitled){
+  const sharp=require('sharp');
+  const image=sharp(bytes), meta=await image.metadata();
+  const width=Math.max(400,Number(meta.width)||1024), height=Math.max(500,Number(meta.height)||1280);
+  const rawTitle=String(story.title||'Moonbeam Story').trim();
+  const words=rawTitle.split(/\s+/).filter(Boolean), lines=[]; let line='';
+  const maxChars=24;
+  for(const word of words){const next=line?`${line} ${word}`:word;if(next.length<=maxChars||!line)line=next;else{lines.push(line);line=word}}
+  if(line)lines.push(line); while(lines.length>3){lines[lines.length-2]+=' '+lines.pop()}
+  const xml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+  const fontSize=Math.round(width*(lines.length>2?.070:lines.length>1?.078:.088));
+  const lineHeight=Math.round(fontSize*1.08), bottom=Math.round(height*.075);
+  const titleHeight=lines.length*lineHeight, startY=height-bottom-titleHeight+fontSize;
+  const tspans=lines.map((ln,i)=>`<tspan x="50%" y="${startY+i*lineHeight}">${xml(ln)}</tspan>`).join('');
+  const svg=Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#130d2d" stop-opacity="0"/><stop offset="1" stop-color="#130d2d" stop-opacity="0.82"/></linearGradient></defs><rect x="0" y="${Math.round(height*.48)}" width="${width}" height="${Math.round(height*.52)}" fill="url(#g)"/><text text-anchor="middle" fill="white" stroke="#160f2c" stroke-opacity="0.45" stroke-width="${Math.max(1,Math.round(width*.002))}" paint-order="stroke" font-family="Georgia, Times New Roman, serif" font-size="${fontSize}" font-weight="700">${tspans}</text></svg>`);
+  bytes=await image.composite([{input:svg,top:0,left:0}]).jpeg({quality:92}).toBuffer();
+  res.setHeader('Content-Type','image/jpeg');
+ }else if(String(req.query?.format||'').toLowerCase()==='jpeg'){
   const sharp=require('sharp'); bytes=await sharp(bytes).jpeg({quality:92}).toBuffer(); res.setHeader('Content-Type','image/jpeg');
  }else res.setHeader('Content-Type',r.headers.get('content-type')||'image/webp');
  res.setHeader('Cache-Control','public, max-age=3600');
