@@ -1,4 +1,4 @@
-# Moonbeam Stories V250.24
+# Moonbeam Stories V250.25
 
 ## V250.20 — desktop homepage cleanup
 
@@ -1284,3 +1284,11 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Includes sender, subject, date/time, destination, opened-message metadata/body, reply labels, recipient/status text and reply textarea text.
 - HTML-only email bodies are also forced to render black text inside the sandboxed message frame.
 - No Support Inbox behaviour, Resend routing, Supabase schema, legal pages or other Moonbeam UI is changed.
+
+
+## V250.25 — Richard Support Email
+- Usage-page Support Inbox replies now send as `Richard — Moonbeam Stories <richard@moonbeamstories.co.uk>`.
+- Usage-page replies set `Reply-To: support@moonbeamstories.co.uk`, so customer replies return to the public support mailbox.
+- Adds `richard@moonbeamstories.co.uk` to the existing inbound routing and Support Inbox, forwarding it to the same `SUPPORT_FORWARD_TO` destination as support mail.
+- Existing `support@` and `privacy@` receiving/forwarding behaviour is preserved.
+- Reuses `api/resend-inbound.js`; no new API function, Vercel environment variable, Supabase/SQL migration, or legal-page change is required.

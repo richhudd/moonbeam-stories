@@ -13,6 +13,7 @@ const PUBLISHABLE_KEY = String(process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publi
 const ALLOWED_RECIPIENTS = Object.freeze({
   'support@moonbeamstories.co.uk': () => SUPPORT_FORWARD_TO,
   'privacy@moonbeamstories.co.uk': () => PRIVACY_FORWARD_TO,
+  'richard@moonbeamstories.co.uk': () => SUPPORT_FORWARD_TO,
 });
 
 function rawBody(req) {
@@ -132,13 +133,13 @@ async function developerReply(req,res,body){
     if(original.message_id){headers['In-Reply-To']=String(original.message_id);headers['References']=String(original.message_id);}
     const resend=new Resend(RESEND_API_KEY);
     const {data,error}=await resend.emails.send({
-      from:`Moonbeam Stories <${mailbox}>`,to:[to],replyTo:mailbox,subject,
+      from:'Richard — Moonbeam Stories <richard@moonbeamstories.co.uk>',to:[to],replyTo:'support@moonbeamstories.co.uk',subject,
       text:replyText,
       html:`<div style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.5">${escapeHtml(replyText)}</div>`,
       ...(Object.keys(headers).length?{headers}:{})
     });
     if(error)throw new Error(error.message||'Could not send reply.');
-    return res.status(200).json({sent:true,id:data?.id||null,to,from:mailbox});
+    return res.status(200).json({sent:true,id:data?.id||null,to,from:'richard@moonbeamstories.co.uk'});
   }catch(error){console.error('support inbox reply',error);return res.status(502).json({error:error?.message||'Could not send reply.'});}
 }
 
