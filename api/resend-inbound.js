@@ -137,6 +137,35 @@ async function developerInstagramTest(req,res){
   }catch(error){console.error('instagram connection test',error);return res.status(502).json({ok:false,error:error?.message||'Could not connect to Instagram.'});}
 }
 
+async function instagramJson(url, options={}){
+  const r=await fetch(url,options);
+  const text=await r.text(); let data={};
+  try{data=text?JSON.parse(text):{}}catch{data={error:{message:text||`Instagram request failed (${r.status}).`}}}
+  if(!r.ok||data?.error)throw new Error(data?.error?.message||`Instagram request failed (${r.status}).`);
+  return data;
+}
+
+async function developerInstagramPublishTest(req,res){
+  const verified=await verifyDeveloper(req); if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
+  const accessToken=String(process.env.INSTAGRAM_ACCESS_TOKEN||'').trim();
+  const accountId=String(process.env.INSTAGRAM_ACCOUNT_ID||'').trim();
+  if(!accessToken||!accountId)return res.status(503).json({error:'Instagram is not configured in Vercel.'});
+  try{
+    const origin='https://www.moonbeamstories.co.uk';
+    const imageUrl=`${origin}/moonbeam-demo.png`;
+    const caption='Moonbeam Stories Instagram publishing test ✨\n\nmoonbeamstories.co.uk';
+    const createBody=new URLSearchParams({image_url:imageUrl,caption,access_token:accessToken});
+    const created=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}/media`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:createBody.toString()});
+    const creationId=String(created?.id||'').trim();
+    if(!creationId)throw new Error('Instagram did not return a media container ID.');
+    const publishBody=new URLSearchParams({creation_id:creationId,access_token:accessToken});
+    const published=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}/media_publish`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:publishBody.toString()});
+    const mediaId=String(published?.id||'').trim();
+    if(!mediaId)throw new Error('Instagram did not return a published media ID.');
+    return res.status(200).json({ok:true,mediaId});
+  }catch(error){console.error('instagram publishing test',error);return res.status(502).json({ok:false,error:error?.message||'Could not publish the Instagram test post.'});}
+}
+
 async function developerReply(req,res,body){
   const verified=await verifyDeveloper(req); if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
   if(!RESEND_API_KEY)return res.status(503).json({error:'RESEND_API_KEY is not configured.'});
@@ -169,6 +198,7 @@ module.exports = async function handler(req, res) {
   const action=String(req.query?.action||'').trim().toLowerCase();
   if(req.method==='GET' && (action==='list'||action==='message'))return developerGet(req,res,action);
   if(req.method==='GET' && action==='instagram-test')return developerInstagramTest(req,res);
+  if(req.method==='POST' && action==='instagram-publish-test')return developerInstagramPublishTest(req,res);
   if(req.method==='POST' && action==='reply'){
     let body=req.body;
     if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}

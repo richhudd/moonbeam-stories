@@ -1303,7 +1303,15 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - No Supabase/SQL migration or legal-page change is required.
 
 
-## V250.27 — Instagram ID Diagnostic
+## V250.28 — Instagram ID Diagnostic
 - Extends the developer-only Instagram connection check so an account-ID mismatch safely reports the username, the ID returned by Meta, and the configured Vercel account ID.
 - The Instagram access token remains server-side and is never returned to the browser.
 - Reuses `api/resend-inbound.js`; no new API function, Supabase/SQL migration, legal-page change, or Vercel environment variable is required.
+
+
+## V250.28 — Instagram Publishing Test
+- Adds a developer-only live Instagram publishing test to the existing Usage page.
+- Reuses `api/resend-inbound.js`; no additional deployable API function.
+- Publishes `/moonbeam-demo.png` with a short test caption to the configured Instagram account after an explicit browser confirmation.
+- Instagram access token remains server-side in Vercel and is never returned to the browser.
+- No Supabase schema or legal-page changes.
