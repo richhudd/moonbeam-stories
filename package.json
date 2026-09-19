@@ -9,6 +9,7 @@
     "start": "vercel dev"
   },
   "dependencies": {
-    "resend": "6.27.0"
+    "resend": "6.27.0",
+    "sharp": "0.34.3"
   }
 }

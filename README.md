@@ -1303,7 +1303,7 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - No Supabase/SQL migration or legal-page change is required.
 
 
-## V250.28 — Instagram ID Diagnostic
+## V250.29 — Instagram ID Diagnostic
 - Extends the developer-only Instagram connection check so an account-ID mismatch safely reports the username, the ID returned by Meta, and the configured Vercel account ID.
 - The Instagram access token remains server-side and is never returned to the browser.
 - Reuses `api/resend-inbound.js`; no new API function, Supabase/SQL migration, legal-page change, or Vercel environment variable is required.
@@ -1315,3 +1315,12 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Publishes `/moonbeam-demo.png` with a short test caption to the configured Instagram account after an explicit browser confirmation.
 - Instagram access token remains server-side in Vercel and is never returned to the browser.
 - No Supabase schema or legal-page changes.
+
+
+## V250.29 — Instagram Story Gallery
+- Developer-only **Post to Instagram** action appears on the owner story end page after server-side developer verification.
+- Posting saves the complete story if needed, creates a public Moonbeam shared-reader link, publishes the genuine saved cover to @moonbeamstoriesuk, and registers the story in the Instagram gallery.
+- `/instagram` is the permanent link-in-bio gallery. Each cover opens the existing shared reader, including its end-page **Create Your Own** conversion.
+- Reuses existing `/api/resend-inbound` and `/api/share`; no additional Vercel API function.
+- Saved WebP covers are converted to JPEG on demand for Instagram publishing.
+- No Supabase schema change and no legal-page change.

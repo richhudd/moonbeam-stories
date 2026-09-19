@@ -99,6 +99,21 @@ async function publicStory(req,res){
  return res.status(200).json({title:story.title,senderName:share.sender_name,language:story.language,child,story:{title:story.title,opening:story.opening||'',character_bible:story.character_bible||'',pages:Array.isArray(story.pages)?story.pages:[],closing:story.closing||''},savedAssets:{cover:'share:cover',pages:Array.from({length:pageCount},(_,i)=>`share:${i}`)}});
 }
 
+
+async function instagramGallery(req,res){
+ if(req.method!=='GET')return res.status(405).json({error:'GET only'});
+ const marker='instagram@moonbeamstories.co.uk';
+ const rows=await jsonFetch(`${SUPABASE_URL}/rest/v1/story_shares?recipient_email=eq.${encodeURIComponent(marker)}&revoked_at=is.null&select=id,saved_story_id,recipient_name,created_at&order=created_at.desc&limit=60`,{headers:adminHeaders()});
+ const stories=[];
+ for(const row of (rows||[])){
+  const token=String(row.recipient_name||'').trim(); if(!token)continue;
+  const story=await getSavedStory(row.saved_story_id); if(!story)continue;
+  stories.push({title:story.title||'Moonbeam Story',language:story.language||'en-GB',createdAt:row.created_at,readerUrl:`${SITE_URL}/shared/${encodeURIComponent(token)}`,coverUrl:`${SITE_URL}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=cover`});
+ }
+ res.setHeader('Cache-Control','public, max-age=60, stale-while-revalidate=300');
+ return res.status(200).json({stories});
+}
+
 async function publicAsset(req,res){
  if(req.method!=='GET')return res.status(405).send('GET only');
  const token=String(req.query?.token||''),kind=String(req.query?.kind||''),share=await getShareByToken(token);
@@ -112,9 +127,11 @@ async function publicAsset(req,res){
  const objectPath=String(path).split('/').map(encodeURIComponent).join('/');
  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/saved-story-art/${objectPath}`,{headers:adminHeaders()});
  if(!r.ok)return res.status(404).send('Image unavailable');
- const bytes=Buffer.from(await r.arrayBuffer());
- res.setHeader('Content-Type',r.headers.get('content-type')||'image/webp');
- res.setHeader('Cache-Control','private, max-age=3600');
+ let bytes=Buffer.from(await r.arrayBuffer());
+ if(String(req.query?.format||'').toLowerCase()==='jpeg'){
+  const sharp=require('sharp'); bytes=await sharp(bytes).jpeg({quality:92}).toBuffer(); res.setHeader('Content-Type','image/jpeg');
+ }else res.setHeader('Content-Type',r.headers.get('content-type')||'image/webp');
+ res.setHeader('Cache-Control','public, max-age=3600');
  return res.status(200).send(bytes);
 }
 
@@ -124,6 +141,7 @@ module.exports=async function(req,res){
  const action=String(req.query?.action||'').trim().toLowerCase();
  try{
   if(action==='story')return await publicStory(req,res);
+  if(action==='instagram-gallery')return await instagramGallery(req,res);
   if(action==='asset')return await publicAsset(req,res);
   if(action==='owner')return await ownerShares(req,res);
   if(action==='link')return await ownerLink(req,res);

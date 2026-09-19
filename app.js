@@ -35,6 +35,7 @@ const SUPABASE_URL='https://quwjfjojeibaxnnpykaf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q';
 const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let currentUser=null, cloudProfiles=[], activeProfileId=null, cloudStories=[];
+let instagramDeveloperAccess=false;
 let castMembers246=[];
 let storyHeroIds248=new Set(),storySupportIds248=new Set();
 let castEditor246={kind:'child',id:null,photo:null,originalPhoto:null};
@@ -289,6 +290,7 @@ async function applyAuthSession(session){
  const sameSignedInUser=!!previousUserId&&!!nextUser&&previousUserId===nextUser.id;
  currentUser=nextUser;
  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
+ if(currentUser)setTimeout(checkInstagramDeveloperAccess,0);else instagramDeveloperAccess=false;
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
  if(currentUser){
@@ -1027,6 +1029,21 @@ const SHARE_LOCALES={
  'pl-PL':{sentBy:n=>`${n} wysłał(a) Ci tę historię`,loved:'Podobała Ci się ta historia? Stwórz własną dla kogoś, kogo kochasz ✨',free:'Twoja pierwsza spersonalizowana historia jest bezpłatna.',create:'Stwórz moją historię',kicker:'PODZIEL SIĘ MAGIĄ',title:'Udostępnij tę historię',methodIntro:'Wybierz sposób udostępnienia.',whatsapp:'WhatsApp',emailMethod:'E-mail',copyLink:'Kopiuj link',linkCopied:'✓ Link skopiowany',back:'Wstecz',privateLink:'Prywatny link',whatsappText:(n,u)=>`${n} wysłał(a) Ci spersonalizowaną historię Moonbeam ✨\n\nOtwórz historię tutaj: ${u}`,intro:'Wyślij prywatną kopię tej historii rodzinie lub znajomym.',yourName:'Twoje imię',senderPh:'Twoje imię',recipientName:'Imię odbiorcy',email:'Adres e-mail odbiorcy',remove:'Usuń',add:'+ Dodaj kolejnego odbiorcę',send:'Wyślij historię',signIn:'Zaloguj się, aby udostępnić historię.',willSave:'Moonbeam zapisze tę ilustrowaną historię na stałe przed jej wysłaniem.',senderRequired:'Wpisz imię, które mają zobaczyć odbiorcy.',recipientRequired:'Dodaj co najmniej jednego odbiorcę.',preparing:'Przygotowujemy prywatne linki do historii…',sent:(n,f)=>f?`Wysłano do ${n}. Nie udało się wysłać do ${f}.`:`Wysłano do ${n} ${n===1?'odbiorcy':'odbiorców'} ✨`,sharedWith:'Udostępniono',opened:'otwarto',revoked:'cofnięto',revoke:'Cofnij dostęp',revokeConfirm:'Cofnąć dostęp do tego prywatnego linku?',mustSave:'Historia musi zostać zapisana, zanim będzie można ją udostępnić.',signInAgain:'Zaloguj się ponownie.',sharingFailed:n=>`Udostępnianie nie powiodło się (${n})`,unavailable:'Ten link do historii jest niedostępny',visit:'Odwiedź Moonbeam Stories',sharedUnavailable:'Ta udostępniona historia jest niedostępna.',illustrationUnavailable:'Udostępniona ilustracja jest niedostępna.'}
 };
 function shareT(lang=language){return SHARE_LOCALES[lang]||SHARE_LOCALES['en-GB']}
+async function checkInstagramDeveloperAccess(){
+ try{const token=await currentAccessToken();if(!token)return;const r=await fetch('/api/resend-inbound?action=instagram-access',{headers:{Authorization:`Bearer ${token}`}});instagramDeveloperAccess=r.ok;if(instagramDeveloperAccess&&currentBook&&currentBook.currentPage===currentBook.pages.length+2&&!currentBook.isShared)renderBookPage(currentBook.currentPage)}catch{instagramDeveloperAccess=false}
+}
+async function postCurrentStoryToInstagram(){
+ if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;
+ if(!confirm('Post this story cover to @moonbeamstoriesuk and add the full story to the public Instagram gallery?'))return;
+ const button=$('endInstagramPost'); if(button){button.disabled=true;button.textContent='Posting…'}
+ try{
+  const storyId=await ensureCurrentBookSaved(),token=await currentAccessToken();if(!token)throw new Error('Sign in again.');
+  const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId})});
+  const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Instagram post failed.');
+  alert('Posted to @moonbeamstoriesuk and added to the Instagram story gallery.');
+  if(button){button.textContent='✓ Posted to Instagram';button.disabled=true}
+ }catch(e){alert(e.message||String(e));if(button){button.disabled=false;button.textContent='Post to Instagram'}}
+}
 function shareStoryLanguage(){return currentBook?.child?.language||language||'en-GB'}
 function shareTokenFromLocation(){const m=location.pathname.match(/^\/shared\/([^/]+)\/?$/);return m?decodeURIComponent(m[1]):''}
 async function loadSharedStory(token){
@@ -1125,11 +1142,12 @@ function renderBookPage(index){
  const prev=$('prevPage'),next=$('nextPage'),indicator=$('pageIndicator'),bookEl=$('book');
  if(isEnd){
    const saveButton=`<button class="secondary end-save${book.isSaved?' saved-state':''}" id="endSave" type="button" ${book.isSaved?'disabled':''}>${escapeHtml(book.isSaved?(t().storySaved||t().savedBtn):t().save)}</button>`;
-   const ownerActions=`${saveButton}<button class="primary end-share-story" id="endShareStory" type="button">${escapeHtml(t().shareStory)}</button><button class="secondary end-new-story" id="endNewStory" type="button">${escapeHtml(t().newStory)}</button>`;
+   const instagramButton=instagramDeveloperAccess?`<button class="secondary end-instagram-post" id="endInstagramPost" type="button">Post to Instagram</button>`:'';
+   const ownerActions=`${saveButton}<button class="primary end-share-story" id="endShareStory" type="button">${escapeHtml(t().shareStory)}</button><button class="secondary end-new-story" id="endNewStory" type="button">${escapeHtml(t().newStory)}</button>${instagramButton}`;
    const sx=shareT(book.child?.language||language),sharedActions=`<div class="shared-conversion"><h3>${escapeHtml(sx.loved)}</h3><p>${escapeHtml(sx.free)}</p><a class="primary shared-create" id="sharedCreateStory" href="/?lang=${encodeURIComponent(book.child?.language||language)}&fromShare=1">${escapeHtml(sx.create)}</a></div>`;
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div><p class="end-save-warning" id="endSaveWarning" hidden>${escapeHtml(t().savingPageWarning||'Please don’t close or leave this page until saving is complete.')}</p>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator){indicator.textContent='';indicator.classList.add('end-hidden')}
-   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};/* V250.1: sharedCreateStory deliberately uses its native href. Do not intercept navigation. */
+   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};const ig=$('endInstagramPost');if(ig)ig.onclick=postCurrentStoryToInstagram;/* V250.1: sharedCreateStory deliberately uses its native href. Do not intercept navigation. */
    if(book.isShared&&isPhoneReader()&&!isPhonePortrait()){const internal=$('sharedCreateStory');if(internal)internal.hidden=true;mountMobileSharedCreateButton(book,sx)}
    applyMobileSide();persistCurrentDraft();return;
  }
@@ -1430,6 +1448,7 @@ async function syncAccountAuthState229(){
   const changed=(currentUser?.id||null)!==(usableSessionUser?.id||null);
   currentUser=usableSessionUser;
   document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
+ if(currentUser)setTimeout(checkInstagramDeveloperAccess,0);else instagramDeveloperAccess=false;
   if(!currentUser){
    storyCreditBalance=null;
    renderAccountView213();
