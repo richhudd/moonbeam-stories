@@ -1292,3 +1292,12 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Adds `richard@moonbeamstories.co.uk` to the existing inbound routing and Support Inbox, forwarding it to the same `SUPPORT_FORWARD_TO` destination as support mail.
 - Existing `support@` and `privacy@` receiving/forwarding behaviour is preserved.
 - Reuses `api/resend-inbound.js`; no new API function, Vercel environment variable, Supabase/SQL migration, or legal-page change is required.
+
+## V250.26 — Instagram Connection Test
+- Adds a developer-only **Instagram connection** check to `usage.html`.
+- The check uses the existing Moonbeam developer-session guard before any Instagram request is made.
+- Reads `INSTAGRAM_ACCESS_TOKEN` and `INSTAGRAM_ACCOUNT_ID` only on the server from Vercel environment variables; the Instagram access token is never returned to the browser.
+- Verifies the configured Instagram account through the Instagram Graph API and reports the returned username/account ID.
+- Reuses `api/resend-inbound.js`, so the deployment remains at exactly 12 deployable API functions.
+- Does not publish an Instagram post yet; this is the connection/authentication test before publishing is enabled.
+- No Supabase/SQL migration or legal-page change is required.

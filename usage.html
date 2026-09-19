@@ -1,10 +1,14 @@
 <!doctype html>
 <meta name="viewport" content="width=device-width">
 <title>Moonbeam Usage</title>
-<link rel="stylesheet" href="/styles.css?v=250.22">
+<link rel="stylesheet" href="/styles.css?v=250.26">
 <main class="usage-page">
   <h1>Moonbeam developer usage</h1>
   <div id="u">Loading…</div>
+  <section class="usage-section usage-baseline-section">
+  <div class="usage-section-head"><h2>Instagram connection</h2><p>Developer-only check of the server-side Instagram account ID and access token stored in Vercel. The token is never sent to this page.</p></div>
+  <div id="instagramConnection"><button id="instagramTestButton" class="primary" type="button">Test Instagram connection</button> <span id="instagramTestStatus" class="usage-note"></span></div>
+</section>
   <section class="usage-section usage-baseline-section support-inbox-section">
   <div class="usage-section-head"><h2>Support inbox</h2><p>Read messages sent to Moonbeam support/privacy and reply without exposing your personal email address.</p></div>
   <div id="supportInbox"><p>Loading support inbox…</p></div>
@@ -124,6 +128,18 @@
    if(!r.ok)throw new Error(d.error||'Could not send reply.'); status.textContent=`✓ Sent from ${d.from}`; document.getElementById('supportReplyText').value='';
   }catch(e){status.textContent=e.message||String(e)}finally{button.disabled=false}
  }
+ async function testInstagramConnection(){
+  const button=document.getElementById('instagramTestButton'), status=document.getElementById('instagramTestStatus');
+  if(!button||!status)return;
+  button.disabled=true; status.textContent='Testing…';
+  try{
+   const token=window.moonbeamDeveloperSession?.access_token; if(!token)throw new Error('Sign into Moonbeam first.');
+   const r=await fetch('/api/resend-inbound?action=instagram-test',{headers:{Authorization:'Bearer '+token}}); const d=await r.json();
+   if(!r.ok||!d.ok)throw new Error(d.error||'Instagram connection test failed.');
+   status.textContent='✓ Connected to @'+(d.username||'moonbeamstoriesuk')+' ('+d.accountId+')';
+  }catch(e){status.textContent='✗ '+(e.message||String(e))}finally{button.disabled=false}
+ }
+ const instagramTestButton=document.getElementById('instagramTestButton'); if(instagramTestButton)instagramTestButton.onclick=testInstagramConnection;
  loadSupportInbox();
 
  function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}

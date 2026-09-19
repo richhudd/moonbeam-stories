@@ -116,6 +116,27 @@ async function developerGet(req,res,action){
     return res.status(200).json({messages:rows,hasMore:!!payload?.has_more});
   }catch(error){console.error('support inbox read',error);return res.status(502).json({error:error?.message||'Could not read support inbox.'});}
 }
+
+async function developerInstagramTest(req,res){
+  const verified=await verifyDeveloper(req); if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
+  const accessToken=String(process.env.INSTAGRAM_ACCESS_TOKEN||'').trim();
+  const accountId=String(process.env.INSTAGRAM_ACCOUNT_ID||'').trim();
+  if(!accessToken||!accountId)return res.status(503).json({error:'Instagram is not configured in Vercel.'});
+  try{
+    const url=`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}?fields=id,username&access_token=${encodeURIComponent(accessToken)}`;
+    const r=await fetch(url,{headers:{Accept:'application/json'}});
+    const text=await r.text(); let data={};
+    try{data=text?JSON.parse(text):{}}catch{data={error:{message:text||`Instagram request failed (${r.status}).`}}}
+    if(!r.ok){
+      const message=data?.error?.message||`Instagram request failed (${r.status}).`;
+      console.error('instagram connection test',r.status,message);
+      return res.status(502).json({ok:false,error:message});
+    }
+    if(String(data?.id||'')!==accountId)return res.status(502).json({ok:false,error:'Instagram returned a different account id.'});
+    return res.status(200).json({ok:true,accountId:data.id,username:data.username||null});
+  }catch(error){console.error('instagram connection test',error);return res.status(502).json({ok:false,error:error?.message||'Could not connect to Instagram.'});}
+}
+
 async function developerReply(req,res,body){
   const verified=await verifyDeveloper(req); if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
   if(!RESEND_API_KEY)return res.status(503).json({error:'RESEND_API_KEY is not configured.'});
@@ -147,6 +168,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const action=String(req.query?.action||'').trim().toLowerCase();
   if(req.method==='GET' && (action==='list'||action==='message'))return developerGet(req,res,action);
+  if(req.method==='GET' && action==='instagram-test')return developerInstagramTest(req,res);
   if(req.method==='POST' && action==='reply'){
     let body=req.body;
     if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}
