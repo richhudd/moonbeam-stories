@@ -1,4 +1,4 @@
-# Moonbeam Stories V250.23
+# Moonbeam Stories V250.24
 
 ## V250.20 — desktop homepage cleanup
 
@@ -1277,3 +1277,10 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Restores subject/body display with list-metadata fallback.
 - Correctly handles Resend reply_to arrays and falls back to the sender address.
 - Keeps the existing 12 deployable API-function limit; no Supabase schema change.
+
+
+## V250.24 — Support Inbox Black Text
+- Makes all text in both the left-hand Support Inbox message list and the right-hand opened-message/reply panel explicitly black against the white cards.
+- Includes sender, subject, date/time, destination, opened-message metadata/body, reply labels, recipient/status text and reply textarea text.
+- HTML-only email bodies are also forced to render black text inside the sandboxed message frame.
+- No Support Inbox behaviour, Resend routing, Supabase schema, legal pages or other Moonbeam UI is changed.
