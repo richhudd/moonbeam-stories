@@ -107,8 +107,11 @@
    const token=window.moonbeamDeveloperSession.access_token;
    const r=await fetch('/api/resend-inbound?action=message&id='+encodeURIComponent(id),{headers:{Authorization:'Bearer '+token}}); const d=await r.json();
    if(!r.ok)throw new Error(d.error||'Could not load message.'); const m=d.message;
-   const body=m.text?`<pre class="support-message-text">${esc(m.text)}</pre>`:(m.html?`<iframe class="support-message-html" sandbox="" srcdoc="${esc(m.html)}"></iframe>`:'<p class="usage-note">This message has no readable body.</p>');
-   pane.innerHTML=`<div class="support-message-meta"><strong>${esc(m.subject)}</strong><span>From: ${esc(m.from)}</span><span>To: ${esc((m.to||[]).join(', '))}</span><span>${m.createdAt?new Date(m.createdAt).toLocaleString('en-GB'):'—'}</span></div>${body}<form id="supportReplyForm" class="support-reply"><label><strong>Reply as ${esc(m.mailbox)}</strong><textarea id="supportReplyText" rows="7" placeholder="Type your reply…" required></textarea></label><div class="support-reply-actions"><button class="primary" type="submit">Send reply</button><span id="supportReplyStatus"></span></div></form>`;
+   const plain=String(m.text||'').trim();
+   const html=String(m.html||'').trim();
+   const body=plain?`<pre class="support-message-text">${esc(plain)}</pre>`:(html?`<iframe id="supportMessageHtml" class="support-message-html" sandbox="" title="Email body"></iframe>`:'<p class="usage-note">This message has no readable body.</p>');
+   pane.innerHTML=`<div class="support-message-meta"><strong>${esc(m.subject||'(No subject)')}</strong><span>From: ${esc(m.from||'—')}</span><span>To: ${esc((m.to||[]).join(', '))}</span><span>${m.createdAt?new Date(m.createdAt).toLocaleString('en-GB'):'—'}</span></div>${body}<form id="supportReplyForm" class="support-reply"><label><strong>Reply as ${esc(m.mailbox)}</strong>${m.replyAddress?`<span class="support-reply-to">To: ${esc(m.replyAddress)}</span>`:''}<textarea id="supportReplyText" rows="7" placeholder="Type your reply…" required></textarea></label><div class="support-reply-actions"><button class="primary" type="submit">Send reply</button><span id="supportReplyStatus"></span></div></form>`;
+   if(!plain&&html){const frame=document.getElementById('supportMessageHtml');if(frame)frame.srcdoc=html;}
    document.getElementById('supportReplyForm').onsubmit=async e=>{e.preventDefault();await sendSupportReply(id,m.mailbox)};
   }catch(e){pane.innerHTML=`<p class="usage-warning">${esc(e.message||String(e))}</p>`}
  }

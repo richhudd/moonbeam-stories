@@ -72,16 +72,43 @@ async function resendJson(path,options={}){
   if(!r.ok)throw new Error(data?.message||data?.error?.message||`Resend request failed (${r.status}).`);
   return data;
 }
+async function getReceivedEmail(id){
+  const resend=new Resend(RESEND_API_KEY);
+  const {data,error}=await resend.emails.receiving.get(id);
+  if(error)throw new Error(error.message||'Could not retrieve received email.');
+  if(!data)throw new Error('Resend returned no received email data.');
+  return data;
+}
+function firstReplyAddress(message){
+  const replyTo=message?.reply_to;
+  if(Array.isArray(replyTo)){
+    for(const value of replyTo){const a=safeReplyAddress(value);if(a)return a;}
+  }else{
+    const a=safeReplyAddress(replyTo); if(a)return a;
+  }
+  return safeReplyAddress(message?.from);
+}
 async function developerGet(req,res,action){
   const verified=await verifyDeveloper(req); if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
   if(!RESEND_API_KEY)return res.status(503).json({error:'RESEND_API_KEY is not configured.'});
   try{
     if(action==='message'){
       const id=String(req.query?.id||'').trim(); if(!id)return res.status(400).json({error:'Missing email id.'});
-      const message=await resendJson(`/emails/receiving/${encodeURIComponent(id)}`);
-      const mailbox=inboundMailbox(message);
+      const message=await getReceivedEmail(id);
+      let mailbox=inboundMailbox(message);
+      let fallback=null;
+      // The received-email list is the authoritative metadata source if a provider response omits a header field.
+      if(!mailbox || !message.subject || !message.from || !message.created_at){
+        const listed=await resendJson('/emails/receiving?limit=100');
+        fallback=(Array.isArray(listed?.data)?listed.data:[]).find(x=>String(x?.id||'')===id)||null;
+        if(!mailbox)mailbox=inboundMailbox(fallback);
+      }
       if(!mailbox)return res.status(404).json({error:'This message is not addressed to a Moonbeam support mailbox.'});
-      return res.status(200).json({message:{id:message.id,from:message.from,to:message.to,cc:message.cc||[],subject:message.subject||'(No subject)',createdAt:message.created_at||null,text:message.text||'',html:message.html||'',messageId:message.message_id||'',mailbox}});
+      const from=message.from||fallback?.from||'';
+      const to=(Array.isArray(message.to)&&message.to.length)?message.to:(fallback?.to||[]);
+      const subject=message.subject||fallback?.subject||'(No subject)';
+      const createdAt=message.created_at||fallback?.created_at||null;
+      return res.status(200).json({message:{id:message.id||id,from,to,cc:message.cc||fallback?.cc||[],subject,createdAt,text:message.text||'',html:message.html||'',messageId:message.message_id||fallback?.message_id||'',mailbox,replyAddress:firstReplyAddress(message)||safeReplyAddress(from)}});
     }
     const payload=await resendJson('/emails/receiving?limit=100');
     const rows=(Array.isArray(payload?.data)?payload.data:[]).filter(x=>inboundMailbox(x)).map(x=>({id:x.id,from:x.from,to:x.to,subject:x.subject||'(No subject)',createdAt:x.created_at||null,mailbox:inboundMailbox(x)}));
@@ -95,10 +122,10 @@ async function developerReply(req,res,body){
   const replyText=String(body?.text||'').trim();
   if(!sourceId||!replyText)return res.status(400).json({error:'Choose a message and enter a reply.'});
   try{
-    const original=await resendJson(`/emails/receiving/${encodeURIComponent(sourceId)}`);
+    const original=await getReceivedEmail(sourceId);
     const mailbox=inboundMailbox(original);
     if(!mailbox)return res.status(400).json({error:'The original message is not a Moonbeam support email.'});
-    const to=safeReplyAddress(original.reply_to||original.from);
+    const to=firstReplyAddress(original);
     if(!to)return res.status(400).json({error:'The sender does not have a valid reply address.'});
     const subject=/^re:/i.test(String(original.subject||''))?String(original.subject):`Re: ${String(original.subject||'(No subject)')}`;
     const headers={};

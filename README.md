@@ -1,4 +1,4 @@
-# Moonbeam Stories V250.22
+# Moonbeam Stories V250.23
 
 ## V250.20 — desktop homepage cleanup
 
@@ -1270,3 +1270,10 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Reuses the existing `api/resend-inbound.js` Serverless Function for inbox list/read/reply actions, so the deployment remains at exactly 12 deployable `/api/*.js` functions. The existing Resend webhook forwarding behaviour is preserved.
 - Replies use the existing `RESEND_API_KEY`; no new Vercel environment variables and no Supabase/SQL migration are required.
 - Legal pages are unchanged.
+
+
+## V250.23 — Support Inbox Message Detail Fix
+- Retrieves selected inbound email content through the Resend Receiving SDK.
+- Restores subject/body display with list-metadata fallback.
+- Correctly handles Resend reply_to arrays and falls back to the sender address.
+- Keeps the existing 12 deployable API-function limit; no Supabase schema change.
