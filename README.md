@@ -1,4 +1,4 @@
-# Moonbeam Stories V250.21
+# Moonbeam Stories V250.22
 
 ## V250.20 — desktop homepage cleanup
 
@@ -1263,3 +1263,10 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - The main desktop homepage Create Story CTA now gently enlarges/brightens twice shortly after the homepage appears, then becomes completely still.
 - The cue is desktop-homepage-only; mobile and in-app Create Story controls are unchanged.
 - Respects reduced-motion preferences. No Supabase/SQL changes.
+
+## V250.22 — private Moonbeam support inbox
+- Adds a private Support inbox to the existing developer Usage page. It lists inbound Resend messages addressed to `support@moonbeamstories.co.uk` or `privacy@moonbeamstories.co.uk`, opens the full message, and lets the Moonbeam developer reply from the matching Moonbeam address without exposing the personal forwarding address.
+- Access uses the same signed-in developer check and `MOONBEAM_DEVELOPER_EMAIL` restriction as the existing Usage dashboard.
+- Reuses the existing `api/resend-inbound.js` Serverless Function for inbox list/read/reply actions, so the deployment remains at exactly 12 deployable `/api/*.js` functions. The existing Resend webhook forwarding behaviour is preserved.
+- Replies use the existing `RESEND_API_KEY`; no new Vercel environment variables and no Supabase/SQL migration are required.
+- Legal pages are unchanged.

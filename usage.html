@@ -1,11 +1,15 @@
 <!doctype html>
 <meta name="viewport" content="width=device-width">
 <title>Moonbeam Usage</title>
-<link rel="stylesheet" href="/styles.css?v=250.12">
+<link rel="stylesheet" href="/styles.css?v=250.22">
 <main class="usage-page">
   <h1>Moonbeam developer usage</h1>
   <div id="u">Loading…</div>
-  <p><a href="/">← Moonbeam</a></p>
+  <section class="usage-section usage-baseline-section support-inbox-section">
+  <div class="usage-section-head"><h2>Support inbox</h2><p>Read messages sent to Moonbeam support/privacy and reply without exposing your personal email address.</p></div>
+  <div id="supportInbox"><p>Loading support inbox…</p></div>
+</section>
+<p><a href="/">← Moonbeam</a></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -14,7 +18,8 @@
  const c=supabase.createClient('https://quwjfjojeibaxnnpykaf.supabase.co','sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q');
  const s=(await c.auth.getSession()).data.session;
  if(!s){u.textContent='Sign into Moonbeam first';return}
- const r=await fetch('/api/usage-summary',{headers:{Authorization:'Bearer '+s.access_token}});
+ window.moonbeamDeveloperSession=s;
+  const r=await fetch('/api/usage-summary',{headers:{Authorization:'Bearer '+s.access_token}});
  const d=await r.json(); if(!r.ok){u.textContent=d.error||'Could not load usage';return}
 
  const money=n=>n==null?'—':'$'+Number(n).toFixed(4);
@@ -81,6 +86,43 @@
     <tbody>${supportRows}</tbody>
    </table></div>
   </section>`;
+
+
+ async function loadSupportInbox(){
+  const box=document.getElementById('supportInbox'); if(!box)return;
+  const token=window.moonbeamDeveloperSession?.access_token; if(!token){box.innerHTML='<p>Sign into Moonbeam first.</p>';return}
+  try{
+   const r=await fetch('/api/resend-inbound?action=list',{headers:{Authorization:'Bearer '+token}}); const d=await r.json();
+   if(!r.ok)throw new Error(d.error||'Could not load support inbox.');
+   const messages=d.messages||[];
+   if(!messages.length){box.innerHTML='<p class="usage-note">No support or privacy messages found.</p>';return}
+   box.innerHTML=`<div class="support-inbox-layout"><div class="support-message-list">${messages.map(m=>`<button class="support-message-row" data-id="${esc(m.id)}"><strong>${esc(m.from||'Unknown sender')}</strong><span>${esc(m.subject||'(No subject)')}</span><small>${m.createdAt?new Date(m.createdAt).toLocaleString('en-GB'):'—'} · ${esc(m.mailbox||'')}</small></button>`).join('')}</div><div id="supportMessagePane" class="support-message-pane"><p class="usage-note">Select a message to read it and reply.</p></div></div>`;
+   box.querySelectorAll('.support-message-row').forEach(b=>b.onclick=()=>openSupportMessage(b.dataset.id,b));
+  }catch(e){box.innerHTML=`<p class="usage-warning">${esc(e.message||String(e))}</p>`}
+ }
+ async function openSupportMessage(id,button){
+  document.querySelectorAll('.support-message-row').forEach(x=>x.classList.toggle('active',x===button));
+  const pane=document.getElementById('supportMessagePane'); pane.innerHTML='<p>Loading message…</p>';
+  try{
+   const token=window.moonbeamDeveloperSession.access_token;
+   const r=await fetch('/api/resend-inbound?action=message&id='+encodeURIComponent(id),{headers:{Authorization:'Bearer '+token}}); const d=await r.json();
+   if(!r.ok)throw new Error(d.error||'Could not load message.'); const m=d.message;
+   const body=m.text?`<pre class="support-message-text">${esc(m.text)}</pre>`:(m.html?`<iframe class="support-message-html" sandbox="" srcdoc="${esc(m.html)}"></iframe>`:'<p class="usage-note">This message has no readable body.</p>');
+   pane.innerHTML=`<div class="support-message-meta"><strong>${esc(m.subject)}</strong><span>From: ${esc(m.from)}</span><span>To: ${esc((m.to||[]).join(', '))}</span><span>${m.createdAt?new Date(m.createdAt).toLocaleString('en-GB'):'—'}</span></div>${body}<form id="supportReplyForm" class="support-reply"><label><strong>Reply as ${esc(m.mailbox)}</strong><textarea id="supportReplyText" rows="7" placeholder="Type your reply…" required></textarea></label><div class="support-reply-actions"><button class="primary" type="submit">Send reply</button><span id="supportReplyStatus"></span></div></form>`;
+   document.getElementById('supportReplyForm').onsubmit=async e=>{e.preventDefault();await sendSupportReply(id,m.mailbox)};
+  }catch(e){pane.innerHTML=`<p class="usage-warning">${esc(e.message||String(e))}</p>`}
+ }
+ async function sendSupportReply(sourceId,mailbox){
+  const text=document.getElementById('supportReplyText').value.trim(), status=document.getElementById('supportReplyStatus'), button=document.querySelector('#supportReplyForm button');
+  if(!text)return; button.disabled=true; status.textContent='Sending…';
+  try{
+   const token=window.moonbeamDeveloperSession.access_token;
+   const r=await fetch('/api/resend-inbound?action=reply',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({sourceId,text})}); const d=await r.json();
+   if(!r.ok)throw new Error(d.error||'Could not send reply.'); status.textContent=`✓ Sent from ${d.from}`; document.getElementById('supportReplyText').value='';
+  }catch(e){status.textContent=e.message||String(e)}finally{button.disabled=false}
+ }
+ loadSupportInbox();
+
  function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 })()
 </script>
