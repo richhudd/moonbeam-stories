@@ -132,7 +132,7 @@ async function developerInstagramTest(req,res){
       console.error('instagram connection test',r.status,message);
       return res.status(502).json({ok:false,error:message});
     }
-    if(String(data?.id||'')!==accountId)return res.status(502).json({ok:false,error:'Instagram returned a different account id.'});
+    if(String(data?.id||'')!==accountId)return res.status(200).json({ok:false,mismatch:true,configuredAccountId:accountId,returnedAccountId:String(data?.id||''),username:data?.username||null,error:'Instagram returned a different account id.'});
     return res.status(200).json({ok:true,accountId:data.id,username:data.username||null});
   }catch(error){console.error('instagram connection test',error);return res.status(502).json({ok:false,error:error?.message||'Could not connect to Instagram.'});}
 }

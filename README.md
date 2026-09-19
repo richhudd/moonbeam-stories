@@ -1301,3 +1301,9 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Reuses `api/resend-inbound.js`, so the deployment remains at exactly 12 deployable API functions.
 - Does not publish an Instagram post yet; this is the connection/authentication test before publishing is enabled.
 - No Supabase/SQL migration or legal-page change is required.
+
+
+## V250.27 — Instagram ID Diagnostic
+- Extends the developer-only Instagram connection check so an account-ID mismatch safely reports the username, the ID returned by Meta, and the configured Vercel account ID.
+- The Instagram access token remains server-side and is never returned to the browser.
+- Reuses `api/resend-inbound.js`; no new API function, Supabase/SQL migration, legal-page change, or Vercel environment variable is required.

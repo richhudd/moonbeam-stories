@@ -135,6 +135,7 @@
   try{
    const token=window.moonbeamDeveloperSession?.access_token; if(!token)throw new Error('Sign into Moonbeam first.');
    const r=await fetch('/api/resend-inbound?action=instagram-test',{headers:{Authorization:'Bearer '+token}}); const d=await r.json();
+   if(d.mismatch){status.textContent='⚠ Meta returned @'+(d.username||'unknown')+' with account ID '+(d.returnedAccountId||'unknown')+'. Vercel currently has '+(d.configuredAccountId||'unknown')+'.'; return;}
    if(!r.ok||!d.ok)throw new Error(d.error||'Instagram connection test failed.');
    status.textContent='✓ Connected to @'+(d.username||'moonbeamstoriesuk')+' ('+d.accountId+')';
   }catch(e){status.textContent='✗ '+(e.message||String(e))}finally{button.disabled=false}
