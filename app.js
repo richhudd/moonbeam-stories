@@ -1041,7 +1041,7 @@ async function postCurrentStoryToInstagram(){
   const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId})});
   const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Instagram post failed.');
   alert('Posted to @moonbeamstoriesuk and added to the Instagram story gallery.');
-  if(button){button.textContent='✓ Posted to Instagram';button.disabled=true}
+  if(button){button.textContent='✓ Posted';button.disabled=true;button.classList.add('instagram-posted')}
  }catch(e){alert(e.message||String(e));if(button){button.disabled=false;button.textContent='Post to Instagram'}}
 }
 function shareStoryLanguage(){return currentBook?.child?.language||language||'en-GB'}

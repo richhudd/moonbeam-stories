@@ -4097,3 +4097,6 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 .support-reply textarea,
 .support-reply-actions span { color:#000 !important; }
 .support-reply textarea::placeholder { color:#555 !important; opacity:1; }
+
+/* V250.31: successful Instagram story post state */
+.end-actions .end-instagram-post.instagram-posted,.end-actions .end-instagram-post.instagram-posted:disabled{background:#5c3bbf!important;border-color:#5c3bbf!important;color:#fff!important;opacity:1!important;}

@@ -179,6 +179,18 @@ async function adminJson(url,options={}){
   if(!r.ok)throw new Error(data?.message||data?.error||`Moonbeam data request failed (${r.status}).`); return data;
 }
 function shareTokenHash(token){return crypto.createHash('sha256').update(String(token)).digest('hex')}
+async function waitForInstagramContainer(creationId,accessToken){
+  const deadline=Date.now()+30000;
+  let lastStatus='';
+  while(Date.now()<deadline){
+    const status=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(creationId)}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`,{headers:{Accept:'application/json'}});
+    lastStatus=String(status?.status_code||status?.status||'').toUpperCase();
+    if(lastStatus==='FINISHED'||lastStatus==='PUBLISHED')return status;
+    if(lastStatus==='ERROR'||lastStatus==='EXPIRED')throw new Error(`Instagram could not prepare the story cover (${lastStatus.toLowerCase()}).`);
+    await new Promise(resolve=>setTimeout(resolve,1500));
+  }
+  throw new Error(`Instagram is still preparing the story cover${lastStatus?` (${lastStatus.toLowerCase()})`:''}. Please try again.`);
+}
 async function developerInstagramPublishStory(req,res,body){
   const verified=await verifyDeveloper(req); if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
   const accessToken=String(process.env.INSTAGRAM_ACCESS_TOKEN||'').trim(), accountId=String(process.env.INSTAGRAM_ACCOUNT_ID||'').trim();
@@ -198,6 +210,7 @@ async function developerInstagramPublishStory(req,res,body){
     const createBody=new URLSearchParams({image_url:imageUrl,caption,access_token:accessToken});
     const created=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}/media`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:createBody.toString()});
     const creationId=String(created?.id||'').trim(); if(!creationId)throw new Error('Instagram did not return a media container ID.');
+    await waitForInstagramContainer(creationId,accessToken);
     const publishBody=new URLSearchParams({creation_id:creationId,access_token:accessToken});
     const published=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}/media_publish`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:publishBody.toString()});
     const mediaId=String(published?.id||'').trim(); if(!mediaId)throw new Error('Instagram did not return a published media ID.');

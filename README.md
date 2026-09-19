@@ -1332,3 +1332,11 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Moved the Support inbox/email section to the top of the Usage page, above Usage & economics and the statistics tables.
 - The working story-to-Instagram publishing feature and Instagram story gallery from V250.29 are unchanged.
 - No Supabase schema or legal-page changes.
+
+
+## V250.31 — Instagram Story Publishing Reliability
+
+- Waits for Meta to finish preparing the real saved-story cover media container before publishing it, preventing the premature “Media ID is not available” failure.
+- A successful story post changes the end-page Instagram button to **✓ Posted**, keeps it disabled, and turns it purple.
+- A failed post restores the active **Post to Instagram** button so it can be retried.
+- No new API function, Supabase/SQL migration, legal-page change, or Vercel environment variable is required.
