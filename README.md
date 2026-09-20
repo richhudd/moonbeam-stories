@@ -1,4 +1,14 @@
-# Moonbeam Stories V250.47
+# Moonbeam Stories V250.48
+
+## V250.48 — restore the last pre-regression story writer
+
+- Restores the V250.41 story-writing prompt exactly.
+- Removes the V250.42 world-model-sheet instructions from story generation.
+- Removes the later storyboard restrictions from story generation.
+- Restores the V250.41 JSON-repair prompt without world-model or storyboard additions.
+- Keeps the later technical page-rebalancing safeguard.
+- Retains V250.47 login restoration, V250.46 prefetching and all current Cast, reader, saving and illustration behaviour.
+- No Supabase migration is required.
 
 ## V250.47 — reliable login restoration
 
