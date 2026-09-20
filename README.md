@@ -1,11 +1,29 @@
-# Moonbeam Stories V250.54
+# Moonbeam Stories V250.56
 
-## V250.54 — dedicated cover only + no invented hair clips
+## V250.56 — foolproof cover generation + optional Male/Female cast marker
 
-- Removes the temporary phone-portrait fallback that showed page 1 as the cover and then replaced it. Moonbeam now waits for the real dedicated cover instead of visibly switching covers.
-- Keeps the normal saved-story cover loading path unchanged; this only affects newly generated unsaved stories.
-- Strengthens the dedicated cover prompt so the child’s underlying identity must stay faithful to the reference photo and must not be ethnically reinterpreted to match the setting.
-- Strengthens the illustration prompt so unsupported decorative accessories are not invented or canonised across the book.
-- Explicitly forbids invented hair clips, bows, barrettes, star ornaments and similar decorative hair accessories unless they are visible in the reference photo or explicitly required by the story.
-- Explicitly tells the engine not to preserve accidental hallucinated accessories from earlier illustrations.
-- No Supabase migration is required.
+This build changes the generation flow so the book does **not open** until all illustrations are finished.
+
+### Generation flow
+- Moonbeam now generates **all interior book illustrations first** (opening page, all story pages, and closing page).
+- Only after all interior illustrations are complete does Moonbeam generate the **cover**.
+- The cover is generated **last**, using:
+  - the **full text of the whole book**
+  - the uploaded Cast photo references
+  - **all completed interior illustrations** as authoritative visual references
+- The **Preparing your story** waiting screen and hourglass remain visible until the entire book, including the cover, has finished generating.
+- The reader opens only once the full book is ready.
+
+### Cover consistency
+- The cover is no longer an early speculative image.
+- It is now generated from the fully established visual world of the finished book, so style and likeness should match the interior much more closely.
+
+### Cast optional marker
+- Replaces the previous gender dropdown UI.
+- Human Cast members now have an **Optional** field with two single-choice options: **Male** and **Female**.
+- If a Cast member is marked **Male**, Moonbeam is instructed not to invent decorative hair accessories unless they are clearly present in the uploaded photo or explicitly required by the story.
+- The marker remains optional and is not shown for pets.
+
+### Supabase
+- Includes an updated migration: **SUPABASE_V250_CAST_OPTIONAL.sql**
+- This adds the `gender` column (used internally) and constrains values to `male` or `female`.
