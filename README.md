@@ -1,4 +1,23 @@
-# Moonbeam Stories V250.45
+# Moonbeam Stories V250.47
+
+## V250.47 — reliable login restoration
+
+- Retries initial Supabase session restoration before deciding that no login exists.
+- Does not turn a temporary session-check or network error into a false logout.
+- Clears the signed-in interface only after Supabase emits an actual `SIGNED_OUT` event or repeated checks confirm there is no stored session.
+- Preserves the existing account state if the Account page encounters a temporary authentication error.
+- Stops hiding authentication errors behind an empty access token.
+- Retains the V250.45 refresh-and-retry path and the V250.46 illustration prefetch buffer.
+- No Supabase migration is required.
+
+## V250.46 — two-page illustration prefetch buffer
+
+- Starts the opening page and the following two illustrations while the cover is being viewed.
+- Keeps the next two pages queued whenever a story page is displayed.
+- Preserves the existing continuity order while starting each dependent generation at the earliest possible moment.
+- Fixes the previous prefetch helper, whose `ahead` argument was accepted but ignored.
+- Does not add or change any creative illustration-prompt instructions.
+- No Supabase migration is required.
 
 ## V250.45 — resilient session refresh during illustration generation
 

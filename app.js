@@ -1,4 +1,4 @@
-// Moonbeam Stories V250.45
+// Moonbeam Stories V250.47
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -265,15 +265,32 @@ document.querySelectorAll('[data-buy-credits]').forEach(b=>b.addEventListener('c
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('creditShop')?.classList.contains('hidden'))closeCreditShop()});
 initSupabase();
 
+const sessionCheckDelay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function readSessionReliably({retryEmpty=false,attempts=3}={}){
+ let lastError=null;
+ for(let attempt=0;attempt<attempts;attempt++){
+  try{
+   const {data,error}=await supabaseClient.auth.getSession();
+   if(data?.session)return{session:data.session,error:null};
+   lastError=error||null;
+   if(!error&&!retryEmpty)return{session:null,error:null};
+  }catch(e){lastError=e}
+  if(attempt<attempts-1)await sessionCheckDelay(300*(attempt+1));
+ }
+ return{session:null,error:lastError};
+}
+
 async function initSupabase(){
  const sharedToken=shareTokenFromLocation();if(sharedToken){await loadSharedStory(sharedToken);return}
  if(!supabaseClient){$('authStatus').textContent='Account service could not load.';return}
- const {data:{session}}=await supabaseClient.auth.getSession();
- await applyAuthSession(session);
  supabaseClient.auth.onAuthStateChange((event,session)=>{
    if(event==='PASSWORD_RECOVERY') setTimeout(()=>showPasswordRecovery(),0);
-   setTimeout(()=>applyAuthSession(session),0)
+   if(session)setTimeout(()=>applyAuthSession(session),0);
+   else if(event==='SIGNED_OUT')setTimeout(()=>applyAuthSession(null),0)
  });
+ const restored=await readSessionReliably({retryEmpty:true,attempts:3});
+ if(restored.error){console.warn('Initial Moonbeam session restoration failed',restored.error);setAuthStatus('Moonbeam could not verify your login. Please check your connection and try again.',true);return}
+ await applyAuthSession(restored.session);
 }
 const UI_STATUS_135={
 'en-GB':{continueSignIn:'Sign in or create an account to continue.',buySignIn:'Sign in or create your parent account before buying story credits.',savedUnavailable:'That saved story is unavailable.',narrationSignIn:'Sign in to use narration.'},
@@ -576,12 +593,14 @@ async function loadStoryCredits(){
 let sessionRefreshPromise=null;
 async function refreshAccessToken(){
  if(!supabaseClient)return'';
- if(!sessionRefreshPromise)sessionRefreshPromise=(async()=>{try{const {data,error}=await supabaseClient.auth.refreshSession();if(error)return'';return data?.session?.access_token||''}catch{return''}})();
+ if(!sessionRefreshPromise)sessionRefreshPromise=(async()=>{const {data,error}=await supabaseClient.auth.refreshSession();if(error)throw new Error(`Moonbeam could not refresh your login: ${error.message||error}`);return data?.session?.access_token||''})();
  try{return await sessionRefreshPromise}finally{sessionRefreshPromise=null}
 }
 async function currentAccessToken(){
  if(!supabaseClient)return'';
- try{const {data:{session},error}=await supabaseClient.auth.getSession();if(error)return'';return session?.access_token||''}catch{return''}
+ const checked=await readSessionReliably({retryEmpty:false,attempts:2});
+ if(checked.error)throw new Error(`Moonbeam could not verify your login: ${checked.error.message||checked.error}`);
+ return checked.session?.access_token||''
 }
 
 function showCheckoutNotice(message,kind=''){
@@ -759,7 +778,7 @@ function renderStory(s,image,child,options={}){
  if(nextPage)nextPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goNextBookPage()});
  loadCoverIllustration(false);
  // Start the opening and next two illustrations immediately while the cover is on screen.
- prefetchIllustrations(-1,1);
+ prefetchIllustrations(-1,3);
  $('save').onclick=saveCurrentStory;
  $('newStory').onclick=()=>startNewStory();
  if(currentBook.isShared){$('save')?.classList.add('hidden');$('newStory')?.classList.add('hidden')}
@@ -905,13 +924,13 @@ async function loadIllustration(index,prompt,silent=false,force=false){
  if(book.isSaved){const path=book.savedAssets?.pages?.[index];if(!path){if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p><small>This older saved story does not contain a cloud copy of this picture.</small></div>';return null}try{const image=await savedAssetUrl(path);book.artwork.pages[index]=image;if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}catch(e){console.error(e);if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p></div>';return null}}
  if(!silent&&frame&&!illustrationCache.has(key))frame.innerHTML=`<div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div>`;
  try{
-   const prevKey=previousIllustrationKey(book,index);
+   const usePreviousArtwork=shouldUsePreviousArtwork(book,index);
+   const prevKey=usePreviousArtwork?previousIllustrationKey(book,index):null;
    let prevImage=prevKey?(illustrationCache.get(prevKey)||await persistentImageGet(prevKey)):null;
-   // Prefetch can start adjacent pages close together. If the preceding page is
-   // still being painted, wait for that same in-flight result so continuity is
-   // never silently dropped merely because the reader navigated quickly.
-   if(!prevImage&&prevKey&&illustrationInflight.has(prevKey)){try{prevImage=await illustrationInflight.get(prevKey)}catch{}}
-   const continuityImage=shouldUsePreviousArtwork(book,index)?prevImage:null;
+   // Only continuity-dependent scenes wait for preceding artwork. Similar scenes
+   // deliberately omit that reference, so they can begin in parallel immediately.
+   if(usePreviousArtwork&&!prevImage&&prevKey&&illustrationInflight.has(prevKey)){try{prevImage=await illustrationInflight.get(prevKey)}catch{}}
+   const continuityImage=usePreviousArtwork?prevImage:null;
    let image=await requestIllustration(key,prompt,`Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,force,book.child?.referenceImages||book.child?.referencePhoto||null,true,index,continuityImage);
    // Never spend a second generation slot automatically. In-flight and persistent caching
    // make each physical page deterministic; a rare duplicate can be retried only by explicit user action.
@@ -927,7 +946,7 @@ function getIllustrationPrompt(index){
 CURRENT PAGE TEXT: ${excerpt(page.text)}
 SCENE DIRECTION: ${page.illustration_prompt||'Depict the specific action and setting described on this page.'}`
 }
-function prefetchIllustrations(index,ahead=1){const book=currentBook;if(!book||book.isSaved)return;const total=book.pages.length+2;const i=index+1;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}
+function prefetchIllustrations(index,ahead=2){const book=currentBook;if(!book||book.isSaved)return;const total=book.pages.length+2;for(let step=1;step<=ahead;step++){const i=index+step;if(i>=0&&i<total)loadIllustration(i,getIllustrationPrompt(i),true)}}
 function isPhonePortrait(){return window.matchMedia('(max-width:700px) and (orientation:portrait)').matches}
 function isPhoneReader(){return isPhonePortrait()||isPhoneLandscape()}
 function mobilePhysicalPageNumber(){if(!currentBook)return 1;return currentBook.currentPage+1}
@@ -1290,7 +1309,7 @@ function renderBookPage(index){
  bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-scroll-cue" aria-hidden="true"><span></span><span></span></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.classList.remove('end-hidden');next.textContent=t().turn}if(indicator){indicator.classList.remove('end-hidden');indicator.textContent=`${clamped+1} / ${total}`}
  const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
- applyMobileSide();setupMobileScrollCue();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,1);
+ applyMobileSide();setupMobileScrollCue();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,2);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${narrationLanguage(book)}:${clamped+1}`,clamped+1).catch(()=>{})}
  persistCurrentDraft();restoreReaderScroll();
 }
@@ -1575,8 +1594,9 @@ async function changeAccountEmail216(){
 async function syncAccountAuthState229(){
  if(!supabaseClient){currentUser=null;storyCreditBalance=null;renderAccountView213();return}
  try{
-  const {data:{session},error}=await supabaseClient.auth.getSession();
-  if(error)console.warn('Account session check',error);
+  const checked=await readSessionReliably({retryEmpty:!!currentUser,attempts:3});
+  if(checked.error){console.warn('Account session check',checked.error);renderAccountView213();return}
+  const session=checked.session;
   const sessionUser=session?.user||null;
   const usableSessionUser=(sessionUser?.id&&sessionUser?.email)?sessionUser:null;
   const changed=(currentUser?.id||null)!==(usableSessionUser?.id||null);
@@ -1595,7 +1615,9 @@ async function syncAccountAuthState229(){
   renderAccountView213();
  }catch(e){
   console.warn('Account session sync',e);
-  currentUser=null;storyCreditBalance=null;document.body.classList.remove('moonbeam-signed-in');renderAccountView213();
+  // A temporary session-check failure is not proof that the parent signed out.
+  // Preserve the existing account state and let Supabase's auth event resolve it.
+  renderAccountView213();
  }
 }
 
