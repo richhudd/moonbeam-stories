@@ -1,3 +1,16 @@
+# Moonbeam Stories V250.50
+
+## V250.50 — Instagram carousel story posting
+
+- Replaces the developer-only **Post to Instagram** action so it now publishes a 10-slide Instagram carousel instead of a single cover-only image.
+- Preserves the existing two-step approval flow and the proven browser-side cover-flattening process; the approved composite cover remains slide 1 and is still used for the public Instagram gallery.
+- Builds the carousel in the exact Moonbeam order: cover, page 1 text, page 1 illustration, page 2 text, page 2 illustration, page 3 text, page 3 illustration, page 4 text, page 4 illustration, and a final **To be continued…** CTA slide.
+- Splits the desktop reader spreads correctly: text slides are rendered separately from story text, while illustration slides are rendered separately from the saved illustration assets.
+- Adds ornate fairytale-style bordered text slides and a matching CTA slide, while keeping illustration slides simple and portrait-framed for Instagram.
+- Keeps the existing behaviour whereby posting to Instagram also adds the full book to the public gallery page linked from the bio.
+- Extends the public share asset route to serve the generated carousel slides for Instagram publishing and refreshes the gallery cover cache version.
+- No Supabase migration is required.
+
 # Moonbeam Stories V250.49
 
 ## V250.49 — story-grounded covers
