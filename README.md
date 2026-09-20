@@ -1,6 +1,6 @@
-# Moonbeam Stories V250.56
+# Moonbeam Stories V250.57
 
-## V250.56 — foolproof cover generation + optional Male/Female cast marker
+## V250.57 — Male/Female alignment fix
 
 This build changes the generation flow so the book does **not open** until all illustrations are finished.
 
@@ -27,3 +27,7 @@ This build changes the generation flow so the book does **not open** until all i
 ### Supabase
 - Includes an updated migration: **SUPABASE_V250_CAST_OPTIONAL.sql**
 - This adds the `gender` column (used internally) and constrains values to `male` or `female`.
+
+### V250.57 UI fix
+- Corrects the Optional Male/Female radio controls so each circle sits directly beside and vertically aligned with its label.
+- Preserves the V250.56 full-generation flow, cover-last architecture, Cast marker behaviour and Supabase migration unchanged.
