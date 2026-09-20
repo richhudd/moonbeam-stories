@@ -1,4 +1,4 @@
-// Moonbeam Stories V133
+// Moonbeam Stories V250.40
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -36,6 +36,7 @@ const SUPABASE_PUBLISHABLE_KEY='sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q';
 const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let currentUser=null, cloudProfiles=[], activeProfileId=null, cloudStories=[];
 let instagramDeveloperAccess=false;
+let pendingInstagramPost=null;
 let castMembers246=[];
 let storyHeroIds248=new Set(),storySupportIds248=new Set();
 let castEditor246={kind:'child',id:null,photo:null,originalPhoto:null};
@@ -1032,18 +1033,102 @@ function shareT(lang=language){return SHARE_LOCALES[lang]||SHARE_LOCALES['en-GB'
 async function checkInstagramDeveloperAccess(){
  try{const token=await currentAccessToken();if(!token)return;const r=await fetch('/api/resend-inbound?action=instagram-access',{headers:{Authorization:`Bearer ${token}`}});instagramDeveloperAccess=r.ok;if(instagramDeveloperAccess&&currentBook&&currentBook.currentPage===currentBook.pages.length+2&&!currentBook.isShared)renderBookPage(currentBook.currentPage)}catch{instagramDeveloperAccess=false}
 }
-async function postCurrentStoryToInstagram(){
- if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;
- if(!confirm('Post this story cover to @moonbeamstoriesuk and add the full story to the public Instagram gallery?'))return;
- const button=$('endInstagramPost'); if(button){button.disabled=true;button.textContent='Posting…'}
- try{
-  const storyId=await ensureCurrentBookSaved(),token=await currentAccessToken();if(!token)throw new Error('Sign in again.');
-  const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId})});
-  const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Instagram post failed.');
-  alert('Posted to @moonbeamstoriesuk and added to the Instagram story gallery.');
-  if(button){button.textContent='✓ Posted';button.disabled=true;button.classList.add('instagram-posted')}
- }catch(e){alert(e.message||String(e));if(button){button.disabled=false;button.textContent='Post to Instagram'}}
+const INSTAGRAM_UI={
+ 'en-GB':{prepare:'Preparing cover…',previewTitle:'Instagram cover preview',previewIntro:'This exact image will be posted to Instagram and used in the public gallery.',post:'Post this cover',cancel:'Cancel',posting:'Posting…',posted:'✓ Posted',failed:'Instagram post failed.',captureFailed:'Moonbeam could not capture the finished cover.',signIn:'Sign in again.'},
+ 'en-US':{prepare:'Preparing cover…',previewTitle:'Instagram cover preview',previewIntro:'This exact image will be posted to Instagram and used in the public gallery.',post:'Post this cover',cancel:'Cancel',posting:'Posting…',posted:'✓ Posted',failed:'Instagram post failed.',captureFailed:'Moonbeam could not capture the finished cover.',signIn:'Sign in again.'},
+ 'es-ES':{prepare:'Preparando portada…',previewTitle:'Vista previa de la portada de Instagram',previewIntro:'Esta imagen exacta se publicará en Instagram y se usará en la galería pública.',post:'Publicar esta portada',cancel:'Cancelar',posting:'Publicando…',posted:'✓ Publicada',failed:'No se pudo publicar en Instagram.',captureFailed:'Moonbeam no pudo capturar la portada terminada.',signIn:'Vuelve a iniciar sesión.'},
+ 'es-419':{prepare:'Preparando portada…',previewTitle:'Vista previa de la portada de Instagram',previewIntro:'Esta imagen exacta se publicará en Instagram y se usará en la galería pública.',post:'Publicar esta portada',cancel:'Cancelar',posting:'Publicando…',posted:'✓ Publicada',failed:'No se pudo publicar en Instagram.',captureFailed:'Moonbeam no pudo capturar la portada terminada.',signIn:'Vuelve a iniciar sesión.'},
+ 'fr-FR':{prepare:'Préparation de la couverture…',previewTitle:'Aperçu de la couverture Instagram',previewIntro:'Cette image exacte sera publiée sur Instagram et utilisée dans la galerie publique.',post:'Publier cette couverture',cancel:'Annuler',posting:'Publication…',posted:'✓ Publiée',failed:'La publication Instagram a échoué.',captureFailed:'Moonbeam n’a pas pu capturer la couverture terminée.',signIn:'Reconnectez-vous.'},
+ 'de-DE':{prepare:'Cover wird vorbereitet…',previewTitle:'Instagram-Cover-Vorschau',previewIntro:'Genau dieses Bild wird auf Instagram veröffentlicht und in der öffentlichen Galerie verwendet.',post:'Dieses Cover posten',cancel:'Abbrechen',posting:'Wird gepostet…',posted:'✓ Gepostet',failed:'Instagram-Beitrag fehlgeschlagen.',captureFailed:'Moonbeam konnte das fertige Cover nicht erfassen.',signIn:'Bitte erneut anmelden.'},
+ 'it-IT':{prepare:'Preparazione copertina…',previewTitle:'Anteprima copertina Instagram',previewIntro:'Questa immagine esatta verrà pubblicata su Instagram e usata nella galleria pubblica.',post:'Pubblica questa copertina',cancel:'Annulla',posting:'Pubblicazione…',posted:'✓ Pubblicata',failed:'Pubblicazione su Instagram non riuscita.',captureFailed:'Moonbeam non è riuscito a catturare la copertina finita.',signIn:'Accedi di nuovo.'},
+ 'pt-BR':{prepare:'Preparando capa…',previewTitle:'Prévia da capa do Instagram',previewIntro:'Esta imagem exata será publicada no Instagram e usada na galeria pública.',post:'Publicar esta capa',cancel:'Cancelar',posting:'Publicando…',posted:'✓ Publicada',failed:'Falha ao publicar no Instagram.',captureFailed:'A Moonbeam não conseguiu capturar a capa final.',signIn:'Entre novamente.'},
+ 'pl-PL':{prepare:'Przygotowywanie okładki…',previewTitle:'Podgląd okładki na Instagram',previewIntro:'Dokładnie ten obraz zostanie opublikowany na Instagramie i użyty w publicznej galerii.',post:'Opublikuj tę okładkę',cancel:'Anuluj',posting:'Publikowanie…',posted:'✓ Opublikowano',failed:'Publikacja na Instagramie nie powiodła się.',captureFailed:'Moonbeam nie mógł przechwycić gotowej okładki.',signIn:'Zaloguj się ponownie.'}
+};
+function instagramUi(){return INSTAGRAM_UI[language]||INSTAGRAM_UI['en-GB']}
+function waitForImageReady(img){return new Promise(async(resolve,reject)=>{try{if(!img)throw new Error('Missing cover image');if(!img.complete){await new Promise((r,j)=>{img.addEventListener('load',r,{once:true});img.addEventListener('error',j,{once:true})})}if(typeof img.decode==='function')await img.decode().catch(()=>{});if(!img.naturalWidth||!img.naturalHeight)throw new Error('Cover image is not ready');resolve()}catch(e){reject(e)}})}
+function canvasCoverDrawImage(ctx,img,w,h){
+ const sw=img.naturalWidth,sh=img.naturalHeight;if(!sw||!sh)throw new Error('Cover artwork is unavailable.');
+ const scale=Math.max(w/sw,h/sh),dw=sw*scale,dh=sh*scale,dx=(w-dw)/2,dy=(h-dh)/2;
+ ctx.drawImage(img,0,0,sw,sh,dx,dy,dw,dh);
 }
+function canvasFontFromStyle(cs,scale){
+ const size=(parseFloat(cs.fontSize)||16)*scale;
+ return `${cs.fontStyle||'normal'} ${cs.fontVariant||'normal'} ${cs.fontWeight||'400'} ${size}px ${cs.fontFamily||'serif'}`;
+}
+function canvasApplyShadow(ctx,cs,scale){
+ const raw=String(cs.textShadow||'').trim();ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+ if(!raw||raw==='none')return;
+ const m=raw.match(/(rgba?\([^)]*\)|#[0-9a-fA-F]{3,8}|[a-zA-Z]+)\s+(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+(\d+(?:\.\d+)?)px/);
+ if(!m)return;ctx.shadowColor=m[1];ctx.shadowOffsetX=Number(m[2])*scale;ctx.shadowOffsetY=Number(m[3])*scale;ctx.shadowBlur=Number(m[4])*scale;
+}
+function charLineGroups(el){
+ const node=[...el.childNodes].find(n=>n.nodeType===Node.TEXT_NODE);if(!node)return [];
+ const text=node.nodeValue||'',groups=[];let current=null;
+ for(let i=0;i<text.length;i++){
+  const r=document.createRange();r.setStart(node,i);r.setEnd(node,i+1);const rect=[...r.getClientRects()][0];if(!rect)continue;
+  const key=Math.round(rect.top*2)/2;
+  if(!current||Math.abs(current.top-key)>1){current={top:key,left:rect.left,text:'',rects:[]};groups.push(current)}
+  current.text+=text[i];current.rects.push(rect);current.left=Math.min(current.left,rect.left);
+ }
+ return groups.map(g=>({...g,text:g.text.replace(/^\s+|\s+$/g,'')})).filter(g=>g.text);
+}
+function drawDomTextElement(ctx,el,rootRect,scale){
+ if(!el)return;const cs=getComputedStyle(el),groups=charLineGroups(el);if(!groups.length)return;
+ ctx.save();ctx.font=canvasFontFromStyle(cs,scale);ctx.fillStyle=cs.color||'#fff';ctx.textAlign='left';ctx.textBaseline='alphabetic';canvasApplyShadow(ctx,cs,scale);
+ const letterSpacing=parseFloat(cs.letterSpacing)||0;
+ for(const g of groups){
+  const first=g.rects[0],last=g.rects[g.rects.length-1];const lineTop=Math.min(...g.rects.map(r=>r.top));const lineBottom=Math.max(...g.rects.map(r=>r.bottom));const lineH=lineBottom-lineTop;
+  const metrics=ctx.measureText('Mg'),asc=metrics.actualBoundingBoxAscent||((parseFloat(cs.fontSize)||16)*scale*.78),desc=metrics.actualBoundingBoxDescent||((parseFloat(cs.fontSize)||16)*scale*.22);
+  const baseline=(lineTop-rootRect.top)*scale+((lineH*scale-(asc+desc))/2)+asc;
+  let x=(first.left-rootRect.left)*scale;
+  if(letterSpacing){for(const ch of g.text){ctx.fillText(ch,x,baseline);x+=ctx.measureText(ch).width+letterSpacing*scale}}
+  else ctx.fillText(g.text,x,baseline);
+ }
+ ctx.restore();
+}
+async function captureReaderCoverForInstagram(){
+ const ui=instagramUi(),art=document.querySelector('#coverView .cover-art-wrap'),img=$('coverImage');if(!art||!img||img.hidden||!img.src)throw new Error(ui.captureFailed);
+ await waitForImageReady(img);if(document.fonts?.ready)await document.fonts.ready.catch(()=>{});await nextPaint();
+ const clone=art.cloneNode(true);clone.id='instagramCaptureSurface';clone.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
+ clone.style.cssText='position:fixed!important;left:-10000px!important;top:0!important;width:620px!important;height:775px!important;aspect-ratio:4/5!important;margin:0!important;border:0!important;border-radius:10px!important;box-shadow:none!important;overflow:hidden!important;visibility:visible!important;display:block!important;opacity:1!important;pointer-events:none!important;z-index:-1!important;';
+ const cimg=clone.querySelector('.cover-image');if(!cimg)throw new Error(ui.captureFailed);cimg.hidden=false;cimg.removeAttribute('hidden');cimg.src=img.src;cimg.style.cssText='display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;opacity:1!important;z-index:1!important;';
+ const painted=clone.querySelector('.cover-painted-bg');if(painted)painted.remove();const loading=clone.querySelector('.cover-loading');if(loading)loading.remove();const error=clone.querySelector('.cover-error-box');if(error)error.remove();
+ const shade=clone.querySelector('.cover-shade');if(shade)shade.style.cssText='position:absolute!important;inset:0!important;z-index:2!important;background:linear-gradient(to bottom,#130d2d22 0%,#130d2d10 35%,#130d2daa 100%)!important;';
+ const copy=clone.querySelector('.cover-copy');if(copy)copy.style.cssText='position:absolute!important;z-index:3!important;left:12%!important;right:12%!important;bottom:6%!important;text-align:center!important;color:white!important;text-shadow:0 2px 12px #000b!important;';
+ const kicker=clone.querySelector('.cover-kicker');if(kicker)kicker.style.cssText='font-size:10px!important;font-weight:850!important;letter-spacing:.16em!important;text-transform:uppercase!important;margin-bottom:9px!important;';
+ const title=clone.querySelector('.cover-copy h2');if(title)title.style.cssText="font-family:Georgia,'Times New Roman',serif!important;font-size:40px!important;line-height:1.08!important;margin:0 auto 10px!important;color:white!important;max-width:92%!important;text-wrap:balance!important;";
+ const dedication=clone.querySelector('.cover-copy p');if(dedication)dedication.style.cssText='font:italic 13px Georgia,serif!important;margin:0!important;';
+ document.body.appendChild(clone);try{
+  await waitForImageReady(cimg);await nextPaint();const rootRect=clone.getBoundingClientRect();if(Math.abs(rootRect.width/rootRect.height-.8)>.01)throw new Error(ui.captureFailed);
+  const W=1080,H=1350,scale=W/rootRect.width,canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error(ui.captureFailed);
+  canvasCoverDrawImage(ctx,cimg,W,H);
+  const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'rgba(19,13,45,.1333)');grad.addColorStop(.35,'rgba(19,13,45,.0627)');grad.addColorStop(1,'rgba(19,13,45,.6667)');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  drawDomTextElement(ctx,kicker,rootRect,scale);drawDomTextElement(ctx,title,rootRect,scale);drawDomTextElement(ctx,dedication,rootRect,scale);
+  let quality=.94,dataUrl=canvas.toDataURL('image/jpeg',quality);while(dataUrl.length>3400000&&quality>.72){quality-=.04;dataUrl=canvas.toDataURL('image/jpeg',quality)}
+  if(!/^data:image\/jpeg;base64,/.test(dataUrl)||dataUrl.length<30000||dataUrl.length>3900000)throw new Error(ui.captureFailed);
+  const probe=new Image();probe.src=dataUrl;await waitForImageReady(probe);if(probe.naturalWidth!==W||probe.naturalHeight!==H)throw new Error(ui.captureFailed);
+  return dataUrl;
+ }finally{clone.remove()}
+}
+function ensureInstagramPreview(){
+ let modal=$('instagramPreview');if(modal)return modal;modal=document.createElement('div');modal.id='instagramPreview';modal.className='instagram-preview hidden';modal.innerHTML='<div class="instagram-preview-card" role="dialog" aria-modal="true"><h2 class="instagram-preview-title"></h2><p class="instagram-preview-intro"></p><img class="instagram-preview-image" alt=""><div class="instagram-preview-actions"><button class="secondary instagram-preview-cancel" type="button"></button><button class="primary instagram-preview-post" type="button"></button></div><div class="instagram-preview-status" aria-live="polite"></div></div>';document.body.appendChild(modal);
+ modal.querySelector('.instagram-preview-cancel').onclick=()=>closeInstagramPreview(true);modal.addEventListener('click',e=>{if(e.target===modal)closeInstagramPreview(true)});modal.querySelector('.instagram-preview-post').onclick=publishApprovedInstagramCover;return modal;
+}
+function closeInstagramPreview(restore=true){const modal=$('instagramPreview');if(modal)modal.classList.add('hidden');const pending=pendingInstagramPost;pendingInstagramPost=null;if(restore&&pending?.page!=null&&currentBook)renderBookPage(pending.page)}
+function showInstagramPreview(dataUrl,storyId,page){
+ const ui=instagramUi(),modal=ensureInstagramPreview();pendingInstagramPost={dataUrl,storyId,page};modal.querySelector('.instagram-preview-title').textContent=ui.previewTitle;modal.querySelector('.instagram-preview-intro').textContent=ui.previewIntro;modal.querySelector('.instagram-preview-image').src=dataUrl;modal.querySelector('.instagram-preview-cancel').textContent=ui.cancel;const post=modal.querySelector('.instagram-preview-post');post.textContent=ui.post;post.disabled=false;modal.querySelector('.instagram-preview-status').textContent='';modal.classList.remove('hidden');
+}
+async function publishApprovedInstagramCover(){
+ const pending=pendingInstagramPost;if(!pending)return;const ui=instagramUi(),modal=ensureInstagramPreview(),post=modal.querySelector('.instagram-preview-post'),cancel=modal.querySelector('.instagram-preview-cancel'),status=modal.querySelector('.instagram-preview-status');post.disabled=true;cancel.disabled=true;post.textContent=ui.posting;status.textContent='';
+ try{const token=await currentAccessToken();if(!token)throw new Error(ui.signIn);const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId:pending.storyId,coverDataUrl:pending.dataUrl})});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||ui.failed);modal.classList.add('hidden');const page=pending.page;pendingInstagramPost=null;if(currentBook)renderBookPage(page);const b=$('endInstagramPost');if(b){b.textContent=ui.posted;b.disabled=true;b.classList.add('instagram-posted')}alert('Posted to @moonbeamstoriesuk and added to the Instagram story gallery.');}
+ catch(e){status.textContent=e.message||String(e);post.disabled=false;cancel.disabled=false;post.textContent=ui.post}
+}
+async function postCurrentStoryToInstagram(){
+ if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;const ui=instagramUi(),button=$('endInstagramPost'),page=currentBook.currentPage;if(button){button.disabled=true;button.textContent=ui.prepare}
+ try{const storyId=await ensureCurrentBookSaved();showCover();const img=$('coverImage');if(!img||!img.src)await loadCoverIllustration(false);const dataUrl=await captureReaderCoverForInstagram();showInstagramPreview(dataUrl,storyId,page)}
+ catch(e){if(currentBook)renderBookPage(page);const b=$('endInstagramPost');if(b){b.disabled=false;b.textContent='Post to Instagram'}alert(e.message||String(e))}
+}
+
 function shareStoryLanguage(){return currentBook?.child?.language||language||'en-GB'}
 function shareTokenFromLocation(){const m=location.pathname.match(/^\/shared\/([^/]+)\/?$/);return m?decodeURIComponent(m[1]):''}
 async function loadSharedStory(token){

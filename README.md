@@ -1405,3 +1405,15 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Instagram/gallery cover text now uses Sharp/Pango text rendering with the reader cover CSS proportions: 4:5 artwork, 12% copy margins, 6% bottom placement, serif title, italic serif dedication and uppercase kicker.
 - The same saved title and the same saved Hero-name dedication data used by the reader are used for the flattened Instagram/gallery cover.
 - Existing saved stories remain supported; no story or illustration regeneration is required.
+
+## V250.40 — Developer-only verified Instagram cover capture
+- Replaces the failed server-generated Instagram typography path with a browser-side capture of the real Moonbeam cover content.
+- Developer account only: normal user accounts receive no Instagram UI and no change to generation, reader, save, sharing, credits, or account flows.
+- Pressing **Post to Instagram** saves the story if needed, switches to the real cover, waits for the cover image and browser fonts, and builds a 1080×1350 JPEG using the browser-rendered cover text metrics and the local/blob cover artwork already loaded by Moonbeam.
+- The developer sees the exact JPEG in a confirmation preview before anything is sent to Instagram. **Post this cover** sends those exact JPEG bytes; **Cancel** returns to the previous book page without publishing.
+- The server no longer creates title, kicker, dedication, line wrapping, or fonts for Instagram. It only verifies the approved JPEG dimensions/type, stores the exact bytes, fetches the public Moonbeam image back, compares SHA-256 hashes, and only then submits that public URL to Meta.
+- The Instagram gallery serves the same stored JPEG bytes. Preview = stored gallery cover = Meta source image.
+- Failed publishing removes the temporary public share and cover asset.
+- Core reader app and Instagram-cover cache-busting are advanced to V250.40.
+- Existing developer access verification and Meta/Vercel environment variables are unchanged. No Supabase schema change.
+- Exactly 12 deployable API functions remain.

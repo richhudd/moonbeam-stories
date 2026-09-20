@@ -4100,3 +4100,15 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 
 /* V250.31: successful Instagram story post state */
 .end-actions .end-instagram-post.instagram-posted,.end-actions .end-instagram-post.instagram-posted:disabled{background:#5c3bbf!important;border-color:#5c3bbf!important;color:#fff!important;opacity:1!important;}
+
+/* V250.40 — developer-only Instagram capture preview. Normal accounts never render this UI. */
+.instagram-preview{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:20px;background:rgba(17,12,35,.88);backdrop-filter:blur(8px)}
+.instagram-preview.hidden{display:none!important}
+.instagram-preview-card{width:min(92vw,520px);max-height:94dvh;overflow:auto;padding:18px;border-radius:18px;background:#fff;color:#241a48;box-shadow:0 24px 80px #0008;text-align:center}
+.instagram-preview-title{margin:0 0 6px;font:700 25px Georgia,'Times New Roman',serif;color:#241a48}
+.instagram-preview-intro{margin:0 auto 14px;max-width:430px;font-size:14px;line-height:1.42;color:#4b4260}
+.instagram-preview-image{display:block;width:min(100%,360px);aspect-ratio:4/5;object-fit:cover;margin:0 auto 14px;border-radius:10px;background:#17132d;box-shadow:0 12px 32px #0003}
+.instagram-preview-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.instagram-preview-actions button{min-width:150px}
+.instagram-preview-status{min-height:1.3em;margin-top:10px;font-size:13px;font-weight:700;color:#9a2740}
+@media(max-width:700px){.instagram-preview{padding:10px}.instagram-preview-card{width:96vw;padding:14px}.instagram-preview-image{width:min(100%,320px)}.instagram-preview-actions{display:grid;grid-template-columns:1fr}.instagram-preview-actions button{width:100%}}

@@ -191,64 +191,15 @@ async function waitForInstagramContainer(creationId,accessToken){
   }
   throw new Error(`Instagram is still preparing the story cover${lastStatus?` (${lastStatus.toLowerCase()})`:''}. Please try again.`);
 }
-const INSTAGRAM_COVER_COPY={
- 'en-GB':{kicker:'A MOONBEAM STORY',dedication:n=>`A bedtime adventure for ${n}`},
- 'en-US':{kicker:'A MOONBEAM STORY',dedication:n=>`A bedtime adventure for ${n}`},
- 'es-ES':{kicker:'UNA HISTORIA DE MOONBEAM',dedication:n=>`Una aventura para dormir para ${n}`},
- 'es-419':{kicker:'UNA HISTORIA DE MOONBEAM',dedication:n=>`Una aventura para dormir para ${n}`},
- 'fr-FR':{kicker:'UNE HISTOIRE MOONBEAM',dedication:n=>`Une aventure du soir pour ${n}`},
- 'de-DE':{kicker:'EINE MOONBEAM-GESCHICHTE',dedication:n=>`Ein Gute-Nacht-Abenteuer für ${n}`},
- 'it-IT':{kicker:'UNA STORIA MOONBEAM',dedication:n=>`Un’avventura della buonanotte per ${n}`},
- 'pt-BR':{kicker:'UMA HISTÓRIA MOONBEAM',dedication:n=>`Uma aventura para dormir para ${n}`},
- 'pl-PL':{kicker:'HISTORIA MOONBEAM',dedication:n=>`Wieczorna przygoda dla ${n}`}
-};
-function instagramHeroList(names,lang){
- const clean=[...new Set((names||[]).map(x=>String(x||'').trim()).filter(Boolean))].slice(0,2);
- if(clean.length<2)return clean[0]||'';
- const and={'en-GB':'and','en-US':'and','es-ES':'y','es-419':'y','fr-FR':'et','de-DE':'und','it-IT':'e','pt-BR':'e','pl-PL':'i'}[lang]||'and';
- return `${clean[0]} ${and} ${clean[1]}`;
+function decodeInstagramCoverDataUrl(value){
+ const m=String(value||'').match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=\r\n]+)$/);if(!m)throw new Error('The approved Instagram cover is missing or is not a JPEG.');
+ const bytes=Buffer.from(m[1].replace(/\s/g,''),'base64');if(!bytes.length||bytes.length>2900000)throw new Error('The approved Instagram cover is too large.');
+ return bytes;
 }
-function pangoEscape(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
-async function renderCoverText(sharp,text,{font,width,height,fill='#fff',align='centre'}){
- const markup=`<span foreground="${fill}">${pangoEscape(text)}</span>`;
- return await sharp({text:{text:markup,font,width,height,align,rgba:true}}).png().toBuffer();
-}
-async function buildCanonicalInstagramCover(story){
- const sharp=require('sharp');
- const assets=story.saved_assets||{},path=String(assets.cover||'').trim();if(!path)throw new Error('The saved cover artwork is unavailable.');
- const objectPath=path.split('/').map(encodeURIComponent).join('/');
- const source=await fetch(`${ADMIN_SUPABASE_URL}/storage/v1/object/authenticated/saved-story-art/${objectPath}`,{headers:adminHeaders()});
- if(!source.ok)throw new Error('The saved cover artwork could not be loaded.');
- const sourceBytes=Buffer.from(await source.arrayBuffer());if(!sourceBytes.length)throw new Error('The saved cover artwork is empty.');
- const width=1080,height=1350;
- let heroNames=Array.isArray(assets.heroNames)?assets.heroNames:[];
- if(!heroNames.length&&story.child_id){
-  const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/child_profiles?id=eq.${encodeURIComponent(story.child_id)}&select=name`,{headers:adminHeaders()});
-  if(rows?.[0]?.name)heroNames=[rows[0].name];
- }
- const lang=String(story.language||'en-GB'),copy=INSTAGRAM_COVER_COPY[lang]||INSTAGRAM_COVER_COPY['en-GB'];
- const heroList=instagramHeroList(heroNames,lang),dedication=copy.dedication(heroList||'');
- const title=String(story.title||'Moonbeam Story').trim();
- // These dimensions are the reader cover CSS scaled from its 620px desktop cover to 1080px.
- // There is no second title-layout algorithm: Pango wraps the real title inside the same cover-copy width.
- const copyWidth=820;
- const kicker=await renderCoverText(sharp,copy.kicker,{font:'sans bold 17',width:copyWidth,height:36});
- const titleImage=await renderCoverText(sharp,title,{font:'serif bold 52',width:900,height:170});
- const dedicationImage=await renderCoverText(sharp,dedication,{font:'serif italic 23',width:900,height:46});
- const shade=Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#130d2d" stop-opacity="0.13"/><stop offset="0.35" stop-color="#130d2d" stop-opacity="0.06"/><stop offset="1" stop-color="#130d2d" stop-opacity="0.67"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#g)"/></svg>`);
- // Reader CSS: cover-copy bottom 6%, kicker -> title -> dedication. Keep that exact vertical order.
- const bottom=Math.round(height*.06),dedH=46,titleH=170,kickH=36,gapTitleDed=10,gapKickTitle=9;
- const dedTop=height-bottom-dedH;
- const titleTop=dedTop-gapTitleDed-titleH;
- const kickTop=titleTop-gapKickTitle-kickH;
- const output=await sharp(sourceBytes).resize(width,height,{fit:'cover',position:'centre'}).composite([
-  {input:shade,top:0,left:0},
-  {input:kicker,top:kickTop,left:Math.round((width-copyWidth)/2)},
-  {input:titleImage,top:titleTop,left:Math.round((width-900)/2)},
-  {input:dedicationImage,top:dedTop,left:Math.round((width-900)/2)}
- ]).jpeg({quality:93,mozjpeg:true}).toBuffer();
- const meta=await sharp(output).metadata();if(meta.width!==width||meta.height!==height||output.length<25000)throw new Error('Moonbeam could not verify the finished Instagram cover.');
- return output;
+async function verifyInstagramCoverBytes(bytes){
+ const sharp=require('sharp');const meta=await sharp(bytes,{failOn:'error'}).metadata();
+ if(meta.format!=='jpeg'||Number(meta.width)!==1080||Number(meta.height)!==1350)throw new Error('The approved Instagram cover failed the 1080 × 1350 JPEG check.');
+ return crypto.createHash('sha256').update(bytes).digest('hex');
 }
 
 async function developerInstagramPublishStory(req,res,body){
@@ -256,7 +207,8 @@ async function developerInstagramPublishStory(req,res,body){
   const accessToken=String(process.env.INSTAGRAM_ACCESS_TOKEN||'').trim(), accountId=String(process.env.INSTAGRAM_ACCOUNT_ID||'').trim();
   if(!accessToken||!accountId)return res.status(503).json({error:'Instagram is not configured in Vercel.'});
   const storyId=String(body?.storyId||'').trim(); if(!storyId)return res.status(400).json({error:'Story id is required.'});
-  let shareId=null;
+  let coverBytes,coverHash;try{coverBytes=decodeInstagramCoverDataUrl(body?.coverDataUrl);coverHash=await verifyInstagramCoverBytes(coverBytes)}catch(error){return res.status(400).json({error:error?.message||'The approved Instagram cover is invalid.'})}
+  let shareId=null,coverPath=null;
   try{
     const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/saved_stories?id=eq.${encodeURIComponent(storyId)}&parent_id=eq.${encodeURIComponent(verified.user.id)}&select=id,title,language,child_id,saved_assets`,{headers:adminHeaders()});
     const story=Array.isArray(rows)?rows[0]:null; if(!story)return res.status(404).json({error:'That saved story is unavailable.'});
@@ -264,12 +216,13 @@ async function developerInstagramPublishStory(req,res,body){
     const token=crypto.randomBytes(32).toString('base64url');
     const createdShare=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({owner_id:verified.user.id,saved_story_id:storyId,token_hash:shareTokenHash(token),sender_name:'Moonbeam Stories',recipient_name:token,recipient_email:'instagram@moonbeamstories.co.uk'})});
     shareId=createdShare?.[0]?.id; if(!shareId)throw new Error('Could not create the public story link.');
-    const coverBytes=await buildCanonicalInstagramCover(story);
-    const coverPath=`instagram-covers/${shareId}.jpg`;
+    coverPath=`instagram-covers/${shareId}.jpg`;
     const stored=await fetch(`${ADMIN_SUPABASE_URL}/storage/v1/object/saved-story-art/${coverPath.split('/').map(encodeURIComponent).join('/')}`,{method:'POST',headers:adminHeaders({'Content-Type':'image/jpeg','x-upsert':'true'}),body:coverBytes});
     if(!stored.ok)throw new Error('Could not store the finished reader cover for Instagram.');
     const origin='https://www.moonbeamstories.co.uk';
-    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25039`;
+    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25040&cb=${Date.now()}`;
+    const publicCheck=await fetch(imageUrl,{headers:{Accept:'image/jpeg'},cache:'no-store'});if(!publicCheck.ok)throw new Error('The finished cover could not be verified from Moonbeam’s public image URL.');
+    const publicBytes=Buffer.from(await publicCheck.arrayBuffer()),publicHash=crypto.createHash('sha256').update(publicBytes).digest('hex');if(publicHash!==coverHash)throw new Error('The public Instagram cover does not exactly match the approved preview.');
     const caption=`${String(story.title||'A Moonbeam Story').trim()} ✨\n\nRead the full illustrated story — link in bio.`;
     const createBody=new URLSearchParams({image_url:imageUrl,caption,access_token:accessToken});
     const created=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}/media`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:createBody.toString()});
@@ -280,6 +233,7 @@ async function developerInstagramPublishStory(req,res,body){
     const mediaId=String(published?.id||'').trim(); if(!mediaId)throw new Error('Instagram did not return a published media ID.');
     return res.status(200).json({ok:true,mediaId,galleryUrl:`${origin}/instagram`,readerUrl:`${origin}/shared/${encodeURIComponent(token)}`});
   }catch(error){
+    if(coverPath){try{await fetch(`${ADMIN_SUPABASE_URL}/storage/v1/object/saved-story-art/${coverPath.split('/').map(encodeURIComponent).join('/')}`,{method:'DELETE',headers:adminHeaders()})}catch{}}
     if(shareId){try{await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares?id=eq.${encodeURIComponent(shareId)}`,{method:'DELETE',headers:adminHeaders({Prefer:'return=minimal'})})}catch{}}
     console.error('instagram story publish',error); return res.status(502).json({ok:false,error:error?.message||'Could not publish this story to Instagram.'});
   }
