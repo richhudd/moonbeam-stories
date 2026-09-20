@@ -183,11 +183,7 @@ The app displays ONE text page beside ONE equally sized illustration. Every disp
 Each pages array item MUST have exactly this shape: {"text":"string","illustration_prompt":"string"}.
 
 VISUAL STORYBOARD
-Write each illustration_prompt to depict one concrete, page-specific visual beat from the actual story moment on that spread. Consecutive prompts must not merely restate the same situation, such as the characters repeatedly standing near, looking at or discussing the main location or object.
-
-For EVERY illustration_prompt specify: (1) the exact action occurring at that moment; (2) the principal visual focus; (3) camera distance and viewpoint; (4) each principal character's position and physical action; and (5) which established part of the location or recurring object is visible. Across neighbouring pages, change at least THREE of those five elements while preserving story accuracy and the fixed visual design and layout of recurring characters, locations and objects. Choose different genuine moments already present in the prose; never invent unrelated action solely to create variety. Do not repeat the same establishing view, static group arrangement, camera angle or focal action. When consecutive pages share one location, reveal a genuinely different part, scale or perspective of that fixed space.
-
-Illustration prompts must remain concrete about action and staging but must not specify or vary art style. Vary composition through the real narrative progression rather than bending the story itself around camera requirements. Preserve character, object and setting continuity.
+Each displayed story page must advance to a new event. Never repeat, recap or restart the preceding page's principal action. Write each illustration_prompt to depict the specific event on its own page, while preserving established characters, objects and settings. Illustration prompts describe content only and must not specify art style.
 
 STORY VISUAL CONTINUITY BIBLE — MANDATORY
 Create one concise but precise character_bible containing BOTH fixed model-sheet sections below. This is instruction data for the illustration system, not prose for the reader.
@@ -307,7 +303,7 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
     // showing the reader a formatting error. This also catches missing required fields.
     if (!story) {
       const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible, BUT the creative brief and age rules below remain mandatory during repair.\n\n${storyIdea ? `PARENT STORY IDEA: ${storyIdea}` : 'NO PARENT STORY IDEA: preserve the generated story premise; do not impose a genre, reality level, magic rule, companion, object, quest, twist or moral during repair.'}\n\nAGE RULES: Child age ${age}, band ${ageBand}. ${ageProfile.writing} Forbidden: ${ageProfile.forbidden}.\n\nEnsure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. All selected Cast personal names must be reproduced exactly as supplied. Never invent or append a surname, middle name, nickname, pet name or other unsupplied personal name. Fictional titles, ranks, roles and forms of address may be used when they arise naturally from the story and do not alter the supplied personal name. The selected Story Cast is the complete principal cast: do not invent additional named, recurring, familial, companion, friend, helper, rival or plot-significant characters. Unnamed setting-appropriate background people may appear only incidentally and must not become participants with their own subplot, family unit, recurring identity or central story function. Never invent relatives or friends for selected Cast members unless explicitly established in the Parent Story Idea. For every selected Cast member with a supplied reference photo, treat that photo as authoritative underlying physical identity regardless of whether the member is a child, adult or pet; preserve recognisable identity while allowing story-established clothing, roles, abilities and fictional transformations. Preserve or reconstruct a precise character_bible for every recurring non-photo character: exact human age (never an age range), stable face/skin/eyes/hair/build, fixed clothing colours/items and permanent distinctive features; for recurring animals, robots or fantastical beings, fixed species/body/material/colour/size/features. Do not age, redesign or visually redefine recurring characters between illustration prompts. Preserve genuine narrative progression without imposing a formula. Avoid static repetition. Each illustration_prompt should depict the actual story moment and, where natural, use a meaningfully different composition from neighbouring scenes. Do not rewrite the story merely to manufacture camera variety. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
-      const worldRepairRule = `\n\nWORLD MODEL SHEET REPAIR RULE: In character_bible, preserve or reconstruct every plot-important recurring location, building, room, object, vehicle or machine with one fixed name, count, shape, proportions, materials, colours, condition, layout and number/design/placement of major parts. One lighthouse remains one lighthouse with unchanged architecture; one wheel or control remains the same component from every viewpoint. Never duplicate or redesign recurring world elements between illustration prompts.\n\nSTORYBOARD REPAIR RULE: Every illustration_prompt must specify the exact page action, principal visual focus, camera distance/viewpoint, principal-character staging and visible part of the established setting or object. Neighbouring prompts must change at least three of those five elements while illustrating genuine moments in their own page text. Do not repeat a static observation scene, establishing view, group arrangement, camera angle or focal action merely with a closer crop, reversed layout or minor pose change.`;
+      const worldRepairRule = `\n\nWORLD MODEL SHEET REPAIR RULE: In character_bible, preserve or reconstruct every plot-important recurring location, building, room, object, vehicle or machine with one fixed name, count, shape, proportions, materials, colours, condition, layout and number/design/placement of major parts. Never duplicate or redesign recurring world elements between illustration prompts. Each displayed story page must advance to a new event rather than repeat, recap or restart the preceding page's principal action.`;
       try {
         const repairedOutput = await callStoryModel(repairInput + worldRepairRule, 5000);
         story = normaliseStory(parseStoryOutput(repairedOutput));
@@ -369,13 +365,13 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
           si = sentences.length;
         }
 
-        const sourceIndex = source.length
-          ? Math.min(source.length - 1, Math.floor((pageIndex + 0.5) * source.length / wanted))
-          : 0;
-        const prompt = source[sourceIndex] && source[sourceIndex].illustration_prompt
-          ? source[sourceIndex].illustration_prompt
-          : 'A charming children’s storybook illustration matching this part of the adventure.';
-        buckets.push({ text: bucket.join(' ').trim(), illustration_prompt: prompt });
+        const pageText = bucket.join(' ').trim();
+        // If prose has to be rebalanced, old illustration prompts no longer
+        // reliably correspond to the new page boundaries. Derive the fallback
+        // direction from the finished page itself instead of duplicating or
+        // misassigning a neighbouring page's scene.
+        const prompt = `Illustrate one specific moment from this page: ${pageText.slice(0,520)}`;
+        buckets.push({ text: pageText, illustration_prompt: prompt });
       }
       return buckets;
     }

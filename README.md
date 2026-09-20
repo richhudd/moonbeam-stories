@@ -1,4 +1,14 @@
-# Moonbeam Stories V250.43
+# Moonbeam Stories V250.44
+
+## V250.44 — prompt cleanup and distinct page sources
+
+- Removes the unsuccessful V250.43 numerical composition rules and consolidates visual direction into a short hierarchy.
+- Stops the first story page borrowing the following page's illustration prompt, and stops the final page borrowing the preceding page's prompt.
+- Removes previous-page prose from the current illustration request so the model is not asked to illustrate two consecutive events at once.
+- Simplifies the cover to one coherent moment and forbids duplicated buildings, mixed interior/exterior viewpoints and cutaway composites.
+- Keeps previous artwork only when adjacent story sources are sufficiently different; closely overlapping scenes rely on the written continuity bible instead of a composition-anchoring image.
+- Requires each story page to advance to a new event without numerical shot quotas or formulaic staging requirements.
+- Uses a new illustration cache version. No Supabase migration is required.
 
 ## V250.43 — distinct visual storytelling across pages
 
