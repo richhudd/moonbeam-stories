@@ -1,4 +1,22 @@
-# Moonbeam Stories V250.41
+# Moonbeam Stories V250.43
+
+## V250.43 — distinct visual storytelling across pages
+
+- Requires every page prompt to define a concrete, page-specific action, focal subject, viewpoint, character staging and visible area of the established setting.
+- Neighbouring pages must differ in at least three of those storyboard dimensions while remaining faithful to the prose.
+- The image generator compares against the previous artwork and rejects superficial variation such as a closer crop, reversed arrangement or minor pose change.
+- Consecutive scenes in one location now reveal a genuinely different part, scale or perspective without redesigning recurring buildings, machinery or objects.
+- Uses a new illustration cache version so artwork generated under the earlier composition rules is not reused.
+- No Supabase migration is required.
+
+## V250.42 — recurring world and object continuity
+
+- Sends the immediately preceding page artwork to the next illustration request as an authoritative continuity reference.
+- Keeps recurring locations, buildings, machines and plot-important objects stable while still allowing a new camera angle and composition.
+- Expands story planning with a fixed World Model Sheet covering count, architecture, proportions, materials, layout and distinctive parts.
+- Prevents cases such as one lighthouse becoming two or the same wheel changing design on every page.
+- Uses a new illustration cache version so old inconsistent artwork is not silently reused for newly generated stories.
+- No Supabase migration is required.
 
 ## V250.41 — reliable developer-only Instagram end-page action
 

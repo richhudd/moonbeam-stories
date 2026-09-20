@@ -18,6 +18,7 @@ module.exports = async function handler(req, res) {
     const referenceImages = Array.isArray(body.referenceImages) ? body.referenceImages.slice(0,8) : [];
     const generationRunId = String(body.generationRunId || '').trim();
     const referenceImage = typeof body.referenceImage === 'string' ? body.referenceImage : '';
+    const continuityImage = /^data:image\/(?:jpeg|png|webp);base64,/i.test(body.continuityImage || '') ? body.continuityImage : '';
     const requiredStoryImage = body.requiredStoryImage === true;
     const storyImageIndex = Number.isInteger(body.storyImageIndex) ? body.storyImageIndex : null;
     // V194: the client already sends the story's character bible as `style`.
@@ -55,8 +56,13 @@ module.exports = async function handler(req, res) {
 
     const refs=(Array.isArray(referenceImages)?referenceImages:[]).filter(r=>r&&/^data:image\/(jpeg|png|webp);base64,/i.test(r.image||''));if(!refs.length&&/^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage||''))refs.push({name:'main hero',kind:'child',role:'hero',image:referenceImage});
     const hasReference = refs.length>0;
+    const hasContinuityReference = Boolean(continuityImage);
+    const hasAnyReference = hasReference || hasContinuityReference;
     const identityDirection = hasReference
       ? `\nIDENTITY REFERENCES — ABSOLUTE CAST IDENTITY LOCK\nThe attached photographs are NOT generic inspiration. Each photograph is the authoritative identity reference for exactly ONE selected Cast member, mapped in attachment order as follows: ${refs.map((r,i)=>`REFERENCE ${i+1} = ${r.name||'character'} | kind: ${r.kind||'character'} | role: ${r.role||'supporting'}`).join('; ')}.\nFor EVERY mapped Cast member, child, adult or pet, reproduce that specific individual whenever the named character appears. Adult identity references have exactly the same priority and force as child identity references. Do not invent an alternative face or appearance for a photographed adult and do not use the real photographed adult later as a different extra person. Preserve recognisable face shape, eyes, nose, mouth anatomy, hair colour/texture, approximate skin tone, apparent age and overall physical identity. The reference expression is NOT a pose that must be copied into every scene: let emotion follow the story naturally. You may safely reduce visible expression information — for example, a photographed toothy smile may become closed-mouth, neutral, serious, worried, surprised or thoughtful when the scene calls for it. But do NOT invent personal facial information that the reference does not reveal. In particular, if the reference does not show the person's teeth or an open-mouth smile, do not invent visible teeth or a broad open-mouth smile; convey happiness through a natural closed-mouth smile, cheeks, eyes and expression instead. If teeth/open-mouth smile are visible in the reference, that observed smile may be used when appropriate but is never compulsory. For photographed pets preserve species/breed appearance, coat, body proportions and relative size. Translate each real identity naturally into the fixed Moonbeam painted style rather than making the result photographic. Reference background, clothing, gaze, head angle and pose are NOT identity requirements unless the scene calls for them. Never merge identities, swap faces, assign one reference to another named character, use a reference as a generic person, or create both an invented version and the real version of the same Cast member. One named Cast member = one stable visual identity across the whole book.`
+      : '';
+    const continuityDirection = hasContinuityReference
+      ? `\nPREVIOUS-PAGE ARTWORK — AUTHORITATIVE WORLD AND OBJECT CONTINUITY REFERENCE\nThe final attached image after any Cast photographs is the immediately preceding page artwork. Use it to preserve the established visual identity and physical state of recurring locations, buildings, rooms, vehicles, machines, props, clothing and other plot-important objects. Keep the same number, overall structure, proportions, materials, colours, weathering, layout, openings and placement/shape of distinctive parts. One established lighthouse remains one lighthouse; one established wheel, handle or control remains that exact same component. Do not create a duplicate merely because the camera now looks from another angle. Story-required changes may occur, but otherwise the established design is immutable. This reference controls continuity only: do NOT copy its composition, camera angle, crop, poses or staging. The current scene direction controls the new action and viewpoint. Do not treat people visible in this artwork as additional identity photographs or extra Cast members.`
       : '';
 
     // V193: one literal, immutable Moonbeam house style for every cover and page.
@@ -77,6 +83,7 @@ Do not use oversized or doll-like eyes, enlarged heads, button noses, chibi prop
 
 ${MOONBEAM_HOUSE_STYLE}
 ${identityDirection}
+${continuityDirection}
 
 RECURRING CHARACTER CONTINUITY — IMMUTABLE ACROSS THE ENTIRE BOOK
 ${characterContinuity || 'Keep every recurring non-photo character exactly consistent across all scenes.'}
@@ -84,6 +91,13 @@ For every recurring non-photo character, treat the supplied description as a fix
 
 VISUAL STORYTELLING — COMPOSITION MUST PROGRESS
 Character identity and rendering style stay rigidly consistent, but composition must not. Treat the supplied scene direction as a distinct storyboard panel. Do not recycle the same camera position, crop, pose, staging or character/object arrangement used for another scene merely to preserve continuity. Use the action in THIS scene to create a materially different composition, varying camera distance, viewpoint, body pose, foreground/background emphasis and focal action as appropriate. Continuity means the same characters and world, not the same picture repeated. Do not invent new events solely for variety; vary the visual staging of the actual story beat.
+
+SCENE SELECTION AND VISUAL PROGRESSION — MANDATORY
+Represent the events and emotional purpose of THIS page accurately, but do not default to showing the characters standing beside, looking at or discussing the story's main location or object. Treat the book as a deliberately storyboarded sequence. This illustration must contribute new visual information and show the clearest distinctive moment available in the current page text.
+
+When previous-page artwork is attached, the new illustration must differ materially from it in at least THREE of these ways: primary action or story beat; camera distance; camera height or viewpoint; direction from which the setting is viewed; character poses and movement; foreground subject; character placement within the frame; visible area of the established location; emotional focus; or lighting/weather when supported by the story. If this page contains several actions, choose the faithful moment least similar to the previous illustration. Prefer active cause-and-effect moments such as discovering, entering, climbing, investigating, operating, reacting, solving or leaving over another static observation scene.
+
+Preserve the exact identity and design of recurring characters, buildings, machinery and objects. Variety must come from genuine events, viewpoint and staging — never from redesigning the setting, changing a recurring component, inventing extra objects, duplicating landmarks or adding events absent from the story. A closer crop, horizontally reversed arrangement or minor pose change does not count as a new composition. Never repeat the same establishing view. When consecutive pages share a location, reveal a genuinely different part, scale or perspective of its fixed layout. The result must unmistakably illustrate THIS page rather than serve as a generic image for the story.
 
 ILLUSTRATE THE SCENE, NOT EVERY SENTENCE
 Treat the supplied page text and scene direction as context for the illustration, not as a checklist of every object, action and description that must appear. Understand the whole passage, choose ONE strongest illustrative moment, main idea, mood or action, and build one clear coherent scene around that. Include only the characters, objects and environmental details needed for that unified moment. Select one or two distinctive supporting details from the text when useful to tie the picture unmistakably to this page, but omit secondary details when including them would crowd, confuse or fragment the composition. Prefer visual clarity, strong composition and one believable unified moment over exhaustive literal coverage of the prose.
@@ -110,11 +124,12 @@ IMPORTANT
 - Square composition suitable for the right-hand page of a children's book.`;
 
     let r;
-    if (hasReference) {
+    if (hasAnyReference) {
       const form = new FormData();
       form.append('model', 'gpt-image-2.5-sunburst');
       form.append('prompt', finalPrompt);
       for(let i=0;i<refs.length;i++){const match=String(refs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`cast-reference-${i+1}.${extension}`);}
+      if(continuityImage){const match=continuityImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(match){const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`previous-page-continuity.${extension}`);}}
       form.append('size', '1024x1024');
       form.append('quality', 'low');
       form.append('output_format', 'webp');
@@ -154,7 +169,7 @@ IMPORTANT
       return res.status(502).json({ error: 'The image service returned no image.' });
     }
 
-    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasReference}),metadata:{reference:hasReference,user_id:moonbeamUser.id,generation_run_id:generationRunId,required_story_image:requiredStoryImage===true,story_image_index:Number.isInteger(storyImageIndex)?storyImageIndex:null,recovery_slot:recoverySlot===true}});
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasAnyReference}),metadata:{reference:hasReference,continuity_reference:hasContinuityReference,user_id:moonbeamUser.id,generation_run_id:generationRunId,required_story_image:requiredStoryImage===true,story_image_index:Number.isInteger(storyImageIndex)?storyImageIndex:null,recovery_slot:recoverySlot===true}});
     slotReserved=false;
     return res.status(200).json({ image: `data:image/webp;base64,${item.b64_json}`, usedReferencePhoto: hasReference });
   } catch (e) {
