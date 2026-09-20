@@ -208,16 +208,10 @@ function instagramHeroList(names,lang){
  const and={'en-GB':'and','en-US':'and','es-ES':'y','es-419':'y','fr-FR':'et','de-DE':'und','it-IT':'e','pt-BR':'e','pl-PL':'i'}[lang]||'and';
  return `${clean[0]} ${and} ${clean[1]}`;
 }
-function xmlEscape(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]))}
-function balancedTitleLines(title,maxLines=3){
- const words=String(title||'Moonbeam Story').trim().split(/\s+/).filter(Boolean);if(!words.length)return ['Moonbeam Story'];
- if(words.length===1)return words;
- let best=[words.join(' ')],bestScore=1e9;
- const candidates=[];
- for(let a=1;a<words.length;a++)candidates.push([words.slice(0,a).join(' '),words.slice(a).join(' ')]);
- if(words.length>2)for(let a=1;a<words.length-1;a++)for(let b=a+1;b<words.length;b++)candidates.push([words.slice(0,a).join(' '),words.slice(a,b).join(' '),words.slice(b).join(' ')]);
- for(const lines of candidates){if(lines.length>maxLines)continue;const lens=lines.map(x=>x.length),mx=Math.max(...lens),mn=Math.min(...lens),score=mx*mx+(mx-mn)*5+lines.length*2;if(score<bestScore){bestScore=score;best=lines}}
- return best;
+function pangoEscape(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+async function renderCoverText(sharp,text,{font,width,height,fill='#fff',align='centre'}){
+ const markup=`<span foreground="${fill}">${pangoEscape(text)}</span>`;
+ return await sharp({text:{text:markup,font,width,height,align,rgba:true}}).png().toBuffer();
 }
 async function buildCanonicalInstagramCover(story){
  const sharp=require('sharp');
@@ -234,15 +228,25 @@ async function buildCanonicalInstagramCover(story){
  }
  const lang=String(story.language||'en-GB'),copy=INSTAGRAM_COVER_COPY[lang]||INSTAGRAM_COVER_COPY['en-GB'];
  const heroList=instagramHeroList(heroNames,lang),dedication=copy.dedication(heroList||'');
- const lines=balancedTitleLines(story.title,3);
- let fontSize=70;if(lines.some(x=>x.length>27))fontSize=62;if(lines.some(x=>x.length>33))fontSize=55;
- const lineHeight=Math.round(fontSize*1.08),center=width/2;
- const titleBlock=lines.length*lineHeight;
- const dedicationY=Math.round(height*.938),titleBottom=dedicationY-42,titleStart=titleBottom-titleBlock+fontSize;
- const kickerY=titleStart-34;
- const tspans=lines.map((line,i)=>`<tspan x="${center}" y="${titleStart+i*lineHeight}">${xmlEscape(line)}</tspan>`).join('');
- const svg=Buffer.from(`<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#130d2d" stop-opacity="0"/><stop offset="0.62" stop-color="#130d2d" stop-opacity="0.10"/><stop offset="1" stop-color="#130d2d" stop-opacity="0.78"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#shade)"/><text x="${center}" y="${kickerY}" text-anchor="middle" fill="#fff" font-family="DejaVu Sans,sans-serif" font-size="17" font-weight="800" letter-spacing="3">${xmlEscape(copy.kicker)}</text><text x="${center}" text-anchor="middle" fill="#fff" stroke="#130d2d" stroke-opacity="0.55" stroke-width="2" paint-order="stroke" font-family="DejaVu Serif,serif" font-size="${fontSize}" font-weight="700">${tspans}</text><text x="${center}" y="${dedicationY}" text-anchor="middle" fill="#fff" stroke="#130d2d" stroke-opacity="0.42" stroke-width="1" paint-order="stroke" font-family="DejaVu Serif,serif" font-size="23" font-style="italic">${xmlEscape(dedication)}</text></svg>`);
- const output=await sharp(sourceBytes).resize(width,height,{fit:'cover',position:'centre'}).composite([{input:svg,top:0,left:0}]).jpeg({quality:93,mozjpeg:true}).toBuffer();
+ const title=String(story.title||'Moonbeam Story').trim();
+ // These dimensions are the reader cover CSS scaled from its 620px desktop cover to 1080px.
+ // There is no second title-layout algorithm: Pango wraps the real title inside the same cover-copy width.
+ const copyWidth=820;
+ const kicker=await renderCoverText(sharp,copy.kicker,{font:'sans bold 17',width:copyWidth,height:36});
+ const titleImage=await renderCoverText(sharp,title,{font:'serif bold 52',width:900,height:170});
+ const dedicationImage=await renderCoverText(sharp,dedication,{font:'serif italic 23',width:900,height:46});
+ const shade=Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#130d2d" stop-opacity="0.13"/><stop offset="0.35" stop-color="#130d2d" stop-opacity="0.06"/><stop offset="1" stop-color="#130d2d" stop-opacity="0.67"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#g)"/></svg>`);
+ // Reader CSS: cover-copy bottom 6%, kicker -> title -> dedication. Keep that exact vertical order.
+ const bottom=Math.round(height*.06),dedH=46,titleH=170,kickH=36,gapTitleDed=10,gapKickTitle=9;
+ const dedTop=height-bottom-dedH;
+ const titleTop=dedTop-gapTitleDed-titleH;
+ const kickTop=titleTop-gapKickTitle-kickH;
+ const output=await sharp(sourceBytes).resize(width,height,{fit:'cover',position:'centre'}).composite([
+  {input:shade,top:0,left:0},
+  {input:kicker,top:kickTop,left:Math.round((width-copyWidth)/2)},
+  {input:titleImage,top:titleTop,left:Math.round((width-900)/2)},
+  {input:dedicationImage,top:dedTop,left:Math.round((width-900)/2)}
+ ]).jpeg({quality:93,mozjpeg:true}).toBuffer();
  const meta=await sharp(output).metadata();if(meta.width!==width||meta.height!==height||output.length<25000)throw new Error('Moonbeam could not verify the finished Instagram cover.');
  return output;
 }
@@ -265,7 +269,7 @@ async function developerInstagramPublishStory(req,res,body){
     const stored=await fetch(`${ADMIN_SUPABASE_URL}/storage/v1/object/saved-story-art/${coverPath.split('/').map(encodeURIComponent).join('/')}`,{method:'POST',headers:adminHeaders({'Content-Type':'image/jpeg','x-upsert':'true'}),body:coverBytes});
     if(!stored.ok)throw new Error('Could not store the finished reader cover for Instagram.');
     const origin='https://www.moonbeamstories.co.uk';
-    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25038`;
+    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25039`;
     const caption=`${String(story.title||'A Moonbeam Story').trim()} ✨\n\nRead the full illustrated story — link in bio.`;
     const createBody=new URLSearchParams({image_url:imageUrl,caption,access_token:accessToken});
     const created=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}/media`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:createBody.toString()});

@@ -1393,8 +1393,15 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - No new API function, Supabase schema change or legal-page change.
 
 
-## V250.38 — Canonical Cover Font Fix
+## V250.39 — Canonical Cover Font Fix
 - Fixes the server-rendered Instagram/gallery cover text that appeared as tiny unreadable glyph boxes.
 - Uses explicit server-available serif/sans-serif font families while preserving the reader cover's existing scaled typography, positions, title, kicker and dedication.
 - The same verified finished JPEG continues to be used for Instagram and the public gallery; no browser canvas/snapshot path is used.
 - Existing posting reliability, newest-first gallery, developer removal, 12-function API architecture and all unrelated behaviour are preserved.
+
+
+## V250.39 — Single cover typography path
+- Removed the SVG/DejaVu Instagram title renderer and its independent line-breaking algorithm.
+- Instagram/gallery cover text now uses Sharp/Pango text rendering with the reader cover CSS proportions: 4:5 artwork, 12% copy margins, 6% bottom placement, serif title, italic serif dedication and uppercase kicker.
+- The same saved title and the same saved Hero-name dedication data used by the reader are used for the flattened Instagram/gallery cover.
+- Existing saved stories remain supported; no story or illustration regeneration is required.
