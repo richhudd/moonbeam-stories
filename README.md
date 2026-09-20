@@ -1,3 +1,16 @@
+# Moonbeam Stories V250.49
+
+## V250.49 — story-grounded covers
+
+- Built directly from V250.48.
+- Changes only the dedicated cover-generation path; the V250.48 story writer and all ordinary page-illustration prompts remain unchanged.
+- The cover request now includes the actual generated story text (opening, middle pages and closing) as the authoritative source for cover content.
+- The story title is explicitly identification/typography only and may not introduce visual facts or genre clichés that are absent from the story.
+- Covers must choose an enticing moment genuinely supported by the story and may not invent locations, objects, costumes, creatures, landmarks, events or outcomes merely because the title suggests them.
+- Prevents cases such as a garden treasure story receiving an invented beach, lighthouse and overflowing pirate treasure chest.
+- Bumps the dedicated cover cache key so newly generated stories cannot reuse a V250.48 cover created under the old prompt. Existing saved books and ordinary page-art cache identity are unchanged.
+- No Supabase migration is required.
+
 # Moonbeam Stories V250.48
 
 ## V250.48 — restore the last pre-regression story writer

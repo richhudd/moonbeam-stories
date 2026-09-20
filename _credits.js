@@ -12,7 +12,10 @@ async function verifyMoonbeamUser(req) {
     headers: { apikey: PUBLISHABLE_KEY, Authorization: `Bearer ${token}` }
   });
   if (!r.ok) {
-    const e = new Error('Your Moonbeam session has expired. Please sign in again.'); e.status = 401; throw e;
+    if (r.status === 401 || r.status === 403) {
+      const e = new Error('Your Moonbeam session has expired. Please sign in again.'); e.status = 401; throw e;
+    }
+    const e = new Error('Moonbeam could not verify your session. Please try again.'); e.status = 503; throw e;
   }
   return r.json();
 }

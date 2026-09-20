@@ -1,4 +1,4 @@
-// Moonbeam Stories V250.48
+// Moonbeam Stories V250.49
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -784,9 +784,21 @@ function renderStory(s,image,child,options={}){
  if(currentBook.isShared){$('save')?.classList.add('hidden');$('newStory')?.classList.add('hidden')}
  if(!currentBook.isSaved&&!currentBook.isShared)persistCurrentDraft();
 }
-function coverKey(book){return `v48:${book.visualCacheId||book.cacheId}:cover`}
+function coverKey(book){return `v49:${book.visualCacheId||book.cacheId}:cover`}
 function getCoverPrompt(book){
- return `Front cover illustration for an original premium children's adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}. Story premise: ${book.child?.storyIdea||book.opening||'an original Moonbeam adventure'}. Story world continuity: ${book.character_bible||'Keep the hero and story world consistent.'} Choose one coherent, physically possible moment from one camera position that represents the premise. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
+ const clean=text=>String(text||'').replace(/\s+/g,' ').trim();
+ const storyText=[book.opening,...(book.pages||[]).map(p=>p?.text||''),book.closing].map(clean).filter(Boolean).join('\n\n');
+ return `FRONT COVER — STORY-GROUNDED ONLY.
+Book title (TYPOGRAPHY/IDENTIFICATION ONLY; NOT a source of visual facts): “${book.title}”.
+Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}.
+
+AUTHORITATIVE STORY CONTENT:
+${storyText||clean(book.child?.storyIdea)||'An original Moonbeam adventure.'}
+
+COVER GROUNDING — ABSOLUTE RULE:
+Read the authoritative story content above before choosing the cover scene. The cover must depict a setting, event, action, object or combination of elements that is explicitly supported by that story. The title must NEVER be used to invent visual facts. Do not add a location, treasure, vehicle, costume, creature, landmark, weather, event, outcome or genre cliché merely because the title suggests it. If the title could suggest imagery that the story does not contain, ignore that implication completely and follow the story. Do not exaggerate a modest story object into a grander or more stereotypical version. Do not reveal or depict an outcome that does not actually occur.
+
+Choose the strongest enticing visual moment that genuinely represents this specific story. It may combine characters with supporting details from the story only when they can coexist naturally in one real moment; do not create a montage or symbolic composite. Story world continuity: ${book.character_bible||'Keep the hero and story world consistent.'} Choose one coherent, physically possible moment from one camera position. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition exactly. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
 }
 function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
 function dataUrlToBlobUrl(dataUrl){
