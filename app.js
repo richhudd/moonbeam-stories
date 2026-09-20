@@ -1032,38 +1032,13 @@ function shareT(lang=language){return SHARE_LOCALES[lang]||SHARE_LOCALES['en-GB'
 async function checkInstagramDeveloperAccess(){
  try{const token=await currentAccessToken();if(!token)return;const r=await fetch('/api/resend-inbound?action=instagram-access',{headers:{Authorization:`Bearer ${token}`}});instagramDeveloperAccess=r.ok;if(instagramDeveloperAccess&&currentBook&&currentBook.currentPage===currentBook.pages.length+2&&!currentBook.isShared)renderBookPage(currentBook.currentPage)}catch{instagramDeveloperAccess=false}
 }
-async function moonbeamImageAsDataUrl(src){
- const r=await fetch(src,{cache:'no-store'});if(!r.ok)throw new Error('The finished cover image could not be prepared.');
- const blob=await r.blob();return await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(blob)})
-}
-function moonbeamInlineComputedStyles(source,clone){
- const cs=getComputedStyle(source);let css='';for(const p of cs){const v=cs.getPropertyValue(p);if(v)css+=`${p}:${v};`}clone.setAttribute('style',css);
- const a=[...source.children],b=[...clone.children];for(let i=0;i<Math.min(a.length,b.length);i++)moonbeamInlineComputedStyles(a[i],b[i])
-}
-async function captureReaderCoverForInstagram(){
- const cover=$('coverView'),art=cover?.querySelector('.cover-art-wrap'),img=$('coverImage');if(!cover||!art||!img||img.hidden||!img.src)throw new Error('The finished Moonbeam cover is not available.');
- const state={hidden:cover.hidden,cls:cover.className,style:cover.getAttribute('style'),aria:cover.getAttribute('aria-hidden')};
- try{
-  cover.hidden=false;cover.classList.remove('hidden');cover.style.cssText='display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:100vw!important;height:100vh!important;opacity:0!important;pointer-events:none!important;';
-  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-  const rect=art.getBoundingClientRect();if(rect.width<100||rect.height<100)throw new Error('The finished cover could not be measured.');
-  const clone=art.cloneNode(true);moonbeamInlineComputedStyles(art,clone);clone.style.position='relative';clone.style.inset='auto';clone.style.left='0';clone.style.top='0';clone.style.width=`${rect.width}px`;clone.style.height=`${rect.height}px`;clone.style.margin='0';clone.style.transform='none';
-  const cloneImg=clone.querySelector('#coverImage');if(cloneImg){cloneImg.src=await moonbeamImageAsDataUrl(img.src);cloneImg.hidden=false;cloneImg.removeAttribute('hidden')}
-  const loading=clone.querySelector('#coverLoading'),err=clone.querySelector('#coverError');if(loading)loading.remove();if(err)err.remove();
-  const xml=new XMLSerializer().serializeToString(clone),svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${rect.width}px;height:${rect.height}px;overflow:hidden">${xml}</div></foreignObject></svg>`;
-  const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
-  try{const shot=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('The finished cover could not be captured.'));im.src=url});const scale=Math.min(1,1400/Math.max(rect.width,rect.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(rect.width*scale));canvas.height=Math.max(1,Math.round(rect.height*scale));const ctx=canvas.getContext('2d');ctx.drawImage(shot,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/jpeg',.92)}finally{URL.revokeObjectURL(url)}
- }finally{
-  cover.hidden=state.hidden;cover.className=state.cls;if(state.style===null)cover.removeAttribute('style');else cover.setAttribute('style',state.style);if(state.aria===null)cover.removeAttribute('aria-hidden');else cover.setAttribute('aria-hidden',state.aria)
- }
-}
 async function postCurrentStoryToInstagram(){
  if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;
  if(!confirm('Post this story cover to @moonbeamstoriesuk and add the full story to the public Instagram gallery?'))return;
  const button=$('endInstagramPost'); if(button){button.disabled=true;button.textContent='Posting…'}
  try{
-  const storyId=await ensureCurrentBookSaved(),coverDataUrl=await captureReaderCoverForInstagram(),token=await currentAccessToken();if(!token)throw new Error('Sign in again.');
-  const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId,coverDataUrl})});
+  const storyId=await ensureCurrentBookSaved(),token=await currentAccessToken();if(!token)throw new Error('Sign in again.');
+  const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId})});
   const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Instagram post failed.');
   alert('Posted to @moonbeamstoriesuk and added to the Instagram story gallery.');
   if(button){button.textContent='✓ Posted';button.disabled=true;button.classList.add('instagram-posted')}

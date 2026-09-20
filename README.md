@@ -1381,3 +1381,13 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - Instagram publishing now captures the existing rendered Moonbeam reader cover (artwork, kicker, exact title and dedication) as one JPEG instead of rebuilding title graphics server-side.
 - That same captured cover is stored for and served by the public Instagram gallery.
 - Existing publishing, newest-first gallery, developer removal and 12-API architecture are preserved.
+
+
+## V250.37 — Server-Side Canonical Instagram Covers
+- Removed the browser/canvas/foreignObject cover snapshot path that Safari could reject as insecure.
+- Instagram posting now sends only the saved story id; the existing server function retrieves the authoritative saved cover artwork and renders the Moonbeam cover treatment server-side.
+- The server uses the story's exact saved title, locale and saved Hero names (falling back to the saved child profile only when older saved data has no Hero-name metadata).
+- The finished 4:5 JPEG is verified before it is stored, submitted to Meta, or exposed to the public gallery.
+- The same stored finished JPEG is used by Instagram and the /instagram gallery. Existing saved stories can be posted without regenerating their story or illustrations.
+- Publishing remains fail-safe: a failed render/publish removes the provisional gallery share and the client returns the Post to Instagram button to a retryable state.
+- No new API function, Supabase schema change or legal-page change.

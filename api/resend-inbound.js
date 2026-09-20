@@ -191,6 +191,62 @@ async function waitForInstagramContainer(creationId,accessToken){
   }
   throw new Error(`Instagram is still preparing the story cover${lastStatus?` (${lastStatus.toLowerCase()})`:''}. Please try again.`);
 }
+const INSTAGRAM_COVER_COPY={
+ 'en-GB':{kicker:'A MOONBEAM STORY',dedication:n=>`A bedtime adventure for ${n}`},
+ 'en-US':{kicker:'A MOONBEAM STORY',dedication:n=>`A bedtime adventure for ${n}`},
+ 'es-ES':{kicker:'UNA HISTORIA DE MOONBEAM',dedication:n=>`Una aventura para dormir para ${n}`},
+ 'es-419':{kicker:'UNA HISTORIA DE MOONBEAM',dedication:n=>`Una aventura para dormir para ${n}`},
+ 'fr-FR':{kicker:'UNE HISTOIRE MOONBEAM',dedication:n=>`Une aventure du soir pour ${n}`},
+ 'de-DE':{kicker:'EINE MOONBEAM-GESCHICHTE',dedication:n=>`Ein Gute-Nacht-Abenteuer für ${n}`},
+ 'it-IT':{kicker:'UNA STORIA MOONBEAM',dedication:n=>`Un’avventura della buonanotte per ${n}`},
+ 'pt-BR':{kicker:'UMA HISTÓRIA MOONBEAM',dedication:n=>`Uma aventura para dormir para ${n}`},
+ 'pl-PL':{kicker:'HISTORIA MOONBEAM',dedication:n=>`Wieczorna przygoda dla ${n}`}
+};
+function instagramHeroList(names,lang){
+ const clean=[...new Set((names||[]).map(x=>String(x||'').trim()).filter(Boolean))].slice(0,2);
+ if(clean.length<2)return clean[0]||'';
+ const and={'en-GB':'and','en-US':'and','es-ES':'y','es-419':'y','fr-FR':'et','de-DE':'und','it-IT':'e','pt-BR':'e','pl-PL':'i'}[lang]||'and';
+ return `${clean[0]} ${and} ${clean[1]}`;
+}
+function xmlEscape(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]))}
+function balancedTitleLines(title,maxLines=3){
+ const words=String(title||'Moonbeam Story').trim().split(/\s+/).filter(Boolean);if(!words.length)return ['Moonbeam Story'];
+ if(words.length===1)return words;
+ let best=[words.join(' ')],bestScore=1e9;
+ const candidates=[];
+ for(let a=1;a<words.length;a++)candidates.push([words.slice(0,a).join(' '),words.slice(a).join(' ')]);
+ if(words.length>2)for(let a=1;a<words.length-1;a++)for(let b=a+1;b<words.length;b++)candidates.push([words.slice(0,a).join(' '),words.slice(a,b).join(' '),words.slice(b).join(' ')]);
+ for(const lines of candidates){if(lines.length>maxLines)continue;const lens=lines.map(x=>x.length),mx=Math.max(...lens),mn=Math.min(...lens),score=mx*mx+(mx-mn)*5+lines.length*2;if(score<bestScore){bestScore=score;best=lines}}
+ return best;
+}
+async function buildCanonicalInstagramCover(story){
+ const sharp=require('sharp');
+ const assets=story.saved_assets||{},path=String(assets.cover||'').trim();if(!path)throw new Error('The saved cover artwork is unavailable.');
+ const objectPath=path.split('/').map(encodeURIComponent).join('/');
+ const source=await fetch(`${ADMIN_SUPABASE_URL}/storage/v1/object/authenticated/saved-story-art/${objectPath}`,{headers:adminHeaders()});
+ if(!source.ok)throw new Error('The saved cover artwork could not be loaded.');
+ const sourceBytes=Buffer.from(await source.arrayBuffer());if(!sourceBytes.length)throw new Error('The saved cover artwork is empty.');
+ const width=1080,height=1350;
+ let heroNames=Array.isArray(assets.heroNames)?assets.heroNames:[];
+ if(!heroNames.length&&story.child_id){
+  const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/child_profiles?id=eq.${encodeURIComponent(story.child_id)}&select=name`,{headers:adminHeaders()});
+  if(rows?.[0]?.name)heroNames=[rows[0].name];
+ }
+ const lang=String(story.language||'en-GB'),copy=INSTAGRAM_COVER_COPY[lang]||INSTAGRAM_COVER_COPY['en-GB'];
+ const heroList=instagramHeroList(heroNames,lang),dedication=copy.dedication(heroList||'');
+ const lines=balancedTitleLines(story.title,3);
+ let fontSize=70;if(lines.some(x=>x.length>27))fontSize=62;if(lines.some(x=>x.length>33))fontSize=55;
+ const lineHeight=Math.round(fontSize*1.08),center=width/2;
+ const titleBlock=lines.length*lineHeight;
+ const dedicationY=Math.round(height*.938),titleBottom=dedicationY-42,titleStart=titleBottom-titleBlock+fontSize;
+ const kickerY=titleStart-34;
+ const tspans=lines.map((line,i)=>`<tspan x="${center}" y="${titleStart+i*lineHeight}">${xmlEscape(line)}</tspan>`).join('');
+ const svg=Buffer.from(`<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#130d2d" stop-opacity="0"/><stop offset="0.62" stop-color="#130d2d" stop-opacity="0.10"/><stop offset="1" stop-color="#130d2d" stop-opacity="0.78"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#shade)"/><text x="${center}" y="${kickerY}" text-anchor="middle" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="800" letter-spacing="3">${xmlEscape(copy.kicker)}</text><text x="${center}" text-anchor="middle" fill="#fff" stroke="#130d2d" stroke-opacity="0.55" stroke-width="2" paint-order="stroke" font-family="Georgia,'Times New Roman',serif" font-size="${fontSize}" font-weight="700">${tspans}</text><text x="${center}" y="${dedicationY}" text-anchor="middle" fill="#fff" stroke="#130d2d" stroke-opacity="0.42" stroke-width="1" paint-order="stroke" font-family="Georgia,'Times New Roman',serif" font-size="23" font-style="italic">${xmlEscape(dedication)}</text></svg>`);
+ const output=await sharp(sourceBytes).resize(width,height,{fit:'cover',position:'centre'}).composite([{input:svg,top:0,left:0}]).jpeg({quality:93,mozjpeg:true}).toBuffer();
+ const meta=await sharp(output).metadata();if(meta.width!==width||meta.height!==height||output.length<25000)throw new Error('Moonbeam could not verify the finished Instagram cover.');
+ return output;
+}
+
 async function developerInstagramPublishStory(req,res,body){
   const verified=await verifyDeveloper(req); if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
   const accessToken=String(process.env.INSTAGRAM_ACCESS_TOKEN||'').trim(), accountId=String(process.env.INSTAGRAM_ACCOUNT_ID||'').trim();
@@ -198,20 +254,18 @@ async function developerInstagramPublishStory(req,res,body){
   const storyId=String(body?.storyId||'').trim(); if(!storyId)return res.status(400).json({error:'Story id is required.'});
   let shareId=null;
   try{
-    const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/saved_stories?id=eq.${encodeURIComponent(storyId)}&parent_id=eq.${encodeURIComponent(verified.user.id)}&select=id,title,language,saved_assets`,{headers:adminHeaders()});
+    const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/saved_stories?id=eq.${encodeURIComponent(storyId)}&parent_id=eq.${encodeURIComponent(verified.user.id)}&select=id,title,language,child_id,saved_assets`,{headers:adminHeaders()});
     const story=Array.isArray(rows)?rows[0]:null; if(!story)return res.status(404).json({error:'That saved story is unavailable.'});
     const assets=story.saved_assets||{}; if(!assets.cover||!Array.isArray(assets.pages)||!assets.pages.length)return res.status(409).json({error:'Save the complete illustrated story before posting it.'});
     const token=crypto.randomBytes(32).toString('base64url');
     const createdShare=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({owner_id:verified.user.id,saved_story_id:storyId,token_hash:shareTokenHash(token),sender_name:'Moonbeam Stories',recipient_name:token,recipient_email:'instagram@moonbeamstories.co.uk'})});
     shareId=createdShare?.[0]?.id; if(!shareId)throw new Error('Could not create the public story link.');
-    const coverDataUrl=String(body?.coverDataUrl||'');
-    const m=coverDataUrl.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);if(!m)throw new Error('The finished reader cover was not supplied.');
-    const coverBytes=Buffer.from(m[1],'base64');if(!coverBytes.length||coverBytes.length>3500000)throw new Error('The finished reader cover is too large to publish.');
+    const coverBytes=await buildCanonicalInstagramCover(story);
     const coverPath=`instagram-covers/${shareId}.jpg`;
     const stored=await fetch(`${ADMIN_SUPABASE_URL}/storage/v1/object/saved-story-art/${coverPath.split('/').map(encodeURIComponent).join('/')}`,{method:'POST',headers:adminHeaders({'Content-Type':'image/jpeg','x-upsert':'true'}),body:coverBytes});
     if(!stored.ok)throw new Error('Could not store the finished reader cover for Instagram.');
     const origin='https://www.moonbeamstories.co.uk';
-    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25036`;
+    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25037`;
     const caption=`${String(story.title||'A Moonbeam Story').trim()} ✨\n\nRead the full illustrated story — link in bio.`;
     const createBody=new URLSearchParams({image_url:imageUrl,caption,access_token:accessToken});
     const created=await instagramJson(`https://graph.instagram.com/v26.0/${encodeURIComponent(accountId)}/media`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:createBody.toString()});
