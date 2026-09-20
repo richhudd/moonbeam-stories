@@ -1369,9 +1369,15 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - No Supabase schema or legal-document changes.
 
 
-## V250.35 — Rendered Titled Covers
+## V250.36 — Rendered Titled Covers
 - Rebuilt the Instagram/gallery cover compositor so the story title is baked into the image itself using explicit pixel positioning rather than percentage SVG positioning.
 - Adds a small MOONBEAM STORIES kicker and stronger lower-cover shading so the published asset reads unmistakably as a book cover.
 - Adds a cache-busting version to gallery and Instagram cover URLs so previously cached raw artwork cannot mask the corrected titled cover.
 - Existing compact newest-first Instagram gallery, developer removal control, posting reliability, and all other V250.34 behaviour are preserved.
 - No Supabase schema change.
+
+
+## V250.36 — Exact Reader Cover Snapshot
+- Instagram publishing now captures the existing rendered Moonbeam reader cover (artwork, kicker, exact title and dedication) as one JPEG instead of rebuilding title graphics server-side.
+- That same captured cover is stored for and served by the public Instagram gallery.
+- Existing publishing, newest-first gallery, developer removal and 12-API architecture are preserved.

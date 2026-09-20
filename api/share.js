@@ -110,7 +110,7 @@ async function instagramGallery(req,res){
  for(const row of (rows||[])){
   const token=String(row.recipient_name||'').trim(); if(!token)continue;
   const story=await getSavedStory(row.saved_story_id); if(!story)continue;
-  stories.push({shareId:row.id,title:story.title||'Moonbeam Story',language:story.language||'en-GB',createdAt:row.created_at,readerUrl:`${SITE_URL}/shared/${encodeURIComponent(token)}`,coverUrl:`${SITE_URL}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=cover&titled=1&v=25035`});
+  stories.push({shareId:row.id,title:story.title||'Moonbeam Story',language:story.language||'en-GB',createdAt:row.created_at,readerUrl:`${SITE_URL}/shared/${encodeURIComponent(token)}`,coverUrl:`${SITE_URL}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25036`});
  }
  res.setHeader('Cache-Control','public, max-age=60, stale-while-revalidate=300');
  return res.status(200).json({stories});
@@ -124,6 +124,7 @@ async function publicAsset(req,res){
  if(!story)return res.status(404).send('Unavailable');
  let path;
  if(kind==='cover')path=story.saved_assets?.cover;
+ else if(kind==='instagram-cover')path=`instagram-covers/${share.id}.jpg`;
  else if(/^\d+$/.test(kind))path=story.saved_assets?.pages?.[Number(kind)];
  if(!path)return res.status(404).send('Image unavailable');
  const objectPath=String(path).split('/').map(encodeURIComponent).join('/');
