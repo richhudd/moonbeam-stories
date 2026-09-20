@@ -1,19 +1,11 @@
-# Moonbeam Stories V250.52
+# Moonbeam Stories V250.54
 
-## V250.52 — Instagram carousel text slides captured in-browser
+## V250.54 — dedicated cover only + no invented hair clips
 
-This build fixes the blank/garbled Instagram carousel text pages.
-
-### What changed
-- Instagram carousel text pages are now captured in the browser as finished 1080 × 1350 JPEGs before posting, using the same general approach already used for the composite cover capture.
-- The ornate story-text pages are uploaded exactly from those browser-rendered captures instead of being re-rendered later on the server.
-- The final “To be continued…” slide is also captured in-browser, while still respecting the saved story language.
-- The full illustrated book is still added to the public gallery page exactly as before.
-
-### Result
-- Carousel slide 1 remains the captured cover.
-- Slides 2, 4, 6 and 8 are now reliable text pages.
-- Slides 3, 5, 7 and 9 remain illustration pages.
-- Slide 10 remains the localized call-to-action page.
-
-No Supabase SQL changes are required.
+- Removes the temporary phone-portrait fallback that showed page 1 as the cover and then replaced it. Moonbeam now waits for the real dedicated cover instead of visibly switching covers.
+- Keeps the normal saved-story cover loading path unchanged; this only affects newly generated unsaved stories.
+- Strengthens the dedicated cover prompt so the child’s underlying identity must stay faithful to the reference photo and must not be ethnically reinterpreted to match the setting.
+- Strengthens the illustration prompt so unsupported decorative accessories are not invented or canonised across the book.
+- Explicitly forbids invented hair clips, bows, barrettes, star ornaments and similar decorative hair accessories unless they are visible in the reference photo or explicitly required by the story.
+- Explicitly tells the engine not to preserve accidental hallucinated accessories from earlier illustrations.
+- No Supabase migration is required.

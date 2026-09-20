@@ -786,7 +786,7 @@ function renderStory(s,image,child,options={}){
 }
 function coverKey(book){return `v48:${book.visualCacheId||book.cacheId}:cover`}
 function getCoverPrompt(book){
- return `Front cover illustration for an original premium children's adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}. Story premise: ${book.child?.storyIdea||book.opening||'an original Moonbeam adventure'}. Story world continuity: ${book.character_bible||'Keep the hero and story world consistent.'} Choose one coherent, physically possible moment from one camera position that represents the premise. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
+ return `Front cover illustration for an original premium children's adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}. Story premise: ${book.child?.storyIdea||book.opening||'an original Moonbeam adventure'}. Story world continuity: ${book.character_bible||'Keep the hero and story world consistent.'} Choose one coherent, physically possible moment from one camera position that represents the premise. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition. Preserve the main child's exact underlying identity from the supplied reference photo, including apparent ethnicity, skin tone, facial structure and hair; do not localise, ethnically reinterpret or restyle the child to match the setting or country. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
 }
 function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
 function dataUrlToBlobUrl(dataUrl){
@@ -850,40 +850,9 @@ async function loadCoverIllustration(force=false){
  if(loading)loading.hidden=false;
  if(error)error.hidden=true;
 
- let fallbackShown=false;
-
- // V45: the phone cover no longer depends on the special cover-image request.
- // The normal opening-page illustration pipeline is already proven to work
- // with child-photo references, so use that artwork as an immediate front-cover
- // fallback. Title/kicker remain HTML overlays, making it a genuine book cover.
- if(isPhonePortrait()){
-   try{
-     const openingPrompt=getIllustrationPrompt(0);
-     const openingKey=illustrationKey(book,0,openingPrompt);
-     const openingImage=await requestIllustration(
-       openingKey,
-       openingPrompt,
-       `Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,
-       false,
-       book.child?.referenceImages||book.child?.referencePhoto||null,
-       true,
-       0
-     );
-     if(currentBook===book){
-       await revealCoverImage($('coverImage'),openingImage);
-       book.artwork.pages[0]=openingImage;
-       fallbackShown=true;
-       if($('coverLoading'))$('coverLoading').hidden=true;
-       if($('coverError'))$('coverError').hidden=true;
-     }
-   }catch(e){
-     console.error('Mobile cover fallback failed',e);
-   }
- }
-
- // Request a specially composed cover as an enhancement. If this request fails
- // after the fallback is visible, keep the working fallback instead of replacing
- // the cover with an error/blank state.
+ // V250.54: always wait for the real dedicated cover.
+ // Do not temporarily show page 1 as a fallback cover on phone portrait,
+ // because that causes visible cover-switching and can hide cover identity drift.
  try{
    const key=coverKey(book);
    const image=await requestIllustration(
@@ -904,8 +873,7 @@ async function loadCoverIllustration(force=false){
    console.error('Dedicated cover failed',e);
    if(currentBook===book){
      if($('coverLoading'))$('coverLoading').hidden=true;
-     // Only show an error if there is genuinely no artwork to use.
-     if(!fallbackShown && $('coverError'))$('coverError').hidden=false;
+     if($('coverError'))$('coverError').hidden=false;
    }
    return null;
  }
