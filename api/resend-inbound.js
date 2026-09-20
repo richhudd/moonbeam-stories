@@ -192,14 +192,14 @@ async function waitForInstagramContainer(creationId,accessToken,label='Instagram
   }
   throw new Error(`${label} is still being prepared${lastStatus?` (${lastStatus.toLowerCase()})`:''}. Please try again.`);
 }
-function decodeInstagramCoverDataUrl(value){
- const m=String(value||'').match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=\r\n]+)$/);if(!m)throw new Error('The approved Instagram cover is missing or is not a JPEG.');
- const bytes=Buffer.from(m[1].replace(/\s/g,''),'base64');if(!bytes.length||bytes.length>2900000)throw new Error('The approved Instagram cover is too large.');
+function decodeInstagramJpegDataUrl(value,label='The approved Instagram image',maxBytes=2900000){
+ const m=String(value||'').match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=\r\n]+)$/);if(!m)throw new Error(`${label} is missing or is not a JPEG.`);
+ const bytes=Buffer.from(m[1].replace(/\s/g,''),'base64');if(!bytes.length||bytes.length>maxBytes)throw new Error(`${label} is too large.`);
  return bytes;
 }
-async function verifyInstagramCoverBytes(bytes){
+async function verifyInstagramJpegBytes(bytes,label='The approved Instagram image'){
  const sharp=require('sharp');const meta=await sharp(bytes,{failOn:'error'}).metadata();
- if(meta.format!=='jpeg'||Number(meta.width)!==1080||Number(meta.height)!==1350)throw new Error('The approved Instagram cover failed the 1080 × 1350 JPEG check.');
+ if(meta.format!=='jpeg'||Number(meta.width)!==1080||Number(meta.height)!==1350)throw new Error(`${label} failed the 1080 × 1350 JPEG check.`);
  return crypto.createHash('sha256').update(bytes).digest('hex');
 }
 function xmlEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
@@ -264,18 +264,32 @@ async function renderInstagramTextSlide(text,pageNumber){
   </svg>`;
   return await sharp(Buffer.from(svg)).jpeg({quality:92}).toBuffer();
 }
-async function renderInstagramCtaSlide(){
+const INSTAGRAM_CTA_COPY={
+  'en-GB':{continued:['To be','continued…'],read:'Read the whole story',bio:'at the link in our bio.'},
+  'en-US':{continued:['To be','continued…'],read:'Read the whole story',bio:'at the link in our bio.'},
+  'es-ES':{continued:['Continuará…'],read:'Lee la historia completa',bio:'en el enlace de nuestra bio.'},
+  'es-419':{continued:['Continuará…'],read:'Lee la historia completa',bio:'en el enlace de nuestra bio.'},
+  'fr-FR':{continued:['À suivre…'],read:'Lisez toute l’histoire',bio:'via le lien dans notre bio.'},
+  'de-DE':{continued:['Fortsetzung folgt…'],read:'Lies die ganze Geschichte',bio:'über den Link in unserer Bio.'},
+  'it-IT':{continued:['Continua…'],read:'Leggi tutta la storia',bio:'dal link nella nostra bio.'},
+  'pt-BR':{continued:['Continua…'],read:'Leia a história completa',bio:'no link da nossa bio.'},
+  'pl-PL':{continued:['Ciąg dalszy nastąpi…'],read:'Przeczytaj całą historię',bio:'pod linkiem w naszym bio.'}
+};
+async function renderInstagramCtaSlide(locale='en-GB'){
   const sharp=require('sharp');
   const width=1080,height=1350;
+  const copy=INSTAGRAM_CTA_COPY[locale]||INSTAGRAM_CTA_COPY['en-GB'];
+  const continuedLines=Array.isArray(copy.continued)?copy.continued:[String(copy.continued||'')];
+  const continuedY=continuedLines.length>1?[490,575]:[540];
+  const continuedSvg=continuedLines.map((line,i)=>`<text x="540" y="${continuedY[i]||540}" text-anchor="middle" fill="#2e2740" font-family="Georgia, Times New Roman, serif" font-size="${continuedLines.length>1?74:68}" font-weight="700">${xmlEscape(line)}</text>`).join('');
   const svg=`<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
     <rect width="${width}" height="${height}" fill="#f7f0df"/>
     <rect x="42" y="42" width="996" height="1266" rx="28" fill="#fffaf2" stroke="#b6904d" stroke-width="4"/>
     <rect x="74" y="74" width="932" height="1202" rx="22" fill="none" stroke="#d9be86" stroke-width="2.5"/>
     <text x="540" y="200" text-anchor="middle" fill="#8d6b35" font-family="Georgia, Times New Roman, serif" font-size="36" font-weight="700">❦</text>
-    <text x="540" y="490" text-anchor="middle" fill="#2e2740" font-family="Georgia, Times New Roman, serif" font-size="74" font-weight="700">To be</text>
-    <text x="540" y="575" text-anchor="middle" fill="#2e2740" font-family="Georgia, Times New Roman, serif" font-size="74" font-weight="700">continued…</text>
-    <text x="540" y="705" text-anchor="middle" fill="#5c4a2b" font-family="Georgia, Times New Roman, serif" font-size="38" font-style="italic">Read the whole story</text>
-    <text x="540" y="765" text-anchor="middle" fill="#5c4a2b" font-family="Georgia, Times New Roman, serif" font-size="38" font-style="italic">at the link in our bio.</text>
+    ${continuedSvg}
+    <text x="540" y="705" text-anchor="middle" fill="#5c4a2b" font-family="Georgia, Times New Roman, serif" font-size="38" font-style="italic">${xmlEscape(copy.read)}</text>
+    <text x="540" y="765" text-anchor="middle" fill="#5c4a2b" font-family="Georgia, Times New Roman, serif" font-size="38" font-style="italic">${xmlEscape(copy.bio)}</text>
     <line x1="190" y1="960" x2="455" y2="960" stroke="#d9be86" stroke-width="2"/>
     <line x1="625" y1="960" x2="890" y2="960" stroke="#d9be86" stroke-width="2"/>
     <text x="540" y="972" text-anchor="middle" fill="#8d6b35" font-family="Georgia, Times New Roman, serif" font-size="36" font-weight="700">❦</text>
@@ -330,7 +344,22 @@ async function developerInstagramPublishStory(req,res,body){
   const accessToken=String(process.env.INSTAGRAM_ACCESS_TOKEN||'').trim(), accountId=String(process.env.INSTAGRAM_ACCOUNT_ID||'').trim();
   if(!accessToken||!accountId)return res.status(503).json({error:'Instagram is not configured in Vercel.'});
   const storyId=String(body?.storyId||'').trim(); if(!storyId)return res.status(400).json({error:'Story id is required.'});
-  let coverBytes,coverHash;try{coverBytes=decodeInstagramCoverDataUrl(body?.coverDataUrl);coverHash=await verifyInstagramCoverBytes(coverBytes)}catch(error){return res.status(400).json({error:error?.message||'The approved Instagram cover is invalid.'})}
+  let coverBytes,coverHash;try{coverBytes=decodeInstagramJpegDataUrl(body?.coverDataUrl,'The approved Instagram cover');coverHash=await verifyInstagramJpegBytes(coverBytes,'The approved Instagram cover')}catch(error){return res.status(400).json({error:error?.message||'The approved Instagram cover is invalid.'})}
+  let textSlideBytes=null,ctaBytesFromClient=null;
+  try{
+    if(Array.isArray(body?.textSlideDataUrls)&&body.textSlideDataUrls.length===4){
+      textSlideBytes=[];
+      for(let i=0;i<4;i++){
+        const bytes=decodeInstagramJpegDataUrl(body.textSlideDataUrls[i],`Instagram text slide ${i+1}`);
+        await verifyInstagramJpegBytes(bytes,`Instagram text slide ${i+1}`);
+        textSlideBytes.push(bytes);
+      }
+    }
+    if(body?.ctaDataUrl){
+      ctaBytesFromClient=decodeInstagramJpegDataUrl(body.ctaDataUrl,'The Instagram carousel ending slide');
+      await verifyInstagramJpegBytes(ctaBytesFromClient,'The Instagram carousel ending slide');
+    }
+  }catch(error){return res.status(400).json({error:error?.message||'One or more Instagram carousel slides are invalid.'})}
   let shareId=null,coverPath=null;
   const uploadedPaths=[];
   try{
@@ -347,12 +376,12 @@ async function developerInstagramPublishStory(req,res,body){
     uploadedPaths.push(coverPath);
     const origin='https://www.moonbeamstories.co.uk';
     const slideSpecs=[];
-    const coverUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25050&cb=${Date.now()}`;
+    const coverUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25052&cb=${Date.now()}`;
     const publicCover=await fetch(coverUrl,{headers:{Accept:'image/jpeg'},cache:'no-store'}); if(!publicCover.ok)throw new Error('The finished cover could not be verified from Moonbeam’s public image URL.');
     const publicBytes=Buffer.from(await publicCover.arrayBuffer()), publicHash=crypto.createHash('sha256').update(publicBytes).digest('hex'); if(publicHash!==coverHash)throw new Error('The public Instagram cover does not exactly match the approved preview.');
     slideSpecs.push({label:'cover',url:coverUrl});
     for(let i=0;i<4;i++){
-      const textBytes=await renderInstagramTextSlide(storyPages[i],i+1);
+      const textBytes=(textSlideBytes&&textSlideBytes[i])?textSlideBytes[i]:await renderInstagramTextSlide(storyPages[i],i+1);
       const textPath=`instagram-carousel/${shareId}/slide-${(i*2)+1}.jpg`;
       await uploadSavedStoryArt(textPath,textBytes,'image/jpeg');
       uploadedPaths.push(textPath);
@@ -362,12 +391,12 @@ async function developerInstagramPublishStory(req,res,body){
       await uploadSavedStoryArt(illustrationPath,illustrationSlideBytes,'image/jpeg');
       uploadedPaths.push(illustrationPath);
     }
-    const ctaBytes=await renderInstagramCtaSlide();
+    const ctaBytes=ctaBytesFromClient||await renderInstagramCtaSlide(story.language||'en-GB');
     const ctaPath=`instagram-carousel/${shareId}/slide-9.jpg`;
     await uploadSavedStoryArt(ctaPath,ctaBytes,'image/jpeg');
     uploadedPaths.push(ctaPath);
     for(let n=1;n<=9;n++){
-      const url=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-slide-${n}&v=25050&cb=${Date.now()}-${n}`;
+      const url=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-slide-${n}&v=25052&cb=${Date.now()}-${n}`;
       const check=await fetch(url,{headers:{Accept:'image/jpeg'},cache:'no-store'});
       if(!check.ok)throw new Error(`Instagram slide ${n+1} could not be verified from Moonbeam’s public image URL.`);
       slideSpecs.push({label:`slide ${n+1}`,url});

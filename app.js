@@ -1177,22 +1177,95 @@ async function captureReaderCoverForInstagram(){
   return dataUrl;
  }finally{clone.remove()}
 }
+function drawRoundedRectPath(ctx,x,y,w,h,r){const rr=Math.max(0,Math.min(r,Math.min(w,h)/2));ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath()}
+function instagramTextCaptureRoot(){
+ const root=document.createElement('div');
+ root.style.cssText='position:fixed!important;left:-10000px!important;top:0!important;width:620px!important;height:775px!important;aspect-ratio:4/5!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important;visibility:visible!important;display:block!important;opacity:1!important;pointer-events:none!important;z-index:-1!important;background:#f7f2e8!important;';
+ return root;
+}
+function instagramTextSlideChrome(root,pageNumber){
+ const outer=document.createElement('div');outer.style.cssText='position:absolute;inset:18px;border:3px solid #cfb069;border-radius:20px;';root.appendChild(outer);
+ const inner=document.createElement('div');inner.style.cssText='position:absolute;inset:36px;border:2px solid #d9c48f;border-radius:18px;';root.appendChild(inner);
+ const topLeft=document.createElement('div');topLeft.style.cssText='position:absolute;left:98px;top:58px;width:142px;height:2px;background:#d0b779;';root.appendChild(topLeft);
+ const topRight=document.createElement('div');topRight.style.cssText='position:absolute;right:98px;top:58px;width:142px;height:2px;background:#d0b779;';root.appendChild(topRight);
+ const bottomLeft=document.createElement('div');bottomLeft.style.cssText='position:absolute;left:98px;bottom:58px;width:142px;height:2px;background:#d0b779;';root.appendChild(bottomLeft);
+ const bottomRight=document.createElement('div');bottomRight.style.cssText='position:absolute;right:98px;bottom:58px;width:142px;height:2px;background:#d0b779;';root.appendChild(bottomRight);
+ if(pageNumber!=null){const n=document.createElement('div');n.textContent=String(pageNumber);n.style.cssText="position:absolute;top:48px;left:50%;transform:translateX(-50%);font:500 10px Georgia,'Times New Roman',serif;color:#9a8350;letter-spacing:.03em;";root.appendChild(n)}
+}
+function instagramCtaCopy(locale='en-GB'){
+ const table={
+  'en-GB':{continued:'To be continued…',read:'Read the whole story',bio:'at the link in our bio.'},
+  'en-US':{continued:'To be continued…',read:'Read the whole story',bio:'at the link in our bio.'},
+  'es-ES':{continued:'Continuará…',read:'Lee la historia completa',bio:'en el enlace de nuestra bio.'},
+  'es-419':{continued:'Continuará…',read:'Lee la historia completa',bio:'en el enlace de nuestra bio.'},
+  'fr-FR':{continued:'À suivre…',read:'Lisez toute l’histoire',bio:'via le lien dans notre bio.'},
+  'de-DE':{continued:'Fortsetzung folgt…',read:'Lies die ganze Geschichte',bio:'über den Link in unserer Bio.'},
+  'it-IT':{continued:'Continua…',read:'Leggi tutta la storia',bio:'dal link nella nostra bio.'},
+  'pt-BR':{continued:'Continua…',read:'Leia a história completa',bio:'no link da nossa bio.'},
+  'pl-PL':{continued:'Ciąg dalszy nastąpi…',read:'Przeczytaj całą historię',bio:'pod linkiem w naszym bio.'}
+ };
+ return table[locale]||table['en-GB'];
+}
+async function instagramCanvasToDataUrl(canvas,minLen=12000){
+ let quality=.94,dataUrl=canvas.toDataURL('image/jpeg',quality);while(dataUrl.length>3400000&&quality>.72){quality-=.04;dataUrl=canvas.toDataURL('image/jpeg',quality)}
+ if(!/^data:image\/jpeg;base64,/.test(dataUrl)||dataUrl.length<minLen||dataUrl.length>3900000)throw new Error(instagramUi().captureFailed);
+ const probe=new Image();probe.src=dataUrl;await waitForImageReady(probe);if(probe.naturalWidth!==canvas.width||probe.naturalHeight!==canvas.height)throw new Error(instagramUi().captureFailed);
+ return dataUrl;
+}
+async function captureInstagramTextSlide(text,pageNumber){
+ const ui=instagramUi();if(document.fonts?.ready)await document.fonts.ready.catch(()=>{});
+ const root=instagramTextCaptureRoot();instagramTextSlideChrome(root,pageNumber);
+ const body=document.createElement('div');body.textContent=String(text||'').replace(/\s+/g,' ').trim();body.style.cssText="position:absolute;left:104px;right:104px;top:132px;bottom:128px;color:#2f2a2b;font:500 17px/1.72 Georgia,'Times New Roman',serif;white-space:normal;overflow:hidden;";root.appendChild(body);
+ document.body.appendChild(root);try{
+  await nextPaint();const rootRect=root.getBoundingClientRect(),scale=1080/rootRect.width,canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1350;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error(ui.captureFailed);
+  ctx.fillStyle='#f7f2e8';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#cfb069';ctx.lineWidth=5;drawRoundedRectPath(ctx,31,31,1018,1288,34);ctx.stroke();
+  ctx.strokeStyle='#d9c48f';ctx.lineWidth=3;drawRoundedRectPath(ctx,63,63,954,1224,29);ctx.stroke();
+  ctx.strokeStyle='#d0b779';ctx.lineWidth=3;[[171,102,247,102],[833,102,909,102],[171,1248,247,1248],[833,1248,909,1248]].forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()});
+  drawDomTextElement(ctx,body,rootRect,scale);if(pageNumber!=null)drawDomTextElement(ctx,root.querySelector('div[style*="transform:translateX(-50%)"]'),rootRect,scale);
+  return await instagramCanvasToDataUrl(canvas,20000);
+ }finally{root.remove()}
+}
+async function captureInstagramCtaSlide(locale='en-GB'){
+ const ui=instagramUi();if(document.fonts?.ready)await document.fonts.ready.catch(()=>{});
+ const copy=instagramCtaCopy(locale),root=instagramTextCaptureRoot();instagramTextSlideChrome(root,null);
+ const continued=document.createElement('div');continued.textContent=copy.continued;continued.style.cssText="position:absolute;left:72px;right:72px;top:208px;color:#2e2740;text-align:center;font:700 40px/1.15 Georgia,'Times New Roman',serif;";root.appendChild(continued);
+ const read=document.createElement('div');read.textContent=copy.read;read.style.cssText="position:absolute;left:72px;right:72px;top:392px;color:#2e2740;text-align:center;font:700 26px/1.28 Georgia,'Times New Roman',serif;";root.appendChild(read);
+ const bio=document.createElement('div');bio.textContent=copy.bio;bio.style.cssText="position:absolute;left:90px;right:90px;top:454px;color:#655840;text-align:center;font:500 18px/1.52 Georgia,'Times New Roman',serif;";root.appendChild(bio);
+ document.body.appendChild(root);try{
+  await nextPaint();const rootRect=root.getBoundingClientRect(),scale=1080/rootRect.width,canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1350;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error(ui.captureFailed);
+  ctx.fillStyle='#f7f2e8';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#cfb069';ctx.lineWidth=5;drawRoundedRectPath(ctx,31,31,1018,1288,34);ctx.stroke();
+  ctx.strokeStyle='#d9c48f';ctx.lineWidth=3;drawRoundedRectPath(ctx,63,63,954,1224,29);ctx.stroke();
+  ctx.strokeStyle='#d0b779';ctx.lineWidth=3;[[171,102,247,102],[833,102,909,102],[171,1248,247,1248],[833,1248,909,1248]].forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()});
+  drawDomTextElement(ctx,continued,rootRect,scale);drawDomTextElement(ctx,read,rootRect,scale);drawDomTextElement(ctx,bio,rootRect,scale);
+  return await instagramCanvasToDataUrl(canvas,15000);
+ }finally{root.remove()}
+}
+function instagramCarouselTextPages(book=currentBook){
+ if(!book)return[];return [String(book.opening||''),String(book.pages?.[0]?.text||''),String(book.pages?.[1]?.text||''),String(book.pages?.[2]?.text||'')].map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean)
+}
+async function captureInstagramCarouselTextAssets(book=currentBook){
+ const locale=book?.child?.language||language||'en-GB';const pages=instagramCarouselTextPages(book);if(pages.length<4)throw new Error('This story needs at least four readable pages before it can be posted to Instagram.');
+ const textSlides=[];for(let i=0;i<4;i++)textSlides.push(await captureInstagramTextSlide(pages[i],i+1));
+ const ctaDataUrl=await captureInstagramCtaSlide(locale);return {textSlides,ctaDataUrl};
+}
 function ensureInstagramPreview(){
  let modal=$('instagramPreview');if(modal)return modal;modal=document.createElement('div');modal.id='instagramPreview';modal.className='instagram-preview hidden';modal.innerHTML='<div class="instagram-preview-card" role="dialog" aria-modal="true"><h2 class="instagram-preview-title"></h2><p class="instagram-preview-intro"></p><img class="instagram-preview-image" alt=""><div class="instagram-preview-actions"><button class="secondary instagram-preview-cancel" type="button"></button><button class="primary instagram-preview-post" type="button"></button></div><div class="instagram-preview-status" aria-live="polite"></div></div>';document.body.appendChild(modal);
  modal.querySelector('.instagram-preview-cancel').onclick=()=>closeInstagramPreview(true);modal.addEventListener('click',e=>{if(e.target===modal)closeInstagramPreview(true)});modal.querySelector('.instagram-preview-post').onclick=publishApprovedInstagramCover;return modal;
 }
 function closeInstagramPreview(restore=true){const modal=$('instagramPreview');if(modal)modal.classList.add('hidden');const pending=pendingInstagramPost;pendingInstagramPost=null;if(restore&&pending?.page!=null&&currentBook)renderBookPage(pending.page)}
-function showInstagramPreview(dataUrl,storyId,page){
- const ui=instagramUi(),modal=ensureInstagramPreview();pendingInstagramPost={dataUrl,storyId,page};modal.querySelector('.instagram-preview-title').textContent=ui.previewTitle;modal.querySelector('.instagram-preview-intro').textContent=ui.previewIntro;modal.querySelector('.instagram-preview-image').src=dataUrl;modal.querySelector('.instagram-preview-cancel').textContent=ui.cancel;const post=modal.querySelector('.instagram-preview-post');post.textContent=ui.post;post.disabled=false;modal.querySelector('.instagram-preview-status').textContent='';modal.classList.remove('hidden');
+function showInstagramPreview(dataUrl,storyId,page,extra={}){
+ const ui=instagramUi(),modal=ensureInstagramPreview();pendingInstagramPost={dataUrl,storyId,page,textSlides:extra.textSlides||[],ctaDataUrl:extra.ctaDataUrl||''};modal.querySelector('.instagram-preview-title').textContent=ui.previewTitle;modal.querySelector('.instagram-preview-intro').textContent=ui.previewIntro;modal.querySelector('.instagram-preview-image').src=dataUrl;modal.querySelector('.instagram-preview-cancel').textContent=ui.cancel;const post=modal.querySelector('.instagram-preview-post');post.textContent=ui.post;post.disabled=false;modal.querySelector('.instagram-preview-status').textContent='';modal.classList.remove('hidden');
 }
 async function publishApprovedInstagramCover(){
  const pending=pendingInstagramPost;if(!pending)return;const ui=instagramUi(),modal=ensureInstagramPreview(),post=modal.querySelector('.instagram-preview-post'),cancel=modal.querySelector('.instagram-preview-cancel'),status=modal.querySelector('.instagram-preview-status');post.disabled=true;cancel.disabled=true;post.textContent=ui.posting;status.textContent='';
- try{const token=await currentAccessToken();if(!token)throw new Error(ui.signIn);const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId:pending.storyId,coverDataUrl:pending.dataUrl})});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||ui.failed);modal.classList.add('hidden');const page=pending.page;pendingInstagramPost=null;if(currentBook)renderBookPage(page);const b=$('endInstagramPost');if(b){b.textContent=ui.posted;b.disabled=true;b.classList.add('instagram-posted')}alert('Posted to @moonbeamstoriesuk as a carousel, and the full book has been added to the Instagram story gallery.');}
+ try{const token=await currentAccessToken();if(!token)throw new Error(ui.signIn);const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId:pending.storyId,coverDataUrl:pending.dataUrl,textSlideDataUrls:pending.textSlides,ctaDataUrl:pending.ctaDataUrl})});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||ui.failed);modal.classList.add('hidden');const page=pending.page;pendingInstagramPost=null;if(currentBook)renderBookPage(page);const b=$('endInstagramPost');if(b){b.textContent=ui.posted;b.disabled=true;b.classList.add('instagram-posted')}alert('Posted to @moonbeamstoriesuk as a carousel, and the full book has been added to the Instagram story gallery.');}
  catch(e){status.textContent=e.message||String(e);post.disabled=false;cancel.disabled=false;post.textContent=ui.post}
 }
 async function postCurrentStoryToInstagram(){
  if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;const ui=instagramUi(),button=$('endInstagramPost'),page=currentBook.currentPage;if(button){button.disabled=true;button.textContent=ui.prepare}
- try{const storyId=await ensureCurrentBookSaved();showCover();const img=$('coverImage');if(!img||!img.src)await loadCoverIllustration(false);const dataUrl=await captureReaderCoverForInstagram();showInstagramPreview(dataUrl,storyId,page)}
+ try{const storyId=await ensureCurrentBookSaved();showCover();const img=$('coverImage');if(!img||!img.src)await loadCoverIllustration(false);const dataUrl=await captureReaderCoverForInstagram();const extra=await captureInstagramCarouselTextAssets(currentBook);showInstagramPreview(dataUrl,storyId,page,extra)}
  catch(e){if(currentBook)renderBookPage(page);const b=$('endInstagramPost');if(b){b.disabled=false;b.textContent='Post to Instagram'}alert(e.message||String(e))}
 }
 
