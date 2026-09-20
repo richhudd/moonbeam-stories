@@ -1,4 +1,12 @@
-# Moonbeam Stories V250.44
+# Moonbeam Stories V250.45
+
+## V250.45 — resilient session refresh during illustration generation
+
+- If an illustration request is rejected with HTTP 401, the browser explicitly refreshes the Supabase session and retries the request once.
+- Concurrent background illustration requests share one refresh operation, preventing competing refresh-token rotations.
+- A genuine invalid session still asks the parent to sign in again.
+- Temporary Supabase authentication-service failures are no longer misreported as an expired login.
+- No Supabase migration is required.
 
 ## V250.44 — prompt cleanup and distinct page sources
 

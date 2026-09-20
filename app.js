@@ -1,4 +1,4 @@
-// Moonbeam Stories V250.44
+// Moonbeam Stories V250.45
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -159,9 +159,9 @@ async function requestIllustration(key,prompt,style,force=false,referenceImage=n
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
  if(!force&&illustrationInflight.has(key))return illustrationInflight.get(key);
- const task=(async()=>{let attempts=0;while(attempts<3){attempts++;const accessToken=await currentAccessToken();if(!accessToken)throw new Error('Sign in again to create illustrations.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:Array.isArray(referenceImage)?null:(referenceImage||null),referenceImages:Array.isArray(referenceImage)?referenceImage:null,continuityImage:continuityImage||null,generationRunId,requiredStoryImage:requiredStoryImage===true,storyImageIndex:Number.isInteger(storyImageIndex)?storyImageIndex:null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
+ const task=(async()=>{let attempts=0,authRefreshed=false;while(attempts<3){attempts++;let accessToken=await currentAccessToken();if(!accessToken){authRefreshed=true;accessToken=await refreshAccessToken()}if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:Array.isArray(referenceImage)?null:(referenceImage||null),referenceImages:Array.isArray(referenceImage)?referenceImage:null,continuityImage:continuityImage||null,generationRunId,requiredStoryImage:requiredStoryImage===true,storyImageIndex:Number.isInteger(storyImageIndex)?storyImageIndex:null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
    if(referenceImage && data.usedReferencePhoto!==true) throw new Error('One or more Cast photo references were not accepted by the illustration service.');
-   illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
+   illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if(response.status===401&&!authRefreshed&&attempts<3){authRefreshed=true;const refreshedToken=await refreshAccessToken();if(refreshedToken)continue;throw new Error('Your Moonbeam session has expired. Please sign in again.')}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
  illustrationInflight.set(key,task);try{return await task}finally{illustrationInflight.delete(key)}
 }
 const coverLocales={
@@ -573,8 +573,15 @@ async function loadStoryCredits(){
  refreshStoryCreditConsentUI().catch(()=>{});
  return storyCreditBalance;
 }
+let sessionRefreshPromise=null;
+async function refreshAccessToken(){
+ if(!supabaseClient)return'';
+ if(!sessionRefreshPromise)sessionRefreshPromise=(async()=>{try{const {data,error}=await supabaseClient.auth.refreshSession();if(error)return'';return data?.session?.access_token||''}catch{return''}})();
+ try{return await sessionRefreshPromise}finally{sessionRefreshPromise=null}
+}
 async function currentAccessToken(){
- const {data:{session}}=await supabaseClient.auth.getSession();return session?.access_token||'';
+ if(!supabaseClient)return'';
+ try{const {data:{session},error}=await supabaseClient.auth.getSession();if(error)return'';return session?.access_token||''}catch{return''}
 }
 
 function showCheckoutNotice(message,kind=''){
