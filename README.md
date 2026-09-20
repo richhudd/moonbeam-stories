@@ -1391,3 +1391,10 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - The same stored finished JPEG is used by Instagram and the /instagram gallery. Existing saved stories can be posted without regenerating their story or illustrations.
 - Publishing remains fail-safe: a failed render/publish removes the provisional gallery share and the client returns the Post to Instagram button to a retryable state.
 - No new API function, Supabase schema change or legal-page change.
+
+
+## V250.38 — Canonical Cover Font Fix
+- Fixes the server-rendered Instagram/gallery cover text that appeared as tiny unreadable glyph boxes.
+- Uses explicit server-available serif/sans-serif font families while preserving the reader cover's existing scaled typography, positions, title, kicker and dedication.
+- The same verified finished JPEG continues to be used for Instagram and the public gallery; no browser canvas/snapshot path is used.
+- Existing posting reliability, newest-first gallery, developer removal, 12-function API architecture and all unrelated behaviour are preserved.
