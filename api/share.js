@@ -110,7 +110,7 @@ async function instagramGallery(req,res){
  for(const row of (rows||[])){
   const token=String(row.recipient_name||'').trim(); if(!token)continue;
   const story=await getSavedStory(row.saved_story_id); if(!story)continue;
-  stories.push({title:story.title||'Moonbeam Story',language:story.language||'en-GB',createdAt:row.created_at,readerUrl:`${SITE_URL}/shared/${encodeURIComponent(token)}`,coverUrl:`${SITE_URL}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=cover&titled=1`});
+  stories.push({shareId:row.id,title:story.title||'Moonbeam Story',language:story.language||'en-GB',createdAt:row.created_at,readerUrl:`${SITE_URL}/shared/${encodeURIComponent(token)}`,coverUrl:`${SITE_URL}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=cover&titled=1&v=25035`});
  }
  res.setHeader('Cache-Control','public, max-age=60, stale-while-revalidate=300');
  return res.status(200).json({stories});
@@ -142,10 +142,14 @@ async function publicAsset(req,res){
   if(line)lines.push(line); while(lines.length>3){lines[lines.length-2]+=' '+lines.pop()}
   const xml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
   const fontSize=Math.round(width*(lines.length>2?.070:lines.length>1?.078:.088));
-  const lineHeight=Math.round(fontSize*1.08), bottom=Math.round(height*.075);
-  const titleHeight=lines.length*lineHeight, startY=height-bottom-titleHeight+fontSize;
-  const tspans=lines.map((ln,i)=>`<tspan x="50%" y="${startY+i*lineHeight}">${xml(ln)}</tspan>`).join('');
-  const svg=Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#130d2d" stop-opacity="0"/><stop offset="1" stop-color="#130d2d" stop-opacity="0.82"/></linearGradient></defs><rect x="0" y="${Math.round(height*.48)}" width="${width}" height="${Math.round(height*.52)}" fill="url(#g)"/><text text-anchor="middle" fill="white" stroke="#160f2c" stroke-opacity="0.45" stroke-width="${Math.max(1,Math.round(width*.002))}" paint-order="stroke" font-family="Georgia, Times New Roman, serif" font-size="${fontSize}" font-weight="700">${tspans}</text></svg>`);
+  const lineHeight=Math.round(fontSize*1.08);
+  const centerX=Math.round(width/2);
+  const bottom=Math.round(height*.075);
+  const titleHeight=lines.length*lineHeight;
+  const startY=height-bottom-titleHeight+fontSize;
+  const tspans=lines.map((ln,i)=>`<tspan x="${centerX}" y="${startY+i*lineHeight}">${xml(ln)}</tspan>`).join('');
+  const kickerY=Math.max(Math.round(height*.58),startY-Math.round(fontSize*.72));
+  const svg=Buffer.from(`<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#130d2d" stop-opacity="0"/><stop offset="1" stop-color="#130d2d" stop-opacity="0.88"/></linearGradient></defs><rect x="0" y="${Math.round(height*.44)}" width="${width}" height="${Math.round(height*.56)}" fill="url(#g)"/><text x="${centerX}" y="${kickerY}" text-anchor="middle" fill="white" opacity="0.96" font-family="Arial, Helvetica, sans-serif" font-size="${Math.max(13,Math.round(width*.025))}" font-weight="700" letter-spacing="${Math.max(1,Math.round(width*.004))}">MOONBEAM STORIES</text><text x="${centerX}" text-anchor="middle" fill="white" stroke="#160f2c" stroke-opacity="0.62" stroke-width="${Math.max(1,Math.round(width*.0025))}" paint-order="stroke" font-family="Georgia, Times New Roman, serif" font-size="${fontSize}" font-weight="700">${tspans}</text></svg>`);
   bytes=await image.composite([{input:svg,top:0,left:0}]).jpeg({quality:92}).toBuffer();
   res.setHeader('Content-Type','image/jpeg');
  }else if(String(req.query?.format||'').toLowerCase()==='jpeg'){

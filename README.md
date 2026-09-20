@@ -1359,3 +1359,19 @@ Restores the dedicated Saved Stories view on mobile after the Create Story Cast/
 - One Hero + Supporting Cast still dedicates the cover only to the Hero.
 - Instagram story captions now say **Read the full illustrated story — link in bio.** and no longer print the non-clickable gallery URL.
 - No Supabase schema change.
+
+
+## V250.34 — Developer Gallery Removal
+- Adds a developer-only **Remove from gallery** control to each `/instagram` story card.
+- Removal revokes only the Instagram gallery share entry; it does not delete the saved Moonbeam story, artwork, credits, or any unrelated private share.
+- Ordinary public visitors never see the removal controls.
+- Existing newest-first compact gallery, titled covers, shared reader, Instagram publishing, and 12-function API architecture are preserved.
+- No Supabase schema or legal-document changes.
+
+
+## V250.35 — Rendered Titled Covers
+- Rebuilt the Instagram/gallery cover compositor so the story title is baked into the image itself using explicit pixel positioning rather than percentage SVG positioning.
+- Adds a small MOONBEAM STORIES kicker and stronger lower-cover shading so the published asset reads unmistakably as a book cover.
+- Adds a cache-busting version to gallery and Instagram cover URLs so previously cached raw artwork cannot mask the corrected titled cover.
+- Existing compact newest-first Instagram gallery, developer removal control, posting reliability, and all other V250.34 behaviour are preserved.
+- No Supabase schema change.
