@@ -1,3 +1,14 @@
+# Moonbeam Stories V250.41
+
+## V250.41 — reliable developer-only Instagram end-page action
+
+- Repairs the developer-only **Post to Instagram** control on the owner’s final **The End** page.
+- The end page now completes a fresh, non-cached server verification and mounts the button immediately after developer access is confirmed, even when authentication and story restoration finish in a different order.
+- Temporary network or server failures no longer become a permanent false “not developer” result for the session; the check can recover when the end page is reached.
+- Explicit unauthorised responses remain denied, shared stories never receive the control, and ordinary accounts retain exactly the existing Save Story, Share Story and New Story actions.
+- Instagram credentials remain server-side. Publishing still requires the same `MOONBEAM_DEVELOPER_EMAIL` verification and the existing cover-preview approval step.
+- No Supabase migration is required.
+
 # Moonbeam Stories V250.25
 
 ## V250.20 — desktop homepage cleanup

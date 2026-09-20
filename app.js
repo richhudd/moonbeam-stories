@@ -1,4 +1,4 @@
-// Moonbeam Stories V250.40
+// Moonbeam Stories V250.41
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -36,6 +36,9 @@ const SUPABASE_PUBLISHABLE_KEY='sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q';
 const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let currentUser=null, cloudProfiles=[], activeProfileId=null, cloudStories=[];
 let instagramDeveloperAccess=false;
+let instagramDeveloperAccessState='unknown';
+let instagramDeveloperAccessPromise=null;
+let instagramDeveloperAccessUserId=null;
 let pendingInstagramPost=null;
 let castMembers246=[];
 let storyHeroIds248=new Set(),storySupportIds248=new Set();
@@ -290,8 +293,9 @@ async function applyAuthSession(session){
  const nextUser=session?.user||null;
  const sameSignedInUser=!!previousUserId&&!!nextUser&&previousUserId===nextUser.id;
  currentUser=nextUser;
+ if(!sameSignedInUser)resetInstagramDeveloperAccess(currentUser);
  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
- if(currentUser)setTimeout(checkInstagramDeveloperAccess,0);else instagramDeveloperAccess=false;
+ if(currentUser)setTimeout(()=>checkInstagramDeveloperAccess(),0);else resetInstagramDeveloperAccess(null);
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
  const badge=$('accountBadge');if(badge){badge.textContent=currentUser?t().cloud:t().notSigned;badge.classList.toggle('online',!!currentUser)}
  if(currentUser){
@@ -1030,8 +1034,41 @@ const SHARE_LOCALES={
  'pl-PL':{sentBy:n=>`${n} wysłał(a) Ci tę historię`,loved:'Podobała Ci się ta historia? Stwórz własną dla kogoś, kogo kochasz ✨',free:'Twoja pierwsza spersonalizowana historia jest bezpłatna.',create:'Stwórz moją historię',kicker:'PODZIEL SIĘ MAGIĄ',title:'Udostępnij tę historię',methodIntro:'Wybierz sposób udostępnienia.',whatsapp:'WhatsApp',emailMethod:'E-mail',copyLink:'Kopiuj link',linkCopied:'✓ Link skopiowany',back:'Wstecz',privateLink:'Prywatny link',whatsappText:(n,u)=>`${n} wysłał(a) Ci spersonalizowaną historię Moonbeam ✨\n\nOtwórz historię tutaj: ${u}`,intro:'Wyślij prywatną kopię tej historii rodzinie lub znajomym.',yourName:'Twoje imię',senderPh:'Twoje imię',recipientName:'Imię odbiorcy',email:'Adres e-mail odbiorcy',remove:'Usuń',add:'+ Dodaj kolejnego odbiorcę',send:'Wyślij historię',signIn:'Zaloguj się, aby udostępnić historię.',willSave:'Moonbeam zapisze tę ilustrowaną historię na stałe przed jej wysłaniem.',senderRequired:'Wpisz imię, które mają zobaczyć odbiorcy.',recipientRequired:'Dodaj co najmniej jednego odbiorcę.',preparing:'Przygotowujemy prywatne linki do historii…',sent:(n,f)=>f?`Wysłano do ${n}. Nie udało się wysłać do ${f}.`:`Wysłano do ${n} ${n===1?'odbiorcy':'odbiorców'} ✨`,sharedWith:'Udostępniono',opened:'otwarto',revoked:'cofnięto',revoke:'Cofnij dostęp',revokeConfirm:'Cofnąć dostęp do tego prywatnego linku?',mustSave:'Historia musi zostać zapisana, zanim będzie można ją udostępnić.',signInAgain:'Zaloguj się ponownie.',sharingFailed:n=>`Udostępnianie nie powiodło się (${n})`,unavailable:'Ten link do historii jest niedostępny',visit:'Odwiedź Moonbeam Stories',sharedUnavailable:'Ta udostępniona historia jest niedostępna.',illustrationUnavailable:'Udostępniona ilustracja jest niedostępna.'}
 };
 function shareT(lang=language){return SHARE_LOCALES[lang]||SHARE_LOCALES['en-GB']}
-async function checkInstagramDeveloperAccess(){
- try{const token=await currentAccessToken();if(!token)return;const r=await fetch('/api/resend-inbound?action=instagram-access',{headers:{Authorization:`Bearer ${token}`}});instagramDeveloperAccess=r.ok;if(instagramDeveloperAccess&&currentBook&&currentBook.currentPage===currentBook.pages.length+2&&!currentBook.isShared)renderBookPage(currentBook.currentPage)}catch{instagramDeveloperAccess=false}
+function resetInstagramDeveloperAccess(user=currentUser){
+ instagramDeveloperAccess=false;
+ instagramDeveloperAccessState=user?'unknown':'anonymous';
+ instagramDeveloperAccessPromise=null;
+ instagramDeveloperAccessUserId=user?.id||null;
+}
+function mountInstagramEndButton(){
+ if(!instagramDeveloperAccess||!currentBook||currentBook.isShared||currentBook.currentPage!==currentBook.pages.length+2||$('endInstagramPost'))return;
+ const actions=document.querySelector('.end-actions');if(!actions)return;
+ const button=document.createElement('button');button.className='secondary end-instagram-post';button.id='endInstagramPost';button.type='button';button.textContent='Post to Instagram';button.onclick=postCurrentStoryToInstagram;actions.appendChild(button);
+}
+async function checkInstagramDeveloperAccess({force=false}={}){
+ const userId=currentUser?.id||null;
+ if(!userId||!supabaseClient){resetInstagramDeveloperAccess(null);return false}
+ if(instagramDeveloperAccessUserId!==userId)resetInstagramDeveloperAccess(currentUser);
+ if(instagramDeveloperAccessState==='granted'){mountInstagramEndButton();return true}
+ if(instagramDeveloperAccessState==='denied'&&!force)return false;
+ if(instagramDeveloperAccessPromise)return instagramDeveloperAccessPromise;
+ instagramDeveloperAccessState='checking';
+ const request=(async()=>{
+  try{
+   const token=await currentAccessToken();if(!token){instagramDeveloperAccessState='unknown';return false}
+   const r=await fetch('/api/resend-inbound?action=instagram-access',{cache:'no-store',credentials:'same-origin',headers:{Authorization:`Bearer ${token}`,'Cache-Control':'no-cache'}});
+   if(currentUser?.id!==userId)return false;
+   instagramDeveloperAccess=r.ok;
+   instagramDeveloperAccessState=r.ok?'granted':((r.status===401||r.status===403)?'denied':'unknown');
+   if(r.ok)mountInstagramEndButton();
+   return r.ok;
+  }catch(error){
+   if(currentUser?.id===userId){instagramDeveloperAccess=false;instagramDeveloperAccessState='unknown'}
+   console.warn('Instagram developer access check',error);return false;
+  }finally{if(instagramDeveloperAccessPromise===request)instagramDeveloperAccessPromise=null}
+ })();
+ instagramDeveloperAccessPromise=request;
+ return request;
 }
 const INSTAGRAM_UI={
  'en-GB':{prepare:'Preparing cover…',previewTitle:'Instagram cover preview',previewIntro:'This exact image will be posted to Instagram and used in the public gallery.',post:'Post this cover',cancel:'Cancel',posting:'Posting…',posted:'✓ Posted',failed:'Instagram post failed.',captureFailed:'Moonbeam could not capture the finished cover.',signIn:'Sign in again.'},
@@ -1233,6 +1270,7 @@ function renderBookPage(index){
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div><p class="end-save-warning" id="endSaveWarning" hidden>${escapeHtml(t().savingPageWarning||'Please don’t close or leave this page until saving is complete.')}</p>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator){indicator.textContent='';indicator.classList.add('end-hidden')}
    const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};const ig=$('endInstagramPost');if(ig)ig.onclick=postCurrentStoryToInstagram;/* V250.1: sharedCreateStory deliberately uses its native href. Do not intercept navigation. */
+   if(!book.isShared&&currentUser&&!instagramDeveloperAccess&&instagramDeveloperAccessState!=='denied')void checkInstagramDeveloperAccess();
    if(book.isShared&&isPhoneReader()&&!isPhonePortrait()){const internal=$('sharedCreateStory');if(internal)internal.hidden=true;mountMobileSharedCreateButton(book,sx)}
    applyMobileSide();persistCurrentDraft();return;
  }
@@ -1532,8 +1570,9 @@ async function syncAccountAuthState229(){
   const usableSessionUser=(sessionUser?.id&&sessionUser?.email)?sessionUser:null;
   const changed=(currentUser?.id||null)!==(usableSessionUser?.id||null);
   currentUser=usableSessionUser;
+  if(changed)resetInstagramDeveloperAccess(currentUser);
   document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
- if(currentUser)setTimeout(checkInstagramDeveloperAccess,0);else instagramDeveloperAccess=false;
+ if(currentUser)setTimeout(()=>checkInstagramDeveloperAccess(),0);else resetInstagramDeveloperAccess(null);
   if(!currentUser){
    storyCreditBalance=null;
    renderAccountView213();

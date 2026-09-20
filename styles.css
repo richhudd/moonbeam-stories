@@ -4101,7 +4101,7 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 /* V250.31: successful Instagram story post state */
 .end-actions .end-instagram-post.instagram-posted,.end-actions .end-instagram-post.instagram-posted:disabled{background:#5c3bbf!important;border-color:#5c3bbf!important;color:#fff!important;opacity:1!important;}
 
-/* V250.40 — developer-only Instagram capture preview. Normal accounts never render this UI. */
+/* V250.41 — developer-only Instagram capture preview. Normal accounts never render this UI. */
 .instagram-preview{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:20px;background:rgba(17,12,35,.88);backdrop-filter:blur(8px)}
 .instagram-preview.hidden{display:none!important}
 .instagram-preview-card{width:min(92vw,520px);max-height:94dvh;overflow:auto;padding:18px;border-radius:18px;background:#fff;color:#241a48;box-shadow:0 24px 80px #0008;text-align:center}

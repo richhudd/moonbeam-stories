@@ -170,6 +170,7 @@ async function developerInstagramPublishTest(req,res){
 
 
 async function developerInstagramAccess(req,res){
+  res.setHeader('Cache-Control','private, no-store, max-age=0');
   const verified=await verifyDeveloper(req); if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
   return res.status(200).json({ok:true});
 }
@@ -220,7 +221,7 @@ async function developerInstagramPublishStory(req,res,body){
     const stored=await fetch(`${ADMIN_SUPABASE_URL}/storage/v1/object/saved-story-art/${coverPath.split('/').map(encodeURIComponent).join('/')}`,{method:'POST',headers:adminHeaders({'Content-Type':'image/jpeg','x-upsert':'true'}),body:coverBytes});
     if(!stored.ok)throw new Error('Could not store the finished reader cover for Instagram.');
     const origin='https://www.moonbeamstories.co.uk';
-    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25040&cb=${Date.now()}`;
+    const imageUrl=`${origin}/api/share?action=asset&token=${encodeURIComponent(token)}&kind=instagram-cover&v=25041&cb=${Date.now()}`;
     const publicCheck=await fetch(imageUrl,{headers:{Accept:'image/jpeg'},cache:'no-store'});if(!publicCheck.ok)throw new Error('The finished cover could not be verified from Moonbeam’s public image URL.');
     const publicBytes=Buffer.from(await publicCheck.arrayBuffer()),publicHash=crypto.createHash('sha256').update(publicBytes).digest('hex');if(publicHash!==coverHash)throw new Error('The public Instagram cover does not exactly match the approved preview.');
     const caption=`${String(story.title||'A Moonbeam Story').trim()} ✨\n\nRead the full illustrated story — link in bio.`;
