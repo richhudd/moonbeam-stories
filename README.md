@@ -1,4 +1,4 @@
-# Moonbeam Stories V250.66
+# Moonbeam Stories V250.67
 
 ## V250.64 — Browser-rendered Reel text
 
@@ -68,12 +68,18 @@ Create personalised, illustrated stories starring your own child at moonbeamstor
 - `api/generate.js` and `api/illustrate.js` are unchanged from V250.59.
 - The restored illustration-generation behaviour and Optional Male/Female Cast field remain intact.
 
-## V250.66
+## V250.67
 - Fixed Reel preparation so **Post reel to Instagram** no longer navigates back to the book cover.
 - The finished cover is captured invisibly using the existing off-screen clone while the end page remains visible with **Preparing reel…** progress.
 - Carousel behaviour is unchanged.
 
 
-V250.66
+V250.67
 - Reel captions now use reel-specific wording: “Watch the adventure begin...” rather than the carousel “Swipe through...” line.
 - Reel rendering no longer fades in from black on the first segment, so the published Reel starts directly on the cover frame instead of a black thumbnail.
+
+
+V250.67
+- Carousel publishing now stays on the finished-book/end page; it no longer navigates back to the cover.
+- Clicking **Post carousel to Instagram** is now the final approval: Moonbeam captures the cover/text assets off-screen and publishes directly without a second preview/permission step.
+- Reel publishing is unchanged and still keeps its preview/approval workflow.

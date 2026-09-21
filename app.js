@@ -1317,9 +1317,20 @@ async function publishApprovedInstagramCover(){
  catch(e){status.textContent=e.message||String(e);post.disabled=false;cancel.disabled=false;post.textContent=ui.post}
 }
 async function postCurrentStoryToInstagram(){
- if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;const ui=instagramUi(),button=$('endInstagramPost'),page=currentBook.currentPage;if(button){button.disabled=true;button.textContent=ui.prepare}
- try{const storyId=await ensureCurrentBookSaved();showCover();const img=$('coverImage');if(!img||!img.src)await loadCoverIllustration(false);const dataUrl=await captureReaderCoverForInstagram();const extra=await captureInstagramCarouselTextAssets(currentBook);showInstagramPreview(dataUrl,storyId,page,extra)}
- catch(e){if(currentBook)renderBookPage(page);const b=$('endInstagramPost');if(b){b.disabled=false;b.textContent='Post carousel to Instagram'}alert(e.message||String(e))}
+ if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;const ui=instagramUi(),button=$('endInstagramPost');if(button){button.disabled=true;button.textContent=ui.prepare}
+ try{
+  const storyId=await ensureCurrentBookSaved();
+  // V250.67: carousel capture stays on the finished-book/end page, just like Reel capture.
+  // captureReaderCoverForInstagram() uses an off-screen clone, so the visible reader never needs to navigate back to the cover.
+  const img=$('coverImage');if(!img||img.hidden||!img.src)await loadCoverIllustration(false);
+  const dataUrl=await captureReaderCoverForInstagram(),extra=await captureInstagramCarouselTextAssets(currentBook),token=await currentAccessToken();
+  if(!token)throw new Error(ui.signIn);if(button)button.textContent=ui.posting;
+  const r=await fetch('/api/resend-inbound?action=instagram-publish-story',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({storyId,coverDataUrl:dataUrl,textSlideDataUrls:extra.textSlides||[],ctaDataUrl:extra.ctaDataUrl||''})});
+  const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||ui.failed);
+  const b=$('endInstagramPost');if(b){b.textContent=ui.posted;b.disabled=true;b.classList.add('instagram-posted')}
+  alert('Posted to @moonbeamstoriesuk as a carousel, and the full book has been added to the Instagram story gallery.');
+ }
+ catch(e){const b=$('endInstagramPost');if(b){b.disabled=false;b.textContent='Post carousel to Instagram'}alert(e.message||String(e))}
 }
 function ensureInstagramReelPreview(){
  let modal=$('instagramReelPreview');if(modal)return modal;
