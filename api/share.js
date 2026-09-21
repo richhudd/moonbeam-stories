@@ -122,16 +122,16 @@ async function publicAsset(req,res){
  if(!share)return res.status(404).send('Unavailable');
  const story=await getSavedStory(share.saved_story_id);
  if(!story)return res.status(404).send('Unavailable');
- let path;
+ let path,bucket='saved-story-art';
  const slideMatch=kind.match(/^instagram-slide-(\d+)$/);
  if(kind==='cover')path=story.saved_assets?.cover;
  else if(kind==='instagram-cover')path=`instagram-covers/${share.id}.jpg`;
  else if(slideMatch)path=`instagram-carousel/${share.id}/slide-${slideMatch[1]}.jpg`;
- else if(kind==='instagram-reel')path=`instagram-reels/${share.id}.mp4`;
+ else if(kind==='instagram-reel'){bucket='instagram-reels';path=`${share.id}.mp4`}
  else if(/^\d+$/.test(kind))path=story.saved_assets?.pages?.[Number(kind)];
  if(!path)return res.status(404).send('Image unavailable');
  const objectPath=String(path).split('/').map(encodeURIComponent).join('/');
- const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/saved-story-art/${objectPath}`,{headers:adminHeaders()});
+ const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/${bucket}/${objectPath}`,{headers:adminHeaders()});
  if(!r.ok)return res.status(404).send('Image unavailable');
  let bytes=Buffer.from(await r.arrayBuffer());
  if(kind==='instagram-reel'){

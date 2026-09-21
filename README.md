@@ -1,24 +1,29 @@
-# Moonbeam Stories V250.62
+# Moonbeam Stories V250.63
 
-## V250.62 — Reels now add the full book to the Instagram gallery
+## V250.63 — Dedicated Instagram Reel video storage
 
-This build starts from **V250.61** and changes only the Instagram publishing/gallery path. The story and illustration systems are untouched.
+This build starts from **V250.62** and fixes the Reel failure shown after the finished MP4 was rendered.
 
-### Reel gallery behaviour fixed
-- A successful **Post reel to Instagram** action now also ensures the complete saved book is present in the public Moonbeam Instagram gallery at `/instagram`, just like a carousel post.
-- If that book is already in the gallery, the existing gallery entry is reused rather than creating a duplicate.
-- If the Reel is posted before the carousel, Moonbeam creates the permanent gallery entry and a gallery cover from the already-saved cover artwork.
-- If Reel publishing fails, a gallery entry created only for that failed attempt is rolled back.
-- The temporary Reel preview/video is still cleaned up after a successful post.
+### Reel storage fix
+- Rendered Reel MP4 files are no longer uploaded into the `saved-story-art` bucket.
+- They now use a dedicated private Supabase Storage bucket named `instagram-reels`.
+- The existing `saved-story-art` bucket remains image-only and is not loosened or repurposed.
+- The public Moonbeam Reel URL still streams the video through the existing `/api/share` endpoint, including byte-range support required by browsers/Instagram.
+- Temporary Reel videos are deleted from the new bucket after a successful post or when a preview is discarded.
 
-### Carousel deduplication
-- **Post carousel to Instagram** now also reuses an existing gallery entry for the same saved story.
-- This means posting a Reel first and a carousel later (or vice versa) does not create duplicate copies of the same book in the Moonbeam Instagram gallery.
+### Required one-time Supabase migration
+Run `SUPABASE_V250_63_INSTAGRAM_REELS_BUCKET.sql` once in the Supabase SQL editor before testing Reel posting. It creates/updates the private `instagram-reels` bucket with:
+- MIME type: `video/mp4`
+- maximum file size: 100 MB
+- public access: off
 
-### Instagram controls and captions retained
-- **Post carousel to Instagram** and **Post reel to Instagram** remain separate developer-only buttons.
-- Reels are still generated only on demand after the Reel button is pressed.
-- Both post types keep the same agreed caption and five hashtags:
+The server-side Moonbeam functions access the bucket with the existing service credentials, so no additional public storage policy is required.
+
+### Existing Instagram behaviour retained
+- Separate developer-only **Post carousel to Instagram** and **Post reel to Instagram** buttons remain.
+- Reel creation happens only on demand after pressing the Reel button.
+- Successful Reel posts still ensure the complete book is present in the Moonbeam `/instagram` gallery without duplicating an existing gallery entry.
+- Reels and carousels keep the same agreed caption and five hashtags:
 
 [BOOK TITLE] ✨
 
@@ -32,6 +37,5 @@ Create personalised, illustrated stories starring your own child at moonbeamstor
 
 ### API / illustration safety
 - **12 callable API endpoints** remain. No API endpoint has been added.
-- No SQL change is required.
-- `api/generate.js` and `api/illustrate.js` remain unchanged from V250.59/V250.61.
+- `api/generate.js` and `api/illustrate.js` are unchanged from V250.59.
 - The restored illustration-generation behaviour and Optional Male/Female Cast field remain intact.
