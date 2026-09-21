@@ -1,4 +1,51 @@
-# Moonbeam Stories V250.74
+# Moonbeam Stories V250.77
+
+## V250.77 — Special photo-to-cover reveal
+
+This build starts from **V250.76** and adds a dedicated reveal transition only between the **real-photo opener** and the **normal-length book cover**.
+
+Reel order is now:
+- ultra-brief cover flash
+- 4.0s real-photo opener
+- **0.65s special reveal transition into the cover**
+- normal cover
+- story pages
+- CTA
+
+All later book-page transitions remain as before. No SQL required. API count unchanged.
+
+---
+
+
+## V250.76 — Reel order changed
+
+This build starts from **V250.75** and changes the developer Reel sequence to:
+- **ultra-brief cover flash**
+- **real-photo opener**
+- **normal-length book cover**
+- **story pages**
+- **CTA**
+
+Timing details:
+- cover flash remains **0.10s**
+- real-photo opener remains **4.0s**
+- the full visible book cover is now restored for **2.2s** before page 1
+
+No SQL required. No API count change.
+
+---
+
+
+## V250.75 — Longer photo opener
+
+This build starts from **V250.74** and makes one Reel timing change:
+- the real-photo **Meet [name]** opening scene now stays on screen for **4.0 seconds** instead of 2.8 seconds, giving viewers time to read and understand the three-line setup.
+- the ultra-brief book-cover flash frame remains unchanged.
+
+No story generation, illustration generation, Cast logic, Reel text layout, Instagram publishing, database schema, or API endpoints are changed.
+
+---
+
 
 ## V250.74 — Cover-flash Reel thumbnail
 
