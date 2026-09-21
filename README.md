@@ -1,6 +1,11 @@
-# Moonbeam Stories V250.73
+# Moonbeam Stories V250.74
 
-## V250.73 — Rounded Reel text panel
+## V250.74 — Cover-flash Reel thumbnail
+
+- Reel videos now start with an ultra-brief book-cover flash frame purely to influence the Instagram grid thumbnail.
+- The visible viewing experience then moves straight into the real-photo “Meet [name]” opener, so the wanted-poster frame remains the effective first scene for viewers.
+- The flash is intentionally tiny (0.10s) so it should barely register during playback while still giving Instagram a better chance of using the cover on the profile grid.
+
 
 This build starts from **V250.72** and makes one visual-only change to the developer Instagram Reel:
 - the cream/white fill of each story text panel now uses the same rounded path as its gold border, so the corners match exactly.
