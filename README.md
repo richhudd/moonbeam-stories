@@ -1,4 +1,4 @@
-# Moonbeam Stories V250.68
+# Moonbeam Stories V250.69
 
 ## V250.64 — Browser-rendered Reel text
 
@@ -68,24 +68,31 @@ Create personalised, illustrated stories starring your own child at moonbeamstor
 - `api/generate.js` and `api/illustrate.js` are unchanged from V250.59.
 - The restored illustration-generation behaviour and Optional Male/Female Cast field remain intact.
 
-## V250.68
+## V250.69
 - Fixed Reel preparation so **Post reel to Instagram** no longer navigates back to the book cover.
 - The finished cover is captured invisibly using the existing off-screen clone while the end page remains visible with **Preparing reel…** progress.
 - Carousel behaviour is unchanged.
 
 
-V250.68
+V250.69
 - Reel captions now use reel-specific wording: “Watch the adventure begin...” rather than the carousel “Swipe through...” line.
 - Reel rendering no longer fades in from black on the first segment, so the published Reel starts directly on the cover frame instead of a black thumbnail.
 
 
-V250.68
+V250.69
 - Carousel publishing now stays on the finished-book/end page; it no longer navigates back to the cover.
 - Clicking **Post carousel to Instagram** is now the final approval: Moonbeam captures the cover/text assets off-screen and publishes directly without a second preview/permission step.
 - Reel publishing is unchanged and still keeps its preview/approval workflow.
 
 
-V250.68
+V250.69
 - Reel publishing now uses progressive backoff while waiting for Instagram processing: 3s, 5s, 8s, 10s, then 12s between checks.
 - This reduces Meta Graph API request pressure and the chance of hitting “Application request limit reached” without changing the final publish step.
 - Reel preparation timeout is extended slightly to 150 seconds to accommodate the gentler polling cadence.
+
+
+V250.69
+- Reel publishing now waits five seconds before its first Instagram processing-status check.
+- Subsequent status checks back off much more aggressively (8s, 12s, 16s, 20s, then 25s) to reduce Graph API request volume.
+- Meta/Instagram application rate-limit responses are detected explicitly and shown as a clear temporary rate-limit message instead of the raw API error.
+- No automatic retry is made when Meta is rate-limiting the app, so Moonbeam does not add more requests during the throttle window.
