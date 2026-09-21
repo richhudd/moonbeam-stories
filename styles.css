@@ -4119,3 +4119,23 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 .instagram-reel-preview-card{width:min(92vw,500px)}
 .instagram-reel-preview-video{display:block;width:min(100%,330px);aspect-ratio:9/16;object-fit:contain;margin:0 auto 14px;border-radius:14px;background:#17132d;box-shadow:0 12px 32px #0004}
 @media(max-width:700px){.instagram-reel-preview-card{width:96vw}.instagram-reel-preview-video{width:min(100%,300px);max-height:64dvh}}
+
+
+/* V250.80 — developer-only one-click Instagram demo Reel trial. */
+.instagram-auto-demo{margin-top:18px;padding-top:4px}
+.instagram-auto-demo-divider{display:flex;align-items:center;gap:10px;margin:4px 0 10px;color:#8a8195;font:700 10px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.instagram-auto-demo-divider::before,.instagram-auto-demo-divider::after{content:"";height:1px;background:#ded5eb;flex:1}
+.instagram-auto-demo-button{width:100%;min-height:44px;border-style:dashed!important}
+.instagram-auto-demo-help{margin:7px 4px 0;color:#837a91;font-size:11px;line-height:1.35;text-align:center}
+.instagram-auto-progress{position:fixed;inset:0;z-index:10050;background:rgba(20,15,34,.72);display:grid;place-items:center;padding:24px}
+.instagram-auto-progress.hidden{display:none!important}
+.instagram-auto-progress-card{width:min(92vw,520px);background:#fffaf2;border:1px solid #d9c48f;border-radius:22px;padding:24px;box-shadow:0 22px 70px rgba(0,0,0,.35);text-align:center}
+.instagram-auto-progress-kicker{margin:0 0 5px;color:#8d6b35;font:800 10px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.15em;text-transform:uppercase}
+.instagram-auto-progress-card h2{margin:0 0 14px;color:#2e2740;font:700 25px/1.15 Georgia,'Times New Roman',serif}
+.instagram-auto-progress-photo{width:112px;height:112px;border-radius:18px;object-fit:cover;display:block;margin:0 auto 14px;box-shadow:0 5px 18px rgba(50,35,70,.16)}
+.instagram-auto-progress-photo.hidden{display:none!important}
+.instagram-auto-progress-stage{display:block;margin:0 0 7px;color:#5c3bbf;font:800 16px/1.3 Arial,Helvetica,sans-serif}
+.instagram-auto-progress-detail{margin:0;color:#5c4a5e;font-size:13px;line-height:1.45;white-space:pre-line}
+.instagram-auto-progress-close{margin-top:18px;min-width:120px}
+.instagram-auto-progress-close.hidden{display:none!important}
+@media(max-width:700px){.instagram-auto-progress-card{padding:20px 17px}.instagram-auto-progress-card h2{font-size:22px}.instagram-auto-progress-stage{font-size:15px}}

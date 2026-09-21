@@ -1,4 +1,4 @@
-// Moonbeam Stories V250.79
+// Moonbeam Stories V250.81
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -41,6 +41,7 @@ let instagramDeveloperAccessPromise=null;
 let instagramDeveloperAccessUserId=null;
 let pendingInstagramPost=null;
 let pendingInstagramReel=null;
+let instagramAutoDemoRunning=false;
 let castMembers246=[];
 let storyHeroIds248=new Set(),storySupportIds248=new Set();
 let castEditor246={kind:'child',id:null,photo:null,originalPhoto:null};
@@ -1073,7 +1074,9 @@ function resetInstagramDeveloperAccess(user=currentUser){
  instagramDeveloperAccessState=user?'unknown':'anonymous';
  instagramDeveloperAccessPromise=null;
  instagramDeveloperAccessUserId=user?.id||null;
+ $('instagramAutoDemoBox')?.classList.add('hidden');
 }
+function mountInstagramAutoDemoButton(){const box=$('instagramAutoDemoBox');if(box)box.classList.toggle('hidden',!instagramDeveloperAccess)}
 function mountInstagramEndButton(){
  if(!instagramDeveloperAccess||!currentBook||currentBook.isShared||currentBook.currentPage!==currentBook.pages.length+2)return;
  const actions=document.querySelector('.end-actions');if(!actions)return;
@@ -1084,7 +1087,7 @@ async function checkInstagramDeveloperAccess({force=false}={}){
  const userId=currentUser?.id||null;
  if(!userId||!supabaseClient){resetInstagramDeveloperAccess(null);return false}
  if(instagramDeveloperAccessUserId!==userId)resetInstagramDeveloperAccess(currentUser);
- if(instagramDeveloperAccessState==='granted'){mountInstagramEndButton();return true}
+ if(instagramDeveloperAccessState==='granted'){mountInstagramEndButton();mountInstagramAutoDemoButton();return true}
  if(instagramDeveloperAccessState==='denied'&&!force)return false;
  if(instagramDeveloperAccessPromise)return instagramDeveloperAccessPromise;
  instagramDeveloperAccessState='checking';
@@ -1095,7 +1098,7 @@ async function checkInstagramDeveloperAccess({force=false}={}){
    if(currentUser?.id!==userId)return false;
    instagramDeveloperAccess=r.ok;
    instagramDeveloperAccessState=r.ok?'granted':((r.status===401||r.status===403)?'denied':'unknown');
-   if(r.ok)mountInstagramEndButton();
+   if(r.ok){mountInstagramEndButton();mountInstagramAutoDemoButton()}
    return r.ok;
   }catch(error){
    if(currentUser?.id===userId){instagramDeveloperAccess=false;instagramDeveloperAccessState='unknown'}
@@ -1105,6 +1108,78 @@ async function checkInstagramDeveloperAccess({force=false}={}){
  instagramDeveloperAccessPromise=request;
  return request;
 }
+
+function ensureInstagramAutoProgress(){
+ let modal=$('instagramAutoProgress');if(modal)return modal;
+ modal=document.createElement('div');modal.id='instagramAutoProgress';modal.className='instagram-auto-progress hidden';modal.innerHTML='<div class="instagram-auto-progress-card" role="dialog" aria-modal="true"><p class="instagram-auto-progress-kicker">Developer trial</p><h2>Automatic Instagram Reel</h2><img class="instagram-auto-progress-photo hidden" alt=""><strong class="instagram-auto-progress-stage">Starting…</strong><p class="instagram-auto-progress-detail"></p><button class="secondary instagram-auto-progress-close hidden" type="button">Close</button></div>';
+ document.body.appendChild(modal);const close=modal.querySelector('.instagram-auto-progress-close');close.onclick=()=>modal.classList.add('hidden');return modal;
+}
+function setInstagramAutoProgress(stage,detail='',photo=null,finished=false){
+ const modal=ensureInstagramAutoProgress(),img=modal.querySelector('.instagram-auto-progress-photo'),close=modal.querySelector('.instagram-auto-progress-close');
+ modal.querySelector('.instagram-auto-progress-stage').textContent=stage||'';modal.querySelector('.instagram-auto-progress-detail').textContent=detail||'';
+ if(photo){img.src=photo;img.classList.remove('hidden')}else if(!img.src)img.classList.add('hidden');
+ close.classList.toggle('hidden',!finished);modal.classList.remove('hidden');
+}
+async function discardAutomaticInstagramPreview(token){if(!token)return;try{const access=await currentAccessToken();if(!access)return;await fetch('/api/resend-inbound?action=instagram-reel-discard',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({token})})}catch(e){console.warn('Automatic Reel cleanup',e)}}
+async function generateAutomaticInstagramReel(){
+ const button=$('instagramAutoDemoButton');if(instagramAutoDemoRunning)return;
+ if(!currentUser){alert('Sign in to the developer account first.');return}
+ const allowed=await checkInstagramDeveloperAccess({force:true});if(!allowed){alert('Developer access is required.');return}
+ instagramAutoDemoRunning=true;if(button){button.disabled=true;button.textContent='Generating automatic Reel…'}
+ let previewToken=null,createdChildId=null;
+ try{
+  let access=await currentAccessToken();if(!access)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+  setInstagramAutoProgress('Inventing a fictional child…','Moonbeam is choosing a name, age, appearance and story premise.');
+  const profileResponse=await fetch('/api/resend-inbound?action=instagram-auto-demo-profile',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({existingNames:castMembers246.filter(m=>m.kind==='child').map(m=>m.name)})});
+  const profileRaw=await profileResponse.text();let profileData={};try{profileData=JSON.parse(profileRaw)}catch{}
+  if(!profileResponse.ok||!profileData?.ok||!profileData?.profile)throw new Error(profileData?.error||'Moonbeam could not invent the demo child.');
+  const profile=profileData.profile;if(!/^data:image\/jpeg;base64,/i.test(profile.portraitDataUrl||''))throw new Error('The fictional child portrait was not returned correctly.');
+  setInstagramAutoProgress(`Meet ${profile.name}, age ${profile.age}`,`Fictional demo child created.\nStory idea: ${profile.storyIdea}`,profile.portraitDataUrl);
+
+  const payload={parent_id:currentUser.id,kind:'child',name:profile.name,age:Number(profile.age),gender:profile.gender==='female'?'female':'male',relationship:'__moonbeam_demo__',animal_type:null,breed:null};
+  const inserted=await supabaseClient.from('cast_members').insert(payload).select().single();if(inserted.error||!inserted.data?.id)throw new Error(inserted.error?.message||'Could not add the demo child to Your Cast.');
+  createdChildId=inserted.data.id;activeProfileId=createdChildId;
+  await childPhotoPut(currentPhotoKey(createdChildId),profile.portraitDataUrl);
+  const photoSaved=await uploadCloudChildPhoto(createdChildId,profile.portraitDataUrl);
+  if(!photoSaved){await supabaseClient.from('cast_members').delete().eq('id',createdChildId);await childPhotoDelete(currentPhotoKey(createdChildId));createdChildId=null;throw new Error('The demo portrait could not be saved to the Cast profile.');}
+  currentChildPhoto=profile.portraitDataUrl;await loadCastMembers246();activeProfileId=createdChildId;storyHeroIds248=new Set([createdChildId]);storySupportIds248=new Set();syncGenerationAdapter246();await renderCast246();
+
+  const hero={id:createdChildId,kind:'child',name:profile.name,age:Number(profile.age),gender:profile.gender==='female'?'female':'male',relationship:null,animal_type:null,breed:null,role:'hero',referencePhoto:profile.portraitDataUrl};
+  const child={name:hero.name,age:hero.age,gender:hero.gender,storyIdea:profile.storyIdea,dislikes:'',length:'standard',language,languageName:languageNames[language],profileId:createdChildId,referencePhoto:profile.portraitDataUrl,referenceImages:[{name:hero.name,kind:'child',role:'hero',gender:hero.gender,image:profile.portraitDataUrl}],cast:[hero]};
+  setInstagramAutoProgress('Writing the story…',`${profile.name} has been added to Your Cast. Moonbeam is now writing the demo story.`,profile.portraitDataUrl);
+  access=await currentAccessToken();if(!access)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+  const storyResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${access}`,'X-Moonbeam-Demo-Generation':'1'},body:JSON.stringify({child})});
+  const storyRaw=await storyResponse.text();let storyData={};try{storyData=JSON.parse(storyRaw)}catch{}
+  if(!storyResponse.ok||!storyData?.story)throw new Error(storyData?.error||`Story service failed (${storyResponse.status}).`);
+  child.generationRunId=storyData.generationRunId||null;if(!child.generationRunId)throw new Error('The automatic story did not receive an illustration allowance.');
+  clearSetupDraft();renderStory(storyData.story,null,child);
+
+  setInstagramAutoProgress('Painting the book…','Generating the dedicated cover and all six story illustrations. This is normally the longest part.',profile.portraitDataUrl);
+  const cover=await loadCoverIllustration(false);if(!cover)throw new Error('The dedicated book cover could not be generated.');
+  const storyId=await ensureCurrentBookSaved();if(!storyId||!currentBook?.savedAssets?.cover||currentBook.savedAssets.pages?.length!==currentBook.pages.length+2)throw new Error('The complete illustrated book could not be verified after saving.');
+
+  setInstagramAutoProgress('Building the Reel…','The book is complete. Moonbeam is now rendering the photo-first Reel.',profile.portraitDataUrl);
+  const visuals=await captureInstagramReelAssets(currentBook);access=await currentAccessToken();if(!access)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+  const prepResponse=await fetch('/api/resend-inbound?action=instagram-reel-prepare',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({storyId,...visuals})});
+  const prepRaw=await prepResponse.text();let prep={};try{prep=JSON.parse(prepRaw)}catch{}
+  if(!prepResponse.ok||!prep?.ok||!prep?.token)throw new Error(prep?.error||'Moonbeam could not create the automatic Reel.');
+  previewToken=prep.token;
+
+  setInstagramAutoProgress('Posting to Instagram…','The Reel passed the build checks and is being published to @moonbeamstoriesuk.',profile.portraitDataUrl);
+  const publishResponse=await fetch('/api/resend-inbound?action=instagram-reel-publish',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({token:previewToken})});
+  const publishRaw=await publishResponse.text();let published={};try{published=JSON.parse(publishRaw)}catch{}
+  if(!publishResponse.ok||!published?.ok)throw new Error(published?.error||'Instagram Reel publication failed.');
+  previewToken=null;
+  setInstagramAutoProgress('✓ Reel posted',`${profile.name}'s complete demo story has been saved, the Reel was posted to @moonbeamstoriesuk, and the full book was added to the Instagram gallery.${published.mediaId?`\nInstagram media ID: ${published.mediaId}`:''}`,profile.portraitDataUrl,true);
+ }catch(error){
+  if(previewToken)await discardAutomaticInstagramPreview(previewToken);
+  console.error('automatic Instagram Reel',error);setInstagramAutoProgress('Automatic Reel stopped',error?.message||String(error),null,true);
+ }finally{
+  instagramAutoDemoRunning=false;if(button){button.disabled=false;button.textContent='Generate automatic Instagram reel'}
+ }
+}
+$('instagramAutoDemoButton')?.addEventListener('click',generateAutomaticInstagramReel);
+
 const INSTAGRAM_UI={
  'en-GB':{prepare:'Preparing carousel…',previewTitle:'Instagram carousel preview',previewIntro:'This exact cover will be slide 1 of a 10-slide Instagram carousel. The full story will also be added to the public gallery.',post:'Post this carousel',cancel:'Cancel',posting:'Posting…',posted:'✓ Posted',failed:'Instagram carousel failed.',captureFailed:'Moonbeam could not capture the finished cover.',signIn:'Sign in again.'},
  'en-US':{prepare:'Preparing carousel…',previewTitle:'Instagram carousel preview',previewIntro:'This exact cover will be slide 1 of a 10-slide Instagram carousel. The full story will also be added to the public gallery.',post:'Post this carousel',cancel:'Cancel',posting:'Posting…',posted:'✓ Posted',failed:'Instagram carousel failed.',captureFailed:'Moonbeam could not capture the finished cover.',signIn:'Sign in again.'},

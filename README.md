@@ -1,4 +1,50 @@
-# Moonbeam Stories V250.79
+# Moonbeam Stories V250.81
+
+## V250.81 — Automatic demo-child realism weighting
+
+This build tightens the **developer-only automatic Instagram Reel** child invention stage before Richard trials it.
+
+Changes:
+- sampled demo-child ethnicity now follows broad current-UK proportions:
+  - White **81.7%**
+  - Asian / Asian British **9.3%**
+  - Black / Black British / Caribbean / African **4.0%**
+  - Mixed / Multiple **2.9%**
+  - Other ethnic group **2.1%**
+- within each broad bucket, Moonbeam now samples from more specific sub-profiles so eye colour, hair colour and hair texture stay **plausible** rather than producing absurd combinations;
+- eye colour and hair colour are now conditionally varied rather than defaulting to repetitive blonde/blue-eyed outputs;
+- portrait backgrounds are now explicitly varied across realistic real-world settings and must **not** default to a plain white or studio background;
+- the child is instructed to look **ordinary and believable**, allowing slimmer, average, stockier or heavier builds and less idealised facial variation rather than every portrait being polished or model-like;
+- the invented story premise is now constrained to **one child only**, with **no adults, siblings, pets or sidekick animals** in the premise.
+
+No SQL required. API count remains unchanged at **12 callable endpoints**.
+
+---
+
+## V250.80 — One-click automatic Instagram Reel trial
+
+A new **developer-only** button appears at the bottom of the Create Story page: **Generate automatic Instagram reel**.
+
+One click now trials the whole marketing pipeline while Richard is at the screen:
+1. invent a completely fictional demo child aged 3–12, with first name and Male/Female marker;
+2. generate a photorealistic synthetic portrait of that fictional child;
+3. add the child and portrait to Richard's Moonbeam Cast (internally tagged with the existing hidden `relationship` field as `__moonbeam_demo__`; no schema change);
+4. invent an age-appropriate story premise and generate the story through the existing Moonbeam story engine;
+5. generate the existing stable dedicated cover and all story illustrations;
+6. save and verify the complete book;
+7. render the current Reel format in the browser, preserving the proven browser-flattened typography;
+8. run the existing Reel preparation checks;
+9. publish automatically to **@moonbeamstoriesuk**;
+10. add the complete book to the existing `/instagram` gallery.
+
+A blocking developer progress card reports each stage and shows the fictional child portrait. On any failure the pipeline stops and reports the error rather than continuing to post. A prepared temporary Reel is discarded if publication fails.
+
+The developer trial uses a secure developer-only generation header so these marketing demo stories do **not** consume Richard's customer story credits, while still creating the normal bounded illustration generation run. Ordinary customer generation is unchanged.
+
+No SQL is required and the deployment remains at the existing **12 callable API endpoints**. This is manual/on-demand only: no scheduler or autonomous daily trigger has been added yet.
+
+---
+
 
 ## V250.79 — Longer Reel CTA
 

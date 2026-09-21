@@ -48,14 +48,20 @@ module.exports = async function handler(req, res) {
     // V50: every new Moonbeam story has the same predictable length and cost.
     const moonbeamUser = await verifyMoonbeamUser(req);
     supportUserId=moonbeamUser.id;
-    let creditsRemaining;
-    try {
-      const reservation = await reserveStoryCredit(moonbeamUser.id);
-      creditsRemaining = reservation.remaining; reservedBatchId = reservation.batchId; reservedUserId=moonbeamUser.id;
-    } catch (e) {
-      return res.status(e.status || 500).json({ error: e.message, code: e.code || 'CREDIT_ERROR', batchId: e.batchId || null });
+    const demoRequested=String(req.headers['x-moonbeam-demo-generation']||'').trim()==='1';
+    const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
+    const developerDemo=demoRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
+    if(demoRequested&&!developerDemo)return res.status(403).json({error:'Developer access only.'});
+    let creditsRemaining=null;
+    if(!developerDemo){
+      try {
+        const reservation = await reserveStoryCredit(moonbeamUser.id);
+        creditsRemaining = reservation.remaining; reservedBatchId = reservation.batchId; reservedUserId=moonbeamUser.id;
+      } catch (e) {
+        return res.status(e.status || 500).json({ error: e.message, code: e.code || 'CREDIT_ERROR', batchId: e.batchId || null });
+      }
+      creditReserved = true;
     }
-    creditReserved = true;
     const refundReservedCredit = async () => {
       if (!creditReserved) return;
       creditReserved = false;
@@ -388,7 +394,7 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
 
     const generationRunId = await createGenerationRun(moonbeamUser.id);
     await logUsage({event_type:'story',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
-    await logSupportAttempt('success',{credit_deducted:true,credit_refunded:false,generation_run_id:generationRunId});
+    await logSupportAttempt('success',{credit_deducted:!developerDemo,credit_refunded:false,generation_run_id:generationRunId});
     creditReserved = false;
     return res.status(200).json({
       creditsRemaining,
