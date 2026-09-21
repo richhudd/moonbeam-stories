@@ -1,4 +1,16 @@
-# Moonbeam Stories V250.77
+# Moonbeam Stories V250.79
+
+## V250.79 — Longer Reel CTA
+
+- Extended the final Reel CTA from **2.8 seconds to 4.0 seconds** so viewers have more time to read and digest it.
+- The photo opener remains 4.0 seconds.
+- Book-page timings and all transitions are unchanged.
+- The CTA wording and larger typography from V250.78 are retained.
+
+No SQL required. API count unchanged.
+
+---
+
 
 ## V250.77 — Special photo-to-cover reveal
 
