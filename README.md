@@ -1,3 +1,31 @@
+# Moonbeam Stories V250.64
+
+## V250.64 — Browser-rendered Reel text
+
+This build starts from **V250.63** and fixes the Reel preview text corruption shown in Safari. The Reel no longer asks the server/Sharp SVG renderer to typeset story text, snippets, titles or the CTA.
+
+### Reel text-rendering fix
+- Reel text is now rasterised **in the browser**, using the same browser/canvas approach that fixed the Instagram carousel text slides in V250.52.
+- The finished cover is captured in the browser and reused as the Reel cover frame, so its title typography is already flattened before it reaches Vercel.
+- Each of the four Reel story text panels is captured as a finished JPEG in the browser, including the highlighted narrated snippet and the full page text.
+- The final Reel CTA panel is also captured in the browser.
+- Vercel/Sharp now only composites those already-finished image assets with the stored illustrations and renders the MP4; it no longer typesets Reel text server-side.
+- The browser-captured assets are tightly compressed before upload so the Reel preparation request stays comfortably below Vercel request-size limits.
+- If a Reel is the first Instagram post for a book, the exact browser-flattened cover is also used for the Moonbeam `/instagram` gallery entry.
+
+### Existing behaviour retained
+- Separate developer-only **Post carousel to Instagram** and **Post reel to Instagram** buttons remain.
+- Reels are generated only after pressing the Reel button.
+- Preview/approve-before-posting remains unchanged.
+- Reels and carousels use the same agreed caption and five hashtags.
+- Successful Reel posts still add the complete book to the Moonbeam Instagram gallery without duplicating an existing entry.
+- The dedicated private `instagram-reels` video bucket introduced in V250.63 remains in use.
+- **No new SQL is required for V250.64.**
+- **12 callable API endpoints** remain. No API endpoint has been added.
+- Story and illustration generation remain untouched. `api/generate.js` and `api/illustrate.js` are unchanged from V250.59.
+
+---
+
 # Moonbeam Stories V250.63
 
 ## V250.63 — Dedicated Instagram Reel video storage
