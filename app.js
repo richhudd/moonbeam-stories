@@ -1296,7 +1296,11 @@ async function compactInstagramReelCover(dataUrl){
 }
 async function captureInstagramReelAssets(book=currentBook){
  if(!book)throw new Error('There is no finished book to turn into a Reel.');const pages=instagramCarouselTextPages(book);if(pages.length<4)throw new Error('This story needs at least four readable pages for the Reel teaser.');
- showCover();const img=$('coverImage');if(!img||!img.src)await loadCoverIllustration(false);const coverDataUrl=await compactInstagramReelCover(await captureReaderCoverForInstagram()),reelTextPanelDataUrls=[];
+ // V250.65: Reel capture must not navigate away from the finished-book/end page.
+ // The cover capture routine already clones the cover off-screen, so simply make
+ // sure its source image is loaded and capture it invisibly while the progress
+ // button remains visible to the developer.
+ const img=$('coverImage');if(!img||img.hidden||!img.src)await loadCoverIllustration(false);const coverDataUrl=await compactInstagramReelCover(await captureReaderCoverForInstagram()),reelTextPanelDataUrls=[];
  for(let i=0;i<4;i++)reelTextPanelDataUrls.push(await captureInstagramReelTextPanel(pages[i],i+1));const reelCtaPanelDataUrl=await captureInstagramReelCtaPanel();return {coverDataUrl,reelTextPanelDataUrls,reelCtaPanelDataUrl};
 }
 function ensureInstagramPreview(){

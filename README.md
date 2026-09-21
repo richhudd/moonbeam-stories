@@ -1,4 +1,4 @@
-# Moonbeam Stories V250.64
+# Moonbeam Stories V250.65
 
 ## V250.64 — Browser-rendered Reel text
 
@@ -67,3 +67,8 @@ Create personalised, illustrated stories starring your own child at moonbeamstor
 - **12 callable API endpoints** remain. No API endpoint has been added.
 - `api/generate.js` and `api/illustrate.js` are unchanged from V250.59.
 - The restored illustration-generation behaviour and Optional Male/Female Cast field remain intact.
+
+## V250.65
+- Fixed Reel preparation so **Post reel to Instagram** no longer navigates back to the book cover.
+- The finished cover is captured invisibly using the existing off-screen clone while the end page remains visible with **Preparing reel…** progress.
+- Carousel behaviour is unchanged.
