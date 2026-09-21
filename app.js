@@ -1,4 +1,4 @@
-// Moonbeam Stories V250.48
+// Moonbeam Stories V250.61
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -40,6 +40,7 @@ let instagramDeveloperAccessState='unknown';
 let instagramDeveloperAccessPromise=null;
 let instagramDeveloperAccessUserId=null;
 let pendingInstagramPost=null;
+let pendingInstagramReel=null;
 let castMembers246=[];
 let storyHeroIds248=new Set(),storySupportIds248=new Set();
 let castEditor246={kind:'child',id:null,photo:null,originalPhoto:null};
@@ -1071,9 +1072,10 @@ function resetInstagramDeveloperAccess(user=currentUser){
  instagramDeveloperAccessUserId=user?.id||null;
 }
 function mountInstagramEndButton(){
- if(!instagramDeveloperAccess||!currentBook||currentBook.isShared||currentBook.currentPage!==currentBook.pages.length+2||$('endInstagramPost'))return;
+ if(!instagramDeveloperAccess||!currentBook||currentBook.isShared||currentBook.currentPage!==currentBook.pages.length+2)return;
  const actions=document.querySelector('.end-actions');if(!actions)return;
- const button=document.createElement('button');button.className='secondary end-instagram-post';button.id='endInstagramPost';button.type='button';button.textContent='Post to Instagram';button.onclick=postCurrentStoryToInstagram;actions.appendChild(button);
+ if(!$('endInstagramPost')){const button=document.createElement('button');button.className='secondary end-instagram-post';button.id='endInstagramPost';button.type='button';button.textContent='Post carousel to Instagram';button.onclick=postCurrentStoryToInstagram;actions.appendChild(button)}
+ if(!$('endInstagramReel')){const button=document.createElement('button');button.className='secondary end-instagram-post end-instagram-reel';button.id='endInstagramReel';button.type='button';button.textContent='Post reel to Instagram';button.onclick=postCurrentStoryReelToInstagram;actions.appendChild(button)}
 }
 async function checkInstagramDeveloperAccess({force=false}={}){
  const userId=currentUser?.id||null;
@@ -1266,7 +1268,32 @@ async function publishApprovedInstagramCover(){
 async function postCurrentStoryToInstagram(){
  if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;const ui=instagramUi(),button=$('endInstagramPost'),page=currentBook.currentPage;if(button){button.disabled=true;button.textContent=ui.prepare}
  try{const storyId=await ensureCurrentBookSaved();showCover();const img=$('coverImage');if(!img||!img.src)await loadCoverIllustration(false);const dataUrl=await captureReaderCoverForInstagram();const extra=await captureInstagramCarouselTextAssets(currentBook);showInstagramPreview(dataUrl,storyId,page,extra)}
- catch(e){if(currentBook)renderBookPage(page);const b=$('endInstagramPost');if(b){b.disabled=false;b.textContent='Post to Instagram'}alert(e.message||String(e))}
+ catch(e){if(currentBook)renderBookPage(page);const b=$('endInstagramPost');if(b){b.disabled=false;b.textContent='Post carousel to Instagram'}alert(e.message||String(e))}
+}
+function ensureInstagramReelPreview(){
+ let modal=$('instagramReelPreview');if(modal)return modal;
+ modal=document.createElement('div');modal.id='instagramReelPreview';modal.className='instagram-preview instagram-reel-preview hidden';modal.innerHTML='<div class="instagram-preview-card instagram-reel-preview-card" role="dialog" aria-modal="true"><h2 class="instagram-preview-title">Instagram Reel preview</h2><p class="instagram-preview-intro">This is the exact teaser Reel that will be posted. Nothing is published until you approve it.</p><video class="instagram-reel-preview-video" controls playsinline preload="metadata"></video><div class="instagram-preview-actions"><button class="secondary instagram-reel-cancel" type="button">Cancel</button><button class="primary instagram-reel-post" type="button">Post this Reel</button></div><div class="instagram-preview-status" aria-live="polite"></div></div>';
+ document.body.appendChild(modal);modal.querySelector('.instagram-reel-cancel').onclick=()=>closeInstagramReelPreview(true);modal.addEventListener('click',e=>{if(e.target===modal)closeInstagramReelPreview(true)});modal.querySelector('.instagram-reel-post').onclick=publishApprovedInstagramReel;return modal;
+}
+async function discardInstagramReelPreview(token){
+ if(!token)return;try{const access=await currentAccessToken();if(!access)return;await fetch('/api/resend-inbound?action=instagram-reel-discard',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({token})})}catch(e){console.warn('Instagram Reel preview cleanup',e)}
+}
+function closeInstagramReelPreview(discard=true){
+ const modal=$('instagramReelPreview'),pending=pendingInstagramReel;pendingInstagramReel=null;if(modal){const video=modal.querySelector('.instagram-reel-preview-video');if(video){try{video.pause()}catch{}video.removeAttribute('src');video.load?.()}modal.classList.add('hidden')}
+ if(discard&&pending?.token)void discardInstagramReelPreview(pending.token);if(pending?.page!=null&&currentBook)renderBookPage(pending.page);else{const b=$('endInstagramReel');if(b){b.disabled=false;b.textContent='Post reel to Instagram'}}
+}
+function showInstagramReelPreview(previewUrl,token,storyId,page){
+ const modal=ensureInstagramReelPreview(),video=modal.querySelector('.instagram-reel-preview-video'),post=modal.querySelector('.instagram-reel-post'),cancel=modal.querySelector('.instagram-reel-cancel'),status=modal.querySelector('.instagram-preview-status');pendingInstagramReel={previewUrl,token,storyId,page};video.src=previewUrl;video.load();post.disabled=false;cancel.disabled=false;post.textContent='Post this Reel';status.textContent='';modal.classList.remove('hidden');
+}
+async function publishApprovedInstagramReel(){
+ const pending=pendingInstagramReel;if(!pending)return;const modal=ensureInstagramReelPreview(),post=modal.querySelector('.instagram-reel-post'),cancel=modal.querySelector('.instagram-reel-cancel'),status=modal.querySelector('.instagram-preview-status');post.disabled=true;cancel.disabled=true;post.textContent='Posting…';status.textContent='';
+ try{const access=await currentAccessToken();if(!access)throw new Error('Sign in again.');const r=await fetch('/api/resend-inbound?action=instagram-reel-publish',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({token:pending.token})});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Instagram Reel failed.');const page=pending.page;pendingInstagramReel=null;const video=modal.querySelector('.instagram-reel-preview-video');try{video.pause()}catch{}video.removeAttribute('src');video.load?.();modal.classList.add('hidden');if(currentBook)renderBookPage(page);const b=$('endInstagramReel');if(b){b.textContent='✓ Reel posted';b.disabled=true;b.classList.add('instagram-posted')}alert('Posted to @moonbeamstoriesuk as a Reel, shared to the feed, and the full book has been added to the Instagram story gallery.');}
+ catch(e){status.textContent=e.message||String(e);post.disabled=false;cancel.disabled=false;post.textContent='Post this Reel'}
+}
+async function postCurrentStoryReelToInstagram(){
+ if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;const button=$('endInstagramReel'),page=currentBook.currentPage;if(button){button.disabled=true;button.textContent='Preparing reel…'}
+ try{const storyId=await ensureCurrentBookSaved(),access=await currentAccessToken();if(!access)throw new Error('Sign in again.');const r=await fetch('/api/resend-inbound?action=instagram-reel-prepare',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({storyId})});const d=await r.json();if(!r.ok||!d.ok||!d.previewUrl||!d.token)throw new Error(d.error||'Moonbeam could not create the Reel.');showInstagramReelPreview(d.previewUrl,d.token,storyId,page)}
+ catch(e){if(currentBook)renderBookPage(page);const b=$('endInstagramReel');if(b){b.disabled=false;b.textContent='Post reel to Instagram'}alert(e.message||String(e))}
 }
 
 function shareStoryLanguage(){return currentBook?.child?.language||language||'en-GB'}
@@ -1367,12 +1394,12 @@ function renderBookPage(index){
  const prev=$('prevPage'),next=$('nextPage'),indicator=$('pageIndicator'),bookEl=$('book');
  if(isEnd){
    const saveButton=`<button class="secondary end-save${book.isSaved?' saved-state':''}" id="endSave" type="button" ${book.isSaved?'disabled':''}>${escapeHtml(book.isSaved?(t().storySaved||t().savedBtn):t().save)}</button>`;
-   const instagramButton=instagramDeveloperAccess?`<button class="secondary end-instagram-post" id="endInstagramPost" type="button">Post to Instagram</button>`:'';
+   const instagramButton=instagramDeveloperAccess?`<button class="secondary end-instagram-post" id="endInstagramPost" type="button">Post carousel to Instagram</button><button class="secondary end-instagram-post end-instagram-reel" id="endInstagramReel" type="button">Post reel to Instagram</button>`:'';
    const ownerActions=`${saveButton}<button class="primary end-share-story" id="endShareStory" type="button">${escapeHtml(t().shareStory)}</button><button class="secondary end-new-story" id="endNewStory" type="button">${escapeHtml(t().newStory)}</button>${instagramButton}`;
    const sx=shareT(book.child?.language||language),sharedActions=`<div class="shared-conversion"><h3>${escapeHtml(sx.loved)}</h3><p>${escapeHtml(sx.free)}</p><a class="primary shared-create" id="sharedCreateStory" href="/?lang=${encodeURIComponent(book.child?.language||language)}&fromShare=1">${escapeHtml(sx.create)}</a></div>`;
    bookEl.innerHTML=`<div class="paper end-page"><div class="end-page-inner"><div class="end-stars" aria-hidden="true">✦ ☾ ✧</div><div class="end-title">${escapeHtml(t().end)}</div><div class="end-flourish" aria-hidden="true">❦</div>${book.isShared?sharedActions:`<div class="end-actions">${ownerActions}</div><p class="end-save-warning" id="endSaveWarning" hidden>${escapeHtml(t().savingPageWarning||'Please don’t close or leave this page until saving is complete.')}</p>`}</div></div>`;
    if(prev){prev.disabled=false;prev.textContent=t().previous}if(next){next.disabled=true;next.textContent=t().end}if(indicator){indicator.textContent='';indicator.classList.add('end-hidden')}
-   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};const ig=$('endInstagramPost');if(ig)ig.onclick=postCurrentStoryToInstagram;/* V250.1: sharedCreateStory deliberately uses its native href. Do not intercept navigation. */
+   const es=$('endSave');if(es)es.onclick=saveCurrentStory;const sh=$('endShareStory');if(sh)sh.onclick=openShareStory;const en=$('endNewStory');if(en)en.onclick=()=>{if(!orientationNavigationGuardActive())startNewStory()};const ig=$('endInstagramPost');if(ig)ig.onclick=postCurrentStoryToInstagram;const igr=$('endInstagramReel');if(igr)igr.onclick=postCurrentStoryReelToInstagram;/* V250.1: sharedCreateStory deliberately uses its native href. Do not intercept navigation. */
    if(!book.isShared&&currentUser&&!instagramDeveloperAccess&&instagramDeveloperAccessState!=='denied')void checkInstagramDeveloperAccess();
    if(book.isShared&&isPhoneReader()&&!isPhonePortrait()){const internal=$('sharedCreateStory');if(internal)internal.hidden=true;mountMobileSharedCreateButton(book,sx)}
    applyMobileSide();persistCurrentDraft();return;

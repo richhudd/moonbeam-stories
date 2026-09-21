@@ -1,6 +1,7 @@
 const { Resend } = require('resend');
 const crypto=require('crypto');
 const {SUPABASE_URL:ADMIN_SUPABASE_URL,adminHeaders}=require('./_usage');
+const instagramReelHandler=require('../lib/instagram-reel');
 
 const RESEND_API_KEY = String(process.env.RESEND_API_KEY || '').trim();
 const RESEND_WEBHOOK_SECRET = String(process.env.RESEND_WEBHOOK_SECRET || '').trim();
@@ -204,6 +205,8 @@ async function verifyInstagramJpegBytes(bytes,label='The approved Instagram imag
 }
 function xmlEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
 function collapseWhitespace(value){return String(value||'').replace(/\s+/g,' ').trim();}
+function instagramHeroCaptionName(assets={}){const names=Array.isArray(assets.heroNames)?assets.heroNames.map(n=>collapseWhitespace(n)).filter(Boolean).slice(0,2):[];if(!names.length)return 'your child';if(names.length===1)return names[0];return `${names[0]} and ${names[1]}`}
+function instagramCarouselCaption(story){const title=collapseWhitespace(story?.title)||'A Moonbeam Story',hero=instagramHeroCaptionName(story?.saved_assets||{});return `${title} ✨\n\nA personalised Moonbeam story starring ${hero}.\n\nSwipe through to start the adventure, then read the full story via the link in our bio.\n\nCreate personalised, illustrated stories starring your own child at moonbeamstories.co.uk\n\n#MoonbeamStories #PersonalisedStories #ChildrensBooks #BedtimeStories #Parenting`}
 function wrapWords(text,maxChars){
   const words=collapseWhitespace(text).split(' ').filter(Boolean); if(!words.length)return [''];
   const lines=[]; let line='';
@@ -360,7 +363,7 @@ async function developerInstagramPublishStory(req,res,body){
       await verifyInstagramJpegBytes(ctaBytesFromClient,'The Instagram carousel ending slide');
     }
   }catch(error){return res.status(400).json({error:error?.message||'One or more Instagram carousel slides are invalid.'})}
-  let shareId=null,coverPath=null;
+  let shareId=null,coverPath=null,shareCreated=false;
   const uploadedPaths=[];
   try{
     const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/saved_stories?id=eq.${encodeURIComponent(storyId)}&parent_id=eq.${encodeURIComponent(verified.user.id)}&select=id,title,language,opening,pages,closing,saved_assets`,{headers:adminHeaders()});
@@ -368,9 +371,17 @@ async function developerInstagramPublishStory(req,res,body){
     const assets=story.saved_assets||{}; if(!assets.cover||!Array.isArray(assets.pages)||assets.pages.length<4)return res.status(409).json({error:'Save the complete illustrated story before posting it.'});
     const storyPages=[collapseWhitespace(story.opening||''), collapseWhitespace(story.pages?.[0]?.text||''), collapseWhitespace(story.pages?.[1]?.text||''), collapseWhitespace(story.pages?.[2]?.text||'')];
     if(storyPages.some(x=>!x))return res.status(409).json({error:'This story needs at least four readable pages before it can be posted to Instagram.'});
-    const token=crypto.randomBytes(32).toString('base64url');
-    const createdShare=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({owner_id:verified.user.id,saved_story_id:storyId,token_hash:shareTokenHash(token),sender_name:'Moonbeam Stories',recipient_name:token,recipient_email:'instagram@moonbeamstories.co.uk'})});
-    shareId=createdShare?.[0]?.id; if(!shareId)throw new Error('Could not create the public story link.');
+    const galleryMarker='instagram@moonbeamstories.co.uk';
+    const existingShares=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares?owner_id=eq.${encodeURIComponent(verified.user.id)}&saved_story_id=eq.${encodeURIComponent(storyId)}&recipient_email=eq.${encodeURIComponent(galleryMarker)}&revoked_at=is.null&select=id,recipient_name&order=created_at.desc&limit=1`,{headers:adminHeaders()});
+    const existingShare=Array.isArray(existingShares)?existingShares[0]:null;
+    let token='';
+    if(existingShare?.id&&String(existingShare.recipient_name||'').trim()){
+      shareId=existingShare.id;token=String(existingShare.recipient_name).trim();
+    }else{
+      token=crypto.randomBytes(32).toString('base64url');
+      const createdShare=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({owner_id:verified.user.id,saved_story_id:storyId,token_hash:shareTokenHash(token),sender_name:'Moonbeam Stories',recipient_name:token,recipient_email:galleryMarker})});
+      shareId=createdShare?.[0]?.id;shareCreated=true;if(!shareId)throw new Error('Could not create the public story link.');
+    }
     coverPath=`instagram-covers/${shareId}.jpg`;
     await uploadSavedStoryArt(coverPath,coverBytes,'image/jpeg');
     uploadedPaths.push(coverPath);
@@ -407,7 +418,7 @@ async function developerInstagramPublishStory(req,res,body){
       await waitForInstagramContainer(childId,accessToken,`Instagram carousel ${slideSpecs[i].label}`);
       childIds.push(childId);
     }
-    const caption=`${String(story.title||'A Moonbeam Story').trim()} ✨\n\nRead the full illustrated story — link in bio.`;
+    const caption=instagramCarouselCaption(story);
     const carouselId=await createInstagramCarouselContainer(accountId,accessToken,childIds,caption);
     await waitForInstagramContainer(carouselId,accessToken,'Instagram carousel');
     const publishBody=new URLSearchParams({creation_id:carouselId,access_token:accessToken});
@@ -415,8 +426,10 @@ async function developerInstagramPublishStory(req,res,body){
     const mediaId=String(published?.id||'').trim(); if(!mediaId)throw new Error('Instagram did not return a published media ID.');
     return res.status(200).json({ok:true,mediaId,galleryUrl:`${origin}/instagram`,readerUrl:`${origin}/shared/${encodeURIComponent(token)}`});
   }catch(error){
-    await deleteSavedStoryArt(uploadedPaths.reverse());
-    if(shareId){try{await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares?id=eq.${encodeURIComponent(shareId)}`,{method:'DELETE',headers:adminHeaders({Prefer:'return=minimal'})})}catch{}}
+    if(shareCreated){
+      await deleteSavedStoryArt(uploadedPaths.reverse());
+      if(shareId){try{await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/story_shares?id=eq.${encodeURIComponent(shareId)}`,{method:'DELETE',headers:adminHeaders({Prefer:'return=minimal'})})}catch{}}
+    }
     console.error('instagram story publish',error); return res.status(502).json({ok:false,error:error?.message||'Could not publish this story to Instagram.'});
   }
 }
@@ -467,6 +480,7 @@ module.exports = async function handler(req, res) {
   if(req.method==='GET' && action==='instagram-test')return developerInstagramTest(req,res);
   if(req.method==='GET' && action==='instagram-access')return developerInstagramAccess(req,res);
   if(req.method==='POST' && action==='instagram-publish-test')return developerInstagramPublishTest(req,res);
+  if(req.method==='POST' && action.startsWith('instagram-reel-'))return instagramReelHandler(req,res);
   if(req.method==='POST' && action==='instagram-publish-story'){
     let body=req.body; if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}
     return developerInstagramPublishStory(req,res,body);

@@ -127,12 +127,19 @@ async function publicAsset(req,res){
  if(kind==='cover')path=story.saved_assets?.cover;
  else if(kind==='instagram-cover')path=`instagram-covers/${share.id}.jpg`;
  else if(slideMatch)path=`instagram-carousel/${share.id}/slide-${slideMatch[1]}.jpg`;
+ else if(kind==='instagram-reel')path=`instagram-reels/${share.id}.mp4`;
  else if(/^\d+$/.test(kind))path=story.saved_assets?.pages?.[Number(kind)];
  if(!path)return res.status(404).send('Image unavailable');
  const objectPath=String(path).split('/').map(encodeURIComponent).join('/');
  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/saved-story-art/${objectPath}`,{headers:adminHeaders()});
  if(!r.ok)return res.status(404).send('Image unavailable');
  let bytes=Buffer.from(await r.arrayBuffer());
+ if(kind==='instagram-reel'){
+  const total=bytes.length,range=String(req.headers.range||'');
+  res.setHeader('Accept-Ranges','bytes');res.setHeader('Content-Type','video/mp4');res.setHeader('Cache-Control','public, max-age=300');
+  if(range){const m=range.match(/bytes=(\d*)-(\d*)/);if(m){let start=m[1]?Number(m[1]):0,end=m[2]?Number(m[2]):total-1;if(!Number.isFinite(start)||start<0)start=0;if(!Number.isFinite(end)||end>=total)end=total-1;if(start<=end&&start<total){res.statusCode=206;res.setHeader('Content-Range',`bytes ${start}-${end}/${total}`);res.setHeader('Content-Length',String(end-start+1));return res.end(bytes.subarray(start,end+1));}}}
+  res.setHeader('Content-Length',String(total));return res.status(200).send(bytes);
+ }
  const wantsTitled=kind==='cover' && String(req.query?.titled||'')==='1';
  if(wantsTitled){
   const sharp=require('sharp');

@@ -4114,3 +4114,8 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 .instagram-preview-actions button{min-width:150px}
 .instagram-preview-status{min-height:1.3em;margin-top:10px;font-size:13px;font-weight:700;color:#9a2740}
 @media(max-width:700px){.instagram-preview{padding:10px}.instagram-preview-card{width:96vw;padding:14px}.instagram-preview-image{width:min(100%,320px)}.instagram-preview-actions{display:grid;grid-template-columns:1fr}.instagram-preview-actions button{width:100%}}
+
+/* V250.61 — developer-only Instagram Reel preview. */
+.instagram-reel-preview-card{width:min(92vw,500px)}
+.instagram-reel-preview-video{display:block;width:min(100%,330px);aspect-ratio:9/16;object-fit:contain;margin:0 auto 14px;border-radius:14px;background:#17132d;box-shadow:0 12px 32px #0004}
+@media(max-width:700px){.instagram-reel-preview-card{width:96vw}.instagram-reel-preview-video{width:min(100%,300px);max-height:64dvh}}
