@@ -155,11 +155,11 @@ async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());if(a
 async function pruneImageCache(){const db=await openImageDb();if(!db)return;try{const rows=await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([])});if(rows.length<=IMAGE_CACHE_LIMIT)return;rows.sort((a,b)=>(b.at||0)-(a.at||0));const remove=rows.slice(IMAGE_CACHE_LIMIT);await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite'),store=tx.objectStore(IMAGE_STORE);remove.forEach(r=>store.delete(r.key));tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 function stableHash(value){let h=2166136261>>>0;for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
 function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'']),c:s.closing||'',n:child?.name||'',a:child?.age||'',g:child?.gender||'',r:child?.referenceImages?stableHash(JSON.stringify(child.referenceImages.map(x=>[x.name,x.role,x.gender||'',(x.image||'').slice(-400)]))):child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
-async function requestIllustration(key,prompt,style,force=false,referenceImage=null,requiredStoryImage=false,storyImageIndex=null,continuityImage=null,storyReferenceImages=null){
+async function requestIllustration(key,prompt,style,force=false,referenceImage=null,requiredStoryImage=false,storyImageIndex=null,continuityImage=null){
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
  if(!force&&illustrationInflight.has(key))return illustrationInflight.get(key);
- const task=(async()=>{let attempts=0,authRefreshed=false;while(attempts<3){attempts++;let accessToken=await currentAccessToken();if(!accessToken){authRefreshed=true;accessToken=await refreshAccessToken()}if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:Array.isArray(referenceImage)?null:(referenceImage||null),referenceImages:Array.isArray(referenceImage)?referenceImage:null,continuityImage:continuityImage||null,storyReferenceImages:Array.isArray(storyReferenceImages)?storyReferenceImages:null,generationRunId,requiredStoryImage:requiredStoryImage===true,storyImageIndex:Number.isInteger(storyImageIndex)?storyImageIndex:null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
+ const task=(async()=>{let attempts=0,authRefreshed=false;while(attempts<3){attempts++;let accessToken=await currentAccessToken();if(!accessToken){authRefreshed=true;accessToken=await refreshAccessToken()}if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:Array.isArray(referenceImage)?null:(referenceImage||null),referenceImages:Array.isArray(referenceImage)?referenceImage:null,continuityImage:continuityImage||null,generationRunId,requiredStoryImage:requiredStoryImage===true,storyImageIndex:Number.isInteger(storyImageIndex)?storyImageIndex:null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
    if(referenceImage && data.usedReferencePhoto!==true) throw new Error('One or more Cast photo references were not accepted by the illustration service.');
    illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if(response.status===401&&!authRefreshed&&attempts<3){authRefreshed=true;const refreshedToken=await refreshAccessToken();if(refreshedToken)continue;throw new Error('Your Moonbeam session has expired. Please sign in again.')}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
  illustrationInflight.set(key,task);try{return await task}finally{illustrationInflight.delete(key)}
@@ -426,7 +426,7 @@ async function loadCloudStories(){
 }
 function dataUrlToBlob(dataUrl){const m=String(dataUrl||'').match(/^data:([^;]+);base64,(.+)$/);if(!m)throw new Error('A finished illustration is missing.');const binary=atob(m[2]),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new Blob([bytes],{type:m[1]||'image/webp'})}
 async function finishedImageForSave(index,book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.pages?.[index])return book.artwork.pages[index];const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(index)}finally{currentBook=prior}})(),key=illustrationKey(book,index,prompt);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image){if(currentBook!==book)throw new Error('The story changed while its illustrations were being saved. Please reopen it and save again.');const prevKey=previousIllustrationKey(book,index),prevImage=prevKey?(book.artwork?.pages?.[index-1]||illustrationCache.get(prevKey)||await persistentImageGet(prevKey)):null,continuityImage=shouldUsePreviousArtwork(book,index)?prevImage:null;image=await requestIllustration(key,prompt,`Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,false,book.child?.referenceImages||book.child?.referencePhoto||null,true,index,continuityImage);book.artwork.pages[index]=image}return image}
-async function finishedCoverForSave(book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.cover)return book.artwork.cover;const key=coverKey(book);let image=illustrationCache.get(key)||await persistentImageGet(key);if(image){book.artwork.cover=image;return image}const prior=currentBook;currentBook=book;try{image=await loadCoverIllustration(false);if(image)return image}finally{currentBook=prior}image=book.artwork?.pages?.[0]||await finishedImageForSave(0,book);return image}
+async function finishedCoverForSave(book=currentBook){if(!book)throw new Error('No story is open.');if(book.artwork?.cover)return book.artwork.cover;const key=coverKey(book);let image=illustrationCache.get(key)||await persistentImageGet(key);if(!image)image=book.artwork?.pages?.[0]||await finishedImageForSave(0,book);return image}
 async function uploadSavedBookArt(storyId,book=currentBook){if(!currentUser||!book)throw new Error('Sign in to save the complete book.');const total=book.pages.length+2,assets={version:2,cover:null,pages:[],heroNames:coverHeroNames(book)},base=`${currentUser.id}/${storyId}`;const cover=await finishedCoverForSave(book),coverPath=`${base}/cover.webp`;let r=await supabaseClient.storage.from('saved-story-art').upload(coverPath,dataUrlToBlob(cover),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.cover=coverPath;for(let i=0;i<total;i++){const image=await finishedImageForSave(i,book),path=`${base}/page-${i}.webp`;r=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'31536000'});if(r.error)throw r.error;assets.pages.push(path)}return assets}
 const PENDING_STORY_SAVE_KEY='moonbeam:pending-story-save:v25018';
 function readPendingStorySave(){try{const x=JSON.parse(localStorage.getItem(PENDING_STORY_SAVE_KEY)||'null');return x&&x.version===25018&&x.userId&&x.storyId?x:null}catch{return null}}
@@ -754,10 +754,7 @@ async function generateStory(){
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
    child.generationRunId=data.generationRunId||null;
    clearSetupDraft();
-   const preparedBook=buildBook(data.story,null,child);
-   currentBook=preparedBook;
-   await prepareCompleteBookBeforeOpening(preparedBook,preparingCopy,preparingTitle);
-   renderStory(data.story,null,child,{book:preparedBook})
+   renderStory(data.story,null,child)
  }catch(e){
    console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
  }finally{
@@ -767,7 +764,7 @@ async function generateStory(){
 
 function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},artwork:{cover:null,pages:{}}}}
 function renderStory(s,image,child,options={}){
- currentBook=options.book||buildBook(s,image,child,options);
+ currentBook=buildBook(s,image,child,options);
  const el=$('story');el.classList.remove('hidden');
  document.body.classList.add('story-mode');document.body.classList.toggle('shared-story-mode',!!currentBook.isShared);document.body.classList.toggle('desktop-story-mode',!isPhoneReader());
  el.innerHTML=`<div class="book-shell"><button id="storyExit" class="story-exit" type="button" aria-label="Close story" title="Back">×</button><div class="book-cover-head"><span>${escapeHtml(t().title)}</span><span>${escapeHtml(t().childTitle.replace('?',''))}</span></div><div id="coverView" class="story-cover"><div class="cover-art-wrap"><div id="coverPaintedBg" class="cover-painted-bg" aria-hidden="true"></div><div id="coverLoading" class="cover-loading"><div class="spinner"></div>${currentBook.isSaved?`<p>${escapeHtml(coverT().loadingBook)}</p>`:`<p>${escapeHtml(coverT().creating)}</p><small>${escapeHtml(coverT().creatingSmall)}</small>`}</div><img id="coverImage" class="cover-image" alt="" hidden><div class="cover-shade"></div><div class="cover-copy"><div class="cover-kicker">${escapeHtml(coverT().kicker)}</div><h2>${escapeHtml(currentBook.title)}</h2><p>${escapeHtml(coverT().forChild(coverHeroList(coverHeroNames(currentBook),language)))}</p></div><div id="coverError" class="cover-error-box" hidden><div class="moon">☾</div><p>${escapeHtml(coverT().failed)}</p><button class="secondary" id="retryCover" type="button">${escapeHtml(coverT().retry)}</button></div></div><div class="mobile-cover-hint">${escapeHtml(t().swipe)}</div><div class="cover-reading-choices"><button class="primary cover-begin" id="beginStory" type="button">📖 ${escapeHtml(t().readSelf)}</button><button class="secondary cover-narrate" id="beginNarrated" type="button">🔊 ${escapeHtml(t().readToMe)}</button></div></div><div id="book" class="book hidden"></div><div id="bookControls" class="book-controls hidden"><button class="secondary" id="prevPage" type="button">${escapeHtml(t().previous)}</button><div class="page-indicator" id="pageIndicator"></div><button class="primary turn" id="nextPage" type="button">${escapeHtml(t().turn)}</button></div><p class="illustration-note hidden" id="illustrationNote">${escapeHtml(t().illustrationNote)}</p><div class="actions"><button class="secondary" id="save" type="button">${escapeHtml(t().save)}</button><button class="secondary" id="newStory" type="button">${escapeHtml(t().newStory)}</button></div></div>`;
@@ -787,11 +784,9 @@ function renderStory(s,image,child,options={}){
  if(currentBook.isShared){$('save')?.classList.add('hidden');$('newStory')?.classList.add('hidden')}
  if(!currentBook.isSaved&&!currentBook.isShared)persistCurrentDraft();
 }
-function coverStoryContext(book){const screens=[['Opening page',book?.opening||'']].concat((book?.pages||[]).map((p,i)=>[`Story page ${i+1}`,p?.text||''])).concat([['Closing page',book?.closing||'']]);return screens.map(([label,text])=>`${label}: ${String(text||'').replace(/\s+/g,' ').trim()}`).join('\n')}
-function coverKey(book){const prompt=getCoverPrompt(book);return `v56:${book.visualCacheId||book.cacheId}:cover:${stableHash(prompt)}`}
+function coverKey(book){return `v48:${book.visualCacheId||book.cacheId}:cover`}
 function getCoverPrompt(book){
- const castSummary=((book?.child?.cast)||[]).map(m=>`${m.name} (${m.kind}${m.age?`, age ${m.age}`:''}${m.gender?`, marked ${m.gender}`:''}, role ${m.role})`).join('; ');
- return `Front cover illustration for an original premium children's adventure called “${book.title}”. This cover must represent the WHOLE BOOK, not merely the title and not merely page 1. Read the whole story context below, infer the overall adventure, emotional tone, main setting and the most representative visual moment, then choose one single coherent physically possible cover scene from one camera position that captures the overall story. The completed interior illustrations supplied separately are authoritative visual references for how this specific book's people, style, props and world already look. Match them closely while composing a fresh cover image.\n\nWHOLE BOOK STORY CONTEXT\n${coverStoryContext(book)}\n\nCAST\n${castSummary||`${book.child?.name||'the child'} (child hero, age ${book.child?.age||7}${book.child?.gender?`, marked ${book.child?.gender}`:''})`}\n\nSTORY WORLD CONTINUITY\n${book.character_bible||'Keep the hero and story world consistent.'}\n\nShow only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, create a collage, or reproduce a story-page composition literally. Preserve the photographed characters' exact underlying identity from the supplied reference photos, including apparent ethnicity, skin tone, facial structure, age, hair and presentation; do not localise, ethnically reinterpret or restyle them to match the setting or country. Follow the same Moonbeam illustration style and realism level as the rest of the book. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
+ return `Front cover illustration for an original premium children's adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}. Story premise: ${book.child?.storyIdea||book.opening||'an original Moonbeam adventure'}. Story world continuity: ${book.character_bible||'Keep the hero and story world consistent.'} Choose one coherent, physically possible moment from one camera position that represents the premise. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
 }
 function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
 function dataUrlToBlobUrl(dataUrl){
@@ -848,74 +843,76 @@ async function revealCoverImage(img,src){
  void img.offsetHeight;
  await nextPaint();
 }
-async function coverInteriorReferenceImages(book=currentBook){
- if(!book)return[];
- const total=book.pages.length+2,refs=[];
- for(let i=0;i<total;i++){
-   let image=book.artwork?.pages?.[i]||null;
-   if(!image){
-     const prior=currentBook;currentBook=book;
-     try{image=await loadIllustration(i,getIllustrationPrompt(i),true,false)}finally{currentBook=prior}
-   }
-   if(image)refs.push({name:`Interior page ${i+1}`,kind:'book_page',role:'story_reference',image});
- }
- return refs;
-}
-async function prepareCompleteBookBeforeOpening(book=currentBook,copyEl=null,titleEl=null){
- if(!book)return null;
- const prior=currentBook;currentBook=book;
- try{
-   const total=book.pages.length+2;
-   for(let i=0;i<total;i++){
-     if(titleEl)titleEl.textContent=t().preparing;
-     if(copyEl)copyEl.textContent=`Painting illustration ${i+1} of ${total}…`;
-     await loadIllustration(i,getIllustrationPrompt(i),true,false);
-   }
-   if(copyEl)copyEl.textContent=coverT().creatingSmall||'Moonbeam is painting the cover.';
-   await loadCoverIllustration(false);
-   return book;
- } finally { currentBook=book; }
-}
 async function loadCoverIllustration(force=false){
  const book=currentBook;if(!book)return;
  if(book.isSaved){try{const path=book.savedAssets?.cover;if(!path)throw new Error('No cloud-saved cover');const image=await savedAssetUrl(path);if(currentBook===book){await revealCoverImage($('coverImage'),image);if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false;return null}}
  const loading=$('coverLoading'),error=$('coverError');
- if(!force&&book.artwork?.cover){if(currentBook===book){await revealCoverImage($('coverImage'),book.artwork.cover);if(loading)loading.hidden=true;if(error)error.hidden=true}return book.artwork.cover}
  if(loading)loading.hidden=false;
  if(error)error.hidden=true;
+
+ let fallbackShown=false;
+
+ // V45: the phone cover no longer depends on the special cover-image request.
+ // The normal opening-page illustration pipeline is already proven to work
+ // with child-photo references, so use that artwork as an immediate front-cover
+ // fallback. Title/kicker remain HTML overlays, making it a genuine book cover.
+ if(isPhonePortrait()){
+   try{
+     const openingPrompt=getIllustrationPrompt(0);
+     const openingKey=illustrationKey(book,0,openingPrompt);
+     const openingImage=await requestIllustration(
+       openingKey,
+       openingPrompt,
+       `Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,
+       false,
+       book.child?.referenceImages||book.child?.referencePhoto||null,
+       true,
+       0
+     );
+     if(currentBook===book){
+       await revealCoverImage($('coverImage'),openingImage);
+       book.artwork.pages[0]=openingImage;
+       fallbackShown=true;
+       if($('coverLoading'))$('coverLoading').hidden=true;
+       if($('coverError'))$('coverError').hidden=true;
+     }
+   }catch(e){
+     console.error('Mobile cover fallback failed',e);
+   }
+ }
+
+ // Request a specially composed cover as an enhancement. If this request fails
+ // after the fallback is visible, keep the working fallback instead of replacing
+ // the cover with an error/blank state.
  try{
-   const pageRefs=await coverInteriorReferenceImages(book);
    const key=coverKey(book);
    const image=await requestIllustration(
      key,
      getCoverPrompt(book),
      `Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,
      force,
-     book.child?.referenceImages||book.child?.referencePhoto||null,
-     false,
-     null,
-     null,
-     pageRefs
+     book.child?.referenceImages||book.child?.referencePhoto||null
    );
-   book.artwork.cover=image;
    if(currentBook===book){
      await revealCoverImage($('coverImage'),image);
-     if(loading)loading.hidden=true;
-     if(error)error.hidden=true;
+     book.artwork.cover=image;
+     if($('coverLoading'))$('coverLoading').hidden=true;
+     if($('coverError'))$('coverError').hidden=true;
    }
    return image;
  }catch(e){
    console.error('Dedicated cover failed',e);
    if(currentBook===book){
-     if(loading)loading.hidden=true;
-     if(error)error.hidden=false;
+     if($('coverLoading'))$('coverLoading').hidden=true;
+     // Only show an error if there is genuinely no artwork to use.
+     if(!fallbackShown && $('coverError'))$('coverError').hidden=false;
    }
    return null;
  }
 }
 function showCover(){if(!currentBook)return;stopNarration();rememberReaderScroll();currentBook.currentPage=-1;const cover=$('coverView'),book=$('book'),controls=$('bookControls'),note=$('illustrationNote');if(book){book.classList.add('hidden');book.hidden=true;book.style.setProperty('display','none','important');book.setAttribute('aria-hidden','true')}if(controls){controls.classList.add('hidden');controls.hidden=true;controls.style.setProperty('display','none','important');controls.setAttribute('aria-hidden','true')}if(note){note.classList.add('hidden');note.hidden=true}if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.removeProperty('display');cover.setAttribute('aria-hidden','false')}persistCurrentDraft()}
 function beginStory(mode='self'){if(!currentBook)return;stopNarration();currentBook.readingMode=mode;currentBook.mobileSide='text';const cover=$('coverView'),book=$('book'),controls=$('bookControls');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.setProperty('display','none','important');cover.setAttribute('aria-hidden','true')}if(book){book.classList.remove('hidden');book.hidden=false;book.style.removeProperty('display');book.setAttribute('aria-hidden','false')}if(controls){controls.classList.remove('hidden');controls.hidden=false;controls.style.removeProperty('display');controls.setAttribute('aria-hidden','false')}renderBookPage(0);if(mode==='narrated')scheduleNarration(120)}
-function illustrationKey(book,index,prompt=''){return `v56:${book.visualCacheId||book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
+function illustrationKey(book,index,prompt=''){return `v48:${book.visualCacheId||book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
 function previousIllustrationKey(book,index){if(index<=0)return null;return illustrationKey(book,index-1,getIllustrationPrompt(index-1))}
 function storyPageSource(book,index){const total=(book?.pages?.length||0)+2;if(index===0)return `${book?.opening||''}`;if(index===total-1)return `${book?.closing||''}`;const page=book?.pages?.[index-1]||{};return `${page.text||''} ${page.illustration_prompt||''}`}
 function sceneWordSet(book,index){const castNames=new Set((book?.child?.cast||[]).map(x=>String(x?.name||'').toLowerCase()).concat([String(book?.child?.name||'').toLowerCase()]));const common=new Set('about after again against along also been before being beside between could from have into just more must near only other over page scene should story than that their them then there these they this through under very were what when where which while with would'.split(' '));return new Set(String(storyPageSource(book,index)).toLowerCase().match(/[a-z]{4,}/g)?.filter(w=>!common.has(w)&&!castNames.has(w))||[])}
@@ -923,7 +920,6 @@ function shouldUsePreviousArtwork(book,index){if(index<=0)return false;const a=s
 async function savedAssetUrl(path){if(!path||!currentBook?.isSaved)return null;if(currentBook.savedAssetUrls[path])return currentBook.savedAssetUrls[path];if(currentBook.isShared){const kind=String(path).replace(/^share:/,'');const r=await fetch(`/api/share?action=asset&token=${encodeURIComponent(currentBook.shareToken)}&kind=${encodeURIComponent(kind)}`);if(!r.ok)throw new Error(shareT(currentBook?.child?.language||language).illustrationUnavailable);const url=URL.createObjectURL(await r.blob());currentBook.savedAssetUrls[path]=url;return url}const data=await savedArtBlob(path);const url=URL.createObjectURL(data);currentBook.savedAssetUrls[path]=url;return url}
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index,prompt);
- if(!force&&book.artwork?.pages?.[index])return book.artwork.pages[index];
  const frame=document.querySelector('.illustration-frame');if(!silent&&(!frame||book.currentPage!==index))return;
  if(book.isSaved){const path=book.savedAssets?.pages?.[index];if(!path){if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p><small>This older saved story does not contain a cloud copy of this picture.</small></div>';return null}try{const image=await savedAssetUrl(path);book.artwork.pages[index]=image;if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}catch(e){console.error(e);if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p></div>';return null}}
  if(!silent&&frame&&!illustrationCache.has(key))frame.innerHTML=`<div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div>`;
@@ -1886,8 +1882,8 @@ $('language')?.addEventListener('change',()=>{if(landingLanguage)landingLanguage
 
 // V246 — one unified Cast profile system. V245 navigation/bootstrap remains intact.
 const CAST_UI_V246={
-'en-GB':{title:'Your Cast',intro:'The people and pets who can appear in your Moonbeam stories.',children:'Main characters',childrenCopy:'Children',adults:'Supporting roles',adultsCopy:'Trusted adults',pets:'Pets',petsCopy:'Animal companions',addChild:'＋ Add child',addAdult:'＋ Add adult',addPet:'＋ Add pet',emptyChild:'Add a child to begin.',emptyAdult:'No trusted adults added yet.',emptyPet:'No pets added yet.',age:'Age',relationship:'Relationship (optional)',animal:'Type of animal',name:'Name',addPhoto:'Add photo',changePhoto:'Change photo',removePhoto:'Remove photo',deleteCast:'Delete from Cast',save:'Save',cancel:'Cancel',close:'Close',editChild:'Edit child',editAdult:'Edit adult',editPet:'Edit pet',newChild:'Add child',newAdult:'Add adult',newPet:'Add pet',required:'Please enter a name.',ageError:'Please choose an age from 3 to 12.',relationshipRequired:'Please enter their relationship.',animalRequired:'Please enter the type of animal.',saving:'Saving…',saved:'Saved',saveError:'Could not save',photoSaveError:'Profile saved, but the photo could not be saved.',deleted:'Removed from your Cast.',confirmDelete:n=>`Delete ${n} from your Cast?`,photoReady:'Photo ready.',photoRemoved:'Photo removed.',photoError:'Please choose a JPG, PNG or WebP photo.',gender:'Optional',genderMale:'Male',genderFemale:'Female',setupNeeded:'Cast storage needs the V250.56 Supabase migration before Cast members can be saved.'},
-'en-US':{title:'Your Cast',intro:'The people and pets who can appear in your Moonbeam stories.',children:'Main characters',childrenCopy:'Children',adults:'Supporting roles',adultsCopy:'Trusted adults',pets:'Pets',petsCopy:'Animal companions',addChild:'＋ Add child',addAdult:'＋ Add adult',addPet:'＋ Add pet',emptyChild:'Add a child to begin.',emptyAdult:'No trusted adults added yet.',emptyPet:'No pets added yet.',age:'Age',relationship:'Relationship (optional)',animal:'Type of animal',name:'Name',addPhoto:'Add photo',changePhoto:'Change photo',removePhoto:'Remove photo',deleteCast:'Delete from Cast',save:'Save',cancel:'Cancel',close:'Close',editChild:'Edit child',editAdult:'Edit adult',editPet:'Edit pet',newChild:'Add child',newAdult:'Add adult',newPet:'Add pet',required:'Please enter a name.',ageError:'Please choose an age from 3 to 12.',relationshipRequired:'Please enter their relationship.',animalRequired:'Please enter the type of animal.',saving:'Saving…',saved:'Saved',saveError:'Could not save',photoSaveError:'Profile saved, but the photo could not be saved.',deleted:'Removed from your Cast.',confirmDelete:n=>`Delete ${n} from your Cast?`,photoReady:'Photo ready.',photoRemoved:'Photo removed.',photoError:'Please choose a JPG, PNG or WebP photo.',gender:'Optional',genderMale:'Male',genderFemale:'Female',setupNeeded:'Cast storage needs the V250.56 Supabase migration before Cast members can be saved.'},
+'en-GB':{title:'Your Cast',intro:'The people and pets who can appear in your Moonbeam stories.',children:'Main characters',childrenCopy:'Children',adults:'Supporting roles',adultsCopy:'Trusted adults',pets:'Pets',petsCopy:'Animal companions',addChild:'＋ Add child',addAdult:'＋ Add adult',addPet:'＋ Add pet',emptyChild:'Add a child to begin.',emptyAdult:'No trusted adults added yet.',emptyPet:'No pets added yet.',age:'Age',relationship:'Relationship (optional)',animal:'Type of animal',name:'Name',addPhoto:'Add photo',changePhoto:'Change photo',removePhoto:'Remove photo',deleteCast:'Delete from Cast',save:'Save',cancel:'Cancel',close:'Close',editChild:'Edit child',editAdult:'Edit adult',editPet:'Edit pet',newChild:'Add child',newAdult:'Add adult',newPet:'Add pet',required:'Please enter a name.',ageError:'Please choose an age from 3 to 12.',relationshipRequired:'Please enter their relationship.',animalRequired:'Please enter the type of animal.',saving:'Saving…',saved:'Saved',saveError:'Could not save',photoSaveError:'Profile saved, but the photo could not be saved.',deleted:'Removed from your Cast.',confirmDelete:n=>`Delete ${n} from your Cast?`,photoReady:'Photo ready.',photoRemoved:'Photo removed.',photoError:'Please choose a JPG, PNG or WebP photo.',gender:'Optional',genderMale:'Male',genderFemale:'Female',setupNeeded:'Cast storage needs the V250.59 Supabase migration before Cast members can be saved.'},
+'en-US':{title:'Your Cast',intro:'The people and pets who can appear in your Moonbeam stories.',children:'Main characters',childrenCopy:'Children',adults:'Supporting roles',adultsCopy:'Trusted adults',pets:'Pets',petsCopy:'Animal companions',addChild:'＋ Add child',addAdult:'＋ Add adult',addPet:'＋ Add pet',emptyChild:'Add a child to begin.',emptyAdult:'No trusted adults added yet.',emptyPet:'No pets added yet.',age:'Age',relationship:'Relationship (optional)',animal:'Type of animal',name:'Name',addPhoto:'Add photo',changePhoto:'Change photo',removePhoto:'Remove photo',deleteCast:'Delete from Cast',save:'Save',cancel:'Cancel',close:'Close',editChild:'Edit child',editAdult:'Edit adult',editPet:'Edit pet',newChild:'Add child',newAdult:'Add adult',newPet:'Add pet',required:'Please enter a name.',ageError:'Please choose an age from 3 to 12.',relationshipRequired:'Please enter their relationship.',animalRequired:'Please enter the type of animal.',saving:'Saving…',saved:'Saved',saveError:'Could not save',photoSaveError:'Profile saved, but the photo could not be saved.',deleted:'Removed from your Cast.',confirmDelete:n=>`Delete ${n} from your Cast?`,photoReady:'Photo ready.',photoRemoved:'Photo removed.',photoError:'Please choose a JPG, PNG or WebP photo.',gender:'Optional',genderMale:'Male',genderFemale:'Female',setupNeeded:'Cast storage needs the V250.59 Supabase migration before Cast members can be saved.'},
 'es-ES':{title:'Tu reparto',intro:'Las personas y mascotas que pueden aparecer en tus historias de Moonbeam.',children:'Personajes principales',childrenCopy:'Niños',adults:'Papeles secundarios',adultsCopy:'Adultos de confianza',pets:'Mascotas',petsCopy:'Compañeros animales',addChild:'＋ Añadir niño',addAdult:'＋ Añadir adulto',addPet:'＋ Añadir mascota',emptyChild:'Añade un niño para empezar.',emptyAdult:'Aún no has añadido adultos de confianza.',emptyPet:'Aún no has añadido mascotas.',age:'Edad',relationship:'Relación (opcional)',animal:'Tipo de animal',name:'Nombre',addPhoto:'Añadir foto',changePhoto:'Cambiar foto',removePhoto:'Quitar foto',deleteCast:'Eliminar del reparto',save:'Guardar',cancel:'Cancelar',close:'Cerrar',editChild:'Editar niño',editAdult:'Editar adulto',editPet:'Editar mascota',newChild:'Añadir niño',newAdult:'Añadir adulto',newPet:'Añadir mascota',required:'Introduce un nombre.',ageError:'Elige una edad entre 3 y 12 años.',relationshipRequired:'Indica la relación.',animalRequired:'Indica el tipo de animal.',saving:'Guardando…',saved:'Guardado',saveError:'No se ha podido guardar',photoSaveError:'El perfil se ha guardado, pero no se ha podido guardar la foto.',deleted:'Eliminado de tu reparto.',confirmDelete:n=>`¿Eliminar a ${n} de tu reparto?`,photoReady:'Foto preparada.',photoRemoved:'Foto eliminada.',photoError:'Elige una foto JPG, PNG o WebP.',setupNeeded:'Hay que ejecutar la migración V246 de Supabase antes de guardar miembros del reparto.'},
 'es-419':{title:'Tu elenco',intro:'Las personas y mascotas que pueden aparecer en tus historias de Moonbeam.',children:'Personajes principales',childrenCopy:'Niños',adults:'Roles secundarios',adultsCopy:'Adultos de confianza',pets:'Mascotas',petsCopy:'Compañeros animales',addChild:'＋ Agregar niño',addAdult:'＋ Agregar adulto',addPet:'＋ Agregar mascota',emptyChild:'Agrega un niño para comenzar.',emptyAdult:'Todavía no agregaste adultos de confianza.',emptyPet:'Todavía no agregaste mascotas.',age:'Edad',relationship:'Relación (opcional)',animal:'Tipo de animal',name:'Nombre',addPhoto:'Agregar foto',changePhoto:'Cambiar foto',removePhoto:'Quitar foto',deleteCast:'Eliminar del elenco',save:'Guardar',cancel:'Cancelar',close:'Cerrar',editChild:'Editar niño',editAdult:'Editar adulto',editPet:'Editar mascota',newChild:'Agregar niño',newAdult:'Agregar adulto',newPet:'Agregar mascota',required:'Ingresa un nombre.',ageError:'Elige una edad entre 3 y 12 años.',relationshipRequired:'Ingresa la relación.',animalRequired:'Ingresa el tipo de animal.',saving:'Guardando…',saved:'Guardado',saveError:'No se ha podido guardar',photoSaveError:'El perfil se guardó, pero no se pudo guardar la foto.',deleted:'Eliminado de tu elenco.',confirmDelete:n=>`¿Eliminar a ${n} de tu elenco?`,photoReady:'Foto lista.',photoRemoved:'Foto eliminada.',photoError:'Elige una foto JPG, PNG o WebP.',setupNeeded:'Debes ejecutar la migración V246 de Supabase antes de guardar miembros del reparto.'},
 'fr-FR':{title:'Votre casting',intro:'Les personnes et animaux qui peuvent apparaître dans vos histoires Moonbeam.',children:'Personnages principaux',childrenCopy:'Enfants',adults:'Rôles secondaires',adultsCopy:'Adultes de confiance',pets:'Animaux',petsCopy:'Compagnons animaux',addChild:'＋ Ajouter un enfant',addAdult:'＋ Ajouter un adulte',addPet:'＋ Ajouter un animal',emptyChild:'Ajoutez un enfant pour commencer.',emptyAdult:'Aucun adulte de confiance ajouté.',emptyPet:'Aucun animal ajouté.',age:'Âge',relationship:'Lien (facultatif)',animal:"Type d’animal",name:'Prénom',addPhoto:'Ajouter une photo',changePhoto:'Changer la photo',removePhoto:'Retirer la photo',deleteCast:'Supprimer du casting',save:'Enregistrer',cancel:'Annuler',close:'Fermer',editChild:'Modifier l’enfant',editAdult:"Modifier l’adulte",editPet:"Modifier l’animal",newChild:'Ajouter un enfant',newAdult:'Ajouter un adulte',newPet:'Ajouter un animal',required:'Indiquez un prénom.',ageError:'Choisissez un âge de 3 à 12 ans.',relationshipRequired:'Indiquez le lien.',animalRequired:"Indiquez le type d’animal.",saving:'Enregistrement…',saved:'Enregistré',saveError:'Impossible d’enregistrer',photoSaveError:"Le profil est enregistré, mais la photo n’a pas pu être enregistrée.",deleted:'Supprimé de votre casting.',confirmDelete:n=>`Supprimer ${n} de votre casting ?`,photoReady:'Photo prête.',photoRemoved:'Photo retirée.',photoError:'Choisissez une photo JPG, PNG ou WebP.',setupNeeded:'La migration Supabase V246 doit être exécutée avant d’enregistrer les membres du casting.'},
@@ -1927,7 +1923,7 @@ async function renderStoryRoles248(){
  hero.querySelectorAll('.story-role-choice').forEach(el=>el.onchange=async()=>{const input=el.querySelector('input');if(input.disabled)return;const id=el.dataset.id;if(input.checked){if(storyHeroIds248.size+storySupportIds248.size>=2){input.checked=false;return}storyHeroIds248.add(id);storySupportIds248.delete(id);activeProfileId=id;syncGenerationAdapter246()}else storyHeroIds248.delete(id);await renderStoryRoles248()});
  support.querySelectorAll('.story-role-choice').forEach(el=>el.onchange=async()=>{const input=el.querySelector('input');if(input.disabled)return;const id=el.dataset.id;if(input.checked){if(storyHeroIds248.size!==1||storyHeroIds248.size+storySupportIds248.size>=2){input.checked=false;return}storySupportIds248.add(id)}else storySupportIds248.delete(id);await renderStoryRoles248()});
 }
-async function storyCastPayload248(){const selected=castMembers246.filter(m=>storyHeroIds248.has(m.id)||storySupportIds248.has(m.id));return Promise.all(selected.map(async m=>({id:m.id,kind:m.kind,name:m.name,age:m.age||null,gender:(m.kind==='pet'?null:(m.gender||null)),relationship:null,animal_type:m.animal_type||null,breed:m.breed||null,role:storyHeroIds248.has(m.id)?'hero':(m.kind==='pet'?'companion':m.kind==='adult'?'supporting_adult':'supporting_child'),referencePhoto:await castPhoto246(m.id)})))}
+async function storyCastPayload248(){const selected=castMembers246.filter(m=>storyHeroIds248.has(m.id)||storySupportIds248.has(m.id));return Promise.all(selected.map(async m=>({id:m.id,kind:m.kind,name:m.name,age:m.age||null,gender:m.kind==='pet'?null:(m.gender||null),relationship:null,animal_type:m.animal_type||null,breed:m.breed||null,role:storyHeroIds248.has(m.id)?'hero':(m.kind==='pet'?'companion':m.kind==='adult'?'supporting_adult':'supporting_child'),referencePhoto:await castPhoto246(m.id)})))}
 function castText246(){return {...CAST_UI_V246['en-GB'],...(CAST_UI_V246[language]||{})}}
 function setCastText246(){const x=castText246(),m={castTitle:'title',castIntro:'intro',castChildrenTitle:'children',castChildrenCopy:'childrenCopy',castAdultsTitle:'adults',castAdultsCopy:'adultsCopy',castPetsTitle:'pets',castPetsCopy:'petsCopy',castAddChild:'addChild',castAddAdult:'addAdult',castAddPet:'addPet',castNameLabel:'name',castAgeLabel:'age',castGenderLabel:'gender',castMaleLabel:'genderMale',castFemaleLabel:'genderFemale',castAnimalLabel:'animal',castEditorSave:'save',castEditorCancel:'cancel'};for(const[id,k]of Object.entries(m)){const el=$(id);if(el)el.textContent=x[k]}$('castEditorClose')?.setAttribute('aria-label',x.close);renderCast246()}
 async function loadCastMembers246(){
@@ -1953,7 +1949,7 @@ function renderCastEditorPhoto246(){const x=castText246(),has=!!castEditor246.ph
 function closeCastEditor246(){const b=$('castEditorSave');if(b){b.disabled=false;b.textContent=castText246().save;b.removeAttribute('aria-busy')}$('castEditor')?.classList.add('hidden');castEditor246={kind:'child',id:null,photo:null,originalPhoto:null}}
 async function saveCastEditor246(){
  if(!currentUser)return;const x=castText246(),button=$('castEditorSave'),status=$('castEditorStatus');if(button.disabled)return;
- const kind=castEditor246.kind,name=$('castEditorName').value.trim(),age=Number($('castEditorAge').value),gender=(kind==='pet'?'':getCastOptionalValue246()),animal=$('castEditorAnimal').value.trim(),breed=$('castEditorBreed')?.value.trim()||'';
+ const kind=castEditor246.kind,name=$('castEditorName').value.trim(),age=Number($('castEditorAge').value),gender=kind==='pet'?'':getCastOptionalValue246(),animal=$('castEditorAnimal').value.trim(),breed=$('castEditorBreed')?.value.trim()||'';
  if(!name){status.textContent=x.required;return}if(kind==='child'&&(age<3||age>12)){status.textContent=x.ageError;return}if(kind==='pet'&&!animal){status.textContent=x.animalRequired;return}
  button.disabled=true;button.textContent=x.saving;button.setAttribute('aria-busy','true');status.textContent=x.saving;
  const payload={parent_id:currentUser.id,kind,name,age:kind==='child'?age:null,gender:kind==='pet'?null:(gender||null),relationship:null,animal_type:kind==='pet'?animal:null,breed:kind==='pet'?(breed||null):null};

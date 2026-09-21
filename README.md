@@ -1,33 +1,22 @@
-# Moonbeam Stories V250.57
+# Moonbeam Stories V250.59
 
-## V250.57 — Male/Female alignment fix
+## V250.59 — V250.53 illustration behaviour restored + Optional Male/Female retained
 
-This build changes the generation flow so the book does **not open** until all illustrations are finished.
+This build deliberately restores the **V250.53 illustration and cover-generation architecture**.
 
-### Generation flow
-- Moonbeam now generates **all interior book illustrations first** (opening page, all story pages, and closing page).
-- Only after all interior illustrations are complete does Moonbeam generate the **cover**.
-- The cover is generated **last**, using:
-  - the **full text of the whole book**
-  - the uploaded Cast photo references
-  - **all completed interior illustrations** as authoritative visual references
-- The **Preparing your story** waiting screen and hourglass remain visible until the entire book, including the cover, has finished generating.
-- The reader opens only once the full book is ready.
+### Restored exactly from the working V250.53 illustration flow
+- No pre-generation of all six interior illustrations before the reader opens.
+- No “cover generated last from all six pages” pipeline.
+- No multi-image cover reference-board/request changes.
+- No V250.56/V250.57 illustration display/preload changes.
+- Cover and interior generation timing/caching are back to the V250.53 behaviour.
+- The working Instagram carousel/gallery behaviour and repaired hourglass animation remain.
 
-### Cover consistency
-- The cover is no longer an early speculative image.
-- It is now generated from the fully established visual world of the finished book, so style and likeness should match the interior much more closely.
-
-### Cast optional marker
-- Replaces the previous gender dropdown UI.
-- Human Cast members now have an **Optional** field with two single-choice options: **Male** and **Female**.
-- If a Cast member is marked **Male**, Moonbeam is instructed not to invent decorative hair accessories unless they are clearly present in the uploaded photo or explicitly required by the story.
-- The marker remains optional and is not shown for pets.
+### Retained from the later Cast work
+- Human Cast members have an **Optional** field with two choices: **Male** and **Female**.
+- The radio controls use the corrected desktop/mobile alignment.
+- The optional value is stored in `cast_members` and passed with the Cast data.
+- A Cast member marked **Male** receives a narrow anti-hair-accessory instruction: do not invent decorative hair clips, bows, barrettes, star ornaments, tiaras or similar accessories unless clearly present in the uploaded reference photo or explicitly required by the story.
 
 ### Supabase
-- Includes an updated migration: **SUPABASE_V250_CAST_OPTIONAL.sql**
-- This adds the `gender` column (used internally) and constrains values to `male` or `female`.
-
-### V250.57 UI fix
-- Corrects the Optional Male/Female radio controls so each circle sits directly beside and vertically aligned with its label.
-- Preserves the V250.56 full-generation flow, cover-last architecture, Cast marker behaviour and Supabase migration unchanged.
+Run **SUPABASE_V250_CAST_OPTIONAL.sql** if the `gender` column has not already been added. The migration is idempotent.
