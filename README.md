@@ -1,4 +1,28 @@
-# Moonbeam Stories V250.69
+# Moonbeam Stories V250.70
+
+## V250.70 — Silent photo-led Instagram Reels
+
+This build starts from **V250.69** and changes the developer-only Reel format so it feels more like a short social promo than a narrated book excerpt.
+
+### Reel format changes
+- Reels are now **silent**. Moonbeam no longer generates teaser narration audio for Instagram Reels.
+- Every Reel now opens with the **real uploaded photo** of the hero child (or two hero children when there are two protagonists).
+- The opener uses social-style copy such as **“Meet Sam”**, followed by short lines about loving stories and being in them.
+- After the real-photo opener, the Reel moves into the Moonbeam cover, then the illustrated story pages, and finishes with the existing CTA panel.
+- Subtle motion and fade transitions remain, but the first segment still avoids the old black fade-in problem.
+
+### Hero-photo handling
+- Reel preparation now collects the current hero-child photo(s) directly from the story cast.
+- When a story is saved, Moonbeam now also stores lightweight hero-cast metadata inside `saved_assets`, so reopened saved stories can still prepare a Reel more reliably.
+- Reel posting continues to ignore supporting adults and pets for the opener.
+
+### Existing behaviour retained
+- The Reel flow is still developer-only and still uses preview-before-publish.
+- Carousel posting is unchanged.
+- No new SQL is required.
+- **12 callable API endpoints** remain. No API endpoint has been added.
+
+---
 
 ## V250.64 — Browser-rendered Reel text
 
