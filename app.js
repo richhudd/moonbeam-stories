@@ -1,4 +1,4 @@
-// Moonbeam Stories V250.70
+// Moonbeam Stories V250.72
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -1270,16 +1270,13 @@ async function instagramReelPanelToDataUrl(canvas,minLen=7000){
  const probe=new Image();probe.src=dataUrl;await waitForImageReady(probe);if(probe.naturalWidth!==canvas.width||probe.naturalHeight!==canvas.height)throw new Error('Moonbeam could not capture the Reel text.');return dataUrl;
 }
 async function captureInstagramReelTextPanel(text,pageNumber){
- if(document.fonts?.ready)await document.fonts.ready.catch(()=>{});const root=instagramReelPanelRoot(),clean=String(text||'').replace(/\s+/g,' ').trim(),snippet=instagramReelSnippetFromText(clean);
- const page=document.createElement('div');page.textContent=`Page ${Number(pageNumber)||1}`;page.style.cssText="position:absolute;right:26px;top:18px;color:#8e7849;font:600 10px/1.2 Georgia,'Times New Roman',serif;";root.appendChild(page);
- const snippetEl=document.createElement('div');snippetEl.textContent=snippet;snippetEl.style.cssText="position:absolute;left:30px;right:30px;top:42px;height:76px;color:#44324f;font:700 14px/1.32 Georgia,'Times New Roman',serif;overflow:hidden;";root.appendChild(snippetEl);
- const body=document.createElement('div');body.textContent=clean;body.style.cssText="position:absolute;left:30px;right:30px;top:142px;bottom:28px;color:#2e2740;font:500 17px/1.38 Georgia,'Times New Roman',serif;overflow:hidden;white-space:normal;";root.appendChild(body);
+ if(document.fonts?.ready)await document.fonts.ready.catch(()=>{});const root=instagramReelPanelRoot(),clean=String(text||'').replace(/\s+/g,' ').trim();
+ const body=document.createElement('div');body.textContent=clean;body.style.cssText="position:absolute;left:34px;right:34px;top:34px;bottom:34px;color:#2e2740;font:500 20px/1.42 Georgia,'Times New Roman',serif;overflow:hidden;white-space:normal;";root.appendChild(body);
  document.body.appendChild(root);try{
-  for(let size=17;size>=11;size--){body.style.fontSize=`${size}px`;await nextPaint();if(body.scrollHeight<=body.clientHeight+2)break}
+  for(let size=20;size>=12;size--){body.style.fontSize=`${size}px`;await nextPaint();if(body.scrollHeight<=body.clientHeight+2)break}
   await nextPaint();const rootRect=root.getBoundingClientRect(),scale=936/rootRect.width,canvas=document.createElement('canvas');canvas.width=936;canvas.height=790;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('Moonbeam could not capture the Reel text.');
   ctx.fillStyle='#fffaf2';ctx.fillRect(0,0,936,790);ctx.strokeStyle='#b6904d';ctx.lineWidth=3;drawRoundedRectPath(ctx,2,2,932,786,28);ctx.stroke();
-  ctx.fillStyle='#f0dba9';drawRoundedRectPath(ctx,30,58,876,122,18);ctx.fill();ctx.strokeStyle='#d9be86';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(36,198);ctx.lineTo(900,198);ctx.stroke();
-  drawDomTextElement(ctx,page,rootRect,scale);drawDomTextElement(ctx,snippetEl,rootRect,scale);drawDomTextElement(ctx,body,rootRect,scale);return await instagramReelPanelToDataUrl(canvas,12000);
+  drawDomTextElement(ctx,body,rootRect,scale);return await instagramReelPanelToDataUrl(canvas,12000);
  }finally{root.remove()}
 }
 async function captureInstagramReelCtaPanel(){
@@ -1297,6 +1294,28 @@ async function compactInstagramReelCover(dataUrl){
  const img=new Image();img.src=dataUrl;await waitForImageReady(img);const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1350;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('Moonbeam could not capture the Reel cover.');ctx.drawImage(img,0,0,1080,1350);
  let quality=.90,out=canvas.toDataURL('image/jpeg',quality);while(out.length>1200000&&quality>.68){quality-=.04;out=canvas.toDataURL('image/jpeg',quality)}if(out.length>1350000)throw new Error('The Reel cover is too large to prepare safely.');return out;
 }
+function drawInstagramReelPhotoCrop(ctx,img,x,y,w,h){
+ const scale=Math.max(w/img.naturalWidth,h/img.naturalHeight),sw=w/scale,sh=h/scale,sx=Math.max(0,(img.naturalWidth-sw)/2),sy=Math.max(0,(img.naturalHeight-sh)/2);ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h)
+}
+function instagramReelWrapCanvasText(ctx,text,maxWidth){
+ const words=String(text||'').trim().split(/\s+/).filter(Boolean),lines=[];let line='';for(const word of words){const next=line?`${line} ${word}`:word;if(!line||ctx.measureText(next).width<=maxWidth)line=next;else{lines.push(line);line=word}}if(line)lines.push(line);return lines
+}
+function drawInstagramReelCenteredCopy(ctx,text,y,maxWidth,fontSize=46,lineHeight=58){
+ let size=fontSize,lines=[];do{ctx.font=`700 ${size}px Georgia, 'Times New Roman', serif`;lines=instagramReelWrapCanvasText(ctx,text,maxWidth);if(lines.length<=2)break;size-=2}while(size>=34);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#2e2740';for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],540,y+i*lineHeight-(lines.length-1)*lineHeight/2);return lines.length*lineHeight
+}
+async function captureInstagramReelIntroFrame(heroes){
+ if(!Array.isArray(heroes)||!heroes.length)throw new Error('The Reel hero photo is missing.');if(document.fonts?.ready)await document.fonts.ready.catch(()=>{});
+ const imgs=[];for(const hero of heroes.slice(0,2)){const img=new Image();img.src=hero.referencePhoto;await waitForImageReady(img);imgs.push(img)}
+ const copy=instagramReelIntroCopy(heroes),canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1920;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('Moonbeam could not capture the Reel opening.');
+ ctx.fillStyle='#17132d';ctx.fillRect(0,0,1080,1920);
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fffaf2';ctx.font="700 66px Georgia, 'Times New Roman', serif";ctx.fillText(copy.heading,540,142);
+ const multi=imgs.length>1,boxes=multi?[{x:66,y:250,w:420,h:620},{x:594,y:250,w:420,h:620}]:[{x:190,y:220,w:700,h:840}];
+ boxes.slice(0,imgs.length).forEach((b,i)=>{ctx.fillStyle='#fffaf2';drawRoundedRectPath(ctx,b.x-12,b.y-12,b.w+24,b.h+24,30);ctx.fill();ctx.save();drawRoundedRectPath(ctx,b.x,b.y,b.w,b.h,22);ctx.clip();drawInstagramReelPhotoCrop(ctx,imgs[i],b.x,b.y,b.w,b.h);ctx.restore()});
+ const panelY=multi?980:1135,panelH=multi?600:520;ctx.fillStyle='#fffaf2';drawRoundedRectPath(ctx,54,panelY,972,panelH,34);ctx.fill();ctx.strokeStyle='#d6be86';ctx.lineWidth=3;drawRoundedRectPath(ctx,54,panelY,972,panelH,34);ctx.stroke();
+ const ys=multi?[panelY+132,panelY+292,panelY+452]:[panelY+112,panelY+252,panelY+392];drawInstagramReelCenteredCopy(ctx,copy.lines[0],ys[0],850,48,58);drawInstagramReelCenteredCopy(ctx,copy.lines[1],ys[1],850,46,56);drawInstagramReelCenteredCopy(ctx,copy.lines[2],ys[2],850,44,54);
+ ctx.font='700 23px Arial, Helvetica, sans-serif';ctx.fillStyle='#72583a';ctx.textAlign='center';ctx.fillText('MOONBEAM STORIES',540,panelY+panelH-35);
+ let quality=.90,out=canvas.toDataURL('image/jpeg',quality);while(out.length>1200000&&quality>.68){quality-=.04;out=canvas.toDataURL('image/jpeg',quality)}if(!/^data:image\/jpeg;base64,/.test(out)||out.length<15000||out.length>1350000)throw new Error('Moonbeam could not capture the Reel opening.');return out
+}
 async function captureInstagramReelAssets(book=currentBook){
  if(!book)throw new Error('There is no finished book to turn into a Reel.');const pages=instagramCarouselTextPages(book);if(pages.length<4)throw new Error('This story needs at least four readable pages for the Reel teaser.');
  const heroes=await instagramReelHeroes(book);if(!heroes.length)throw new Error('Add a photo to the hero character before posting a Reel.');
@@ -1304,8 +1323,8 @@ async function captureInstagramReelAssets(book=currentBook){
  // The cover capture routine already clones the cover off-screen, so simply make
  // sure its source image is loaded and capture it invisibly while the progress
  // button remains visible to the developer.
- const img=$('coverImage');if(!img||img.hidden||!img.src)await loadCoverIllustration(false);const coverDataUrl=await compactInstagramReelCover(await captureReaderCoverForInstagram()),reelTextPanelDataUrls=[];
- for(let i=0;i<4;i++)reelTextPanelDataUrls.push(await captureInstagramReelTextPanel(pages[i],i+1));const reelCtaPanelDataUrl=await captureInstagramReelCtaPanel();return {coverDataUrl,reelTextPanelDataUrls,reelCtaPanelDataUrl,reelHeroPhotoDataUrls:heroes.map(h=>h.referencePhoto),reelIntro:instagramReelIntroCopy(heroes)};
+ const img=$('coverImage');if(!img||img.hidden||!img.src)await loadCoverIllustration(false);const coverDataUrl=await compactInstagramReelCover(await captureReaderCoverForInstagram()),reelIntroFrameDataUrl=await captureInstagramReelIntroFrame(heroes),reelTextPanelDataUrls=[];
+ for(let i=0;i<4;i++)reelTextPanelDataUrls.push(await captureInstagramReelTextPanel(pages[i],i+1));const reelCtaPanelDataUrl=await captureInstagramReelCtaPanel();return {coverDataUrl,reelIntroFrameDataUrl,reelTextPanelDataUrls,reelCtaPanelDataUrl};
 }
 function ensureInstagramPreview(){
  let modal=$('instagramPreview');if(modal)return modal;modal=document.createElement('div');modal.id='instagramPreview';modal.className='instagram-preview hidden';modal.innerHTML='<div class="instagram-preview-card" role="dialog" aria-modal="true"><h2 class="instagram-preview-title"></h2><p class="instagram-preview-intro"></p><img class="instagram-preview-image" alt=""><div class="instagram-preview-actions"><button class="secondary instagram-preview-cancel" type="button"></button><button class="primary instagram-preview-post" type="button"></button></div><div class="instagram-preview-status" aria-live="polite"></div></div>';document.body.appendChild(modal);

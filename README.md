@@ -1,4 +1,32 @@
-# Moonbeam Stories V250.70
+# Moonbeam Stories V250.72
+
+## V250.72 — Clean Reel book text panels
+
+This build starts from **V250.71** and simplifies the book-page portion of the silent Reel.
+
+### Reel text-panel change
+- Removed the old highlighted/narrated snippet from the top of each Reel text panel.
+- Removed the extra divider/highlight treatment so the lower half of each Reel page now looks like a straightforward book text window beneath the illustration.
+- The full page text uses the available panel space and automatically scales down only when necessary to fit.
+- Text is still flattened in the browser before the Reel reaches Vercel, preserving the proven typography fix.
+- The real-photo intro, silent format, subtle motion, cover, CTA, one/two-child handling and Male/Female wording are unchanged.
+- No SQL is required and **12 callable API endpoints** remain.
+
+---
+
+## V250.71 — Browser-flattened Reel opening text
+
+This build fixes the broken/gibberish text in the new photo-led Reel opening. V250.70 accidentally reintroduced server-side SVG text for that one new opening frame, which is the same rendering path that caused the earlier Reel text corruption.
+
+### Fix
+- The entire real-photo opening frame — photos, **Meet [name]** heading, all three promo lines and Moonbeam branding — is now rendered and flattened to a JPEG **in the browser** before it is sent to Vercel.
+- The Reel server now treats that opener as a finished image and does not typeset any of its text.
+- The already-proven browser-rendered book text panels and CTA remain unchanged.
+- Silent Reel timing, subtle motion, one/two-child handling, Cast/gender logic and preview-before-publish remain unchanged.
+- No SQL is required.
+- **12 callable API endpoints** remain.
+
+---
 
 ## V250.70 — Silent photo-led Instagram Reels
 
