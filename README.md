@@ -1,4 +1,13 @@
-# Moonbeam Stories V250.72
+# Moonbeam Stories V250.73
+
+## V250.73 — Rounded Reel text panel
+
+This build starts from **V250.72** and makes one visual-only change to the developer Instagram Reel:
+- the cream/white fill of each story text panel now uses the same rounded path as its gold border, so the corners match exactly.
+
+No story generation, illustration generation, Reel sequencing, Cast logic, Instagram publishing, database schema, or API endpoints are changed.
+
+---
 
 ## V250.72 — Clean Reel book text panels
 

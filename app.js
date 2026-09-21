@@ -1,4 +1,4 @@
-// Moonbeam Stories V250.72
+// Moonbeam Stories V250.73
 const locales = {
   'en-GB': {
     title:'Moonbeam Stories', tagline:"Make tonight's story just for them.", language:'Language', languageName:'English (UK)', chooseLanguage:'Choose your language', childTitle:"Who's tonight's story for?", name:'Name or nickname', namePh:'Milo', age:'Age', interests:'Interests', interestsPh:'dinosaurs, space, football', dislikes:'Things to avoid', dislikesPh:'too scary, spiders', storyPrefs:'Story preferences', length:'Story length', tone:'Tone', values:'Story Values', generate:"✨ Make Tonight's Story", saved:'Saved stories', noSaved:'Your saved stories will appear here.', short:'Short', medium:'Medium', long:'Long', cosy:'Cosy and funny', magical:'Magical', adventurous:'Adventurous', calm:'Calm and dreamy', previous:'‹ Previous', turn:'Turn page ›', end:'The End', save:'♡ Save story', savedBtn:'♥ Saved', newStory:'↟ New story', painting:'Painting this page…', paintingSmall:'Moonbeam is creating the picture.', beginning:'The beginning', page:'Page', errorName:'Give me a name or nickname first.', errorAge:'Please choose an age from 3 to 12.', writing:'Writing tonight’s adventure…', illustrationNote:'Illustrations are created in the background as you read.', valuesList:['Kindness','Courage','Curiosity','Independence','Creativity','Responsibility','Cooperation','Resilience']
@@ -1275,7 +1275,7 @@ async function captureInstagramReelTextPanel(text,pageNumber){
  document.body.appendChild(root);try{
   for(let size=20;size>=12;size--){body.style.fontSize=`${size}px`;await nextPaint();if(body.scrollHeight<=body.clientHeight+2)break}
   await nextPaint();const rootRect=root.getBoundingClientRect(),scale=936/rootRect.width,canvas=document.createElement('canvas');canvas.width=936;canvas.height=790;const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('Moonbeam could not capture the Reel text.');
-  ctx.fillStyle='#fffaf2';ctx.fillRect(0,0,936,790);ctx.strokeStyle='#b6904d';ctx.lineWidth=3;drawRoundedRectPath(ctx,2,2,932,786,28);ctx.stroke();
+  ctx.fillStyle='#fffaf2';drawRoundedRectPath(ctx,2,2,932,786,28);ctx.fill();ctx.strokeStyle='#b6904d';ctx.lineWidth=3;drawRoundedRectPath(ctx,2,2,932,786,28);ctx.stroke();
   drawDomTextElement(ctx,body,rootRect,scale);return await instagramReelPanelToDataUrl(canvas,12000);
  }finally{root.remove()}
 }
