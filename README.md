@@ -1,4 +1,44 @@
-# Moonbeam Stories V250.81
+# Moonbeam Stories V250.83
+
+## V250.83 — 10-minute automatic Reel ceiling
+
+The unattended Instagram Reel job now has substantially more headroom:
+- Vercel function maximum duration increased from **300 seconds to 600 seconds**;
+- the cloud Chromium protocol timeout increased from **290 seconds to 590 seconds**;
+- the Supabase `pg_net` request timeout increased from **300,000 ms to 600,000 ms**.
+
+The live Supabase scheduling function has also been updated to use the 10-minute request timeout. No further SQL needs to be run manually.
+
+---
+
+## V250.82 — Scheduled cloud automatic Instagram Reels
+
+This build extends the developer-only automatic Reel trial so it can run with Richard's browser and computer switched off.
+
+### Developer scheduling control
+- The Create Story page now shows an **Automatic posting schedule** directly underneath **Generate automatic Instagram reel**.
+- Richard can choose **Once**, **Every day**, **Every 2 days**, **Every 3 days**, or **Every week**, plus a first-post date and local clock time.
+- The control shows whether automatic posting is on, the next scheduled run, and the previous run result.
+- **Stop automatic posts** disables the schedule immediately.
+
+### Cloud execution
+- The schedule is persisted in Supabase rather than in Safari/local storage.
+- Supabase `pg_cron` wakes Moonbeam once per minute and only claims a job when its `next_run_at` is due.
+- A cloud-side headless Chromium session signs into the developer account with a one-time Supabase admin magic link and runs the same proven browser-driven `generateAutomaticInstagramReel()` flow.
+- This deliberately preserves browser-flattened Reel typography instead of going back to the broken server-side text rendering path.
+- The database lock prevents another scheduled run being claimed while the current one is still running.
+- On success the next occurrence is calculated in the saved timezone; one-off schedules switch themselves off. On failure the run is recorded as failed and recurring schedules move to their next occurrence.
+
+### Story variety
+- The automatic premise selector is broadened substantially: wildcard/unconstrained, fantasy, space/SF, time travel, prehistory, underwater, surreal, absurd comedy, historical, giant/miniature, machines, extreme environments, inside-art/book/game worlds, mystery, transformation and occasional ordinary-place-becomes-impossible stories.
+- This removes the V250.81 bias toward repeated modern-setting magical anomalies.
+
+### Infrastructure
+- Uses the existing `resend-inbound` endpoint, so the deployment remains at **12 callable API endpoints**.
+- Adds `puppeteer-core` and serverless Chromium as production dependencies for unattended browser rendering.
+- Adds `SUPABASE_V250_82_INSTAGRAM_AUTO_SCHEDULE.sql`. The migration has already been applied to the connected Moonbeam Supabase project in this build session.
+
+---
 
 ## V250.81 — Automatic demo-child realism weighting
 
