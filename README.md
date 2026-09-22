@@ -1,5 +1,17 @@
-# Moonbeam Stories V250.86
+# Moonbeam Stories V250.87
 
+## V250.87 — Fix automatic Reel Sandbox Chrome preflight scope
+
+V250.86 reached the cloud-browser preparation stage but failed before the Sandbox Chrome preflight could run with `executable is not defined`. The diagnostic command embedded a Sandbox-local variable inside the outer Vercel Function template literal, so Node tried to interpolate that variable in the wrong scope.
+
+- Keeps `executable` entirely inside the Sandbox preflight process.
+- Runs `ldd` directly with `execFileSync('ldd', [executable])` and filters its output for unresolved libraries, avoiding nested template interpolation and shell quoting.
+- Preserves the existing Chrome launch/close preflight, persistent Sandbox, 10-minute runner, schedule controls and automatic Reel pipeline.
+- Customer-facing story generation, illustration generation and Instagram publishing behaviour are otherwise unchanged.
+
+No SQL is required. API count remains unchanged.
+
+---
 
 
 ## V250.86 — Fix Vercel Sandbox Chrome dependency installation
