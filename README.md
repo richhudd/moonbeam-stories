@@ -1,4 +1,19 @@
-# Moonbeam Stories V250.84
+# Moonbeam Stories V250.85
+
+
+## V250.85 — Fix cloud Chrome shared-library failure
+
+The first unattended scheduled Reel reached the Vercel Sandbox correctly but Chrome could not start because the Sandbox did not yet contain Puppeteer's required Linux shared libraries (`libnspr4` was the first missing library reported).
+
+- New persistent Sandbox name forces a clean browser environment rather than reusing the incomplete V250.84 Sandbox.
+- Puppeteer is installed into a fixed persistent cache under `/vercel/sandbox/.cache/puppeteer`.
+- During first-time Sandbox setup, Puppeteer's own Debian/Ubuntu dependency installer now installs the Chrome system libraries with elevated Sandbox privileges.
+- Every scheduled run performs a short real Chrome launch/close preflight before handing off the 10-minute Reel job, so a broken browser environment fails immediately with a useful error instead of spending minutes on story generation first.
+- The actual automatic story/Reel pipeline, schedule controls, Reel formatting and 10-minute Sandbox limit are unchanged.
+
+No SQL is required for this fix. API count remains unchanged.
+
+---
 
 ## V250.84 — Hobby-safe 10-minute unattended cloud runner
 

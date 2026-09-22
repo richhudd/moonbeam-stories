@@ -390,14 +390,20 @@ try{
 `;
 async function ensureInstagramAutoSandbox(){
   const {Sandbox}=await import('@vercel/sandbox');
+  const cacheDir='/vercel/sandbox/.cache/puppeteer';
   const sandbox=await Sandbox.getOrCreate({
-    name:'moonbeam-instagram-auto',runtime:'node24',timeout:10*60*1000,
+    name:'moonbeam-instagram-auto-v2',runtime:'node24',timeout:10*60*1000,
     onCreate:async(sbx)=>{
       await sbx.writeFiles([{path:'/vercel/sandbox/package.json',content:Buffer.from(JSON.stringify({private:true,type:'module',dependencies:{puppeteer:'25.11.0'}},null,2))}]);
-      const install=await sbx.runCommand({cmd:'npm',args:['install','--no-audit','--no-fund'],cwd:'/vercel/sandbox'});
-      if(install.exitCode!==0)throw new Error(`Could not prepare the Moonbeam cloud browser: ${String(await install.stderr()).slice(0,500)}`);
+      const install=await sbx.runCommand({cmd:'npm',args:['install','--no-audit','--no-fund'],cwd:'/vercel/sandbox',env:{PUPPETEER_CACHE_DIR:cacheDir}});
+      if(install.exitCode!==0)throw new Error(`Could not prepare the Moonbeam cloud browser package: ${String(await install.stderr()).slice(0,700)}`);
+      const deps=await sbx.runCommand({cmd:'npx',args:['puppeteer','browsers','install','chrome','--install-deps'],cwd:'/vercel/sandbox',sudo:true,env:{PUPPETEER_CACHE_DIR:cacheDir}});
+      if(deps.exitCode!==0)throw new Error(`Could not install the Moonbeam cloud browser system libraries: ${String(await deps.stderr()).slice(0,900)}`);
     }
   });
+  const preflightCode=`import puppeteer from 'puppeteer';let b;try{b=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'],protocolTimeout:30000});console.log('MOONBEAM_BROWSER_READY')}finally{if(b)await b.close().catch(()=>{})}`;
+  const preflight=await sandbox.runCommand({cmd:'node',args:['--input-type=module','-e',preflightCode],cwd:'/vercel/sandbox',env:{PUPPETEER_CACHE_DIR:cacheDir}});
+  if(preflight.exitCode!==0)throw new Error(`Moonbeam cloud browser preflight failed: ${String(await preflight.stderr()).slice(0,900)}`);
   await sandbox.writeFiles([{path:'/vercel/sandbox/moonbeam-auto-runner.mjs',content:Buffer.from(INSTAGRAM_AUTO_SANDBOX_RUNNER)}]);
   return sandbox;
 }
@@ -408,7 +414,7 @@ async function launchInstagramAutoSandbox(claimed){
   await patchInstagramAutoSchedule(claimed.id,{run_token_hash:instagramAutoRunTokenHash(runToken),run_sandbox_name:sandbox.name,last_message:'Automatic Reel handed to the 10-minute cloud runner.'});
   const command=await sandbox.runCommand({
     cmd:'node',args:['moonbeam-auto-runner.mjs'],cwd:'/vercel/sandbox',detached:true,
-    env:{MOONBEAM_AUTO_START_URL:actionLink,MOONBEAM_AUTO_CALLBACK_URL:`${SITE_URL}/api/resend-inbound?action=instagram-auto-job-finish`,MOONBEAM_AUTO_SCHEDULE_ID:String(claimed.id),MOONBEAM_AUTO_RUN_TOKEN:runToken,MOONBEAM_AUTO_SANDBOX_NAME:String(sandbox.name||'')}
+    env:{PUPPETEER_CACHE_DIR:'/vercel/sandbox/.cache/puppeteer',MOONBEAM_AUTO_START_URL:actionLink,MOONBEAM_AUTO_CALLBACK_URL:`${SITE_URL}/api/resend-inbound?action=instagram-auto-job-finish`,MOONBEAM_AUTO_SCHEDULE_ID:String(claimed.id),MOONBEAM_AUTO_RUN_TOKEN:runToken,MOONBEAM_AUTO_SANDBOX_NAME:String(sandbox.name||'')}
   });
   if(command?.exitCode!=null&&command.exitCode!==0)throw new Error('The Moonbeam cloud runner could not be started.');
   return {sandboxName:sandbox.name};
