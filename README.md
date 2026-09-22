@@ -1,4 +1,20 @@
-# Moonbeam Stories V250.83
+# Moonbeam Stories V250.84
+
+## V250.84 — Hobby-safe 10-minute unattended cloud runner
+
+V250.83 could not deploy on the current Vercel Hobby plan because a Vercel Function cannot set `maxDuration` above **300 seconds**. V250.84 fixes the architecture rather than forcing the whole 4–7 minute Reel pipeline to fit inside a five-minute Function.
+
+- `api/resend-inbound.js` is back to the valid **300-second** Vercel Function ceiling.
+- When a scheduled post becomes due, the short Vercel Function now **launches a detached Vercel Sandbox runner and returns immediately**.
+- The Sandbox runs the existing browser-driven Moonbeam generation flow independently for up to **10 minutes**, so Safari and the Mac can remain switched off.
+- Vercel documents that Hobby sandboxes can run for up to **45 minutes**, so the 10-minute Moonbeam limit is comfortably inside the plan limit.
+- The runner uses a one-time signed completion token; when it finishes it reports success/failure back to Moonbeam, updates the schedule, and the sandbox is stopped.
+- A persistent named sandbox retains its Puppeteer installation between runs, so only the first run needs to prepare the browser environment.
+- No new callable API endpoint is added; the callback is another action on the existing `/api/resend-inbound` route.
+
+The existing schedule UI and automatic story/portrait/Reel behaviour are unchanged.
+
+---
 
 ## V250.83 — 10-minute automatic Reel ceiling
 

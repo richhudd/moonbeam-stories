@@ -354,26 +354,91 @@ async function generateDeveloperMagicLink(){
   const data=await adminJson(`${ADMIN_SUPABASE_URL}/auth/v1/admin/generate_link`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify({type:'magiclink',email,redirect_to:`${SITE_URL}/?instagramAutoCloud=1`})});
   const actionLink=String(data?.action_link||data?.properties?.action_link||'').trim();if(!actionLink)throw new Error('Supabase did not return a developer sign-in link.');return actionLink;
 }
-async function runInstagramAutoInCloud(){
-  const puppeteer=require('puppeteer-core');const chromium=require('@sparticuz/chromium');chromium.setGraphicsMode=false;
-  const browser=await puppeteer.launch({args:chromium.args,defaultViewport:{width:1440,height:1200,deviceScaleFactor:1},executablePath:await chromium.executablePath(),headless:'shell',protocolTimeout:590000});
+function instagramAutoRunTokenHash(token){return crypto.createHash('sha256').update(String(token||'')).digest('hex')}
+async function patchInstagramAutoSchedule(id,payload){
+  if(!id)return;await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/instagram_auto_schedule?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),body:JSON.stringify({...payload,updated_at:new Date().toISOString()})});
+}
+const INSTAGRAM_AUTO_SANDBOX_RUNNER=`import puppeteer from 'puppeteer';
+const startUrl=process.env.MOONBEAM_AUTO_START_URL;
+const callbackUrl=process.env.MOONBEAM_AUTO_CALLBACK_URL;
+const scheduleId=process.env.MOONBEAM_AUTO_SCHEDULE_ID;
+const runToken=process.env.MOONBEAM_AUTO_RUN_TOKEN;
+const sandboxName=process.env.MOONBEAM_AUTO_SANDBOX_NAME;
+async function callback(payload){
+  const r=await fetch(callbackUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scheduleId,runToken,sandboxName,...payload})});
+  if(!r.ok)throw new Error('Moonbeam completion callback failed ('+r.status+').');
+}
+let browser=null;
+try{
+  if(!startUrl||!callbackUrl||!scheduleId||!runToken)throw new Error('Automatic Reel runner configuration is incomplete.');
+  browser=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'],protocolTimeout:9*60*1000});
+  const page=await browser.newPage();
+  await page.setViewport({width:1440,height:1200,deviceScaleFactor:1});
+  page.setDefaultTimeout(45000);page.setDefaultNavigationTimeout(45000);
+  page.on('console',msg=>{const t=msg.type();if(t==='error'||t==='warning')console.log('moonbeam sandbox browser '+t+': '+msg.text())});
+  await page.goto(startUrl,{waitUntil:'networkidle2',timeout:45000});
+  await page.waitForFunction(()=>typeof generateAutomaticInstagramReel==='function'&&typeof currentUser!=='undefined'&&!!currentUser?.id,{timeout:45000});
+  const result=await page.evaluate(async()=>await generateAutomaticInstagramReel());
+  if(!result?.ok)throw new Error(result?.error||'The cloud browser did not complete the automatic Reel.');
+  await callback({success:true,message:'Automatic Reel posted'+(result.childName?' for '+result.childName:'' )+'.',mediaId:result.mediaId||''});
+}catch(error){
+  console.error('moonbeam automatic Reel sandbox',error);
+  try{await callback({success:false,message:error?.message||String(error),mediaId:''})}catch(callbackError){console.error('moonbeam automatic Reel callback',callbackError)}
+}finally{
+  if(browser)await browser.close().catch(()=>{});
+}
+`;
+async function ensureInstagramAutoSandbox(){
+  const {Sandbox}=await import('@vercel/sandbox');
+  const sandbox=await Sandbox.getOrCreate({
+    name:'moonbeam-instagram-auto',runtime:'node24',timeout:10*60*1000,
+    onCreate:async(sbx)=>{
+      await sbx.writeFiles([{path:'/vercel/sandbox/package.json',content:Buffer.from(JSON.stringify({private:true,type:'module',dependencies:{puppeteer:'25.11.0'}},null,2))}]);
+      const install=await sbx.runCommand({cmd:'npm',args:['install','--no-audit','--no-fund'],cwd:'/vercel/sandbox'});
+      if(install.exitCode!==0)throw new Error(`Could not prepare the Moonbeam cloud browser: ${String(await install.stderr()).slice(0,500)}`);
+    }
+  });
+  await sandbox.writeFiles([{path:'/vercel/sandbox/moonbeam-auto-runner.mjs',content:Buffer.from(INSTAGRAM_AUTO_SANDBOX_RUNNER)}]);
+  return sandbox;
+}
+async function launchInstagramAutoSandbox(claimed){
+  const runToken=crypto.randomBytes(32).toString('hex');
+  const actionLink=await generateDeveloperMagicLink();
+  const sandbox=await ensureInstagramAutoSandbox();
+  await patchInstagramAutoSchedule(claimed.id,{run_token_hash:instagramAutoRunTokenHash(runToken),run_sandbox_name:sandbox.name,last_message:'Automatic Reel handed to the 10-minute cloud runner.'});
+  const command=await sandbox.runCommand({
+    cmd:'node',args:['moonbeam-auto-runner.mjs'],cwd:'/vercel/sandbox',detached:true,
+    env:{MOONBEAM_AUTO_START_URL:actionLink,MOONBEAM_AUTO_CALLBACK_URL:`${SITE_URL}/api/resend-inbound?action=instagram-auto-job-finish`,MOONBEAM_AUTO_SCHEDULE_ID:String(claimed.id),MOONBEAM_AUTO_RUN_TOKEN:runToken,MOONBEAM_AUTO_SANDBOX_NAME:String(sandbox.name||'')}
+  });
+  if(command?.exitCode!=null&&command.exitCode!==0)throw new Error('The Moonbeam cloud runner could not be started.');
+  return {sandboxName:sandbox.name};
+}
+async function stopInstagramAutoSandbox(name){
+  if(!name)return;try{const {Sandbox}=await import('@vercel/sandbox');const sandbox=await Sandbox.get({name:String(name)});if(sandbox)await sandbox.stop()}catch(error){console.warn('Moonbeam sandbox stop',error?.message||error)}
+}
+async function developerInstagramAutoJobFinish(req,res,body={}){
+  const scheduleId=String(body?.scheduleId||'').trim(),runToken=String(body?.runToken||'').trim();
+  if(!scheduleId||!runToken)return res.status(400).json({error:'Missing automatic Reel completion token.'});
   try{
-    const page=await browser.newPage();page.setDefaultTimeout(45000);page.setDefaultNavigationTimeout(45000);
-    page.on('console',msg=>{const t=msg.type();if(t==='error'||t==='warning')console.log(`moonbeam cloud browser ${t}:`,msg.text())});
-    const actionLink=await generateDeveloperMagicLink();await page.goto(actionLink,{waitUntil:'networkidle2',timeout:45000});
-    await page.waitForFunction(()=>typeof generateAutomaticInstagramReel==='function'&&typeof currentUser!=='undefined'&&!!currentUser?.id,{timeout:45000});
-    const result=await page.evaluate(async()=>await generateAutomaticInstagramReel());
-    if(!result?.ok)throw new Error(result?.error||'The cloud browser did not complete the automatic Reel.');
-    return result;
-  }finally{await browser.close().catch(()=>{})}
+    const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/instagram_auto_schedule?id=eq.${encodeURIComponent(scheduleId)}&select=id,run_token_hash,run_sandbox_name,last_status&limit=1`,{headers:adminHeaders()});
+    const row=Array.isArray(rows)?rows[0]:null;if(!row?.id||!row?.run_token_hash)return res.status(404).json({error:'This automatic Reel run is no longer active.'});
+    const actual=instagramAutoRunTokenHash(runToken),expected=String(row.run_token_hash||'');
+    const valid=actual.length===expected.length&&crypto.timingSafeEqual(Buffer.from(actual),Buffer.from(expected));
+    if(!valid)return res.status(403).json({error:'Invalid automatic Reel completion token.'});
+    const success=body?.success===true,message=String(body?.message||'').slice(0,1000),mediaId=String(body?.mediaId||'').slice(0,200);
+    await finishInstagramAutoSchedule(row.id,success,message,mediaId);
+    res.status(200).json({ok:true});
+    await stopInstagramAutoSandbox(row.run_sandbox_name||body?.sandboxName||'');
+    return;
+  }catch(error){console.error('instagram automatic sandbox finish',error);return res.status(502).json({error:error?.message||'Could not finish the automatic Instagram Reel job.'})}
 }
 async function developerInstagramAutoCron(req,res){
   let claimed=null;
   try{
     claimed=await claimInstagramAutoSchedule();if(!claimed)return res.status(200).json({ok:true,due:false});
-    const result=await runInstagramAutoInCloud();await finishInstagramAutoSchedule(claimed.id,true,`Automatic Reel posted${result?.childName?` for ${result.childName}`:''}.`,result?.mediaId||'');
-    return res.status(200).json({ok:true,due:true,posted:true,mediaId:result?.mediaId||null});
-  }catch(error){console.error('instagram automatic cloud run',error);if(claimed?.id)await finishInstagramAutoSchedule(claimed.id,false,error?.message||String(error),'');return res.status(502).json({ok:false,due:!!claimed,error:error?.message||'Automatic Instagram Reel failed.'})}
+    const launched=await launchInstagramAutoSandbox(claimed);
+    return res.status(200).json({ok:true,due:true,started:true,sandbox:launched?.sandboxName||null});
+  }catch(error){console.error('instagram automatic cloud launch',error);if(claimed?.id)await finishInstagramAutoSchedule(claimed.id,false,error?.message||String(error),'');return res.status(502).json({ok:false,due:!!claimed,error:error?.message||'Automatic Instagram Reel could not be started.'})}
 }
 function shareTokenHash(token){return crypto.createHash('sha256').update(String(token)).digest('hex')}
 async function waitForInstagramContainer(creationId,accessToken,label='Instagram media'){
@@ -682,6 +747,10 @@ module.exports = async function handler(req, res) {
     return developerInstagramAutoScheduleSave(req,res,body);
   }
   if(req.method==='POST' && action==='instagram-auto-schedule-stop')return developerInstagramAutoScheduleStop(req,res);
+  if(req.method==='POST' && action==='instagram-auto-job-finish'){
+    let body=req.body;if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}
+    return developerInstagramAutoJobFinish(req,res,body);
+  }
   if(req.method==='POST' && action==='instagram-auto-demo-profile'){
     let body=req.body;if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}
     return developerInstagramAutoDemoProfile(req,res,body);
