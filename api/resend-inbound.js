@@ -392,18 +392,38 @@ async function ensureInstagramAutoSandbox(){
   const {Sandbox}=await import('@vercel/sandbox');
   const cacheDir='/vercel/sandbox/.cache/puppeteer';
   const sandbox=await Sandbox.getOrCreate({
-    name:'moonbeam-instagram-auto-v2',runtime:'node24',timeout:10*60*1000,
+    name:'moonbeam-instagram-auto-v3',runtime:'node24',timeout:10*60*1000,
     onCreate:async(sbx)=>{
       await sbx.writeFiles([{path:'/vercel/sandbox/package.json',content:Buffer.from(JSON.stringify({private:true,type:'module',dependencies:{puppeteer:'25.11.0'}},null,2))}]);
       const install=await sbx.runCommand({cmd:'npm',args:['install','--no-audit','--no-fund'],cwd:'/vercel/sandbox',env:{PUPPETEER_CACHE_DIR:cacheDir}});
       if(install.exitCode!==0)throw new Error(`Could not prepare the Moonbeam cloud browser package: ${String(await install.stderr()).slice(0,700)}`);
-      const deps=await sbx.runCommand({cmd:'npx',args:['puppeteer','browsers','install','chrome','--install-deps'],cwd:'/vercel/sandbox',sudo:true,env:{PUPPETEER_CACHE_DIR:cacheDir}});
-      if(deps.exitCode!==0)throw new Error(`Could not install the Moonbeam cloud browser system libraries: ${String(await deps.stderr()).slice(0,900)}`);
+
+      const detect=await sbx.runCommand({cmd:'sh',args:['-lc',`if command -v apt-get >/dev/null 2>&1; then echo apt; elif command -v dnf >/dev/null 2>&1; then echo dnf; else echo none; fi`],cwd:'/vercel/sandbox'});
+      const manager=String(await detect.stdout()).trim();
+      let depScript='';
+      if(manager==='apt')depScript=`set -eu
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+pick(){ for p in "$@"; do if apt-cache show "$p" >/dev/null 2>&1; then printf '%s' "$p"; return 0; fi; done; return 1; }
+ASOUND=$(pick libasound2t64 libasound2)
+ATK=$(pick libatk1.0-0t64 libatk1.0-0)
+GTK=$(pick libgtk-3-0t64 libgtk-3-0)
+CUPS=$(pick libcups2t64 libcups2)
+apt-get install -y --no-install-recommends ca-certificates fonts-liberation "$ASOUND" libatk-bridge2.0-0 "$ATK" libcairo2 "$CUPS" libdbus-1-3 libexpat1 libfontconfig1 libgbm1 libglib2.0-0 "$GTK" libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 xdg-utils wget
+ldconfig`;
+      else if(manager==='dnf')depScript=`set -eu
+dnf clean all || true
+dnf install -y --skip-broken nss nspr libxkbcommon atk at-spi2-atk at-spi2-core libXcomposite libXdamage libXrandr libXfixes libXcursor libXi libXtst libXScrnSaver libXext mesa-libgbm libdrm mesa-libGL mesa-libEGL cups-libs alsa-lib pango cairo gtk3 dbus-libs fontconfig liberation-fonts || true
+ldconfig`;
+      else throw new Error('Moonbeam cloud browser could not identify the Sandbox Linux package manager.');
+
+      const deps=await sbx.runCommand({cmd:'sh',args:['-lc',depScript],cwd:'/vercel/sandbox',sudo:true});
+      if(deps.exitCode!==0)throw new Error(`Could not install the Moonbeam cloud browser system libraries (${manager}): ${String(await deps.stderr()).slice(0,1200)}`);
     }
   });
-  const preflightCode=`import puppeteer from 'puppeteer';let b;try{b=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'],protocolTimeout:30000});console.log('MOONBEAM_BROWSER_READY')}finally{if(b)await b.close().catch(()=>{})}`;
+  const preflightCode=`import puppeteer from 'puppeteer';import {execFileSync} from 'node:child_process';let b;try{const executable=puppeteer.executablePath();console.log('MOONBEAM_CHROME='+executable);try{const missing=execFileSync('sh',['-lc',\`ldd \"${executable}\" 2>/dev/null | grep 'not found' || true\`],{encoding:'utf8'}).trim();if(missing)console.error('MOONBEAM_MISSING_LIBS='+missing)}catch{}b=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'],protocolTimeout:30000});console.log('MOONBEAM_BROWSER_READY')}finally{if(b)await b.close().catch(()=>{})}`;
   const preflight=await sandbox.runCommand({cmd:'node',args:['--input-type=module','-e',preflightCode],cwd:'/vercel/sandbox',env:{PUPPETEER_CACHE_DIR:cacheDir}});
-  if(preflight.exitCode!==0)throw new Error(`Moonbeam cloud browser preflight failed: ${String(await preflight.stderr()).slice(0,900)}`);
+  if(preflight.exitCode!==0){const err=String(await preflight.stderr()),out=String(await preflight.stdout());throw new Error(`Moonbeam cloud browser preflight failed: ${(err+'\n'+out).trim().slice(0,1400)}`)}
   await sandbox.writeFiles([{path:'/vercel/sandbox/moonbeam-auto-runner.mjs',content:Buffer.from(INSTAGRAM_AUTO_SANDBOX_RUNNER)}]);
   return sandbox;
 }

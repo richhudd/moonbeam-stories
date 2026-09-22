@@ -1,5 +1,21 @@
-# Moonbeam Stories V250.85
+# Moonbeam Stories V250.86
 
+
+
+## V250.86 — Fix Vercel Sandbox Chrome dependency installation
+
+V250.85 reached the scheduled cloud runner but the first-time dependency step used Puppeteer's `--install-deps` helper. That helper is Debian/Ubuntu-specific and the Sandbox environment did not complete it successfully, so the browser never reached its launch preflight.
+
+- Replaces Puppeteer's OS dependency helper with explicit Vercel-Sandbox-aware installation.
+- Detects the Sandbox package manager at runtime and supports both current Ubuntu/`apt` images and Amazon-Linux/`dnf` images.
+- Installs Chrome's required NSS/NSPR, GTK, X11, audio, font and graphics libraries with root privileges.
+- Uses a fresh persistent Sandbox name (`moonbeam-instagram-auto-v3`) so the failed V250.85 environment is not reused.
+- Keeps the real Chrome launch preflight and now also reports unresolved `ldd` libraries if launch still fails.
+- The automatic story/Reel pipeline, schedule controls, 10-minute Sandbox limit and customer-facing generation are otherwise unchanged.
+
+No SQL is required. API count remains unchanged.
+
+---
 
 ## V250.85 — Fix cloud Chrome shared-library failure
 
