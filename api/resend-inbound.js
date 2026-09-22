@@ -201,7 +201,7 @@ function weightedValue(items,fallback=''){
   const picked=weightedPick(items);if(picked&&typeof picked==='object'&&typeof picked.value!=='undefined')return picked.value;
   return fallback;
 }
-async function developerInstagramAutoDemoProfile(req,res,body={}){
+async function developerInstagramDemoChild(req,res,body={}){
   const verified=await verifyDeveloper(req);if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
   const apiKey=String(process.env.OPENAI_API_KEY||'').trim().replace(/^[\'\"]|[\'\"]$/g,'');
   if(!apiKey)return res.status(503).json({error:'OPENAI_API_KEY is not configured in Vercel.'});
@@ -247,27 +247,33 @@ async function developerInstagramAutoDemoProfile(req,res,body={}){
   const featureDescriptor=randomItem(['soft chubby cheeks','slightly prominent ears','a scattering of freckles','a faint birthmark','glasses','a slightly gap-toothed smile','unruly hair','']);
   const clothingDescriptor=randomItem(['a plain T-shirt','a simple striped top','a knit jumper','a casual hoodie','a lightweight jacket over a T-shirt','a simple long-sleeved top'])||'a plain T-shirt';
   const backgroundDescriptor=randomItem(['a leafy park path','a back garden with greenery','a quiet playground','a schoolyard edge','a brick terrace street','a seaside promenade','a local football pitch sideline','a softly blurred woodland path','a quiet urban courtyard','a front garden by a low wall'])||'a leafy park path';
-  const storySeed=weightedValue([
-    {value:'WILDCARD — choose any imaginative genre, setting, period or reality level. Surprise us and do not default to an ordinary modern setting.',weight:24},
-    {value:'high fantasy — castles, impossible landscapes, magic, quests or strange kingdoms, without needing to begin in the ordinary world',weight:7},
-    {value:'space or science fiction — planets, spacecraft, alien environments, future cities, strange technology or cosmic-scale adventure',weight:7},
-    {value:'time travel — any historical, prehistoric or future period, with the adventure genuinely taking place there',weight:7},
-    {value:'prehistoric adventure — dinosaurs, ancient seas, ice ages or deep prehistory, with the child immersed in that world',weight:5},
-    {value:'underwater or oceanic world — deep sea, reefs, submarines, drowned cities or impossible marine environments',weight:5},
-    {value:'surreal impossible world — dream logic, bizarre scale, upside-down places, impossible physics or an entirely invented reality',weight:6},
-    {value:'absurd comedy — a genuinely funny, escalating, ridiculous predicament rather than a conventional magical mystery',weight:6},
-    {value:'historical adventure — a vivid past era, not merely a present-day museum or old object leading to clues',weight:5},
-    {value:'giant or miniature scale — the child becomes tiny, enormous, or enters a world at radically different scale',weight:5},
-    {value:'machines and invention — extraordinary vehicles, robots, contraptions or engineering-driven adventure',weight:5},
-    {value:'wild environment — Arctic, desert, jungle, mountain, volcanic, cave or other visually dramatic natural setting',weight:5},
-    {value:'inside another medium — the child enters a painting, book, map, game, photograph, film or other represented world',weight:4},
-    {value:'mystery or puzzle — a strong mystery structure, but avoid another generic trail of clues through an ordinary neighbourhood',weight:4},
-    {value:'transformation — the child or the world changes form in a surprising way and the consequences drive the plot',weight:4},
-    {value:'an ordinary place becomes impossible — use sparingly; a familiar setting can transform, but make the transformation visually bold and distinctive',weight:5}
-  ],'WILDCARD — choose any imaginative genre, setting, period or reality level.');
   try{
-    const conceptPrompt=`Invent ONE completely fictional demo child for Moonbeam Stories marketing. This is not a real customer and must not be based on any real child.\n\nVARIETY SEED: ${varietySeed}\nExisting Cast first names to avoid if practical: ${existingNames.length?existingNames.join(', '):'none'}.\n\nThe demographic and visual brief is FIXED. Use it exactly:\n- age: ${age}\n- gender: "${gender}"\n- broad UK demographic bucket: ${broadCategory.label}\n- more specific profile: ${subProfile.label}\n- skin tone: ${skinTone}\n- hair: ${hairColour} ${hairTexture} hair, with ${hairStyle}\n- eyes: ${eyeColour}\n- body type: ${buildDescriptor}\n- face: ${faceDescriptor}${featureDescriptor?`; extra detail: ${featureDescriptor}`:''}\n- clothing: ${clothingDescriptor}\n- portrait background: ${backgroundDescriptor}\n\nRequirements:\n- choose a plausible FIRST NAME ONLY (no surname), suitable in contemporary Britain and fitting this profile;\n- write a concise appearance description that stays faithful to the fixed brief;\n- the child should look real and ordinary, not idealised, glamorous, airbrushed or model-like;\n- create ONE concise, imaginative, age-appropriate Moonbeam story idea using this story seed as a rough direction: ${storySeed};\n- the story must star ONLY this child; no adults, no parents, no siblings, no pets, no sidekick animals, and no crowd of characters;\n- avoid repeatedly using bedtime, stars, moonlight, treasure hunts, hair accessories, or the same generic fantasy trope.\n\nReturn JSON only with exactly this shape:\n{"name":"string","age":${age},"gender":"${gender}","appearance":"string","storyIdea":"string"}`;
-    const conceptResponse=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:conceptPrompt,max_output_tokens:700})});
+    const conceptPrompt=`Invent ONE completely fictional demo child for Moonbeam Stories marketing. This is not a real customer and must not be based on any real child.
+
+VARIETY SEED: ${varietySeed}
+Existing Cast first names to avoid if practical: ${existingNames.length?existingNames.join(', '):'none'}.
+
+The demographic and visual brief is FIXED. Use it exactly:
+- age: ${age}
+- gender: "${gender}"
+- broad UK demographic bucket: ${broadCategory.label}
+- more specific profile: ${subProfile.label}
+- skin tone: ${skinTone}
+- hair: ${hairColour} ${hairTexture} hair, with ${hairStyle}
+- eyes: ${eyeColour}
+- body type: ${buildDescriptor}
+- face: ${faceDescriptor}${featureDescriptor?`; extra detail: ${featureDescriptor}`:''}
+- clothing: ${clothingDescriptor}
+- portrait background: ${backgroundDescriptor}
+
+Requirements:
+- choose a plausible FIRST NAME ONLY (no surname), suitable in contemporary Britain and fitting this profile;
+- write a concise appearance description that stays faithful to the fixed brief;
+- the child should look real and ordinary, not idealised, glamorous, airbrushed or model-like.
+
+Return JSON only with exactly this shape:
+{"name":"string","age":${age},"gender":"${gender}","appearance":"string"}`;
+    const conceptResponse=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:conceptPrompt,max_output_tokens:450})});
     const raw=await conceptResponse.text();let data={};try{data=JSON.parse(raw)}catch{}
     if(!conceptResponse.ok)throw new Error(data?.error?.message||`Demo-child invention failed (${conceptResponse.status}).`);
     let output=typeof data.output_text==='string'?data.output_text:'';
@@ -282,189 +288,21 @@ async function developerInstagramAutoDemoProfile(req,res,body={}){
     const name=lowerExisting.has(rawName.toLowerCase())?fallbackName:rawName;
     const fallbackAppearance=`${gender==='male'?'boy':'girl'} with ${skinTone}, ${eyeColour} eyes, ${hairColour} ${hairTexture} hair worn as ${hairStyle}, ${buildDescriptor}, ${faceDescriptor}${featureDescriptor?`, ${featureDescriptor}`:''}, wearing ${clothingDescriptor}.`;
     const appearance=String(concept.appearance||fallbackAppearance).replace(/\s+/g,' ').trim().slice(0,700)||fallbackAppearance;
-    const fallbackStoryIdeas=[
-      'The child wakes aboard a city-sized spacecraft drifting through the rings of Saturn and must work out why every machine has gone silent.',
-      'A railway run by dinosaurs crosses a prehistoric jungle, and the child has to get the last train through before a volcanic storm arrives.',
-      'The child shrinks to the size of a beetle and discovers an enormous civilisation living beneath the garden grass.',
-      'A submarine descends beneath an ordinary sea and finds a bright underwater city built inside the skeleton of a colossal whale.',
-      'The child steps into a painting and finds a country where every road, mountain and river is still being painted into existence.',
-      'A ridiculous machine begins swapping the size of everything it touches, turning a biscuit enormous and a bus pocket-sized.',
-      'The child is accidentally sent to a medieval city on the morning its clock tower starts predicting events before they happen.',
-      'A robot taxi in a future city refuses to take the child home until they help solve why gravity keeps changing street by street.',
-      'The child climbs into a cloud and finds an entire weather factory where the seasons have become mixed up.',
-      'A mysterious staircase appears in the middle of the desert and leads upward into a floating world built from enormous kites.'
-    ];
-    const storyIdea=String(concept.storyIdea||fallbackStoryIdeas[crypto.randomInt(0,fallbackStoryIdeas.length)]).replace(/\s+/g,' ').trim().slice(0,500);
-    await logUsage({event_type:'instagram_demo_profile',estimated_cost_gbp:0,metadata:{model:'gpt-5.6-luna',user_id:verified.user.id,age,gender,broad_category:broadCategory.label,sub_profile:subProfile.label,hair_colour:hairColour,eye_colour:eyeColour,background:backgroundDescriptor}});
+    await logUsage({event_type:'instagram_demo_child_profile',estimated_cost_gbp:0,metadata:{model:'gpt-5.6-luna',user_id:verified.user.id,age,gender,broad_category:broadCategory.label,sub_profile:subProfile.label,hair_colour:hairColour,eye_colour:eyeColour,background:backgroundDescriptor}});
 
     const portraitPrompt=`Create a high-quality PHOTOREALISTIC head-and-shoulders portrait photograph of ONE completely fictional ${age}-year-old ${gender==='male'?'boy':'girl'} named ${name}. This person must be invented and must not resemble or be based on any real child or public figure.\n\nUse this appearance faithfully: ${appearance}\n\nHard requirements:\n- believable ${broadCategory.label.toLowerCase()} / ${subProfile.label} appearance\n- relaxed friendly expression\n- believable skin, hair and eye texture\n- natural contemporary child clothing\n- soft natural daylight\n- camera at the child's eye level\n- background should be ${backgroundDescriptor}, slightly blurred with shallow depth of field\n- the child should look ordinary and real rather than glamorised or model-perfect\n- the child may look slim, average, stockier or heavier as stated; do not slim them down\n- keep any freckles, glasses, birthmarks, gap-toothed smile or other ordinary features if mentioned\n\nThe result should look like a normal high-quality family portrait photograph, not a fashion shoot, school ID photo, passport photo, poster, illustration, cartoon, 3D render or painting. The background must not be a plain white, plain grey or studio backdrop. No text, captions, logos, borders, signs, watermarks, props held toward camera, costumes, other people or animals. ${gender==='male'?'Do not add hair clips, bows, barrettes, decorative stars, tiaras or ornamental headbands. ':''}Do not beautify the child into a generic AI-perfect face.`;
     const imageResponse=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-image-2.5-flare',prompt:portraitPrompt,size:'1024x1024',quality:'medium',output_format:'jpeg'})});
     const imageRaw=await imageResponse.text();let imageData={};try{imageData=JSON.parse(imageRaw)}catch{}
     if(!imageResponse.ok)throw new Error(imageData?.error?.message||`Demo portrait failed (${imageResponse.status}).`);
     const item=Array.isArray(imageData.data)?imageData.data[0]:null;if(!item||typeof item.b64_json!=='string')throw new Error('The demo portrait service returned no image.');
-    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:false}),metadata:{model:'gpt-image-2.5-flare',user_id:verified.user.id,instagram_demo_portrait:true,synthetic:true,broad_category:broadCategory.label,sub_profile:subProfile.label}});
-    return res.status(200).json({ok:true,profile:{name,age,gender,storyIdea,portraitDataUrl:`data:image/jpeg;base64,${item.b64_json}`,synthetic:true}});
-  }catch(error){console.error('instagram auto demo profile',error);return res.status(502).json({ok:false,error:error?.message||'Could not invent the demo child.'});}
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:false}),metadata:{model:'gpt-image-2.5-flare',user_id:verified.user.id,instagram_demo_child_portrait:true,synthetic:true,broad_category:broadCategory.label,sub_profile:subProfile.label}});
+    return res.status(200).json({ok:true,profile:{name,age,gender,portraitDataUrl:`data:image/jpeg;base64,${item.b64_json}`,synthetic:true}});
+  }catch(error){console.error('instagram demo child',error);return res.status(502).json({ok:false,error:error?.message||'Could not invent the demo child.'});}
 }
 async function adminJson(url,options={}){
   const r=await fetch(url,options); const text=await r.text(); let data=null;
   try{data=text?JSON.parse(text):null}catch{data=text}
   if(!r.ok)throw new Error(data?.message||data?.error||`Moonbeam data request failed (${r.status}).`); return data;
-}
-function safeScheduleRow(row){
-  if(!row)return null;return {id:row.id||null,enabled:row.enabled===true,frequency_days:Number(row.frequency_days)||0,timezone:String(row.timezone||'Europe/London'),local_time:String(row.local_time||'').slice(0,5),next_run_at:row.next_run_at||null,last_run_at:row.last_run_at||null,last_status:row.last_status||null,last_message:row.last_message||null,last_media_id:row.last_media_id||null};
-}
-async function getInstagramAutoSchedule(ownerId){
-  const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/instagram_auto_schedule?owner_id=eq.${encodeURIComponent(ownerId)}&select=id,enabled,frequency_days,timezone,local_time,next_run_at,last_run_at,last_status,last_message,last_media_id&limit=1`,{headers:adminHeaders()});
-  return safeScheduleRow(Array.isArray(rows)?rows[0]:null);
-}
-async function developerInstagramAutoScheduleGet(req,res){
-  const verified=await verifyDeveloper(req);if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
-  try{return res.status(200).json({ok:true,schedule:await getInstagramAutoSchedule(verified.user.id)})}catch(error){console.error('instagram schedule get',error);return res.status(502).json({error:error?.message||'Could not load the automatic posting schedule.'})}
-}
-async function developerInstagramAutoScheduleSave(req,res,body={}){
-  const verified=await verifyDeveloper(req);if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
-  try{
-    const frequencyDays=Math.max(0,Math.min(30,Math.round(Number(body.frequencyDays)||0)));
-    const next=new Date(String(body.nextRunAt||''));if(!Number.isFinite(next.getTime())||next.getTime()<=Date.now()+30000)return res.status(400).json({error:'Choose a future date and time.'});
-    const timezone=String(body.timezone||'Europe/London').trim().slice(0,80)||'Europe/London';
-    const localTime=/^\d{2}:\d{2}$/.test(String(body.localTime||''))?String(body.localTime):new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:timezone}).format(next).replace('.',':');
-    const payload={owner_id:verified.user.id,enabled:true,frequency_days:frequencyDays,timezone,local_time:localTime,next_run_at:next.toISOString(),locked_at:null,last_status:'scheduled',last_message:'Automatic Reel scheduled.',updated_at:new Date().toISOString()};
-    await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/instagram_auto_schedule?on_conflict=owner_id`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(payload)});
-    await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/rpc/ensure_instagram_auto_cron`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:'{}'});
-    return res.status(200).json({ok:true,schedule:await getInstagramAutoSchedule(verified.user.id)});
-  }catch(error){console.error('instagram schedule save',error);return res.status(502).json({error:error?.message||'Could not save the automatic posting schedule.'})}
-}
-async function developerInstagramAutoScheduleStop(req,res){
-  const verified=await verifyDeveloper(req);if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
-  try{
-    await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/instagram_auto_schedule?owner_id=eq.${encodeURIComponent(verified.user.id)}`,{method:'PATCH',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),body:JSON.stringify({enabled:false,next_run_at:null,locked_at:null,last_status:'stopped',last_message:'Automatic posting stopped.',updated_at:new Date().toISOString()})});
-    return res.status(200).json({ok:true,schedule:await getInstagramAutoSchedule(verified.user.id)});
-  }catch(error){console.error('instagram schedule stop',error);return res.status(502).json({error:error?.message||'Could not stop automatic posting.'})}
-}
-async function claimInstagramAutoSchedule(){
-  const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/rpc/claim_due_instagram_auto_schedule`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:'{}'});
-  return Array.isArray(rows)?rows[0]:null;
-}
-async function finishInstagramAutoSchedule(id,success,message='',mediaId=''){
-  if(!id)return;try{await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/rpc/finish_instagram_auto_schedule`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify({p_id:id,p_success:!!success,p_message:String(message||'').slice(0,1000),p_media_id:String(mediaId||'').slice(0,200)})})}catch(error){console.error('instagram schedule finish',error)}
-}
-async function generateDeveloperMagicLink(){
-  const email=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();if(!email)throw new Error('MOONBEAM_DEVELOPER_EMAIL is not configured.');
-  const data=await adminJson(`${ADMIN_SUPABASE_URL}/auth/v1/admin/generate_link`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify({type:'magiclink',email,redirect_to:`${SITE_URL}/?instagramAutoCloud=1`})});
-  const actionLink=String(data?.action_link||data?.properties?.action_link||'').trim();if(!actionLink)throw new Error('Supabase did not return a developer sign-in link.');return actionLink;
-}
-function instagramAutoRunTokenHash(token){return crypto.createHash('sha256').update(String(token||'')).digest('hex')}
-async function patchInstagramAutoSchedule(id,payload){
-  if(!id)return;await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/instagram_auto_schedule?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:adminHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),body:JSON.stringify({...payload,updated_at:new Date().toISOString()})});
-}
-const INSTAGRAM_AUTO_SANDBOX_RUNNER=`import puppeteer from 'puppeteer';
-const startUrl=process.env.MOONBEAM_AUTO_START_URL;
-const callbackUrl=process.env.MOONBEAM_AUTO_CALLBACK_URL;
-const scheduleId=process.env.MOONBEAM_AUTO_SCHEDULE_ID;
-const runToken=process.env.MOONBEAM_AUTO_RUN_TOKEN;
-const sandboxName=process.env.MOONBEAM_AUTO_SANDBOX_NAME;
-async function callback(payload){
-  const r=await fetch(callbackUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scheduleId,runToken,sandboxName,...payload})});
-  if(!r.ok)throw new Error('Moonbeam completion callback failed ('+r.status+').');
-}
-let browser=null;
-try{
-  if(!startUrl||!callbackUrl||!scheduleId||!runToken)throw new Error('Automatic Reel runner configuration is incomplete.');
-  browser=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'],protocolTimeout:9*60*1000});
-  const page=await browser.newPage();
-  await page.setViewport({width:1440,height:1200,deviceScaleFactor:1});
-  page.setDefaultTimeout(45000);page.setDefaultNavigationTimeout(45000);
-  page.on('console',msg=>{const t=msg.type();if(t==='error'||t==='warning')console.log('moonbeam sandbox browser '+t+': '+msg.text())});
-  await page.goto(startUrl,{waitUntil:'networkidle2',timeout:45000});
-  await page.waitForFunction(()=>typeof generateAutomaticInstagramReel==='function'&&typeof currentUser!=='undefined'&&!!currentUser?.id,{timeout:45000});
-  const result=await page.evaluate(async()=>await generateAutomaticInstagramReel());
-  if(!result?.ok)throw new Error(result?.error||'The cloud browser did not complete the automatic Reel.');
-  await callback({success:true,message:'Automatic Reel posted'+(result.childName?' for '+result.childName:'' )+'.',mediaId:result.mediaId||''});
-}catch(error){
-  console.error('moonbeam automatic Reel sandbox',error);
-  try{await callback({success:false,message:error?.message||String(error),mediaId:''})}catch(callbackError){console.error('moonbeam automatic Reel callback',callbackError)}
-}finally{
-  if(browser)await browser.close().catch(()=>{});
-}
-`;
-async function ensureInstagramAutoSandbox(){
-  const {Sandbox}=await import('@vercel/sandbox');
-  const cacheDir='/vercel/sandbox/.cache/puppeteer';
-  const sandbox=await Sandbox.getOrCreate({
-    name:'moonbeam-instagram-auto-v3',runtime:'node24',timeout:10*60*1000,
-    onCreate:async(sbx)=>{
-      await sbx.writeFiles([{path:'/vercel/sandbox/package.json',content:Buffer.from(JSON.stringify({private:true,type:'module',dependencies:{puppeteer:'25.11.0'}},null,2))}]);
-      const install=await sbx.runCommand({cmd:'npm',args:['install','--no-audit','--no-fund'],cwd:'/vercel/sandbox',env:{PUPPETEER_CACHE_DIR:cacheDir}});
-      if(install.exitCode!==0)throw new Error(`Could not prepare the Moonbeam cloud browser package: ${String(await install.stderr()).slice(0,700)}`);
-
-      const detect=await sbx.runCommand({cmd:'sh',args:['-lc',`if command -v apt-get >/dev/null 2>&1; then echo apt; elif command -v dnf >/dev/null 2>&1; then echo dnf; else echo none; fi`],cwd:'/vercel/sandbox'});
-      const manager=String(await detect.stdout()).trim();
-      let depScript='';
-      if(manager==='apt')depScript=`set -eu
-export DEBIAN_FRONTEND=noninteractive
-apt-get update
-pick(){ for p in "$@"; do if apt-cache show "$p" >/dev/null 2>&1; then printf '%s' "$p"; return 0; fi; done; return 1; }
-ASOUND=$(pick libasound2t64 libasound2)
-ATK=$(pick libatk1.0-0t64 libatk1.0-0)
-GTK=$(pick libgtk-3-0t64 libgtk-3-0)
-CUPS=$(pick libcups2t64 libcups2)
-apt-get install -y --no-install-recommends ca-certificates fonts-liberation "$ASOUND" libatk-bridge2.0-0 "$ATK" libcairo2 "$CUPS" libdbus-1-3 libexpat1 libfontconfig1 libgbm1 libglib2.0-0 "$GTK" libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 xdg-utils wget
-ldconfig`;
-      else if(manager==='dnf')depScript=`set -eu
-dnf clean all || true
-dnf install -y --skip-broken nss nspr libxkbcommon atk at-spi2-atk at-spi2-core libXcomposite libXdamage libXrandr libXfixes libXcursor libXi libXtst libXScrnSaver libXext mesa-libgbm libdrm mesa-libGL mesa-libEGL cups-libs alsa-lib pango cairo gtk3 dbus-libs fontconfig liberation-fonts || true
-ldconfig`;
-      else throw new Error('Moonbeam cloud browser could not identify the Sandbox Linux package manager.');
-
-      const deps=await sbx.runCommand({cmd:'sh',args:['-lc',depScript],cwd:'/vercel/sandbox',sudo:true});
-      if(deps.exitCode!==0)throw new Error(`Could not install the Moonbeam cloud browser system libraries (${manager}): ${String(await deps.stderr()).slice(0,1200)}`);
-    }
-  });
-  const preflightCode=`import puppeteer from 'puppeteer';import {execFileSync} from 'node:child_process';let b;try{const executable=puppeteer.executablePath();console.log('MOONBEAM_CHROME='+executable);try{const libs=execFileSync('ldd',[executable],{encoding:'utf8'});const missing=libs.split('\n').filter(line=>line.includes('not found')).join('\n').trim();if(missing)console.error('MOONBEAM_MISSING_LIBS='+missing)}catch{}b=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'],protocolTimeout:30000});console.log('MOONBEAM_BROWSER_READY')}finally{if(b)await b.close().catch(()=>{})}`;
-  const preflight=await sandbox.runCommand({cmd:'node',args:['--input-type=module','-e',preflightCode],cwd:'/vercel/sandbox',env:{PUPPETEER_CACHE_DIR:cacheDir}});
-  if(preflight.exitCode!==0){const err=String(await preflight.stderr()),out=String(await preflight.stdout());throw new Error(`Moonbeam cloud browser preflight failed: ${(err+'\n'+out).trim().slice(0,1400)}`)}
-  await sandbox.writeFiles([{path:'/vercel/sandbox/moonbeam-auto-runner.mjs',content:Buffer.from(INSTAGRAM_AUTO_SANDBOX_RUNNER)}]);
-  return sandbox;
-}
-async function launchInstagramAutoSandbox(claimed){
-  const runToken=crypto.randomBytes(32).toString('hex');
-  const actionLink=await generateDeveloperMagicLink();
-  const sandbox=await ensureInstagramAutoSandbox();
-  await patchInstagramAutoSchedule(claimed.id,{run_token_hash:instagramAutoRunTokenHash(runToken),run_sandbox_name:sandbox.name,last_message:'Automatic Reel handed to the 10-minute cloud runner.'});
-  const command=await sandbox.runCommand({
-    cmd:'node',args:['moonbeam-auto-runner.mjs'],cwd:'/vercel/sandbox',detached:true,
-    env:{PUPPETEER_CACHE_DIR:'/vercel/sandbox/.cache/puppeteer',MOONBEAM_AUTO_START_URL:actionLink,MOONBEAM_AUTO_CALLBACK_URL:`${SITE_URL}/api/resend-inbound?action=instagram-auto-job-finish`,MOONBEAM_AUTO_SCHEDULE_ID:String(claimed.id),MOONBEAM_AUTO_RUN_TOKEN:runToken,MOONBEAM_AUTO_SANDBOX_NAME:String(sandbox.name||'')}
-  });
-  if(command?.exitCode!=null&&command.exitCode!==0)throw new Error('The Moonbeam cloud runner could not be started.');
-  return {sandboxName:sandbox.name};
-}
-async function stopInstagramAutoSandbox(name){
-  if(!name)return;try{const {Sandbox}=await import('@vercel/sandbox');const sandbox=await Sandbox.get({name:String(name)});if(sandbox)await sandbox.stop()}catch(error){console.warn('Moonbeam sandbox stop',error?.message||error)}
-}
-async function developerInstagramAutoJobFinish(req,res,body={}){
-  const scheduleId=String(body?.scheduleId||'').trim(),runToken=String(body?.runToken||'').trim();
-  if(!scheduleId||!runToken)return res.status(400).json({error:'Missing automatic Reel completion token.'});
-  try{
-    const rows=await adminJson(`${ADMIN_SUPABASE_URL}/rest/v1/instagram_auto_schedule?id=eq.${encodeURIComponent(scheduleId)}&select=id,run_token_hash,run_sandbox_name,last_status&limit=1`,{headers:adminHeaders()});
-    const row=Array.isArray(rows)?rows[0]:null;if(!row?.id||!row?.run_token_hash)return res.status(404).json({error:'This automatic Reel run is no longer active.'});
-    const actual=instagramAutoRunTokenHash(runToken),expected=String(row.run_token_hash||'');
-    const valid=actual.length===expected.length&&crypto.timingSafeEqual(Buffer.from(actual),Buffer.from(expected));
-    if(!valid)return res.status(403).json({error:'Invalid automatic Reel completion token.'});
-    const success=body?.success===true,message=String(body?.message||'').slice(0,1000),mediaId=String(body?.mediaId||'').slice(0,200);
-    await finishInstagramAutoSchedule(row.id,success,message,mediaId);
-    res.status(200).json({ok:true});
-    await stopInstagramAutoSandbox(row.run_sandbox_name||body?.sandboxName||'');
-    return;
-  }catch(error){console.error('instagram automatic sandbox finish',error);return res.status(502).json({error:error?.message||'Could not finish the automatic Instagram Reel job.'})}
-}
-async function developerInstagramAutoCron(req,res){
-  let claimed=null;
-  try{
-    claimed=await claimInstagramAutoSchedule();if(!claimed)return res.status(200).json({ok:true,due:false});
-    const launched=await launchInstagramAutoSandbox(claimed);
-    return res.status(200).json({ok:true,due:true,started:true,sandbox:launched?.sandboxName||null});
-  }catch(error){console.error('instagram automatic cloud launch',error);if(claimed?.id)await finishInstagramAutoSchedule(claimed.id,false,error?.message||String(error),'');return res.status(502).json({ok:false,due:!!claimed,error:error?.message||'Automatic Instagram Reel could not be started.'})}
 }
 function shareTokenHash(token){return crypto.createHash('sha256').update(String(token)).digest('hex')}
 async function waitForInstagramContainer(creationId,accessToken,label='Instagram media'){
@@ -765,21 +603,10 @@ module.exports = async function handler(req, res) {
   if(req.method==='GET' && (action==='list'||action==='message'))return developerGet(req,res,action);
   if(req.method==='GET' && action==='instagram-test')return developerInstagramTest(req,res);
   if(req.method==='GET' && action==='instagram-access')return developerInstagramAccess(req,res);
-  if(req.method==='GET' && action==='instagram-auto-schedule')return developerInstagramAutoScheduleGet(req,res);
-  if(req.method==='GET' && action==='instagram-auto-cron')return developerInstagramAutoCron(req,res);
   if(req.method==='POST' && action==='instagram-publish-test')return developerInstagramPublishTest(req,res);
-  if(req.method==='POST' && action==='instagram-auto-schedule-save'){
+  if(req.method==='POST' && action==='instagram-demo-child'){
     let body=req.body;if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}
-    return developerInstagramAutoScheduleSave(req,res,body);
-  }
-  if(req.method==='POST' && action==='instagram-auto-schedule-stop')return developerInstagramAutoScheduleStop(req,res);
-  if(req.method==='POST' && action==='instagram-auto-job-finish'){
-    let body=req.body;if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}
-    return developerInstagramAutoJobFinish(req,res,body);
-  }
-  if(req.method==='POST' && action==='instagram-auto-demo-profile'){
-    let body=req.body;if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}
-    return developerInstagramAutoDemoProfile(req,res,body);
+    return developerInstagramDemoChild(req,res,body);
   }
   if(req.method==='POST' && action.startsWith('instagram-reel-'))return instagramReelHandler(req,res);
   if(req.method==='POST' && action==='instagram-publish-story'){

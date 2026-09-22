@@ -1,3 +1,22 @@
+# Moonbeam Stories V250.88
+
+## V250.88 — retire automatic Reel posting; keep demo-child generator
+
+The unattended Instagram automation experiment has been removed.
+
+- Removes the automatic posting schedule UI and all schedule controls from the Create Story page.
+- Removes the Supabase cron/cloud-runner/Sandbox routes and the Vercel Sandbox dependency.
+- The old **Generate automatic Instagram reel** developer button is replaced by **Generate demo child**.
+- That button now does only two things: invents one completely fictional child with a photorealistic portrait, and saves that child/photo to **Your Cast**.
+- It does **not** invent a story premise, generate a story, create illustrations, build a Reel or publish anything to Instagram.
+- Manual story creation is unchanged. The existing end-of-book **Post reel to Instagram** and **Post carousel to Instagram** flows are retained unchanged.
+- Adds `SUPABASE_V250_88_RETIRE_INSTAGRAM_AUTOMATION.sql`, which must be run once to unschedule the old once-per-minute cron wake-up and retire its schedule RPCs. The old schedule table is retained only as inert historical data.
+- Restores `SUPABASE_V250_CAST_GENDER.sql` to the complete package after it was accidentally omitted from the later V250.85/V250.86 packaging.
+
+No customer story-generation, illustration, reader, Cast editing, payments or normal Instagram Reel/carousel behaviour is changed.
+
+---
+
 # Moonbeam Stories V250.87
 
 ## V250.87 — Fix automatic Reel Sandbox Chrome preflight scope
