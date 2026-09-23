@@ -4144,3 +4144,17 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 
 /* V250.93 developer KDP description */
 .kdp-description-panel{width:min(680px,90vw);margin:16px auto 0;text-align:left}.kdp-description-title{font-weight:700;margin-bottom:7px}.kdp-description-panel textarea{box-sizing:border-box;width:100%;min-height:150px;resize:vertical;padding:12px;border:1px solid rgba(60,45,90,.22);border-radius:12px;background:#fff;color:inherit;font:inherit;line-height:1.45}.kdp-description-panel button{margin-top:8px}
+
+/* V250.97 — developer-only finished-page correction */
+.developer-correct-page{position:absolute;right:18px;bottom:16px;z-index:9;border:1px solid rgba(207,176,105,.8);background:rgba(247,242,232,.94);color:#3b3155;border-radius:999px;padding:8px 13px;font:600 12px/1.2 system-ui,-apple-system,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.12);cursor:pointer}
+.developer-correction-dialog{position:fixed;inset:0;z-index:10050;background:rgba(20,15,34,.58);display:flex;align-items:center;justify-content:center;padding:20px}
+.developer-correction-dialog.hidden{display:none}
+.developer-correction-card{position:relative;width:min(560px,94vw);background:#fbf7ee;color:#211a36;border-radius:18px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.developer-correction-card h3{margin:0 32px 8px 0;font:700 24px Georgia,serif}
+.developer-correction-card p{margin:0 0 14px;color:#625a70}
+.developer-correction-card textarea{box-sizing:border-box;width:100%;min-height:125px;resize:vertical;border:1px solid #cfc6d7;border-radius:10px;padding:12px;font:15px/1.45 system-ui,-apple-system,sans-serif;background:#fff}
+.developer-correction-close{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:28px;cursor:pointer;color:#655d70}
+.developer-correction-actions{display:flex;gap:10px;margin-top:14px}
+.developer-correction-actions button{flex:1}
+.developer-correction-status{min-height:20px;margin-top:12px;font:13px/1.4 system-ui,-apple-system,sans-serif;color:#6b587b}
+@media(max-width:700px){.developer-correct-page{right:10px;bottom:10px;font-size:11px;padding:7px 10px}.developer-correction-actions{flex-direction:column}}

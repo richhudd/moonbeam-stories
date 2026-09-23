@@ -157,11 +157,11 @@ async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());if(a
 async function pruneImageCache(){const db=await openImageDb();if(!db)return;try{const rows=await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([])});if(rows.length<=IMAGE_CACHE_LIMIT)return;rows.sort((a,b)=>(b.at||0)-(a.at||0));const remove=rows.slice(IMAGE_CACHE_LIMIT);await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite'),store=tx.objectStore(IMAGE_STORE);remove.forEach(r=>store.delete(r.key));tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 function stableHash(value){let h=2166136261>>>0;for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
 function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'']),c:s.closing||'',n:child?.name||'',a:child?.age||'',g:child?.gender||'',r:child?.referenceImages?stableHash(JSON.stringify(child.referenceImages.map(x=>[x.name,x.role,x.gender||'',(x.image||'').slice(-400)]))):child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
-async function requestIllustration(key,prompt,style,force=false,referenceImage=null,requiredStoryImage=false,storyImageIndex=null,continuityImage=null){
+async function requestIllustration(key,prompt,style,force=false,referenceImage=null,requiredStoryImage=false,storyImageIndex=null,continuityImage=null,developerCorrection=false){
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
  if(!force&&illustrationInflight.has(key))return illustrationInflight.get(key);
- const task=(async()=>{let attempts=0,authRefreshed=false;while(attempts<3){attempts++;let accessToken=await currentAccessToken();if(!accessToken){authRefreshed=true;accessToken=await refreshAccessToken()}if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:Array.isArray(referenceImage)?null:(referenceImage||null),referenceImages:Array.isArray(referenceImage)?referenceImage:null,continuityImage:continuityImage||null,generationRunId,requiredStoryImage:requiredStoryImage===true,storyImageIndex:Number.isInteger(storyImageIndex)?storyImageIndex:null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
+ const task=(async()=>{let attempts=0,authRefreshed=false;while(attempts<3){attempts++;let accessToken=await currentAccessToken();if(!accessToken){authRefreshed=true;accessToken=await refreshAccessToken()}if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:Array.isArray(referenceImage)?null:(referenceImage||null),referenceImages:Array.isArray(referenceImage)?referenceImage:null,continuityImage:continuityImage||null,generationRunId,requiredStoryImage:requiredStoryImage===true,storyImageIndex:Number.isInteger(storyImageIndex)?storyImageIndex:null,developerCorrection:developerCorrection===true})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
    if(referenceImage && data.usedReferencePhoto!==true) throw new Error('One or more Cast photo references were not accepted by the illustration service.');
    illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if(response.status===401&&!authRefreshed&&attempts<3){authRefreshed=true;const refreshedToken=await refreshAccessToken();if(refreshedToken)continue;throw new Error('Your Moonbeam session has expired. Please sign in again.')}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
  illustrationInflight.set(key,task);try{return await task}finally{illustrationInflight.delete(key)}
@@ -1572,6 +1572,83 @@ async function downloadKindleEbook(){
  }catch(e){console.error('Kindle EPUB export',e);alert('The Kindle eBook could not be prepared: '+(e?.message||e))}finally{if(button){button.disabled=false;button.textContent=old||'Download Kindle eBook'}}
 }
 
+
+// V250.97 — developer-only per-page continuity correction.
+function correctionPageText(book=currentBook,index=book?.currentPage){
+ if(!book||!Number.isInteger(index))return '';
+ const total=(book.pages?.length||0)+2;
+ if(index===0)return book.opening||'';
+ if(index===total-1)return book.closing||'';
+ return book.pages?.[index-1]?.text||'';
+}
+function correctionStoryPayload(book=currentBook){return{title:book?.title||'',opening:book?.opening||'',pages:(book?.pages||[]).map(p=>({text:p?.text||'',illustration_prompt:p?.illustration_prompt||''})),closing:book?.closing||'',character_bible:book?.character_bible||''}}
+function developerCorrectionButton(){return instagramDeveloperAccess&&!currentBook?.isShared?'<button class="developer-correct-page" id="developerCorrectPage" type="button">Correct this page</button>':''}
+function ensureDeveloperCorrectionDialog(){
+ let d=$('developerCorrectionDialog');if(d)return d;
+ d=document.createElement('div');d.id='developerCorrectionDialog';d.className='developer-correction-dialog hidden';d.innerHTML=`<div class="developer-correction-card" role="dialog" aria-modal="true" aria-labelledby="developerCorrectionTitle"><button class="developer-correction-close" id="developerCorrectionClose" type="button" aria-label="Close">×</button><h3 id="developerCorrectionTitle">Correct this page</h3><p>Describe exactly what is inconsistent. Your instruction is authoritative.</p><textarea id="developerCorrectionInstruction" rows="5" placeholder="For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam's pocket."></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCorrectText" type="button">Correct text</button><button class="secondary" id="developerCorrectImage" type="button">Correct illustration</button></div><div class="developer-correction-status" id="developerCorrectionStatus"></div></div>`;
+ document.body.appendChild(d);$('developerCorrectionClose').onclick=closeDeveloperCorrection;$('developerCorrectText').onclick=()=>runDeveloperCorrection('text');$('developerCorrectImage').onclick=()=>runDeveloperCorrection('illustration');d.addEventListener('click',e=>{if(e.target===d)closeDeveloperCorrection()});return d
+}
+function openDeveloperCorrection(){if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;const d=ensureDeveloperCorrectionDialog(),ta=$('developerCorrectionInstruction'),st=$('developerCorrectionStatus');if(ta)ta.value='';if(st)st.textContent='';d.classList.remove('hidden');setTimeout(()=>ta?.focus(),20)}
+function closeDeveloperCorrection(){const d=$('developerCorrectionDialog');if(d)d.classList.add('hidden')}
+async function correctionBlobToDataUrl(blob){return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error('Could not prepare continuity artwork.'));r.readAsDataURL(blob)})}
+async function correctionPreviousArtwork(book,index){
+ if(index===0){if(book.artwork?.cover)return book.artwork.cover;if(book.isSaved&&book.savedAssets?.cover){try{return await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.cover))}catch{}}return null}
+ if(book.artwork?.pages?.[index-1])return book.artwork.pages[index-1];
+ if(book.isSaved&&book.savedAssets?.pages?.[index-1]){try{return await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.pages[index-1]))}catch{}}
+ const key=previousIllustrationKey(book,index);return key?(illustrationCache.get(key)||await persistentImageGet(key)):null
+}
+async function correctionReferenceImages(book){
+ const refs=[];for(const m of (book?.child?.cast||[])){if(m?.referencePhoto)refs.push({name:m.name,kind:m.kind,role:m.role,gender:m.gender||null,image:m.referencePhoto})}
+ if(refs.length)return refs;
+ if(book?.child?.profileId){try{const photo=await castPhoto246(book.child.profileId);if(photo)refs.push({name:book.child.name||'main hero',kind:'child',role:'hero',gender:book.child.gender||null,image:photo})}catch{}}
+ return refs
+}
+async function persistCorrectedText(book,index,newText){
+ const total=book.pages.length+2;
+ if(index===0)book.opening=newText;else if(index===total-1)book.closing=newText;else book.pages[index-1].text=newText;
+ if(book.isSaved&&book.savedStoryId){
+  const pages=book.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
+  const assets={...(book.savedAssets||{})};delete assets.kdp_description;
+  const patch={opening:book.opening,closing:book.closing,pages,saved_assets:assets};
+  const u=await supabaseClient.from('saved_stories').update(patch).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;
+  book.savedAssets=u.data?.saved_assets||assets;const item=cloudStories.find(x=>x.id===book.savedStoryId);if(item){item.story={...(item.story||{}),opening:book.opening,closing:book.closing,pages};item.savedAssets=book.savedAssets}
+ }
+ persistCurrentDraft();
+}
+async function persistCorrectedIllustration(book,index,image){
+ book.artwork.pages[index]=image;
+ if(book.isSaved&&book.savedStoryId){
+  const path=book.savedAssets?.pages?.[index];if(!path)throw new Error('This saved page has no artwork slot to replace.');
+  const up=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;
+  const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};delete book.savedAssetUrls[path];
+  const assets={...(book.savedAssets||{})};delete assets.kdp_description;
+  const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets;
+ }
+}
+async function runDeveloperCorrection(kind){
+ const book=currentBook,index=book?.currentPage,ta=$('developerCorrectionInstruction'),st=$('developerCorrectionStatus'),instruction=String(ta?.value||'').trim();
+ if(!instagramDeveloperAccess||!book||book.isShared||!Number.isInteger(index))return;if(!instruction){if(st)st.textContent='Describe the inconsistency first.';ta?.focus();return}
+ const buttons=[$('developerCorrectText'),$('developerCorrectImage')].filter(Boolean);buttons.forEach(b=>b.disabled=true);if(st)st.textContent=kind==='text'?'Correcting the text…':'Regenerating this illustration…';
+ try{
+  if(kind==='text'){
+   const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
+   const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-continuity-text',story:correctionStoryPayload(book),pageIndex:index,instruction})});
+   const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Text correction failed.');
+   const replacement=String(data.text||'').trim();if(!replacement)throw new Error('The corrected text came back empty.');
+   await persistCorrectedText(book,index,replacement);
+  }else{
+   const basePrompt=getIllustrationPrompt(index);
+   const correctionPrompt=`${basePrompt}\n\nDEVELOPER CORRECTION — AUTHORITATIVE:\n${instruction}\n\nThe existing illustration for this page was rejected because of the inconsistency described above. Regenerate this page so the correction is visibly and physically true. Do not preserve the rejected mistake. The finished story facts and this correction override any conflicting visual inference.`;
+   const refs=await correctionReferenceImages(book),continuity=await correctionPreviousArtwork(book,index);
+   const key=`${illustrationKey(book,index,basePrompt)}:developer-correction:${Date.now()}`;
+   const image=await requestIllustration(key,correctionPrompt,`Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,true,refs.length?refs:null,true,index,continuity,true);
+   await persistCorrectedIllustration(book,index,image);
+  }
+  closeDeveloperCorrection();renderBookPage(index);
+ }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
+ finally{buttons.forEach(b=>b.disabled=false)}
+}
+
 function renderBookPage(index){
  removeMobileSharedCreateButton();
  rememberReaderScroll();
@@ -1593,9 +1670,9 @@ function renderBookPage(index){
  }
  let text='',label='';if(isOpening){text=book.opening;label=t().beginning}else if(isClosing){text=book.closing;label=''}else{const p=book.pages[clamped-1]||{};text=p.text||'';label=`${t().page} ${clamped}`};
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';
- bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-scroll-cue" aria-hidden="true"><span></span><span></span></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div><button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
+ bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-scroll-cue" aria-hidden="true"><span></span><span></span></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div>${developerCorrectionButton()}<button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.classList.remove('end-hidden');next.textContent=t().turn}if(indicator){indicator.classList.remove('end-hidden');indicator.textContent=`${clamped+1} / ${total}`}
- const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};
+ const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};const dc=$('developerCorrectPage');if(dc)dc.onclick=e=>{e.stopPropagation();openDeveloperCorrection()};
  applyMobileSide();setupMobileScrollCue();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,2);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${narrationLanguage(book)}:${clamped+1}`,clamped+1).catch(()=>{})}
  persistCurrentDraft();restoreReaderScroll();

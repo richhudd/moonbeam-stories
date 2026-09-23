@@ -36,6 +36,23 @@ module.exports = async function handler(req, res) {
   const refundOuterReservation=async()=>{if(!creditReserved||!reservedUserId)return;creditReserved=false;try{await refundReservedStoryCredit(reservedUserId,reservedBatchId)}catch(refundError){console.error('credit refund error',refundError)}};
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    // V250.97: developer-only editorial correction of one story page.
+    if (String(body.action || '').trim() === 'developer-continuity-text') {
+      const user = await verifyMoonbeamUser(req);
+      const developerEmail = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
+      if (!developerEmail || String(user.email || '').trim().toLowerCase() !== developerEmail) return res.status(403).json({ error: 'Developer access only.' });
+      const story=body.story||{},pageIndex=Number(body.pageIndex),instruction=String(body.instruction||'').trim(),pages=Array.isArray(story.pages)?story.pages:[];
+      const total=pages.length+2;if(!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=total||!instruction)return res.status(400).json({error:'A valid page and correction instruction are required.'});
+      const target=pageIndex===0?String(story.opening||''):pageIndex===total-1?String(story.closing||''):String(pages[pageIndex-1]?.text||'');
+      const full=[story.opening,...pages.map(p=>p?.text||''),story.closing].filter(Boolean).join('\n\n');
+      const prompt=`You are making one tightly controlled editorial correction to a finished children's story.\n\nFULL FINISHED STORY:\n${full}\n\nTARGET PAGE TEXT:\n${target}\n\nDEVELOPER'S AUTHORITATIVE CORRECTION INSTRUCTION:\n${instruction}\n\nReturn ONLY the replacement text for the target page. Preserve the existing story, voice, tense, approximate length, plot, characterisation and surrounding continuity. Change only what is necessary to resolve the stated inconsistency. Do not rewrite unrelated details, do not add commentary, and do not mention the correction process. The replacement must fit naturally between the preceding and following pages and must be physically/logically possible given the finished story.`;
+      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:prompt,max_output_tokens:700})});
+      const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok){const e=data?.error;throw new Error(typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`))}
+      let text=typeof data.output_text==='string'?data.output_text:'';if(!text&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')text+=part.text;
+      text=text.trim().replace(/^["']|["']$/g,'').trim();if(!text)throw new Error('The corrected page text came back empty.');
+      return res.status(200).json({text});
+    }
+
     // V250.94: reuse the existing generate function for developer-only KDP copy.
     // This branch runs before story-credit reservation and does not create a Moonbeam story.
     if (String(body.action || '').trim() === 'kdp-description') {

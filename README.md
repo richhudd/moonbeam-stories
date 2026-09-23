@@ -1,4 +1,17 @@
-# Moonbeam Stories V250.96
+# Moonbeam Stories V250.97
+
+## V250.97 — developer-only continuity correction
+
+- Adds **Correct this page** to every finished story spread on the developer account only.
+- The developer types the exact inconsistency and chooses **Correct text** or **Correct illustration**.
+- Text correction rewrites only the current page, using the complete finished story for context and the developer instruction as authoritative.
+- Illustration correction regenerates only the current page image, using the current story facts, developer instruction, Cast reference photo where available, and preceding artwork for continuity.
+- Saved-book corrections replace the saved text/artwork in place. A text or image correction invalidates any previously generated KDP description so the next Kindle preparation is based on the corrected story.
+- Developer correction reuses the existing `generate` and `illustrate` endpoints; no additional Vercel function is added.
+- Ordinary customer accounts and shared-story readers do not see or receive the correction controls.
+- No SQL migration required.
+
+---
 
 ## V250.96 — coverless KDP EPUB + author photo fix
 

@@ -29,8 +29,12 @@ module.exports = async function handler(req, res) {
     if (!prompt) return res.status(400).json({ error: 'An illustration prompt is required.' });
     if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
     const moonbeamUser = await verifyMoonbeamUser(req);
+    const developerCorrectionRequested=body.developerCorrection===true;
+    const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
+    const developerCorrection=developerCorrectionRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
+    if(developerCorrectionRequested&&!developerCorrection)return res.status(403).json({error:'Developer access only.'});
     let recoverySlot=false;
-    try { await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
+    try { if(!developerCorrection) await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
     catch(e){
       // V206: the original nine image slots remain the primary anti-abuse budget.
       // If Safari/navigation discarded an otherwise legitimate required page request,
@@ -51,7 +55,7 @@ module.exports = async function handler(req, res) {
       if(!recoveryReservation) return res.status(503).json({error:'Moonbeam could not reserve an illustration recovery attempt. Please try again.',code:'RECOVERY_CHECK_FAILED'});
       recoverySlot=true;
     }
-    if(!recoverySlot){slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;}
+    if(!recoverySlot&&!developerCorrection){slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;}
     const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(reservedUserId,reservedRunId,'image')}};
 
     const refs=(Array.isArray(referenceImages)?referenceImages:[]).filter(r=>r&&/^data:image\/(jpeg|png|webp);base64,/i.test(r.image||''));if(!refs.length&&/^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage||''))refs.push({name:'main hero',kind:'child',role:'hero',image:referenceImage});
@@ -163,7 +167,7 @@ IMPORTANT
       return res.status(502).json({ error: 'The image service returned no image.' });
     }
 
-    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasAnyReference}),metadata:{reference:hasReference,continuity_reference:hasContinuityReference,user_id:moonbeamUser.id,generation_run_id:generationRunId,required_story_image:requiredStoryImage===true,story_image_index:Number.isInteger(storyImageIndex)?storyImageIndex:null,recovery_slot:recoverySlot===true}});
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasAnyReference}),metadata:{reference:hasReference,continuity_reference:hasContinuityReference,user_id:moonbeamUser.id,generation_run_id:generationRunId,required_story_image:requiredStoryImage===true,story_image_index:Number.isInteger(storyImageIndex)?storyImageIndex:null,recovery_slot:recoverySlot===true,developer_correction:developerCorrection===true}});
     slotReserved=false;
     return res.status(200).json({ image: `data:image/webp;base64,${item.b64_json}`, usedReferencePhoto: hasReference });
   } catch (e) {
