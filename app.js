@@ -1601,7 +1601,7 @@ async function runWholeBookContinuityAudit(){
  const d=ensureDeveloperBookAudit(),st=$('developerAuditStatus'),box=$('developerAuditResults');d.classList.remove('hidden');developerBookConflicts=[];currentBook.developerContinuityCanon=[];currentBook.developerTextApproved=false;if($('developerApplyTextRepairs'))$('developerApplyTextRepairs').disabled=true;if($('developerApproveCorrectedText'))$('developerApproveCorrectedText').disabled=true;if($('developerReillustrateBook'))$('developerReillustrateBook').disabled=true;if(box)box.innerHTML='';if(st)st.textContent='Auditing the whole finished book…';
  try{
   const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const pages=[];for(let i=0;i<(currentBook.pages||[]).length;i++){pages.push({pageIndex:i,text:currentBook.pages[i]?.text||'',image:await developerPageArtwork(currentBook,i)})}
+  const pages=await developerFinishedAuditPages(currentBook);if(!pages.length)throw new Error('No finished page illustrations could be loaded.');
   const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-whole-book-continuity',story:correctionStoryPayload(currentBook),pages})});
   const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Whole-book continuity audit failed.');
   developerBookConflicts=Array.isArray(data.conflicts)?data.conflicts:[];
@@ -1614,7 +1614,7 @@ async function chooseDeveloperCanon(i,canon){
  if(slot)slot.innerHTML='<div class="developer-correction-status">Building repair plan…</div>';
  try{
   const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const pages=[];for(let n=0;n<(currentBook.pages||[]).length;n++)pages.push({pageIndex:n,text:currentBook.pages[n]?.text||'',image:await developerPageArtwork(currentBook,n)});
+  const pages=await developerFinishedAuditPages(currentBook);if(!pages.length)throw new Error('No finished page illustrations could be loaded.');
   const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-continuity-repair-plan',story:correctionStoryPayload(currentBook),pages,conflict:c,canon})});
   const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Could not build repair plan.');
   c.canon=canon;c.repairs=Array.isArray(data.repairs)?data.repairs:[];currentBook.developerContinuityCanon=currentBook.developerContinuityCanon||[];currentBook.developerContinuityCanon[i]=canon;currentBook.developerTextApproved=false;
@@ -1630,7 +1630,7 @@ async function addDeveloperContinuityProblem(){
  const st=$('developerAuditStatus');if(st)st.textContent='Investigating your continuity problem across the whole book…';
  try{
   const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const pages=[];for(let i=0;i<(currentBook.pages||[]).length;i++)pages.push({pageIndex:i,text:currentBook.pages[i]?.text||'',image:await developerPageArtwork(currentBook,i)});
+  const pages=await developerFinishedAuditPages(currentBook);if(!pages.length)throw new Error('No finished page illustrations could be loaded.');
   const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-investigate-continuity',story:correctionStoryPayload(currentBook),pages,userIssue:issue.trim()})});
   const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Could not investigate that continuity problem.');
   const found=Array.isArray(data.conflicts)?data.conflicts:[];developerBookConflicts.push(...found);if(st)st.textContent=found.length?'Your continuity problem has been added to the audit.':'Moonbeam could not verify a cross-book conflict from that report. You can describe it differently or use the individual page editor.';renderDeveloperBookConflicts();
@@ -1641,7 +1641,7 @@ async function applyDeveloperAuditTextRepairs(){
  if(!currentBook||!instagramDeveloperAccess)return;const repairs=auditTextRepairs();if(!repairs.length)return;
  const st=$('developerAuditStatus');if(st)st.textContent='Applying approved continuity text repairs…';
  try{
-  for(const r of repairs)await persistCorrectedText(currentBook,Number(r.pageIndex)+1,String(r.suggestedText).trim());
+  for(const r of repairs)await persistCorrectedText(currentBook,Number(r.pageIndex),String(r.suggestedText).trim());
   if($('developerApplyTextRepairs'))$('developerApplyTextRepairs').disabled=true;if($('developerApproveCorrectedText'))$('developerApproveCorrectedText').disabled=false;if(st)st.textContent='Text repairs applied. Review the corrected story, then approve it before re-illustrating.';renderBookPage(currentBook.currentPage);
  }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
 }
@@ -1687,6 +1687,15 @@ async function developerPageArtwork(book,index){
  if(book?.isSaved&&book?.savedAssets?.pages?.[index]){try{return await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.pages[index]))}catch{}}
  const key=illustrationKey(book,index,getIllustrationPrompt(index));return illustrationCache.get(key)||await persistentImageGet(key)||null
 }
+async function developerFinishedAuditPages(book){
+ const total=(book?.pages?.length||0)+2,out=[];
+ for(let i=0;i<total;i++){
+  const text=i===0?String(book?.opening||''):i===total-1?String(book?.closing||''):String(book?.pages?.[i-1]?.text||'');
+  const image=await developerPageArtwork(book,i);
+  if(image)out.push({pageIndex:i,text,image});
+ }
+ return out
+}
 function renderDeveloperContinuityFindings(){
  const box=$('developerReviewResults');if(!box)return;
  if(!developerContinuityFindings.length){box.innerHTML='<div class="developer-review-clear">No genuine text/illustration inconsistencies were found.</div>';return}
@@ -1696,7 +1705,7 @@ function renderDeveloperContinuityFindings(){
 }
 async function acceptDeveloperContinuityFinding(i){
  const f=developerContinuityFindings[i];if(!f||!currentBook)return;
- try{await persistCorrectedText(currentBook,f.pageIndex+1,f.suggestedText);developerContinuityFindings.splice(i,1);renderDeveloperContinuityFindings();renderBookPage(currentBook.currentPage)}
+ try{await persistCorrectedText(currentBook,f.pageIndex,f.suggestedText);developerContinuityFindings.splice(i,1);renderDeveloperContinuityFindings();renderBookPage(currentBook.currentPage)}
  catch(e){const st=$('developerReviewStatus');if(st)st.textContent=e?.message||String(e)}
 }
 function rejectDeveloperContinuityFinding(i){developerContinuityFindings.splice(i,1);renderDeveloperContinuityFindings()}
@@ -1705,8 +1714,7 @@ async function checkTextAgainstIllustrations(){
  const d=ensureDeveloperContinuityReview(),st=$('developerReviewStatus'),box=$('developerReviewResults');d.classList.remove('hidden');developerContinuityFindings=[];if(box)box.innerHTML='';if(st)st.textContent='Checking the finished pages…';
  try{
   const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const pages=[];
-  for(let i=0;i<(currentBook.pages||[]).length;i++){const image=await developerPageArtwork(currentBook,i);if(image)pages.push({pageIndex:i,text:currentBook.pages[i]?.text||'',image})}
+  const pages=await developerFinishedAuditPages(currentBook);
   if(!pages.length)throw new Error('No finished page illustrations could be loaded.');
   const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-illustration-text-check',story:correctionStoryPayload(currentBook),pages})});
   const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Continuity check failed.');

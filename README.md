@@ -1,4 +1,17 @@
-# Moonbeam Stories V251.06
+# Moonbeam Stories V251.07
+
+## V251.07 — illustrated whole-book audit fix
+
+- Fixes a concrete indexing bug in the developer continuity tools: story-page text was being paired with the wrong illustration. Page 1 story text was compared with the opening illustration, subsequent pages were shifted, and the closing spread was omitted.
+- The whole-book audit now supplies all six finished reading spreads in their true order: opening → story pages → closing, with each text paired to its own illustration.
+- The manual continuity investigation and canonical repair planner use the same corrected page/image mapping.
+- The separate **Check text against illustrations** tool is fixed to use the same correct mapping.
+- Adds explicit within-page action/timing-state auditing. The model must flag mixed moments such as Sam still walking towards the rocket while the flag is already shown repaired.
+- Coherent prose is not rewritten merely to accommodate an erroneous illustration; the audit is told to identify the illustration as the conflicting source when appropriate.
+- Repair page indexes now map directly to the real reading spreads, including opening and closing.
+- No new API endpoint and no SQL migration.
+
+---
 
 ## V251.06 — live cover overlay editing fix
 
