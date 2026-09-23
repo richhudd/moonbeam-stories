@@ -1,3 +1,9 @@
+# Moonbeam Stories V251.13
+
+V251.13 tightens the story engine's creative direction. It removes prompt wording that could encourage arbitrary whimsy (including locale vocabulary examples such as “biscuit”, the early-years invitation to “absurdity”, and the “mundane realism” framing) and replaces the previous weak personification guidance with a concise reality/agency/prose discipline. Blank or realistic premises now favour grounded adventure, mystery, discovery, exploration, humour and coherent problem-solving; deliberate fantasy remains fully available when established by the premise. The writer is explicitly directed to create imagination through interesting events rather than faux-poetic personification, arbitrary impossible objects, stock cosy props or strained comparisons. The JSON-repair path carries the same creative standard. No UI, illustration, credit, database or API-function-count changes.
+
+---
+
 # Moonbeam Stories V251.07
 
 ## V251.07 — illustrated whole-book audit fix
