@@ -1,3 +1,31 @@
+# Moonbeam Stories V250.99
+
+## V250.99 — surgical illustration correction
+
+- **Correct illustration** now sends the actual existing illustration as the first and primary edit reference.
+- The image service is instructed to preserve composition, framing, characters, likenesses, poses, clothing, expressions, lighting, colours, background, scale and style.
+- Only the developer-described error should change, plus the minimum dependent detail needed for physical coherence.
+- Normal Moonbeam instructions that demand a new composition are explicitly disabled during correction requests.
+- Cast references remain secondary identity anchors; preceding artwork remains secondary continuity context.
+- Saved-book correction and V250.98 cover correction remain intact.
+- No new API endpoint and no SQL migration.
+
+---
+
+# Moonbeam Stories V250.98
+
+## V250.98 — developer-only cover correction
+
+- Adds **Correct cover** to the finished cover for the developer account only.
+- The developer describes the exact inconsistency; that instruction is authoritative.
+- Regenerates only the underlying cover artwork from the complete finished story and Cast references.
+- Existing Moonbeam title/author/dedication typography remains separate and unchanged.
+- Saved books have their saved cover artwork replaced in place.
+- Retains V250.97 page-level Correct text / Correct illustration.
+- No new API endpoint and no SQL migration.
+
+---
+
 # Moonbeam Stories V250.97
 
 ## V250.97 — developer-only continuity correction
