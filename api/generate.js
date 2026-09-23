@@ -36,6 +36,41 @@ module.exports = async function handler(req, res) {
   const refundOuterReservation=async()=>{if(!creditReserved||!reservedUserId)return;creditReserved=false;try{await refundReservedStoryCredit(reservedUserId,reservedBatchId)}catch(refundError){console.error('credit refund error',refundError)}};
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    // V250.94: reuse the existing generate function for developer-only KDP copy.
+    // This branch runs before story-credit reservation and does not create a Moonbeam story.
+    if (String(body.action || '').trim() === 'kdp-description') {
+      const user = await verifyMoonbeamUser(req);
+      const developerEmail = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
+      if (!developerEmail || String(user.email || '').trim().toLowerCase() !== developerEmail) {
+        return res.status(403).json({ error: 'Developer access only.' });
+      }
+      const finishedStory = body.story || {};
+      const author = String(body.author || '').trim();
+      const series = String(body.series || '').trim();
+      const parts = [finishedStory.opening, ...(Array.isArray(finishedStory.pages) ? finishedStory.pages.map(p => p?.text || '') : []), finishedStory.closing].filter(Boolean);
+      const fullStory = parts.join('\n\n');
+      if (!finishedStory.title || !fullStory) return res.status(400).json({ error: 'The finished story is incomplete.' });
+      const kdpPrompt = `Write the Amazon KDP product description for this finished children's story.\n\nTITLE: ${finishedStory.title}\nAUTHOR: ${author}\nSERIES: ${series}\n\nFINISHED STORY:\n${fullStory}\n\nRequirements:\n- Return ONLY the description as plain text, with no heading, labels, markdown, HTML, bullet points or quotation marks.\n- Aim for 100-150 words.\n- This is enticing sales copy, not a full synopsis.\n- Describe only characters, settings and events that actually occur in the finished story. Never invent details or selling points.\n- Introduce the central adventure and its hook, but do not reveal the ending or resolution.\n- Natural British English.\n- Avoid generic AI/marketing phrases such as “embark on a magical journey”, “heartwarming tale”, “perfect for”, “young readers will love”, “packed with”, or “join X as”.\n- Do not mention AI, prompts, generation, personalisation, Moonbeam Stories, or how the book was made.\n- You may naturally identify it as part of ${series} if useful, but do not force the series name into the copy.\n- Keep the tone specific to this particular story rather than using a reusable template.`;
+      const r = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-5.6-luna', input: kdpPrompt, max_output_tokens: 500 })
+      });
+      const raw = await r.text();
+      let data = {};
+      try { data = JSON.parse(raw); } catch {}
+      if (!r.ok) {
+        const e = data?.error;
+        throw new Error(typeof e === 'string' ? e : (e?.message || `OpenAI returned HTTP ${r.status}`));
+      }
+      let description = typeof data.output_text === 'string' ? data.output_text : '';
+      if (!description && Array.isArray(data.output)) {
+        for (const item of data.output) for (const part of (item.content || [])) if (typeof part.text === 'string') description += part.text;
+      }
+      description = description.trim().replace(/^[\'"]|[\'"]$/g, '').trim();
+      if (!description) throw new Error('The KDP description came back empty.');
+      return res.status(200).json({ description });
+    }
     const child = body.child || {};
     const cast = Array.isArray(child.cast) ? child.cast.filter(m=>m&&m.name&&m.role) : [];
     const heroes = cast.filter(m=>m.role==='hero'&&m.kind==='child');

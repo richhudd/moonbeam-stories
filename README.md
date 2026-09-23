@@ -1,4 +1,13 @@
-# Moonbeam Stories V250.93
+# Moonbeam Stories V250.94
+
+## V250.94 — keep KDP description inside the 12-function Vercel limit
+
+- Removes the separate `api/kdp-description.js` serverless route introduced in V250.93.
+- KDP description generation now uses a developer-only `action: "kdp-description"` branch of the existing `api/generate.js` function.
+- The KDP branch runs before story-credit reservation, so exporting/publishing copy does not consume a Moonbeam story credit.
+- The client now requests KDP copy through `/api/generate`; saved-book KDP description behaviour and EPUB contents are otherwise unchanged.
+- Deployment returns to 12 public Vercel API functions; the four underscore-prefixed files in `api/` are shared helper modules, not public routes.
+
 
 ## V250.93 — saved KDP description on Kindle export
 

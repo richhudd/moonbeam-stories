@@ -1537,7 +1537,7 @@ async function ensureKdpDescription(book=currentBook,profile=kindleAuthorProfile
  const existing=String(book.savedAssets?.kdp_description||'').trim();if(existing)return existing;
  const {data:{session}}=await supabaseClient.auth.getSession(),token=session?.access_token;if(!token)throw new Error('Please sign in again before preparing the KDP description.');
  const story={title:book.title||'',opening:book.opening||'',pages:(book.pages||[]).map(p=>({text:p.text||''})),closing:book.closing||''};
- const r=await fetch('/api/kdp-description',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({story,author:profile.name,series:profile.series})});
+ const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'kdp-description',story,author:profile.name,series:profile.series})});
  const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'The KDP description could not be generated.');
  const description=String(data.description||'').trim();if(!description)throw new Error('The KDP description came back empty.');
  const assets={...(book.savedAssets||{}),kdp_description:description};
