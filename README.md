@@ -647,3 +647,10 @@ V250.69
 
 ## V251.09
 Developer manual editing now accepts general text and illustration corrections/improvements, not only continuity reports. Medium-specific investigation remains human-directed. Illustration repair instructions explicitly preserve the existing illustration as the visual master and describe only the requested delta for surgical edits.
+
+## V251.10
+- Page illustration corrections are now non-destructive candidates: generate, preview, Accept / Try again / Keep original.
+- Saved artwork is not overwritten until Accept.
+- Accepted page/cover artwork refreshes the persistent saved-art cache as well as the object-URL cache, fixing stale original illustrations reappearing after replacement.
+- AI page-text corrections are previewed before acceptance.
+- Added direct manual page-text editing; Save text stores exactly what the developer typed without an AI rewrite.

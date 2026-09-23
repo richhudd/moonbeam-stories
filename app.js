@@ -1649,7 +1649,7 @@ function approveDeveloperAuditText(){
 }
 async function persistReillustratedCover(book,image){
  book.artwork=book.artwork||{};book.artwork.cover=image;
- if(book.isSaved&&book.savedStoryId){const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');const up=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};if(book.savedAssetUrls)delete book.savedAssetUrls[path]}
+ if(book.isSaved&&book.savedStoryId){const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');const replacementBlob=dataUrlToBlob(image);const up=await supabaseClient.storage.from('saved-story-art').upload(path,replacementBlob,{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;await savedArtPut(path,replacementBlob);const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};if(book.savedAssetUrls)delete book.savedAssetUrls[path]}
 }
 async function reillustrateCorrectedBook(){
  const book=currentBook;if(!book||!instagramDeveloperAccess||book.isShared||!book.developerTextApproved)return;
@@ -1734,8 +1734,8 @@ function correctionStoryPayload(book=currentBook){return{title:book?.title||'',o
 function developerCorrectionButton(){return instagramDeveloperAccess&&!currentBook?.isShared?'<div class="developer-editor-tools"><button class="developer-correct-page" id="developerCorrectPage" type="button">Correct this page</button><button class="developer-check-book" id="developerCheckBook" type="button">Check text against illustrations</button><button class="developer-audit-book" id="developerAuditBook" type="button">Manual corrections &amp; improvements</button></div>':''}
 function ensureDeveloperCorrectionDialog(){
  let d=$('developerCorrectionDialog');if(d)return d;
- d=document.createElement('div');d.id='developerCorrectionDialog';d.className='developer-correction-dialog hidden';d.innerHTML=`<div class="developer-correction-card" role="dialog" aria-modal="true" aria-labelledby="developerCorrectionTitle"><button class="developer-correction-close" id="developerCorrectionClose" type="button" aria-label="Close">×</button><h3 id="developerCorrectionTitle">Correct this page</h3><p id="developerCorrectionHelp">Describe exactly what is inconsistent. Your instruction is authoritative.</p><textarea id="developerCorrectionInstruction" rows="5" placeholder="For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam's pocket."></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCorrectTitle" type="button">Correct title</button><button class="secondary" id="developerCorrectByline" type="button">Correct author/dedication</button><button class="secondary" id="developerCorrectText" type="button">Correct text</button><button class="secondary" id="developerCorrectImage" type="button">Correct illustration</button></div><div class="developer-correction-status" id="developerCorrectionStatus"></div></div>`;
- document.body.appendChild(d);$('developerCorrectionClose').onclick=closeDeveloperCorrection;$('developerCorrectTitle').onclick=()=>runDeveloperCorrection('title');$('developerCorrectByline').onclick=()=>runDeveloperCorrection('byline');$('developerCorrectText').onclick=()=>runDeveloperCorrection('text');$('developerCorrectImage').onclick=()=>runDeveloperCorrection('illustration');d.addEventListener('click',e=>{if(e.target===d)closeDeveloperCorrection()});return d
+ d=document.createElement('div');d.id='developerCorrectionDialog';d.className='developer-correction-dialog hidden';d.innerHTML=`<div class="developer-correction-card" role="dialog" aria-modal="true" aria-labelledby="developerCorrectionTitle"><button class="developer-correction-close" id="developerCorrectionClose" type="button" aria-label="Close">×</button><h3 id="developerCorrectionTitle">Correct this page</h3><p id="developerCorrectionHelp">Describe exactly what is inconsistent. Your instruction is authoritative.</p><textarea id="developerCorrectionInstruction" rows="5" placeholder="For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam's pocket."></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCorrectTitle" type="button">Correct title</button><button class="secondary" id="developerCorrectByline" type="button">Correct author/dedication</button><button class="secondary" id="developerCorrectText" type="button">AI text correction</button><button class="secondary" id="developerManualText" type="button">Edit text manually</button><button class="secondary" id="developerCorrectImage" type="button">Correct illustration</button></div><div id="developerManualTextPanel" class="hidden"><div class="developer-review-label">Manual page text</div><textarea id="developerManualTextValue" rows="10"></textarea><div class="developer-correction-actions"><button class="secondary" id="developerManualTextSave" type="button">Save text</button><button class="secondary" id="developerManualTextCancel" type="button">Cancel</button></div></div><div id="developerCandidatePanel" class="hidden"><div class="developer-review-label" id="developerCandidateLabel">Proposed replacement</div><div id="developerCandidateBody"></div><div class="developer-correction-actions"><button class="secondary" id="developerCandidateAccept" type="button">Accept</button><button class="secondary" id="developerCandidateRetry" type="button">Try again</button><button class="secondary" id="developerCandidateReject" type="button">Keep original</button></div></div><div class="developer-correction-status" id="developerCorrectionStatus"></div></div>`;
+ document.body.appendChild(d);$('developerCorrectionClose').onclick=closeDeveloperCorrection;$('developerCorrectTitle').onclick=()=>runDeveloperCorrection('title');$('developerCorrectByline').onclick=()=>runDeveloperCorrection('byline');$('developerCorrectText').onclick=()=>runDeveloperCorrection('text');$('developerCorrectImage').onclick=()=>runDeveloperCorrection('illustration');$('developerManualText').onclick=openDeveloperManualText;$('developerManualTextSave').onclick=saveDeveloperManualText;$('developerManualTextCancel').onclick=()=>$('developerManualTextPanel')?.classList.add('hidden');$('developerCandidateAccept').onclick=acceptDeveloperCandidate;$('developerCandidateRetry').onclick=retryDeveloperCandidate;$('developerCandidateReject').onclick=rejectDeveloperCandidate;d.addEventListener('click',e=>{if(e.target===d)closeDeveloperCorrection()});return d
 }
 function openDeveloperCorrection(target='page'){
  if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;
@@ -1747,7 +1747,9 @@ function openDeveloperCorrection(target='page'){
  if(titleBtn)titleBtn.style.display=cover?'':'none';
  if(bylineBtn)bylineBtn.style.display=cover?'':'none';
  if(textBtn)textBtn.style.display=cover?'none':'';
+ const manualBtn=$('developerManualText');if(manualBtn)manualBtn.style.display=cover?'none':'';
  if(imageBtn)imageBtn.textContent=cover?'Correct cover artwork':'Correct illustration';
+ developerCorrectionCandidate=null;$('developerCandidatePanel')?.classList.add('hidden');$('developerManualTextPanel')?.classList.add('hidden');
  if(ta){ta.value='';ta.placeholder=cover?'For example: Change the title to “Sam and the Moon Biscuit Mystery”.':'For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam\'s pocket.'}
  if(st)st.textContent='';
  d.classList.remove('hidden');setTimeout(()=>ta?.focus(),20)
@@ -1788,12 +1790,55 @@ async function persistCorrectedIllustration(book,index,image){
  book.artwork.pages[index]=image;
  if(book.isSaved&&book.savedStoryId){
   const path=book.savedAssets?.pages?.[index];if(!path)throw new Error('This saved page has no artwork slot to replace.');
-  const up=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;
+  const replacementBlob=dataUrlToBlob(image);const up=await supabaseClient.storage.from('saved-story-art').upload(path,replacementBlob,{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;
+  await savedArtPut(path,replacementBlob);
   const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};delete book.savedAssetUrls[path];
   const assets={...(book.savedAssets||{})};delete assets.kdp_description;
   const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets;
  }
 }
+
+let developerCorrectionCandidate=null;
+function openDeveloperManualText(){
+ const book=currentBook,index=book?.currentPage;if(!book||!Number.isInteger(index))return;
+ const panel=$('developerManualTextPanel'),ta=$('developerManualTextValue');if(!panel||!ta)return;
+ ta.value=correctionPageText(book,index);panel.classList.remove('hidden');$('developerCandidatePanel')?.classList.add('hidden');ta.focus()
+}
+async function saveDeveloperManualText(){
+ const book=currentBook,index=book?.currentPage,ta=$('developerManualTextValue'),st=$('developerCorrectionStatus');
+ if(!book||!Number.isInteger(index)||!ta)return;
+ const value=String(ta.value||'').trim();if(!value){if(st)st.textContent='Page text cannot be empty.';return}
+ try{await persistCorrectedText(book,index,value);if(st)st.textContent='Manual text saved exactly as written.';closeDeveloperCorrection();renderBookPage(index)}
+ catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
+}
+function showDeveloperCandidate(candidate){
+ developerCorrectionCandidate=candidate;const panel=$('developerCandidatePanel'),body=$('developerCandidateBody'),label=$('developerCandidateLabel');
+ if(!panel||!body)return;panel.classList.remove('hidden');$('developerManualTextPanel')?.classList.add('hidden');
+ if(candidate.kind==='illustration'){
+  if(label)label.textContent='Proposed replacement illustration — original is still safely saved';
+  body.innerHTML=`<img src="${escapeHtml(candidate.image)}" alt="Proposed replacement illustration" style="display:block;max-width:100%;max-height:58vh;margin:.75rem auto;border-radius:12px">`;
+ }else{
+  if(label)label.textContent='Proposed replacement text — original is unchanged';
+  body.innerHTML=`<div class="developer-review-text suggested">${renderNarrationText(candidate.text||'')}</div>`;
+ }
+ const retry=$('developerCandidateRetry');if(retry)retry.style.display=candidate.kind==='illustration'?'':'none';
+}
+async function acceptDeveloperCandidate(){
+ const c=developerCorrectionCandidate,book=currentBook,st=$('developerCorrectionStatus');if(!c||!book)return;
+ try{
+  if(c.kind==='illustration')await persistCorrectedIllustration(book,c.index,c.image);
+  else await persistCorrectedText(book,c.index,c.text);
+  developerCorrectionCandidate=null;if(st)st.textContent='Accepted and saved.';closeDeveloperCorrection();renderBookPage(c.index)
+ }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
+}
+function rejectDeveloperCandidate(){
+ developerCorrectionCandidate=null;$('developerCandidatePanel')?.classList.add('hidden');const st=$('developerCorrectionStatus');if(st)st.textContent='Original kept. Nothing was changed.'
+}
+async function retryDeveloperCandidate(){
+ const c=developerCorrectionCandidate;if(!c||c.kind!=='illustration')return;
+ developerCorrectionCandidate=null;$('developerCandidatePanel')?.classList.add('hidden');await runDeveloperCorrection('illustration')
+}
+
 async function runDeveloperCorrection(kind){
  const book=currentBook,index=book?.currentPage,ta=$('developerCorrectionInstruction'),st=$('developerCorrectionStatus'),instruction=String(ta?.value||'').trim(),target=$('developerCorrectionDialog')?.dataset?.target||'page';
  if(!instagramDeveloperAccess||!book||book.isShared||!Number.isInteger(index))return;if(target==='cover'&&kind==='text')return;if(target!=='cover'&&(kind==='title'||kind==='byline'))return;if(!instruction){if(st)st.textContent='Describe the inconsistency first.';ta?.focus();return}
@@ -1820,7 +1865,7 @@ async function runDeveloperCorrection(kind){
    const key=`${coverKey(book)}:developer-correction:${Date.now()}`;
    const image=await requestIllustration(key,prompt,`Cover visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and important objects consistent.'}`,true,refs.length?refs:null,false,null,null,true);
    book.artwork=book.artwork||{};book.artwork.cover=image;
-   if(book.isSaved&&book.savedStoryId){const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');const up=await supabaseClient.storage.from('saved-story-art').upload(path,dataUrlToBlob(image),{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};delete book.savedAssetUrls[path];const assets={...(book.savedAssets||{})};delete assets.kdp_description;const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets}
+   if(book.isSaved&&book.savedStoryId){const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');const replacementBlob=dataUrlToBlob(image);const up=await supabaseClient.storage.from('saved-story-art').upload(path,replacementBlob,{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;await savedArtPut(path,replacementBlob);const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};delete book.savedAssetUrls[path];const assets={...(book.savedAssets||{})};delete assets.kdp_description;const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets}
    persistCurrentDraft();closeDeveloperCorrection();const ci=$('coverImage');if(ci)await revealCoverImage(ci,image);return;
   }
   if(kind==='text'){
@@ -1828,7 +1873,7 @@ async function runDeveloperCorrection(kind){
    const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-continuity-text',story:correctionStoryPayload(book),pageIndex:index,instruction})});
    const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Text correction failed.');
    const replacement=String(data.text||'').trim();if(!replacement)throw new Error('The corrected text came back empty.');
-   await persistCorrectedText(book,index,replacement);
+   showDeveloperCandidate({kind:'text',index,text:replacement,instruction});if(st)st.textContent='Review the proposed text. The original has not been changed.';return;
   }else{
    const basePrompt=getIllustrationPrompt(index),currentArtwork=await correctionCurrentArtwork(book,index);
    if(!currentArtwork)throw new Error('The existing illustration could not be loaded for correction.');
@@ -1837,7 +1882,7 @@ async function runDeveloperCorrection(kind){
    const correctionPrompt=`SURGICAL CORRECTION. The FIRST reference image is the actual existing illustration and is the visual master. Preserve it as closely as possible: same composition, framing, camera angle, characters, likenesses, poses, expressions, clothing, lighting, colours, background, objects, scale and style. Change ONLY the specific error identified below. Do not redesign, re-stage, embellish or reinterpret unrelated parts.\n\nDEVELOPER CORRECTION — AUTHORITATIVE:\n${instruction}\n\nPAGE SCENE FACTS:\n${basePrompt}\n\nEvery other visible detail in the existing illustration should remain unchanged unless changing it is strictly necessary to make the requested correction physically coherent.`;
    const key=`${illustrationKey(book,index,basePrompt)}:developer-surgical-correction:${Date.now()}`;
    const image=await requestIllustration(key,correctionPrompt,`EDIT PRIORITY: developer correction first; preserve the existing illustration everywhere else; preserve Cast likeness; use preceding artwork only where the current image does not establish a detail. ${book.character_bible||''}`,true,refs,true,index,continuity,true);
-   await persistCorrectedIllustration(book,index,image);
+   showDeveloperCandidate({kind:'illustration',index,image,instruction});if(st)st.textContent='Review the replacement illustration. The original has not been changed.';return;
   }
   closeDeveloperCorrection();renderBookPage(index);
  }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
