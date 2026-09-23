@@ -659,3 +659,11 @@ Developer manual editing now accepts general text and illustration corrections/i
 - Illustration replacement previews keep the correction instruction editable.
 - Before pressing Try again, the developer can refine or completely replace the instruction.
 - Try again always uses the current instruction-box contents while preserving the untouched original illustration until Accept.
+
+## V251.12
+- Removed the whole-book continuity audit, text-vs-illustration book check, canonical conflict/repair workflow and whole-book reillustration controls.
+- Developer editing is now deliberately page-local: one Edit this page control.
+- Text editing retains AI suggestions, now with Accept / Suggest another / Keep original; the instruction can be refined or replaced before requesting another suggestion.
+- Manual text override remains and saves exactly what is typed.
+- Illustration editing remains non-destructive: describe the change, preview a draft, Accept / refine instruction and Try again / Keep original.
+- No accepted content is replaced until the developer explicitly accepts it (manual text Save remains explicit).

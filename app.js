@@ -1583,146 +1583,6 @@ async function downloadKindleEbook(){
 
 
 let developerBookConflicts=[];
-function ensureDeveloperBookAudit(){
- let d=$('developerBookAudit');if(d)return d;
- d=document.createElement('div');d.id='developerBookAudit';d.className='developer-correction-dialog hidden';
- d.innerHTML=`<div class="developer-correction-card developer-review-card" role="dialog" aria-modal="true"><button class="developer-correction-close" id="developerAuditClose" type="button" aria-label="Close">×</button><h3>Manual corrections &amp; improvements</h3><p>Tell Moonbeam exactly what you want changed or investigated. Choose text or illustration so the engine works in the correct medium. Your instruction is authoritative; Moonbeam must not hunt for unrelated problems.</p><div id="developerAuditStatus" class="developer-correction-status"></div><div class="developer-audit-toolbar"><button class="secondary" id="developerAddTextContinuityProblem" type="button">Add text correction or improvement</button><button class="secondary" id="developerAddIllustrationContinuityProblem" type="button">Add illustration correction or improvement</button><button class="secondary" id="developerApplyTextRepairs" type="button" disabled>Apply proposed text repairs</button><button class="secondary" id="developerApproveCorrectedText" type="button" disabled>Approve corrected text</button><button class="secondary" id="developerReillustrateBook" type="button" disabled>Re-illustrate book</button></div><div id="developerAuditResults" class="developer-review-results"></div></div>`;
- document.body.appendChild(d);$('developerAuditClose').onclick=()=>d.classList.add('hidden');$('developerAddTextContinuityProblem').onclick=()=>addDeveloperContinuityProblem('text');$('developerAddIllustrationContinuityProblem').onclick=()=>addDeveloperContinuityProblem('illustration');$('developerApplyTextRepairs').onclick=applyDeveloperAuditTextRepairs;$('developerApproveCorrectedText').onclick=approveDeveloperAuditText;$('developerReillustrateBook').onclick=reillustrateCorrectedBook;d.addEventListener('click',e=>{if(e.target===d)d.classList.add('hidden')});return d
-}
-function renderDeveloperBookConflicts(){
- const box=$('developerAuditResults');if(!box)return;
- if(!developerBookConflicts.length){box.innerHTML='<div class="developer-review-clear">No whole-book continuity conflicts were found.</div>';return}
- box.innerHTML=developerBookConflicts.map((c,i)=>`<div class="developer-review-item developer-book-conflict" data-conflict="${i}"><div class="developer-review-page">${escapeHtml(c.subject||'Continuity conflict')}</div><div class="developer-review-reason">${escapeHtml(c.summary||'Conflicting versions appear in the book.')}</div>${(c.evidence||[]).map(e=>`<div class="developer-audit-evidence"><b>Page ${Number(e.pageIndex)+1}</b> · ${escapeHtml(e.source||'book')}: ${escapeHtml(e.detail||'')}</div>`).join('')}<div class="developer-review-label">Choose the canonical version</div><div class="developer-canon-options">${(c.options||[]).map((o,j)=>`<button type="button" class="secondary developer-canon-choice" data-i="${i}" data-j="${j}">${escapeHtml(o.label||o.fact||`Option ${j+1}`)}</button>`).join('')}<button type="button" class="secondary developer-canon-custom" data-i="${i}">Enter different canon…</button></div><div class="developer-repair-plan" id="developerRepairPlan${i}"></div></div>`).join('');
- box.querySelectorAll('.developer-canon-choice').forEach(b=>b.onclick=()=>chooseDeveloperCanon(Number(b.dataset.i),developerBookConflicts[Number(b.dataset.i)]?.options?.[Number(b.dataset.j)]?.fact||''));
- box.querySelectorAll('.developer-canon-custom').forEach(b=>b.onclick=()=>{const fact=prompt('Enter the authoritative continuity fact for this book:');if(fact?.trim())chooseDeveloperCanon(Number(b.dataset.i),fact.trim())});
-}
-function openDeveloperContinuityProblems(){
- if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;
- const d=ensureDeveloperBookAudit(),st=$('developerAuditStatus'),box=$('developerAuditResults');
- d.classList.remove('hidden');developerBookConflicts=[];currentBook.developerContinuityCanon=[];currentBook.developerTextApproved=false;
- if($('developerApplyTextRepairs'))$('developerApplyTextRepairs').disabled=true;
- if($('developerApproveCorrectedText'))$('developerApproveCorrectedText').disabled=true;
- if($('developerReillustrateBook'))$('developerReillustrateBook').disabled=true;
- if(box)box.innerHTML='<div class="developer-review-clear">No problems added yet.</div>';
- if(st)st.textContent='Add a text or illustration correction, problem or improvement.';
-}
-async function chooseDeveloperCanon(i,canon){
- const c=developerBookConflicts[i],slot=$(`developerRepairPlan${i}`),st=$('developerAuditStatus');if(!c||!canon||!currentBook)return;
- if(slot)slot.innerHTML='<div class="developer-correction-status">Building repair plan…</div>';
- try{
-  const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const pages=await developerFinishedAuditPages(currentBook);if(!pages.length)throw new Error('No finished page illustrations could be loaded.');
-  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-continuity-repair-plan',story:correctionStoryPayload(currentBook),pages,conflict:c,canon})});
-  const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Could not build repair plan.');
-  c.canon=canon;c.repairs=Array.isArray(data.repairs)?data.repairs:[];currentBook.developerContinuityCanon=currentBook.developerContinuityCanon||[];currentBook.developerContinuityCanon[i]=canon;currentBook.developerTextApproved=false;
-  if(slot)slot.innerHTML=`<div class="developer-review-label">Canon</div><div class="developer-review-text suggested">${escapeHtml(canon)}</div><div class="developer-review-label">Repair plan</div>${c.repairs.length?c.repairs.map(r=>`<div class="developer-audit-repair"><b>Page ${Number(r.pageIndex)+1} · ${escapeHtml(r.kind||'review')}</b><br>${escapeHtml(r.action||'')}${r.suggestedText?`<div class="developer-review-label">Proposed replacement text</div><div class="developer-review-text suggested">${renderNarrationText(r.suggestedText)}</div>`:''}</div>`).join(''):'<div class="developer-review-text">No downstream repair is required.</div>'}<p class="developer-audit-note">Review the repair plan. Apply the proposed text repairs only when you are happy with the chosen canon.</p>`;
-  const hasText=developerBookConflicts.some(x=>(x.repairs||[]).some(r=>String(r.kind||'').includes('text')&&String(r.suggestedText||'').trim()));if($('developerApplyTextRepairs'))$('developerApplyTextRepairs').disabled=!hasText;if($('developerApproveCorrectedText'))$('developerApproveCorrectedText').disabled=hasText;if($('developerReillustrateBook'))$('developerReillustrateBook').disabled=true;
- }catch(e){console.error(e);if(slot)slot.innerHTML='';if(st)st.textContent=e?.message||String(e)}
-}
-
-
-async function addDeveloperContinuityProblem(issueType='text'){
- if(!currentBook||!instagramDeveloperAccess)return;
- const isIllustration=issueType==='illustration';
- const issue=prompt(isIllustration?'Describe exactly what you want corrected or improved in the illustration(s). This may be a continuity issue or a small art-direction change such as “Sam should look more frightened”. Moonbeam will investigate only this request:':'Describe exactly what you want corrected or improved in the text. This may be a continuity issue or a general writing improvement. Moonbeam will investigate only this request:');if(!issue?.trim())return;
- const st=$('developerAuditStatus');if(st)st.textContent=isIllustration?'Checking the illustrations for your requested change…':'Checking the story text for your requested change…';
- try{
-  const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const allPages=await developerFinishedAuditPages(currentBook);if(!allPages.length)throw new Error('No finished book pages could be loaded.');
-  const pages=isIllustration?allPages:allPages.map(p=>({pageIndex:p.pageIndex,text:p.text||''}));
-  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-investigate-continuity',story:correctionStoryPayload(currentBook),pages,userIssue:issue.trim(),issueType})});
-  const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Could not investigate that continuity problem.');
-  const found=(Array.isArray(data.conflicts)?data.conflicts:[]).map(c=>({...c,issueType}));developerBookConflicts.push(...found);if(st)st.textContent=found.length?`${isIllustration?'Illustration':'Text'} correction or improvement added.`:`Moonbeam could not identify where to apply that ${isIllustration?'illustration':'text'} request.`;renderDeveloperBookConflicts();
- }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
-}
-function auditTextRepairs(){return developerBookConflicts.flatMap(c=>(c.repairs||[]).filter(r=>String(r.kind||'').includes('text')&&String(r.suggestedText||'').trim()))}
-async function applyDeveloperAuditTextRepairs(){
- if(!currentBook||!instagramDeveloperAccess)return;const repairs=auditTextRepairs();if(!repairs.length)return;
- const st=$('developerAuditStatus');if(st)st.textContent='Applying approved continuity text repairs…';
- try{
-  for(const r of repairs)await persistCorrectedText(currentBook,Number(r.pageIndex),String(r.suggestedText).trim());
-  if($('developerApplyTextRepairs'))$('developerApplyTextRepairs').disabled=true;if($('developerApproveCorrectedText'))$('developerApproveCorrectedText').disabled=false;if(st)st.textContent='Text repairs applied. Review the corrected story, then approve it before re-illustrating.';renderBookPage(currentBook.currentPage);
- }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
-}
-function approveDeveloperAuditText(){
- if(!currentBook||!instagramDeveloperAccess)return;currentBook.developerTextApproved=true;persistCurrentDraft();if($('developerApproveCorrectedText'))$('developerApproveCorrectedText').disabled=true;if($('developerReillustrateBook'))$('developerReillustrateBook').disabled=false;const st=$('developerAuditStatus');if(st)st.textContent='Corrected text approved. The book can now be re-illustrated from scratch.';
-}
-async function persistReillustratedCover(book,image){
- book.artwork=book.artwork||{};book.artwork.cover=image;
- if(book.isSaved&&book.savedStoryId){const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');const replacementBlob=dataUrlToBlob(image);const up=await supabaseClient.storage.from('saved-story-art').upload(path,replacementBlob,{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;await savedArtPut(path,replacementBlob);const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};if(book.savedAssetUrls)delete book.savedAssetUrls[path]}
-}
-async function reillustrateCorrectedBook(){
- const book=currentBook;if(!book||!instagramDeveloperAccess||book.isShared||!book.developerTextApproved)return;
- if(!confirm('Re-illustrate the entire book from the approved corrected text? This will replace the cover and every page illustration.'))return;
- const st=$('developerAuditStatus'),btn=$('developerReillustrateBook');if(btn)btn.disabled=true;
- try{
-  const canon=(book.developerContinuityCanon||[]).filter(Boolean);const canonBlock=canon.length?`\n\nAUTHORITATIVE WHOLE-BOOK CONTINUITY FACTS:\n${canon.map(x=>`- ${x}`).join('\n')}\nThese facts must remain visually true throughout every relevant later scene.`:'';
-  book.visualCacheId=`${book.cacheId||'book'}:continuity-rebuild:${Date.now()}`;book.artwork={cover:null,pages:[]};
-  if(st)st.textContent='Re-illustrating cover…';
-  const refs=await correctionReferenceImages(book);
-  const cover=await requestIllustration(`${coverKey(book)}:full-rebuild`,`${getCoverPrompt(book)}${canonBlock}`,`Story visual continuity bible: ${book.character_bible||''}${canonBlock}`,true,refs.length?refs:null,false,null,null,true);
-  await persistReillustratedCover(book,cover);let previous=cover;const total=book.pages.length+2;
-  for(let i=0;i<total;i++){
-   if(st)st.textContent=`Re-illustrating page ${i+1} of ${total}…`;
-   const prompt=`${getIllustrationPrompt(i)}${canonBlock}\n\nThis is a clean whole-book rebuild from the approved corrected story. Do not copy errors from the old illustrations. Preserve Cast likeness and the authoritative continuity facts above.`;
-   const key=`${illustrationKey(book,i,prompt)}:full-rebuild`;
-   const image=await requestIllustration(key,prompt,`Story visual continuity bible: ${book.character_bible||''}${canonBlock}`,true,refs.length?refs:null,true,i,previous,true);
-   book.artwork.pages[i]=image;await persistCorrectedIllustration(book,i,image);previous=image;
-  }
-  if(book.isSaved&&book.savedStoryId){const assets={...(book.savedAssets||{})};delete assets.kdp_description;delete assets.kdp_keywords;const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets}
-  persistCurrentDraft();if(st)st.textContent='Re-illustration complete. The cover and every page were rebuilt from the approved corrected story.';renderBookPage(book.currentPage);
- }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e);if(btn)btn.disabled=false}
-}
-
-let developerContinuityFindings=[];
-function ensureDeveloperContinuityReview(){
- let d=$('developerContinuityReview');if(d)return d;
- d=document.createElement('div');d.id='developerContinuityReview';d.className='developer-correction-dialog hidden';
- d.innerHTML=`<div class="developer-correction-card developer-review-card" role="dialog" aria-modal="true"><button class="developer-correction-close" id="developerReviewClose" type="button" aria-label="Close">×</button><h3>Check text against illustrations</h3><p>Moonbeam compares each finished illustration with its page text and the complete story. Nothing changes until you approve it.</p><div id="developerReviewStatus" class="developer-correction-status"></div><div id="developerReviewResults" class="developer-review-results"></div></div>`;
- document.body.appendChild(d);$('developerReviewClose').onclick=()=>d.classList.add('hidden');d.addEventListener('click',e=>{if(e.target===d)d.classList.add('hidden')});return d
-}
-async function developerPageArtwork(book,index){
- if(book?.artwork?.pages?.[index])return book.artwork.pages[index];
- if(book?.isSaved&&book?.savedAssets?.pages?.[index]){try{return await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.pages[index]))}catch{}}
- const key=illustrationKey(book,index,getIllustrationPrompt(index));return illustrationCache.get(key)||await persistentImageGet(key)||null
-}
-async function developerFinishedAuditPages(book){
- const total=(book?.pages?.length||0)+2,out=[];
- for(let i=0;i<total;i++){
-  const text=i===0?String(book?.opening||''):i===total-1?String(book?.closing||''):String(book?.pages?.[i-1]?.text||'');
-  const image=await developerPageArtwork(book,i);
-  if(image)out.push({pageIndex:i,text,image});
- }
- return out
-}
-function renderDeveloperContinuityFindings(){
- const box=$('developerReviewResults');if(!box)return;
- if(!developerContinuityFindings.length){box.innerHTML='<div class="developer-review-clear">No genuine text/illustration inconsistencies were found.</div>';return}
- box.innerHTML=developerContinuityFindings.map((f,i)=>`<div class="developer-review-item" data-finding="${i}"><div class="developer-review-page">Page ${f.pageIndex+1}</div><div class="developer-review-reason">${escapeHtml(f.reason||'Possible inconsistency')}</div><div class="developer-review-label">Current text</div><div class="developer-review-text">${renderNarrationText(f.currentText||'')}</div><div class="developer-review-label">Suggested correction</div><div class="developer-review-text suggested">${renderNarrationText(f.suggestedText||'')}</div><div class="developer-review-actions"><button type="button" class="secondary developer-review-accept" data-i="${i}">Accept</button><button type="button" class="secondary developer-review-reject" data-i="${i}">Reject</button></div></div>`).join('');
- box.querySelectorAll('.developer-review-accept').forEach(b=>b.onclick=()=>acceptDeveloperContinuityFinding(Number(b.dataset.i)));
- box.querySelectorAll('.developer-review-reject').forEach(b=>b.onclick=()=>rejectDeveloperContinuityFinding(Number(b.dataset.i)));
-}
-async function acceptDeveloperContinuityFinding(i){
- const f=developerContinuityFindings[i];if(!f||!currentBook)return;
- try{await persistCorrectedText(currentBook,f.pageIndex,f.suggestedText);developerContinuityFindings.splice(i,1);renderDeveloperContinuityFindings();renderBookPage(currentBook.currentPage)}
- catch(e){const st=$('developerReviewStatus');if(st)st.textContent=e?.message||String(e)}
-}
-function rejectDeveloperContinuityFinding(i){developerContinuityFindings.splice(i,1);renderDeveloperContinuityFindings()}
-async function checkTextAgainstIllustrations(){
- if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;
- const d=ensureDeveloperContinuityReview(),st=$('developerReviewStatus'),box=$('developerReviewResults');d.classList.remove('hidden');developerContinuityFindings=[];if(box)box.innerHTML='';if(st)st.textContent='Checking the finished pages…';
- try{
-  const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const pages=await developerFinishedAuditPages(currentBook);
-  if(!pages.length)throw new Error('No finished page illustrations could be loaded.');
-  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-illustration-text-check',story:correctionStoryPayload(currentBook),pages})});
-  const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Continuity check failed.');
-  developerContinuityFindings=Array.isArray(data.findings)?data.findings.filter(f=>Number.isInteger(f.pageIndex)&&String(f.suggestedText||'').trim()):[];
-  if(st)st.textContent=developerContinuityFindings.length?`${developerContinuityFindings.length} possible ${developerContinuityFindings.length===1?'inconsistency':'inconsistencies'} found. Review each change below.`:'Check complete.';
-  renderDeveloperContinuityFindings();
- }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
-}
-
 function correctionPageText(book=currentBook,index=book?.currentPage){
  if(!book||!Number.isInteger(index))return '';
  const total=(book.pages?.length||0)+2;
@@ -1731,10 +1591,10 @@ function correctionPageText(book=currentBook,index=book?.currentPage){
  return book.pages?.[index-1]?.text||'';
 }
 function correctionStoryPayload(book=currentBook){return{title:book?.title||'',opening:book?.opening||'',pages:(book?.pages||[]).map(p=>({text:p?.text||'',illustration_prompt:p?.illustration_prompt||''})),closing:book?.closing||'',character_bible:book?.character_bible||''}}
-function developerCorrectionButton(){return instagramDeveloperAccess&&!currentBook?.isShared?'<div class="developer-editor-tools"><button class="developer-correct-page" id="developerCorrectPage" type="button">Correct this page</button><button class="developer-check-book" id="developerCheckBook" type="button">Check text against illustrations</button><button class="developer-audit-book" id="developerAuditBook" type="button">Manual corrections &amp; improvements</button></div>':''}
+function developerCorrectionButton(){return instagramDeveloperAccess&&!currentBook?.isShared?'<div class="developer-editor-tools"><button class="developer-correct-page" id="developerCorrectPage" type="button">Edit this page</button></div>':''}
 function ensureDeveloperCorrectionDialog(){
  let d=$('developerCorrectionDialog');if(d)return d;
- d=document.createElement('div');d.id='developerCorrectionDialog';d.className='developer-correction-dialog hidden';d.innerHTML=`<div class="developer-correction-card" role="dialog" aria-modal="true" aria-labelledby="developerCorrectionTitle"><button class="developer-correction-close" id="developerCorrectionClose" type="button" aria-label="Close">×</button><h3 id="developerCorrectionTitle">Correct this page</h3><p id="developerCorrectionHelp">Describe exactly what is inconsistent. Your instruction is authoritative.</p><textarea id="developerCorrectionInstruction" rows="5" placeholder="For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam's pocket."></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCorrectTitle" type="button">Correct title</button><button class="secondary" id="developerCorrectByline" type="button">Correct author/dedication</button><button class="secondary" id="developerCorrectText" type="button">AI text correction</button><button class="secondary" id="developerManualText" type="button">Edit text manually</button><button class="secondary" id="developerCorrectImage" type="button">Correct illustration</button></div><div id="developerManualTextPanel" class="hidden"><div class="developer-review-label">Manual page text</div><textarea id="developerManualTextValue" rows="10"></textarea><div class="developer-correction-actions"><button class="secondary" id="developerManualTextSave" type="button">Save text</button><button class="secondary" id="developerManualTextCancel" type="button">Cancel</button></div></div><div id="developerCandidatePanel" class="hidden"><div class="developer-review-label" id="developerCandidateLabel">Proposed replacement</div><div id="developerCandidateBody"></div><div class="developer-correction-actions"><button class="secondary" id="developerCandidateAccept" type="button">Accept</button><button class="secondary" id="developerCandidateRetry" type="button">Try again</button><button class="secondary" id="developerCandidateReject" type="button">Keep original</button></div></div><div class="developer-correction-status" id="developerCorrectionStatus"></div></div>`;
+ d=document.createElement('div');d.id='developerCorrectionDialog';d.className='developer-correction-dialog hidden';d.innerHTML=`<div class="developer-correction-card" role="dialog" aria-modal="true" aria-labelledby="developerCorrectionTitle"><button class="developer-correction-close" id="developerCorrectionClose" type="button" aria-label="Close">×</button><h3 id="developerCorrectionTitle">Correct this page</h3><p id="developerCorrectionHelp">Describe exactly what is inconsistent. Your instruction is authoritative.</p><textarea id="developerCorrectionInstruction" rows="5" placeholder="For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam's pocket."></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCorrectTitle" type="button">Correct title</button><button class="secondary" id="developerCorrectByline" type="button">Correct author/dedication</button><button class="secondary" id="developerCorrectText" type="button">AI text correction</button><button class="secondary" id="developerManualText" type="button">Edit text manually</button><button class="secondary" id="developerCorrectImage" type="button">Correct illustration</button></div><div id="developerManualTextPanel" class="hidden"><div class="developer-review-label">Manual page text</div><textarea id="developerManualTextValue" rows="10"></textarea><div class="developer-correction-actions"><button class="secondary" id="developerManualTextSave" type="button">Save text</button><button class="secondary" id="developerManualTextCancel" type="button">Cancel</button></div></div><div id="developerCandidatePanel" class="hidden"><div class="developer-review-label" id="developerCandidateLabel">Proposed replacement</div><div id="developerCandidateBody"></div><div class="developer-correction-actions"><button class="secondary" id="developerCandidateAccept" type="button">Accept</button><button class="secondary" id="developerCandidateRetry" type="button">Suggest another</button><button class="secondary" id="developerCandidateReject" type="button">Keep original</button></div></div><div class="developer-correction-status" id="developerCorrectionStatus"></div></div>`;
  document.body.appendChild(d);$('developerCorrectionClose').onclick=closeDeveloperCorrection;$('developerCorrectTitle').onclick=()=>runDeveloperCorrection('title');$('developerCorrectByline').onclick=()=>runDeveloperCorrection('byline');$('developerCorrectText').onclick=()=>runDeveloperCorrection('text');$('developerCorrectImage').onclick=()=>runDeveloperCorrection('illustration');$('developerManualText').onclick=openDeveloperManualText;$('developerManualTextSave').onclick=saveDeveloperManualText;$('developerManualTextCancel').onclick=()=>$('developerManualTextPanel')?.classList.add('hidden');$('developerCandidateAccept').onclick=acceptDeveloperCandidate;$('developerCandidateRetry').onclick=retryDeveloperCandidate;$('developerCandidateReject').onclick=rejectDeveloperCandidate;d.addEventListener('click',e=>{if(e.target===d)closeDeveloperCorrection()});return d
 }
 function openDeveloperCorrection(target='page'){
@@ -1818,10 +1678,10 @@ function showDeveloperCandidate(candidate){
   if(label)label.textContent='Proposed replacement illustration — original is still safely saved';
   body.innerHTML=`<div class="developer-correction-status">You can refine or completely replace the instruction above before choosing Try again.</div><img src="${escapeHtml(candidate.image)}" alt="Proposed replacement illustration" style="display:block;max-width:100%;max-height:58vh;margin:.75rem auto;border-radius:12px">`;
  }else{
-  if(label)label.textContent='Proposed replacement text — original is unchanged';
-  body.innerHTML=`<div class="developer-review-text suggested">${renderNarrationText(candidate.text||'')}</div>`;
+  if(label)label.textContent='Suggested replacement text — original is unchanged';
+  body.innerHTML=`<div class="developer-correction-status">Accept this suggestion, refine or replace the instruction above and ask for another, or keep the original.</div><div class="developer-review-text suggested">${renderNarrationText(candidate.text||'')}</div>`;
  }
- const retry=$('developerCandidateRetry');if(retry)retry.style.display=candidate.kind==='illustration'?'':'none';
+ const retry=$('developerCandidateRetry');if(retry){retry.style.display='';retry.textContent=candidate.kind==='illustration'?'Try again':'Suggest another'};
 }
 async function acceptDeveloperCandidate(){
  const c=developerCorrectionCandidate,book=currentBook,st=$('developerCorrectionStatus');if(!c||!book)return;
@@ -1835,12 +1695,12 @@ function rejectDeveloperCandidate(){
  developerCorrectionCandidate=null;$('developerCandidatePanel')?.classList.add('hidden');const st=$('developerCorrectionStatus');if(st)st.textContent='Original kept. Nothing was changed.'
 }
 async function retryDeveloperCandidate(){
- const c=developerCorrectionCandidate;if(!c||c.kind!=='illustration')return;
+ const c=developerCorrectionCandidate;if(!c)return;
  const ta=$('developerCorrectionInstruction'),st=$('developerCorrectionStatus'),instruction=String(ta?.value||'').trim();
- if(!instruction){if(st)st.textContent='Refine or replace the correction instruction before trying again.';ta?.focus();return}
+ if(!instruction){if(st)st.textContent='Refine or replace the instruction before trying again.';ta?.focus();return}
  developerCorrectionCandidate=null;$('developerCandidatePanel')?.classList.add('hidden');
- if(st)st.textContent='Generating another replacement from your current instruction…';
- await runDeveloperCorrection('illustration')
+ if(st)st.textContent=c.kind==='illustration'?'Generating another replacement from your current instruction…':'Suggesting another text solution from your current instruction…';
+ await runDeveloperCorrection(c.kind==='illustration'?'illustration':'text')
 }
 
 async function runDeveloperCorrection(kind){
@@ -1916,7 +1776,7 @@ function renderBookPage(index){
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';
  bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-scroll-cue" aria-hidden="true"><span></span><span></span></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div>${developerCorrectionButton()}<button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.classList.remove('end-hidden');next.textContent=t().turn}if(indicator){indicator.classList.remove('end-hidden');indicator.textContent=`${clamped+1} / ${total}`}
- const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};const dc=$('developerCorrectPage');if(dc)dc.onclick=e=>{e.stopPropagation();openDeveloperCorrection()};const dcb=$('developerCheckBook');if(dcb)dcb.onclick=e=>{e.stopPropagation();checkTextAgainstIllustrations()};const dab=$('developerAuditBook');if(dab)dab.onclick=e=>{e.stopPropagation();openDeveloperContinuityProblems()};
+ const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};const dc=$('developerCorrectPage');if(dc)dc.onclick=e=>{e.stopPropagation();openDeveloperCorrection()};
  applyMobileSide();setupMobileScrollCue();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,2);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${narrationLanguage(book)}:${clamped+1}`,clamped+1).catch(()=>{})}
  persistCurrentDraft();restoreReaderScroll();
