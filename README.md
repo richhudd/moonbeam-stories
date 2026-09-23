@@ -1,3 +1,20 @@
+# Moonbeam Stories V250.89
+
+## V250.89 — developer-only Sam/Emily cover author credits
+
+This build starts from **V250.88** and makes one deliberately narrow cover-text change.
+
+- On the existing authenticated Moonbeam developer account only, a story with exactly one hero named **Sam** shows **By Sam Alderwick** on the cover instead of the normal bedtime dedication.
+- On that same developer account only, a story with exactly one hero named **Emily** shows **By Emily Alderwick** instead of the normal bedtime dedication.
+- Stories about every other child on the developer account keep the existing bedtime dedication unchanged.
+- Stories with multiple heroes keep the existing bedtime dedication unchanged, even if Sam or Emily is one of them.
+- All ordinary Moonbeam accounts keep the existing bedtime dedication unchanged.
+- The restriction reuses Moonbeam's existing server-verified developer-access check (`MOONBEAM_DEVELOPER_EMAIL`); no developer email address is exposed or duplicated in client code.
+
+No SQL is required. Story generation, illustration generation, saved stories, payments, sharing and Instagram publishing are otherwise unchanged.
+
+---
+
 # Moonbeam Stories V250.88
 
 ## V250.88 — retire automatic Reel posting; keep demo-child generator
