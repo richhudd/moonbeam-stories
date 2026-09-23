@@ -1,4 +1,13 @@
-# Moonbeam Stories V250.95
+# Moonbeam Stories V250.96
+
+## V250.96 — coverless KDP EPUB + author photo fix
+
+- Kindle EPUB export no longer includes the Moonbeam book cover. The EPUB now begins with the first story text page; the KDP cover is supplied separately outside the EPUB.
+- Fixes the **About the Author** portrait so Sam/Emily's existing Moonbeam Cast/profile photo is decoded from its saved image bytes before being drawn into the circular author portrait.
+- The author biography, Moonbeam website link, story text/illustration sequence, saved KDP description and all non-Kindle Moonbeam behaviour are unchanged.
+- No new API endpoint or SQL migration is added.
+
+---
 
 ## V250.95 — Vercel Hobby function-count fix
 
