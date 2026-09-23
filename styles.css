@@ -4162,3 +4162,35 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 /* V250.98 developer-only cover correction */
 .developer-correct-cover{position:absolute;right:18px;bottom:92px;z-index:12;border:1px solid rgba(207,176,105,.8);background:rgba(247,242,232,.94);color:#3b3155;border-radius:999px;padding:8px 13px;font:600 12px/1.2 system-ui,-apple-system,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.12);cursor:pointer}
 @media(max-width:700px){.developer-correct-cover{right:10px;bottom:86px;font-size:11px;padding:7px 10px}}
+
+/* V251.00 cover text correction controls */
+.developer-correction-actions{flex-wrap:wrap}
+.developer-correction-actions button{min-width:140px}
+
+/* V251.01 developer editorial continuity review */
+.developer-editor-tools{position:absolute;right:18px;bottom:16px;z-index:9;display:flex;gap:8px;align-items:center}
+.developer-editor-tools .developer-correct-page{position:static}
+.developer-check-book{border:1px solid rgba(207,176,105,.8);background:rgba(247,242,232,.94);color:#3b3155;border-radius:999px;padding:8px 13px;font:600 12px/1.2 system-ui,-apple-system,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.12);cursor:pointer}
+.developer-review-card{width:min(760px,94vw);max-height:88vh;overflow:auto}
+.developer-review-results{display:grid;gap:14px;margin-top:12px}
+.developer-review-item{border:1px solid #ddd2e1;border-radius:12px;padding:14px;background:#fff}
+.developer-review-page{font-weight:750;margin-bottom:6px}
+.developer-review-reason{color:#6b587b;margin-bottom:12px}
+.developer-review-label{font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.04em;margin:9px 0 4px;color:#6d6575}
+.developer-review-text{padding:10px;border-radius:8px;background:#f6f3f8}
+.developer-review-text.suggested{background:#f4f7ee}
+.developer-review-actions{display:flex;gap:8px;margin-top:12px}
+.developer-review-clear{padding:18px;border-radius:10px;background:#f4f7ee;text-align:center}
+@media(max-width:700px){.developer-editor-tools{right:10px;bottom:10px;flex-direction:column;align-items:flex-end}.developer-check-book{font-size:11px;padding:7px 10px}}
+
+/* V251.02 whole-book continuity audit */
+.developer-audit-book{border:1px solid rgba(207,176,105,.8);background:rgba(247,242,232,.94);color:#3b3155;border-radius:999px;padding:8px 13px;font:600 12px/1.2 system-ui,-apple-system,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.12);cursor:pointer}
+.developer-audit-evidence{padding:7px 9px;margin:5px 0;border-left:3px solid #d7cadf;background:#faf8fb;border-radius:4px}
+.developer-canon-options{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.developer-audit-repair{padding:9px 10px;margin:6px 0;background:#f7f5f8;border-radius:8px}
+.developer-audit-note{font-size:12px;color:#706778;margin:10px 0 0}
+
+/* V251.03 complete developer continuity repair workflow */
+.developer-audit-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.developer-audit-toolbar button:disabled{opacity:.45;cursor:not-allowed}
+.developer-editor-tools{flex-wrap:wrap;justify-content:flex-end;max-width:min(96vw,760px)}

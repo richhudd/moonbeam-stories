@@ -1,3 +1,63 @@
+# Moonbeam Stories V251.03
+
+## V251.03 — complete developer continuity repair + full re-illustration
+
+- Keeps **Correct this page** for small individual page fixes.
+- Keeps the automatic **Check text against illustrations** review.
+- Adds **Add continuity problem** inside the whole-book audit so the developer can report problems the automatic scan misses.
+- Manually reported problems are investigated across the entire finished story and all illustrations.
+- The developer chooses canon; repair plans now include complete minimally corrected replacement text where needed.
+- Staged workflow: **Apply proposed text repairs → Approve corrected text → Re-illustrate book**.
+- Re-illustration stays locked until corrected text is explicitly approved.
+- Full re-illustration starts clean and rebuilds **cover → page 1 → page 2 → …**, without using the rejected old artwork as continuity references.
+- Human-chosen canonical facts are carried through the new illustration sequence, and each new image seeds the next.
+- Saved-book artwork is replaced in place and publishing metadata caches are invalidated.
+- Entire workflow is developer-account-only; ordinary customer generation is unchanged.
+- No new Vercel endpoint and no SQL migration.
+
+---
+
+## V251.02 — developer whole-book continuity audit
+
+- Adds **Whole-book continuity audit** beside the existing developer correction/review tools.
+- Audits the complete story and all finished page illustrations together, across page boundaries.
+- Detects persistent-state conflicts such as an object being planted and later appearing in a pocket, changing identity/size, inconsistent equipment, location, damage, clothing or time-of-day state.
+- It does **not** invent an explanation or decide which contradictory version is canon.
+- For each conflict it presents the evidence and 2–4 supported canonical choices, plus **Enter different canon…**.
+- Once the developer chooses canon, Moonbeam creates a page-by-page repair plan identifying text changes and illustrations that require regeneration.
+- The chosen canon is explicitly authoritative in that repair plan.
+- No repair is silently applied at the audit stage.
+- Developer-only; ordinary customer generation is unchanged.
+- Reuses the existing `generate` endpoint: no new Vercel function and no SQL migration.
+
+---
+
+## V251.01 — developer illustration/text continuity review
+
+- Adds **Check text against illustrations** to the developer editing tools on finished books.
+- The review sends each finished page illustration with its corresponding text plus the complete finished story to the existing generation endpoint.
+- It reports only genuine correctable text/image contradictions; harmless omissions and composition differences are ignored.
+- Established story facts outrank an illustration. The checker will not rewrite the plot merely to accommodate an erroneous image.
+- For safe mismatches, it proposes a minimal replacement for that page's text.
+- Every proposed change is shown to the developer with **Accept / Reject**. Nothing changes automatically.
+- Accepted corrections use the existing saved-book text persistence path.
+- This is developer-only and is not an extra generation stage for ordinary customer books.
+- No new Vercel endpoint and no SQL migration.
+
+---
+
+## V251.00 — full developer cover correction
+
+- **Correct cover** now exposes three independent correction targets: **Correct title**, **Correct author/dedication**, and **Correct cover artwork**.
+- The developer still describes the required change in free text; that instruction is authoritative.
+- Title correction changes the actual stored book title rather than painting text into the artwork.
+- Author/dedication correction changes the stored cover text layer, not the image.
+- Saved-book cover-text corrections are persisted and invalidate previously prepared KDP description/keywords so downstream publishing can use the corrected metadata.
+- V250.99 surgical illustration correction remains intact.
+- Reuses the existing `generate` and `illustrate` endpoints: no new Vercel function and no SQL migration.
+
+---
+
 # Moonbeam Stories V250.99
 
 ## V250.99 — surgical illustration correction
