@@ -632,3 +632,18 @@ V250.69
 - Subsequent status checks back off much more aggressively (8s, 12s, 16s, 20s, then 25s) to reduce Graph API request volume.
 - Meta/Instagram application rate-limit responses are detected explicitly and shown as a clear temporary rate-limit message instead of the raw API error.
 - No automatic retry is made when Meta is rate-limiting the app, so Moonbeam does not add more requests during the throttle window.
+
+
+## V251.08 — human-directed continuity checks
+- Removed the automatic whole-book continuity audit from the developer UI.
+- Replaced it with a manual Continuity problems workflow.
+- Added separate **Add text continuity problem** and **Add illustration continuity problem** controls.
+- Text reports send story text only and direct the model to inspect textual continuity.
+- Illustration reports send the finished illustrations and direct the model to inspect visual continuity, using prose only as factual/timing context.
+- Human reports are investigated narrowly; Moonbeam is told not to launch an unrelated automatic audit.
+- Existing canon selection, repair planning, text approval and re-illustration workflow is retained.
+- No new API endpoint and no database/schema change.
+
+
+## V251.09
+Developer manual editing now accepts general text and illustration corrections/improvements, not only continuity reports. Medium-specific investigation remains human-directed. Illustration repair instructions explicitly preserve the existing illustration as the visual master and describe only the requested delta for surgical edits.

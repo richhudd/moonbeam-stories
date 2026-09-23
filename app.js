@@ -1586,8 +1586,8 @@ let developerBookConflicts=[];
 function ensureDeveloperBookAudit(){
  let d=$('developerBookAudit');if(d)return d;
  d=document.createElement('div');d.id='developerBookAudit';d.className='developer-correction-dialog hidden';
- d.innerHTML=`<div class="developer-correction-card developer-review-card" role="dialog" aria-modal="true"><button class="developer-correction-close" id="developerAuditClose" type="button" aria-label="Close">×</button><h3>Whole-book continuity audit</h3><p>Moonbeam checks the complete story and all finished illustrations for continuity that changes across pages. Choose which version is canon before Moonbeam proposes repairs.</p><div id="developerAuditStatus" class="developer-correction-status"></div><div class="developer-audit-toolbar"><button class="secondary" id="developerAddContinuityProblem" type="button">Add continuity problem</button><button class="secondary" id="developerApplyTextRepairs" type="button" disabled>Apply proposed text repairs</button><button class="secondary" id="developerApproveCorrectedText" type="button" disabled>Approve corrected text</button><button class="secondary" id="developerReillustrateBook" type="button" disabled>Re-illustrate book</button></div><div id="developerAuditResults" class="developer-review-results"></div></div>`;
- document.body.appendChild(d);$('developerAuditClose').onclick=()=>d.classList.add('hidden');$('developerAddContinuityProblem').onclick=addDeveloperContinuityProblem;$('developerApplyTextRepairs').onclick=applyDeveloperAuditTextRepairs;$('developerApproveCorrectedText').onclick=approveDeveloperAuditText;$('developerReillustrateBook').onclick=reillustrateCorrectedBook;d.addEventListener('click',e=>{if(e.target===d)d.classList.add('hidden')});return d
+ d.innerHTML=`<div class="developer-correction-card developer-review-card" role="dialog" aria-modal="true"><button class="developer-correction-close" id="developerAuditClose" type="button" aria-label="Close">×</button><h3>Manual corrections &amp; improvements</h3><p>Tell Moonbeam exactly what you want changed or investigated. Choose text or illustration so the engine works in the correct medium. Your instruction is authoritative; Moonbeam must not hunt for unrelated problems.</p><div id="developerAuditStatus" class="developer-correction-status"></div><div class="developer-audit-toolbar"><button class="secondary" id="developerAddTextContinuityProblem" type="button">Add text correction or improvement</button><button class="secondary" id="developerAddIllustrationContinuityProblem" type="button">Add illustration correction or improvement</button><button class="secondary" id="developerApplyTextRepairs" type="button" disabled>Apply proposed text repairs</button><button class="secondary" id="developerApproveCorrectedText" type="button" disabled>Approve corrected text</button><button class="secondary" id="developerReillustrateBook" type="button" disabled>Re-illustrate book</button></div><div id="developerAuditResults" class="developer-review-results"></div></div>`;
+ document.body.appendChild(d);$('developerAuditClose').onclick=()=>d.classList.add('hidden');$('developerAddTextContinuityProblem').onclick=()=>addDeveloperContinuityProblem('text');$('developerAddIllustrationContinuityProblem').onclick=()=>addDeveloperContinuityProblem('illustration');$('developerApplyTextRepairs').onclick=applyDeveloperAuditTextRepairs;$('developerApproveCorrectedText').onclick=approveDeveloperAuditText;$('developerReillustrateBook').onclick=reillustrateCorrectedBook;d.addEventListener('click',e=>{if(e.target===d)d.classList.add('hidden')});return d
 }
 function renderDeveloperBookConflicts(){
  const box=$('developerAuditResults');if(!box)return;
@@ -1596,18 +1596,15 @@ function renderDeveloperBookConflicts(){
  box.querySelectorAll('.developer-canon-choice').forEach(b=>b.onclick=()=>chooseDeveloperCanon(Number(b.dataset.i),developerBookConflicts[Number(b.dataset.i)]?.options?.[Number(b.dataset.j)]?.fact||''));
  box.querySelectorAll('.developer-canon-custom').forEach(b=>b.onclick=()=>{const fact=prompt('Enter the authoritative continuity fact for this book:');if(fact?.trim())chooseDeveloperCanon(Number(b.dataset.i),fact.trim())});
 }
-async function runWholeBookContinuityAudit(){
+function openDeveloperContinuityProblems(){
  if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;
- const d=ensureDeveloperBookAudit(),st=$('developerAuditStatus'),box=$('developerAuditResults');d.classList.remove('hidden');developerBookConflicts=[];currentBook.developerContinuityCanon=[];currentBook.developerTextApproved=false;if($('developerApplyTextRepairs'))$('developerApplyTextRepairs').disabled=true;if($('developerApproveCorrectedText'))$('developerApproveCorrectedText').disabled=true;if($('developerReillustrateBook'))$('developerReillustrateBook').disabled=true;if(box)box.innerHTML='';if(st)st.textContent='Auditing the whole finished book…';
- try{
-  const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const pages=await developerFinishedAuditPages(currentBook);if(!pages.length)throw new Error('No finished page illustrations could be loaded.');
-  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-whole-book-continuity',story:correctionStoryPayload(currentBook),pages})});
-  const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Whole-book continuity audit failed.');
-  developerBookConflicts=Array.isArray(data.conflicts)?data.conflicts:[];
-  if(st)st.textContent=developerBookConflicts.length?`${developerBookConflicts.length} whole-book continuity ${developerBookConflicts.length===1?'conflict':'conflicts'} found. Choose the canonical version for each.`:'Audit complete.';
-  renderDeveloperBookConflicts();
- }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
+ const d=ensureDeveloperBookAudit(),st=$('developerAuditStatus'),box=$('developerAuditResults');
+ d.classList.remove('hidden');developerBookConflicts=[];currentBook.developerContinuityCanon=[];currentBook.developerTextApproved=false;
+ if($('developerApplyTextRepairs'))$('developerApplyTextRepairs').disabled=true;
+ if($('developerApproveCorrectedText'))$('developerApproveCorrectedText').disabled=true;
+ if($('developerReillustrateBook'))$('developerReillustrateBook').disabled=true;
+ if(box)box.innerHTML='<div class="developer-review-clear">No problems added yet.</div>';
+ if(st)st.textContent='Add a text or illustration correction, problem or improvement.';
 }
 async function chooseDeveloperCanon(i,canon){
  const c=developerBookConflicts[i],slot=$(`developerRepairPlan${i}`),st=$('developerAuditStatus');if(!c||!canon||!currentBook)return;
@@ -1624,16 +1621,18 @@ async function chooseDeveloperCanon(i,canon){
 }
 
 
-async function addDeveloperContinuityProblem(){
+async function addDeveloperContinuityProblem(issueType='text'){
  if(!currentBook||!instagramDeveloperAccess)return;
- const issue=prompt('Describe the continuity problem you noticed. Moonbeam will investigate it across the entire book:');if(!issue?.trim())return;
- const st=$('developerAuditStatus');if(st)st.textContent='Investigating your continuity problem across the whole book…';
+ const isIllustration=issueType==='illustration';
+ const issue=prompt(isIllustration?'Describe exactly what you want corrected or improved in the illustration(s). This may be a continuity issue or a small art-direction change such as “Sam should look more frightened”. Moonbeam will investigate only this request:':'Describe exactly what you want corrected or improved in the text. This may be a continuity issue or a general writing improvement. Moonbeam will investigate only this request:');if(!issue?.trim())return;
+ const st=$('developerAuditStatus');if(st)st.textContent=isIllustration?'Checking the illustrations for your requested change…':'Checking the story text for your requested change…';
  try{
   const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-  const pages=await developerFinishedAuditPages(currentBook);if(!pages.length)throw new Error('No finished page illustrations could be loaded.');
-  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-investigate-continuity',story:correctionStoryPayload(currentBook),pages,userIssue:issue.trim()})});
+  const allPages=await developerFinishedAuditPages(currentBook);if(!allPages.length)throw new Error('No finished book pages could be loaded.');
+  const pages=isIllustration?allPages:allPages.map(p=>({pageIndex:p.pageIndex,text:p.text||''}));
+  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-investigate-continuity',story:correctionStoryPayload(currentBook),pages,userIssue:issue.trim(),issueType})});
   const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Could not investigate that continuity problem.');
-  const found=Array.isArray(data.conflicts)?data.conflicts:[];developerBookConflicts.push(...found);if(st)st.textContent=found.length?'Your continuity problem has been added to the audit.':'Moonbeam could not verify a cross-book conflict from that report. You can describe it differently or use the individual page editor.';renderDeveloperBookConflicts();
+  const found=(Array.isArray(data.conflicts)?data.conflicts:[]).map(c=>({...c,issueType}));developerBookConflicts.push(...found);if(st)st.textContent=found.length?`${isIllustration?'Illustration':'Text'} correction or improvement added.`:`Moonbeam could not identify where to apply that ${isIllustration?'illustration':'text'} request.`;renderDeveloperBookConflicts();
  }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
 }
 function auditTextRepairs(){return developerBookConflicts.flatMap(c=>(c.repairs||[]).filter(r=>String(r.kind||'').includes('text')&&String(r.suggestedText||'').trim()))}
@@ -1732,7 +1731,7 @@ function correctionPageText(book=currentBook,index=book?.currentPage){
  return book.pages?.[index-1]?.text||'';
 }
 function correctionStoryPayload(book=currentBook){return{title:book?.title||'',opening:book?.opening||'',pages:(book?.pages||[]).map(p=>({text:p?.text||'',illustration_prompt:p?.illustration_prompt||''})),closing:book?.closing||'',character_bible:book?.character_bible||''}}
-function developerCorrectionButton(){return instagramDeveloperAccess&&!currentBook?.isShared?'<div class="developer-editor-tools"><button class="developer-correct-page" id="developerCorrectPage" type="button">Correct this page</button><button class="developer-check-book" id="developerCheckBook" type="button">Check text against illustrations</button><button class="developer-audit-book" id="developerAuditBook" type="button">Whole-book continuity audit</button></div>':''}
+function developerCorrectionButton(){return instagramDeveloperAccess&&!currentBook?.isShared?'<div class="developer-editor-tools"><button class="developer-correct-page" id="developerCorrectPage" type="button">Correct this page</button><button class="developer-check-book" id="developerCheckBook" type="button">Check text against illustrations</button><button class="developer-audit-book" id="developerAuditBook" type="button">Manual corrections &amp; improvements</button></div>':''}
 function ensureDeveloperCorrectionDialog(){
  let d=$('developerCorrectionDialog');if(d)return d;
  d=document.createElement('div');d.id='developerCorrectionDialog';d.className='developer-correction-dialog hidden';d.innerHTML=`<div class="developer-correction-card" role="dialog" aria-modal="true" aria-labelledby="developerCorrectionTitle"><button class="developer-correction-close" id="developerCorrectionClose" type="button" aria-label="Close">×</button><h3 id="developerCorrectionTitle">Correct this page</h3><p id="developerCorrectionHelp">Describe exactly what is inconsistent. Your instruction is authoritative.</p><textarea id="developerCorrectionInstruction" rows="5" placeholder="For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam's pocket."></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCorrectTitle" type="button">Correct title</button><button class="secondary" id="developerCorrectByline" type="button">Correct author/dedication</button><button class="secondary" id="developerCorrectText" type="button">Correct text</button><button class="secondary" id="developerCorrectImage" type="button">Correct illustration</button></div><div class="developer-correction-status" id="developerCorrectionStatus"></div></div>`;
@@ -1868,7 +1867,7 @@ function renderBookPage(index){
  const wc=String(text).trim().split(/\s+/).filter(Boolean).length;const fitClass=wc>135?' compact-text':wc<85?' roomy-text':'';
  bookEl.innerHTML=`<div class="paper left-page"><div class="page-number">${isOpening?'☾':clamped}</div><div class="page-content">${label?`<div class="chapter-label">${escapeHtml(label)}</div>`:''}<div class="story-text${fitClass}">${renderNarrationText(text)}</div></div><div class="mobile-scroll-cue" aria-hidden="true"><span></span><span></span></div></div><div class="paper right-page"><div class="page-number">${isClosing?'☾':(clamped+1)}</div><div class="illustration-frame"><div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div></div>${book.readingMode==='narrated'?'<button class="narration-control" id="narrationControl" type="button" aria-label="Play narration">▶</button>':''}</div>${developerCorrectionButton()}<button class="mobile-turn-zone mobile-turn-left" aria-label="Previous page" type="button"></button><button class="mobile-turn-zone mobile-turn-right" aria-label="Next page" type="button"></button>`;
  if(prev){prev.disabled=false;prev.textContent=isOpening?coverT().cover:t().previous}if(next){next.disabled=false;next.classList.remove('end-hidden');next.textContent=t().turn}if(indicator){indicator.classList.remove('end-hidden');indicator.textContent=`${clamped+1} / ${total}`}
- const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};const dc=$('developerCorrectPage');if(dc)dc.onclick=e=>{e.stopPropagation();openDeveloperCorrection()};const dcb=$('developerCheckBook');if(dcb)dcb.onclick=e=>{e.stopPropagation();checkTextAgainstIllustrations()};const dab=$('developerAuditBook');if(dab)dab.onclick=e=>{e.stopPropagation();runWholeBookContinuityAudit()};
+ const nc=$('narrationControl');if(nc){nc.onclick=e=>{e.stopPropagation();toggleNarration()};nc.textContent=book.readingMode==='narrated'?'⏸':'▶'};const dc=$('developerCorrectPage');if(dc)dc.onclick=e=>{e.stopPropagation();openDeveloperCorrection()};const dcb=$('developerCheckBook');if(dcb)dcb.onclick=e=>{e.stopPropagation();checkTextAgainstIllustrations()};const dab=$('developerAuditBook');if(dab)dab.onclick=e=>{e.stopPropagation();openDeveloperContinuityProblems()};
  applyMobileSide();setupMobileScrollCue();requestAnimationFrame(fitDesktopStoryText);loadIllustration(clamped,getIllustrationPrompt(clamped),false);prefetchIllustrations(clamped,2);
  if(book.readingMode==='narrated'&&clamped<closingIndex){const nextText=clamped+1===closingIndex?book.closing:(book.pages[clamped]?.text||'');if(nextText)getNarration(nextText,`${book.cacheId}:audio:${narrationLanguage(book)}:${clamped+1}`,clamped+1).catch(()=>{})}
  persistCurrentDraft();restoreReaderScroll();
