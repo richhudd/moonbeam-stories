@@ -1,6 +1,6 @@
 const { Resend } = require('resend');
 const crypto=require('crypto');
-const {SUPABASE_URL:ADMIN_SUPABASE_URL,adminHeaders,logUsage,estimateGBP}=require('./_usage');
+const {SUPABASE_URL:ADMIN_SUPABASE_URL,adminHeaders,logUsage,estimateGBP}=require('../_usage');
 const instagramReelHandler=require('../lib/instagram-reel');
 
 const RESEND_API_KEY = String(process.env.RESEND_API_KEY || '').trim();

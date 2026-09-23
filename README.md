@@ -1,4 +1,13 @@
-# Moonbeam Stories V250.94
+# Moonbeam Stories V250.95
+
+## V250.95 — Vercel Hobby function-count fix
+
+- Moves the four shared server helper modules (`_credits.js`, `_shares.js`, `_stripe.js`, `_usage.js`) out of `/api`. Vercel treats every JavaScript file under `/api` as a Serverless Function, including underscore-prefixed helper files.
+- `/api` now contains exactly 12 JavaScript entry files, matching the Hobby-plan limit.
+- Existing API entry-point URLs are unchanged.
+- Updates the `resend-inbound` helper import to the helpers' non-API location.
+- KDP description generation remains folded into the existing `generate.js` endpoint; no KDP endpoint is added.
+
 
 ## V250.94 — keep KDP description inside the 12-function Vercel limit
 
