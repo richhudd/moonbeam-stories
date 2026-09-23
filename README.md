@@ -1,3 +1,29 @@
+# Moonbeam Stories V250.91
+
+## V250.91 — cover-first whole-book illustration continuity
+
+- The dedicated front cover now reads the complete finished story (opening, all story pages, scene directions and closing) before choosing its scene.
+- The finished story is explicitly authoritative over generic title/genre/premise imagery, including location, time of day, weather, clothing, vehicles, machines, props, scale and other concrete visual facts.
+- The cover is now generated before reading-page prefetch begins and acts as **image zero** for visual continuity.
+- Scene 1 always receives the finished cover as its continuity artwork; subsequent scenes continue the existing previous-artwork continuity chain.
+- The old mobile path that could generate Scene 1 independently before the dedicated cover has been removed, preventing the continuity chain from starting in two different places.
+- Story-required changes still override previous artwork, so clothing, locations, objects and environments may change when the text actually changes them.
+- No SQL required. API count unchanged.
+
+---
+
+## V250.90 — reduce stock atmospheric personification
+
+- Tightens the story-generation creative brief to discourage habitual personification of settings and inanimate surroundings.
+- Places, planets, moons, forests, jungles, seas, skies and landscapes should not routinely listen, watch, whisper, hum, sing, breathe or wait as sentient observers.
+- Personification remains available when it has a genuine story purpose, such as a setting that is actually magical or alive.
+- Prefers concrete, specific description over stock atmospheric personification.
+- All other V250.89 behaviour is unchanged.
+
+No SQL required. API count unchanged.
+
+---
+
 # Moonbeam Stories V250.89
 
 ## V250.89 — developer-only Sam/Emily cover author credits

@@ -168,7 +168,7 @@ Explicitly excluded for this age band: ${ageProfile.forbidden}.
 Age suitability overrides any unsuitable parent detail or invented premise. Preserve the harmless imaginative core whenever possible rather than flattening it into mundane realism.
 
 GENERAL SAFETY
-No politics, religion, sexual content, graphic violence, dangerous instructions or adult themes. Keep the experience emotionally safe for the youngest hero age ${age}. Do not impose a moral or predetermined value theme. Avoid clichés, generic filler and repetitive phrasing.
+No politics, religion, sexual content, graphic violence, dangerous instructions or adult themes. Keep the experience emotionally safe for the youngest hero age ${age}. Do not impose a moral or predetermined value theme. Avoid clichés, generic filler and repetitive phrasing. Avoid habitual personification of settings and inanimate surroundings: places, planets, moons, forests, jungles, seas, skies and landscapes should not routinely listen, watch, whisper, hum, sing, breathe, wait or otherwise behave as sentient observers. Use personification only when it has a genuine story purpose, such as when the setting is actually magical or alive. Prefer concrete, specific description over stock atmospheric personification.
 
 OUTPUT
 Return JSON only, with exactly this shape:

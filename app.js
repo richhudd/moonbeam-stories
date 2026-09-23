@@ -784,9 +784,12 @@ function renderStory(s,image,child,options={}){
  // V85: explicit page controls. Navigation is immediate; no animation state or timer.
  if(prevPage)prevPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goPreviousBookPage()});
  if(nextPage)nextPage.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();goNextBookPage()});
- loadCoverIllustration(false);
- // Start the opening and next two illustrations immediately while the cover is on screen.
- prefetchIllustrations(-1,3);
+ // V250.91: the cover is now image zero for visual continuity. Build it first,
+ // then let Scene 1 inherit its machines, clothing, environment and other established details.
+ // If the dedicated cover fails, page generation still proceeds normally.
+ Promise.resolve(loadCoverIllustration(false)).finally(()=>{
+   if(currentBook)prefetchIllustrations(-1,3);
+ });
  $('save').onclick=saveCurrentStory;
  $('newStory').onclick=()=>startNewStory();
  if(currentBook.isShared){$('save')?.classList.add('hidden');$('newStory')?.classList.add('hidden')}
@@ -794,7 +797,18 @@ function renderStory(s,image,child,options={}){
 }
 function coverKey(book){return `v48:${book.visualCacheId||book.cacheId}:cover`}
 function getCoverPrompt(book){
- return `Front cover illustration for an original premium children's adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}. Story premise: ${book.child?.storyIdea||book.opening||'an original Moonbeam adventure'}. Story world continuity: ${book.character_bible||'Keep the hero and story world consistent.'} Choose one coherent, physically possible moment from one camera position that represents the premise. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
+ const wholeStory=[book.opening,...(book.pages||[]).flatMap(p=>[p?.text||'',p?.illustration_prompt||'']),book.closing].filter(Boolean).join('\n');
+ return `Front cover illustration for an original premium children's adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}.
+
+FINISHED STORY — AUTHORITATIVE SOURCE OF TRUTH FOR THE COVER:
+${wholeStory}
+
+STORY WORLD / CHARACTER CONTINUITY:
+${book.character_bible||'Keep the hero and story world consistent.'}
+
+Read the complete finished story above before choosing the cover scene. The cover must represent the story that was actually written, not a generic interpretation of its title, genre or original premise. Preserve concrete story facts including location, time of day, weather, clothing, important props, vehicles, machines, buildings, creatures, their relative scale and distinctive appearance. Never substitute genre shorthand for a specifically established story element: if the story establishes a small lift, do not invent a rocket; if it takes place in a garden, do not relocate it to a beach; if the relevant scene is at midnight, do not turn it into bright daylight. Artistic freedom may fill only details the finished story leaves unspecified.
+
+Choose one compelling, coherent, physically possible moment that genuinely belongs to this finished story, from one camera position. This cover becomes the FIRST visual continuity reference for the book, so establish recurring machines, clothing, environment and plot-important objects carefully and consistently with the story. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
 }
 function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
 function dataUrlToBlobUrl(dataUrl){
@@ -860,34 +874,8 @@ async function loadCoverIllustration(force=false){
 
  let fallbackShown=false;
 
- // V45: the phone cover no longer depends on the special cover-image request.
- // The normal opening-page illustration pipeline is already proven to work
- // with child-photo references, so use that artwork as an immediate front-cover
- // fallback. Title/kicker remain HTML overlays, making it a genuine book cover.
- if(isPhonePortrait()){
-   try{
-     const openingPrompt=getIllustrationPrompt(0);
-     const openingKey=illustrationKey(book,0,openingPrompt);
-     const openingImage=await requestIllustration(
-       openingKey,
-       openingPrompt,
-       `Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,
-       false,
-       book.child?.referenceImages||book.child?.referencePhoto||null,
-       true,
-       0
-     );
-     if(currentBook===book){
-       await revealCoverImage($('coverImage'),openingImage);
-       book.artwork.pages[0]=openingImage;
-       fallbackShown=true;
-       if($('coverLoading'))$('coverLoading').hidden=true;
-       if($('coverError'))$('coverError').hidden=true;
-     }
-   }catch(e){
-     console.error('Mobile cover fallback failed',e);
-   }
- }
+ // V250.91: do not pre-generate Scene 1 as a mobile cover fallback. The dedicated
+ // whole-book cover must be established first so it can seed the continuity chain.
 
  // Request a specially composed cover as an enhancement. If this request fails
  // after the fallback is visible, keep the working fallback instead of replacing
@@ -932,12 +920,13 @@ async function loadIllustration(index,prompt,silent=false,force=false){
  if(book.isSaved){const path=book.savedAssets?.pages?.[index];if(!path){if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p><small>This older saved story does not contain a cloud copy of this picture.</small></div>';return null}try{const image=await savedAssetUrl(path);book.artwork.pages[index]=image;if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}catch(e){console.error(e);if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p></div>';return null}}
  if(!silent&&frame&&!illustrationCache.has(key))frame.innerHTML=`<div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div>`;
  try{
-   const usePreviousArtwork=shouldUsePreviousArtwork(book,index);
-   const prevKey=usePreviousArtwork?previousIllustrationKey(book,index):null;
-   let prevImage=prevKey?(illustrationCache.get(prevKey)||await persistentImageGet(prevKey)):null;
-   // Only continuity-dependent scenes wait for preceding artwork. Similar scenes
-   // deliberately omit that reference, so they can begin in parallel immediately.
-   if(usePreviousArtwork&&!prevImage&&prevKey&&illustrationInflight.has(prevKey)){try{prevImage=await illustrationInflight.get(prevKey)}catch{}}
+   const coverSeedsContinuity=index===0;
+   const usePreviousArtwork=coverSeedsContinuity||shouldUsePreviousArtwork(book,index);
+   const prevKey=!coverSeedsContinuity&&usePreviousArtwork?previousIllustrationKey(book,index):null;
+   let prevImage=coverSeedsContinuity?(book.artwork?.cover||illustrationCache.get(coverKey(book))||await persistentImageGet(coverKey(book))):prevKey?(illustrationCache.get(prevKey)||await persistentImageGet(prevKey)):null;
+   // Scene 1 always inherits from the completed cover. Later continuity-dependent scenes
+   // retain the existing previous-page chain and wait for preceding artwork when needed.
+   if(!coverSeedsContinuity&&usePreviousArtwork&&!prevImage&&prevKey&&illustrationInflight.has(prevKey)){try{prevImage=await illustrationInflight.get(prevKey)}catch{}}
    const continuityImage=usePreviousArtwork?prevImage:null;
    let image=await requestIllustration(key,prompt,`Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,force,book.child?.referenceImages||book.child?.referencePhoto||null,true,index,continuityImage);
    // Never spend a second generation slot automatically. In-flight and persistent caching
