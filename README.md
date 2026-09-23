@@ -654,3 +654,8 @@ Developer manual editing now accepts general text and illustration corrections/i
 - Accepted page/cover artwork refreshes the persistent saved-art cache as well as the object-URL cache, fixing stale original illustrations reappearing after replacement.
 - AI page-text corrections are previewed before acceptance.
 - Added direct manual page-text editing; Save text stores exactly what the developer typed without an AI rewrite.
+
+## V251.11
+- Illustration replacement previews keep the correction instruction editable.
+- Before pressing Try again, the developer can refine or completely replace the instruction.
+- Try again always uses the current instruction-box contents while preserving the untouched original illustration until Accept.

@@ -1816,7 +1816,7 @@ function showDeveloperCandidate(candidate){
  if(!panel||!body)return;panel.classList.remove('hidden');$('developerManualTextPanel')?.classList.add('hidden');
  if(candidate.kind==='illustration'){
   if(label)label.textContent='Proposed replacement illustration — original is still safely saved';
-  body.innerHTML=`<img src="${escapeHtml(candidate.image)}" alt="Proposed replacement illustration" style="display:block;max-width:100%;max-height:58vh;margin:.75rem auto;border-radius:12px">`;
+  body.innerHTML=`<div class="developer-correction-status">You can refine or completely replace the instruction above before choosing Try again.</div><img src="${escapeHtml(candidate.image)}" alt="Proposed replacement illustration" style="display:block;max-width:100%;max-height:58vh;margin:.75rem auto;border-radius:12px">`;
  }else{
   if(label)label.textContent='Proposed replacement text — original is unchanged';
   body.innerHTML=`<div class="developer-review-text suggested">${renderNarrationText(candidate.text||'')}</div>`;
@@ -1836,7 +1836,11 @@ function rejectDeveloperCandidate(){
 }
 async function retryDeveloperCandidate(){
  const c=developerCorrectionCandidate;if(!c||c.kind!=='illustration')return;
- developerCorrectionCandidate=null;$('developerCandidatePanel')?.classList.add('hidden');await runDeveloperCorrection('illustration')
+ const ta=$('developerCorrectionInstruction'),st=$('developerCorrectionStatus'),instruction=String(ta?.value||'').trim();
+ if(!instruction){if(st)st.textContent='Refine or replace the correction instruction before trying again.';ta?.focus();return}
+ developerCorrectionCandidate=null;$('developerCandidatePanel')?.classList.add('hidden');
+ if(st)st.textContent='Generating another replacement from your current instruction…';
+ await runDeveloperCorrection('illustration')
 }
 
 async function runDeveloperCorrection(kind){
