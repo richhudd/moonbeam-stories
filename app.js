@@ -1594,8 +1594,8 @@ function correctionStoryPayload(book=currentBook){return{title:book?.title||'',o
 function developerCorrectionButton(){return instagramDeveloperAccess&&!currentBook?.isShared?'<div class="developer-editor-tools"><button class="developer-correct-page" id="developerCorrectPage" type="button">Edit this page</button></div>':''}
 function ensureDeveloperCorrectionDialog(){
  let d=$('developerCorrectionDialog');if(d)return d;
- d=document.createElement('div');d.id='developerCorrectionDialog';d.className='developer-correction-dialog hidden';d.innerHTML=`<div class="developer-correction-card" role="dialog" aria-modal="true" aria-labelledby="developerCorrectionTitle"><button class="developer-correction-close" id="developerCorrectionClose" type="button" aria-label="Close">×</button><h3 id="developerCorrectionTitle">Correct this page</h3><p id="developerCorrectionHelp">Describe exactly what is inconsistent. Your instruction is authoritative.</p><textarea id="developerCorrectionInstruction" rows="5" placeholder="For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam's pocket."></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCorrectTitle" type="button">Correct title</button><button class="secondary" id="developerCorrectByline" type="button">Correct author/dedication</button><button class="secondary" id="developerCorrectText" type="button">AI text correction</button><button class="secondary" id="developerManualText" type="button">Edit text manually</button><button class="secondary" id="developerCorrectImage" type="button">Correct illustration</button></div><div id="developerManualTextPanel" class="hidden"><div class="developer-review-label">Manual page text</div><textarea id="developerManualTextValue" rows="10"></textarea><div class="developer-correction-actions"><button class="secondary" id="developerManualTextSave" type="button">Save text</button><button class="secondary" id="developerManualTextCancel" type="button">Cancel</button></div></div><div id="developerCandidatePanel" class="hidden"><div class="developer-review-label" id="developerCandidateLabel">Proposed replacement</div><div id="developerCandidateBody"></div><div class="developer-correction-actions"><button class="secondary" id="developerCandidateAccept" type="button">Accept</button><button class="secondary" id="developerCandidateRetry" type="button">Suggest another</button><button class="secondary" id="developerCandidateReject" type="button">Keep original</button></div></div><div class="developer-correction-status" id="developerCorrectionStatus"></div></div>`;
- document.body.appendChild(d);$('developerCorrectionClose').onclick=closeDeveloperCorrection;$('developerCorrectTitle').onclick=()=>runDeveloperCorrection('title');$('developerCorrectByline').onclick=()=>runDeveloperCorrection('byline');$('developerCorrectText').onclick=()=>runDeveloperCorrection('text');$('developerCorrectImage').onclick=()=>runDeveloperCorrection('illustration');$('developerManualText').onclick=openDeveloperManualText;$('developerManualTextSave').onclick=saveDeveloperManualText;$('developerManualTextCancel').onclick=()=>$('developerManualTextPanel')?.classList.add('hidden');$('developerCandidateAccept').onclick=acceptDeveloperCandidate;$('developerCandidateRetry').onclick=retryDeveloperCandidate;$('developerCandidateReject').onclick=rejectDeveloperCandidate;d.addEventListener('click',e=>{if(e.target===d)closeDeveloperCorrection()});return d
+ d=document.createElement('div');d.id='developerCorrectionDialog';d.className='developer-correction-dialog hidden';d.innerHTML=`<div class="developer-correction-card" role="dialog" aria-modal="true" aria-labelledby="developerCorrectionTitle"><button class="developer-correction-close" id="developerCorrectionClose" type="button" aria-label="Close">×</button><h3 id="developerCorrectionTitle">Correct this page</h3><p id="developerCorrectionHelp">Describe exactly what is inconsistent. Your instruction is authoritative.</p><textarea id="developerCorrectionInstruction" rows="5" placeholder="For example: The flag was left on the Moon. It should be visible on the lunar surface, not in Sam's pocket."></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCorrectTitle" type="button">Edit title</button><button class="secondary" id="developerCorrectByline" type="button">Edit author/dedication</button><button class="secondary" id="developerCorrectText" type="button">AI text correction</button><button class="secondary" id="developerManualText" type="button">Edit text manually</button><button class="secondary" id="developerCorrectImage" type="button">Correct illustration</button></div><div id="developerCoverTextPanel" class="hidden"><div class="developer-review-label" id="developerCoverTextLabel">Cover text</div><textarea id="developerCoverTextValue" rows="4"></textarea><div class="developer-correction-actions"><button class="secondary" id="developerCoverTextSave" type="button">Save</button><button class="secondary" id="developerCoverTextCancel" type="button">Cancel</button></div></div><div id="developerManualTextPanel" class="hidden"><div class="developer-review-label">Manual page text</div><textarea id="developerManualTextValue" rows="10"></textarea><div class="developer-correction-actions"><button class="secondary" id="developerManualTextSave" type="button">Save text</button><button class="secondary" id="developerManualTextCancel" type="button">Cancel</button></div></div><div id="developerCandidatePanel" class="hidden"><div class="developer-review-label" id="developerCandidateLabel">Proposed replacement</div><div id="developerCandidateBody"></div><div class="developer-correction-actions"><button class="secondary" id="developerCandidateAccept" type="button">Accept</button><button class="secondary" id="developerCandidateRetry" type="button">Suggest another</button><button class="secondary" id="developerCandidateReject" type="button">Keep original</button></div></div><div class="developer-correction-status" id="developerCorrectionStatus"></div></div>`;
+ document.body.appendChild(d);$('developerCorrectionClose').onclick=closeDeveloperCorrection;$('developerCorrectTitle').onclick=()=>openDeveloperCoverText('title');$('developerCorrectByline').onclick=()=>openDeveloperCoverText('byline');$('developerCorrectText').onclick=()=>runDeveloperCorrection('text');$('developerCorrectImage').onclick=()=>runDeveloperCorrection('illustration');$('developerManualText').onclick=openDeveloperManualText;$('developerManualTextSave').onclick=saveDeveloperManualText;$('developerManualTextCancel').onclick=()=>$('developerManualTextPanel')?.classList.add('hidden');$('developerCoverTextSave').onclick=saveDeveloperCoverText;$('developerCoverTextCancel').onclick=()=>$('developerCoverTextPanel')?.classList.add('hidden');$('developerCoverTextPanel')?.classList.add('hidden');$('developerCandidateAccept').onclick=acceptDeveloperCandidate;$('developerCandidateRetry').onclick=retryDeveloperCandidate;$('developerCandidateReject').onclick=rejectDeveloperCandidate;d.addEventListener('click',e=>{if(e.target===d)closeDeveloperCorrection()});return d
 }
 function openDeveloperCorrection(target='page'){
  if(!instagramDeveloperAccess||!currentBook||currentBook.isShared)return;
@@ -1659,6 +1659,33 @@ async function persistCorrectedIllustration(book,index,image){
 }
 
 let developerCorrectionCandidate=null;
+let developerCoverTextKind=null;
+function openDeveloperCoverText(kind){
+ const book=currentBook,panel=$('developerCoverTextPanel'),ta=$('developerCoverTextValue'),label=$('developerCoverTextLabel'),st=$('developerCorrectionStatus');
+ if(!instagramDeveloperAccess||!book||book.isShared||!panel||!ta)return;
+ developerCoverTextKind=kind==='byline'?'byline':'title';
+ ta.value=developerCoverTextKind==='title'?String(book.title||''):String(book.coverByline||book.dedication||'');
+ if(label)label.textContent=developerCoverTextKind==='title'?'Book title':'Author / dedication';
+ panel.classList.remove('hidden');$('developerCandidatePanel')?.classList.add('hidden');$('developerManualTextPanel')?.classList.add('hidden');
+ if(st)st.textContent='Edit the text directly. It will be saved exactly as written.';
+ ta.focus();ta.select();
+}
+async function saveDeveloperCoverText(){
+ const book=currentBook,kind=developerCoverTextKind,ta=$('developerCoverTextValue'),st=$('developerCorrectionStatus');
+ if(!instagramDeveloperAccess||!book||book.isShared||!ta||(kind!=='title'&&kind!=='byline'))return;
+ const value=String(ta.value||'').trim();if(!value){if(st)st.textContent=kind==='title'?'Title cannot be empty.':'Author / dedication cannot be empty.';return}
+ try{
+  if(kind==='title')book.title=value;else{book.coverByline=value;book.dedication=value}
+  if(book.isSaved&&book.savedStoryId){
+   const assets={...(book.savedAssets||{})};delete assets.kdp_description;delete assets.kdp_keywords;
+   if(kind==='byline'){assets.coverByline=book.coverByline||'';assets.dedication=book.dedication||''}
+   const patch={saved_assets:assets};if(kind==='title')patch.title=book.title;
+   const u=await supabaseClient.from('saved_stories').update(patch).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('title,saved_assets').single();if(u.error)throw u.error;
+   book.savedAssets=u.data?.saved_assets||assets;const item=cloudStories.find(x=>x.id===book.savedStoryId);if(item){item.title=book.title;item.story={...(item.story||{}),title:book.title,coverByline:book.coverByline||'',dedication:book.dedication||''};item.savedAssets=book.savedAssets}
+  }
+  persistCurrentDraft();refreshCoverTextOverlay(book);if(st)st.textContent='Cover text saved exactly as written.';closeDeveloperCorrection();showCover();
+ }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
+}
 function openDeveloperManualText(){
  const book=currentBook,index=book?.currentPage;if(!book||!Number.isInteger(index))return;
  const panel=$('developerManualTextPanel'),ta=$('developerManualTextValue');if(!panel||!ta)return;
@@ -1705,24 +1732,9 @@ async function retryDeveloperCandidate(){
 
 async function runDeveloperCorrection(kind){
  const book=currentBook,index=book?.currentPage,ta=$('developerCorrectionInstruction'),st=$('developerCorrectionStatus'),instruction=String(ta?.value||'').trim(),target=$('developerCorrectionDialog')?.dataset?.target||'page';
- if(!instagramDeveloperAccess||!book||book.isShared||!Number.isInteger(index))return;if(target==='cover'&&kind==='text')return;if(target!=='cover'&&(kind==='title'||kind==='byline'))return;if(!instruction){if(st)st.textContent='Describe the inconsistency first.';ta?.focus();return}
+ if(!instagramDeveloperAccess||!book||book.isShared||!Number.isInteger(index))return;if(target==='cover'&&kind==='text')return;if(kind==='title'||kind==='byline')return;if(!instruction){if(st)st.textContent='Describe the inconsistency first.';ta?.focus();return}
  const buttons=[$('developerCorrectText'),$('developerCorrectImage')].filter(Boolean);buttons.forEach(b=>b.disabled=true);if(st)st.textContent=kind==='text'?'Correcting the text…':'Regenerating this illustration…';
  try{
-  if(target==='cover'&&(kind==='title'||kind==='byline')){
-   const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
-   const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-cover-text',kind,currentTitle:book.title||'',currentByline:book.coverByline||book.dedication||'',story:correctionStoryPayload(book),instruction})});
-   const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||'Cover text correction failed.');
-   const value=String(data.value||'').trim();if(!value)throw new Error('The corrected cover text came back empty.');
-   if(kind==='title')book.title=value;else{book.coverByline=value;book.dedication=value}
-   if(book.isSaved&&book.savedStoryId){
-    const assets={...(book.savedAssets||{})};delete assets.kdp_description;delete assets.kdp_keywords;
-    if(kind==='byline'){assets.coverByline=book.coverByline||'';assets.dedication=book.dedication||''}
-    const patch={saved_assets:assets};if(kind==='title')patch.title=book.title;
-    const u=await supabaseClient.from('saved_stories').update(patch).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('title,saved_assets').single();if(u.error)throw u.error;
-    book.savedAssets=u.data?.saved_assets||assets;const item=cloudStories.find(x=>x.id===book.savedStoryId);if(item){item.title=book.title;item.story={...(item.story||{}),title:book.title,coverByline:book.coverByline||'',dedication:book.dedication||''};item.savedAssets=book.savedAssets}
-   }
-   persistCurrentDraft();refreshCoverTextOverlay(book);closeDeveloperCorrection();showCover();return;
-  }
   if(target==='cover'){
    const refs=await correctionReferenceImages(book),story=correctionStoryPayload(book),fullStory=[story.opening,...story.pages.map(p=>p.text),story.closing].filter(Boolean).join('\n\n');
    const prompt=`Front cover ARTWORK ONLY for the finished children's story “${book.title||''}”.\n\nFINISHED STORY — AUTHORITATIVE:\n${fullStory}\n\nDEVELOPER CORRECTION — AUTHORITATIVE:\n${instruction}\n\nThe existing cover artwork was rejected because of the inconsistency described above. Correct that inconsistency. Story facts and the developer instruction override artistic inference. Keep recurring characters faithful to their Moonbeam Cast references. Do not add title, author, dedication, logos or any text; Moonbeam overlays those separately.`;

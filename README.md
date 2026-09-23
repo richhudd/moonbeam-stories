@@ -1,3 +1,7 @@
+# Moonbeam Stories V251.15
+
+V251.15 repairs the developer-only cover text editor. Title and author/dedication are now edited directly in the browser and saved exactly as typed, rather than calling the missing `developer-cover-text` API action. Saved-book edits persist to the existing saved story record and invalidate saved KDP description/keyword metadata. No database migration or new API function is required.
+
 # Moonbeam Stories V251.14
 
 V251.14 adds a positive creative target on top of V251.13's anti-whimsy cleanup. The story engine now treats plausibility as a constraint on imagination rather than a substitute for it: grounded stories should still contain genuinely compelling experiences, discoveries, problems, achievements, humour, surprise or other consequential events, with the child acting as a meaningful cause of what happens rather than merely following adult procedure. Technical detail is retained only when it improves narrative interest or consequence, and the engine applies a concise “It was the one where…” retelling test without imposing a fixed plot formula.
