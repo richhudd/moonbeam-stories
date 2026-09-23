@@ -1,4 +1,26 @@
-# Moonbeam Stories V250.91
+# Moonbeam Stories V250.93
+
+## V250.93 — saved KDP description on Kindle export
+
+- The first developer-only **Download Kindle eBook** action for a saved Sam or Emily book now generates a separate 100–150 word Amazon KDP description from the completed story.
+- The description is saved inside the existing `saved_assets` metadata for that saved story; no database migration is required.
+- The description is never inserted into the EPUB or normal Moonbeam reader. It is shown only in the developer publishing controls, as selectable plain text with **Copy KDP Description**.
+- Reopening the saved story restores the same description; later EPUB downloads reuse it rather than generating a new version.
+- Description generation is developer-account-only and does not consume a Moonbeam story credit.
+
+
+## V250.92 — developer Kindle eBook export
+
+- Adds a developer-only **Download Kindle eBook** button to finished, saved single-child Sam or Emily books.
+- Exports a KDP-ready fixed-layout EPUB directly in the browser; no story or illustration is regenerated and no additional AI usage is incurred.
+- Reuses the proven Instagram browser-flattened cover capture so the artwork, title and **By Sam/Emily Alderwick** typography are baked into one cover image exactly as rendered.
+- Story text and illustrations alternate on separate fixed-layout pages. Illustration pages use the maximum available page area without cropping or distorting the artwork.
+- Text pages are browser-rasterised for deterministic Kindle typography and to avoid fixed-layout font substitution.
+- Adds a final **About the Author** page using the child's existing Moonbeam profile photo and a fixed reusable Sam/Emily biography. The displayed `moonbeamstories.co.uk` address has a clickable hotspot on Kindle platforms that support external links.
+- Includes Amazon fixed-layout metadata: pre-paginated layout, original 1080×1350 design resolution, portrait orientation, children's-book type, navigation document, cover-image declaration and series metadata.
+- EPUB packaging is generated locally in the browser. No new API endpoint, dependency or SQL migration is required.
+
+---
 
 ## V250.91 — cover-first whole-book illustration continuity
 

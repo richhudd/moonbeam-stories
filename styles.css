@@ -4141,3 +4141,6 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 @media(max-width:700px){.instagram-demo-child-progress-card{padding:20px 17px}.instagram-demo-child-progress-card h2{font-size:22px}.instagram-demo-child-progress-stage{font-size:15px}}
 
 /* V250.82 — developer-controlled automatic Instagram scheduling. */
+
+/* V250.93 developer KDP description */
+.kdp-description-panel{width:min(680px,90vw);margin:16px auto 0;text-align:left}.kdp-description-title{font-weight:700;margin-bottom:7px}.kdp-description-panel textarea{box-sizing:border-box;width:100%;min-height:150px;resize:vertical;padding:12px;border:1px solid rgba(60,45,90,.22);border-radius:12px;background:#fff;color:inherit;font:inherit;line-height:1.45}.kdp-description-panel button{margin-top:8px}
