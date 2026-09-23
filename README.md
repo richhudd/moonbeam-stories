@@ -1,3 +1,11 @@
+# Moonbeam Stories V251.14
+
+V251.14 adds a positive creative target on top of V251.13's anti-whimsy cleanup. The story engine now treats plausibility as a constraint on imagination rather than a substitute for it: grounded stories should still contain genuinely compelling experiences, discoveries, problems, achievements, humour, surprise or other consequential events, with the child acting as a meaningful cause of what happens rather than merely following adult procedure. Technical detail is retained only when it improves narrative interest or consequence, and the engine applies a concise “It was the one where…” retelling test without imposing a fixed plot formula.
+
+The visual-storyboard and illustration prompts are also strengthened. They now prioritise the event that advances the page rather than an easy portrait or incidental object, require physical/spatial coherence for characters and equipment, preserve recurring vehicles/environments/objects, and seek visual progression between pages through changing story events rather than arbitrary redesign. The JSON-repair route carries the same standards. No UI, credits, database schema or API-function-count changes.
+
+---
+
 # Moonbeam Stories V251.13
 
 V251.13 tightens the story engine's creative direction. It removes prompt wording that could encourage arbitrary whimsy (including locale vocabulary examples such as “biscuit”, the early-years invitation to “absurdity”, and the “mundane realism” framing) and replaces the previous weak personification guidance with a concise reality/agency/prose discipline. Blank or realistic premises now favour grounded adventure, mystery, discovery, exploration, humour and coherent problem-solving; deliberate fantasy remains fully available when established by the premise. The writer is explicitly directed to create imagination through interesting events rather than faux-poetic personification, arbitrary impossible objects, stock cosy props or strained comparisons. The JSON-repair path carries the same creative standard. No UI, illustration, credit, database or API-function-count changes.
