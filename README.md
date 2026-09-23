@@ -1,4 +1,18 @@
-# Moonbeam Stories V251.05
+# Moonbeam Stories V251.06
+
+## V251.06 — live cover overlay editing fix
+
+- Fixes **Correct title** so it updates the actual separate HTML title overlay on the existing cover immediately.
+- The underlying cover illustration is not regenerated or altered when only the title changes.
+- After a successful title correction Moonbeam refreshes the visible cover text layer and returns to the cover, so the new title is visible at once.
+- Keeps persistence through the existing `saved_stories.title` field for saved books.
+- Fixes the same overlay path for developer **author/dedication** overrides: saved overrides are restored into the book object and are used by the visible cover subtitle layer.
+- `buildBook` now preserves saved cover-text overrides instead of dropping them when reopening a saved story.
+- All V251.05 database fixes, V251.04 legal wording and V251.03 continuity tools are retained.
+- No image generation is used for title/byline-only changes.
+- No new Vercel endpoint and no SQL migration.
+
+---
 
 ## V251.05 — saved cover-text persistence fix
 
