@@ -1,4 +1,31 @@
-# Moonbeam Stories V251.03
+# Moonbeam Stories V251.05
+
+## V251.05 — saved cover-text persistence fix
+
+- Fixes the developer **Correct title** failure on already-saved books.
+- Removes the invalid attempt to write a non-existent `story` column in `saved_stories`.
+- Title corrections now update the existing `saved_stories.title` column.
+- Cover author/dedication overrides are stored inside the existing `saved_assets` JSON metadata, so no database column or SQL migration is required.
+- Saved-story loading restores those cover-text overrides from `saved_assets`.
+- KDP description/keyword caches are still invalidated when cover metadata changes.
+- All V251.04 legal wording and V251.03 developer continuity tools are retained.
+- No new Vercel endpoint and no SQL migration.
+
+---
+
+## V251.04 — AI continuity wording in Terms and Refund Policy
+
+- Strengthens the Terms' AI-generated-content wording to expressly cover occasional story/illustration and cross-page continuity inconsistencies.
+- Gives concrete categories such as character appearance, clothing, surroundings, and object appearance, size, position and continuity.
+- Clarifies that minor AI-generated errors, variations and continuity inconsistencies do not necessarily mean the requested story was not supplied.
+- Strengthens the Refund Policy to state that a successfully generated story is not normally refundable merely for a disliked creative choice or a minor visual, narrative or continuity inconsistency.
+- Explicitly preserves remedies that apply under consumer law for faulty, misdescribed or otherwise non-compliant digital content/services.
+- Avoids an absolute exclusion of responsibility.
+- Equivalent wording is included in all seven supported legal-document languages.
+- Legal-document revision date updated to 23 September 2026.
+- No application logic, credits, story generation, developer editing, API endpoints or database schema changed.
+
+---
 
 ## V251.03 — complete developer continuity repair + full re-illustration
 
