@@ -767,6 +767,21 @@ function formatAverageStoryBuildTime(seconds){
  const labels={'en-GB':'Average story creation time','en-US':'Average story creation time','es-ES':'Tiempo medio de creación','es-419':'Tiempo medio de creación','fr-FR':'Temps moyen de création','de-DE':'Durchschnittliche Erstellungszeit','it-IT':'Tempo medio di creazione','pt-BR':'Tempo médio de criação','pl-PL':'Średni czas tworzenia'};
  return `${labels[language]||labels['en-GB']}: ${time}`
 }
+function formatStoryWaitingTime(seconds){
+ const n=Math.max(0,Math.floor(Number(seconds)||0)),mins=Math.floor(n/60),secs=n%60;
+ const time=mins?`${mins} min${mins===1?'':'s'} ${secs} sec${secs===1?'':'s'}`:`${secs} sec${secs===1?'':'s'}`;
+ const labels={'en-GB':'You have been waiting','en-US':'You have been waiting','es-ES':'Llevas esperando','es-419':'Llevas esperando','fr-FR':'Vous attendez depuis','de-DE':'Du wartest seit','it-IT':'Stai aspettando da','pt-BR':'Você está esperando há','pl-PL':'Czekasz już'};
+ return `${labels[language]||labels['en-GB']}: ${time}`
+}
+let storyWaitingTimer=null;
+function startStoryWaitingCounter(){
+ const el=$('preparingElapsed');if(!el)return;
+ if(storyWaitingTimer){clearInterval(storyWaitingTimer);storyWaitingTimer=null}
+ const started=Date.now(),paint=()=>{el.textContent=formatStoryWaitingTime((Date.now()-started)/1000);el.hidden=false};
+ paint();storyWaitingTimer=setInterval(paint,1000)
+}
+function stopStoryWaitingCounter(){if(storyWaitingTimer){clearInterval(storyWaitingTimer);storyWaitingTimer=null}const el=$('preparingElapsed');if(el){el.hidden=true;el.textContent=''}}
+
 async function loadAverageStoryBuildTime(accessToken){
  const el=$('preparingAverage');if(!el)return;
  try{
@@ -813,12 +828,14 @@ async function generateStory(){
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
  const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
  if(!(await prepareStoryCreditConsent(accessToken)))return;
- const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy'),preparingAverage=$('preparingAverage');
+ const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy'),preparingAverage=$('preparingAverage'),preparingElapsed=$('preparingElapsed');
  $('status').textContent='';button.disabled=true;button.classList.add('is-generating');
  if(preparingTitle)preparingTitle.textContent=t().preparing;
  if(preparingCopy)preparingCopy.textContent=t().preparingCopy;
  if(preparingAverage){preparingAverage.hidden=true;preparingAverage.textContent=''}
+ if(preparingElapsed){preparingElapsed.hidden=true;preparingElapsed.textContent=''}
  if(preparing)preparing.classList.remove('hidden');
+ startStoryWaitingCounter();
  loadAverageStoryBuildTime(accessToken);
  // Force the loading state to paint on iOS Safari before any network work begins.
  // Two animation frames are intentional: Safari can otherwise coalesce the DOM update
@@ -847,7 +864,7 @@ async function generateStory(){
  }catch(e){
    console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
  }finally{
-   button.disabled=false;button.classList.remove('is-generating');if(preparing)preparing.classList.add('hidden')
+   stopStoryWaitingCounter();button.disabled=false;button.classList.remove('is-generating');if(preparing)preparing.classList.add('hidden')
  }
 }
 

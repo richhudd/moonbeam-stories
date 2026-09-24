@@ -4198,3 +4198,6 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 
 /* V251.36 — historical successful-build average beneath the preparing copy. */
 .story-preparing .preparing-average{margin-top:2px;font-size:13px!important;font-weight:700;color:#cfc5ee!important;opacity:.95}
+
+/* V251.41 — live elapsed wait counter below the historical average. */
+.story-preparing .preparing-elapsed{margin-top:-8px;font-size:13px!important;font-weight:600;color:#cfc5ee!important;opacity:.95}

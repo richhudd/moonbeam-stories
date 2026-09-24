@@ -1,3 +1,7 @@
+## V251.41
+- Added a live “You have been waiting…” elapsed-time counter beneath the average story creation time on the Preparing Story screen. It starts at generation, updates every second, and stops/resets when generation finishes or fails.
+- No story-generation, illustration, credit, or database changes.
+
 ## V251.40
 - Restores/protects the developer demo-child **Gender** and **Age (3–12)** selectors.
 - The developer UI now self-heals those selectors if an older/stale HTML shell is paired with the current JavaScript.
