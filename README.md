@@ -739,6 +739,6 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 - Replaces the misleading ‘could not find a strong story concept’ error with a neutral technical retry message.
 - No Supabase schema change.
 
-
-## V251.27
-Developer diagnostic build based directly on V251.22. Story-generation behaviour is unchanged. If the concept-builder fails for the configured Moonbeam developer account, the returned error now includes the OpenAI response status, incomplete details, response/output sizes and output item/content types, plus a short preview of the first concept response. This is diagnostic only and does not change prompts, token budgets, parsing, retries, storyboard generation, final reconciliation, illustration generation, credits, or database schema.
+## V251.28
+- Increased only the concept-builder and concept-format-repair `max_output_tokens` allowance from 1600 to 4000 after diagnostics confirmed both calls were ending `incomplete` with `reason: max_output_tokens` before producing visible output.
+- Retains the V251.27 developer diagnostics. No story prompt, parser, illustration, reconciliation, API-count, or database changes.

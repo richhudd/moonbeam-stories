@@ -305,7 +305,6 @@ Create one concise but precise character_bible for every recurring character. Th
 
 For ANY selected Cast member with a supplied reference photo — child, adult or pet — underlying physical identity comes authoritatively from that exact photo. Preserve the recognisable face, apparent age, hair, approximate skin tone, body proportions and other identifying physical characteristics shown by the reference; for pets preserve the recognisable species/breed appearance and proportions. Any optional Male/Female marker for a photographed human Cast member is authoritative and must be preserved consistently. Story-world clothing, costume, role, status, abilities and story-required fictional characteristics or transformations are free to follow the story and must not be mistaken for conflicting real-world identity. The bible should identify photographed Cast members by their supplied name, kind and narrative role and record only story-world appearance or continuity details needed for the book while keeping the underlying person or pet recognisable. Do not invent decorative hair accessories for a photographed Cast member marked male unless they are clearly visible in the reference photo or explicitly required by the Parent Story Idea. A photographed adult is just as identity-locked as a photographed child, and a photographed pet is just as identity-locked as a photographed human. Every illustration_prompt must use the SAME supplied Cast names and preserve established continuity unless the STORY itself explicitly requires a change. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
 
-    const storyModelDiagnostics=[];
     async function callStoryModel(input, maxOutputTokens = 5000) {
       const r = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -332,18 +331,7 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
           }
         }
       }
-      const cleanOutput=String(output || '').trim();
-      storyModelDiagnostics.push({
-        http_status:r.status,
-        response_id:String(data.id||''),
-        response_status:String(data.status||''),
-        incomplete_details:data.incomplete_details||null,
-        output_chars:cleanOutput.length,
-        raw_chars:raw.length,
-        output_item_types:Array.isArray(data.output)?data.output.map(item=>String(item?.type||'')):[],
-        content_part_types:Array.isArray(data.output)?data.output.flatMap(item=>Array.isArray(item?.content)?item.content.map(part=>String(part?.type||'')):[]):[]
-      });
-      return cleanOutput;
+      return String(output || '').trim();
     }
 
     function candidateJsonStrings(text) {
@@ -458,26 +446,15 @@ Return JSON ONLY:
     }
     let concept=null;let conceptOutput='';
     try{
-      conceptOutput=await callStoryModel(conceptPrompt,1600);
+      conceptOutput=await callStoryModel(conceptPrompt,4000);
       concept=parseConceptOutput(conceptOutput);
       if(!concept){
         const repairPrompt=`The previous concept-builder response could not be parsed. Return ONLY one valid JSON object with exactly these keys: central_premise, why_a_child_would_care, direction, ending_destination. Do not add markdown, commentary or story prose. Preserve the strongest concept you intended; this is a formatting repair, not a request to reject the user's idea.\n\nORIGINAL CONCEPT-BUILDER INSTRUCTIONS:\n${conceptPrompt}\n\nPREVIOUS RESPONSE:\n${conceptOutput}`;
-        const repaired=await callStoryModel(repairPrompt,1600);
+        const repaired=await callStoryModel(repairPrompt,4000);
         concept=parseConceptOutput(repaired);
       }
     }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
-    if(!concept){
-      await refundReservedCredit();
-      const isDeveloperAccount=developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
-      const diagnostic=isDeveloperAccount?{
-        stage:'concept-builder',
-        attempts:storyModelDiagnostics.slice(-2),
-        first_output_chars:String(conceptOutput||'').length,
-        first_output_preview:String(conceptOutput||'').slice(0,600)
-      }:undefined;
-      const diagnosticText=diagnostic?` Developer diagnostic: ${JSON.stringify(diagnostic)}`:'';
-      return res.status(502).json({error:`Moonbeam had trouble preparing this story idea. Please try again.${diagnosticText}`,diagnostic});
-    }
+    if(!concept){await refundReservedCredit();return res.status(502).json({error:'Moonbeam had trouble preparing this story idea. Please try again.'})}
 
     // Plan the complete illustrated book only AFTER the concept has been selected.
     const planningBase = String(prompt).split('\nOUTPUT\n')[0].replace('Write a completely original children’s story centred on the selected hero or co-heroes.','Design a completely original children’s story centred on the selected hero or co-heroes, but do not write its finished prose yet.').replace('Write an original, polished children’s story in natural ${language}.','Design an original, polished children’s story suitable for later writing in natural ${language}.');
