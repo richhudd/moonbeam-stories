@@ -721,3 +721,12 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 - Adds contemporary-authenticity guidance so stock adventure shorthand such as maps, backpacks, keys, ribbons and snacks appears only when naturally required.
 - Keeps V251.17+ storyboard-first production: chosen concept -> storyboard -> six illustrations -> final prose written from the plan and finished pictures.
 - No Supabase schema change and no new API endpoint.
+
+
+## V251.21 — Robust concept-builder response handling
+- Keeps the V251.20 concept-builder and account-level anti-repetition architecture unchanged.
+- Parses concept JSON defensively, including harmless trailing commas and a nested `concept` object.
+- Accepts a few semantically equivalent field names instead of rejecting an otherwise valid concept.
+- If the first concept response is malformed, makes one formatting-repair attempt before failing.
+- Replaces the misleading ‘could not find a strong story concept’ error with a neutral technical retry message.
+- No Supabase schema change.

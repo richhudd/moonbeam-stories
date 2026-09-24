@@ -400,7 +400,7 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
       return normal;
     }
 
-    // V251.20: choose a compelling, account-aware concept BEFORE storyboarding it.
+    // V251.21: choose a compelling, account-aware concept BEFORE storyboarding it; repair malformed concept JSON once before failing.
     // The concept call is deliberately not allowed to write scenes or prose. It sees a compact
     // account-wide memory of recent saved stories so a pack of credits produces genuinely varied books.
     const recentStoriesRaw=Array.isArray(body.recentStories)?body.recentStories.slice(0,10):[];
@@ -428,10 +428,33 @@ Silently consider several FUNDAMENTALLY DIFFERENT possible concepts before choos
 
 Return JSON ONLY:
 {"central_premise":"1-2 plain factual sentences stating what actually happens","why_a_child_would_care":"one plain sentence identifying the compelling experience","direction":"one plain sentence defining the intended kind of story and reality level","ending_destination":"one plain factual sentence stating where the story ultimately arrives"}`;
+    function parseConceptOutput(text){
+      for(const candidate of candidateJsonStrings(text)){
+        for(const version of [candidate,candidate.replace(/,\s*([}\]])/g,'$1')]){
+          try{
+            const parsed=JSON.parse(version);
+            const x=parsed&&parsed.concept&&typeof parsed.concept==='object'?parsed.concept:parsed;
+            if(!x||typeof x!=='object')continue;
+            const central=String(x.central_premise||x.premise||'').trim();
+            const appeal=String(x.why_a_child_would_care||x.why_it_is_compelling||x.child_appeal||'').trim();
+            const ending=String(x.ending_destination||x.ending||x.destination||'').trim();
+            if(central&&appeal&&ending)return {central_premise:central,why_a_child_would_care:appeal,direction:String(x.direction||'').trim(),ending_destination:ending};
+          }catch{}
+        }
+      }
+      return null;
+    }
     let concept=null;let conceptOutput='';
-    try{conceptOutput=await callStoryModel(conceptPrompt,1600);for(const candidate of candidateJsonStrings(conceptOutput)){try{const x=JSON.parse(candidate);if(x?.central_premise&&x?.why_a_child_would_care&&x?.ending_destination){concept=x;break}}catch{}}}catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
-    if(!concept){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not find a strong story concept. Please try again.'})}
-    concept={central_premise:String(concept.central_premise||'').trim(),why_a_child_would_care:String(concept.why_a_child_would_care||'').trim(),direction:String(concept.direction||'').trim(),ending_destination:String(concept.ending_destination||'').trim()};
+    try{
+      conceptOutput=await callStoryModel(conceptPrompt,1600);
+      concept=parseConceptOutput(conceptOutput);
+      if(!concept){
+        const repairPrompt=`The previous concept-builder response could not be parsed. Return ONLY one valid JSON object with exactly these keys: central_premise, why_a_child_would_care, direction, ending_destination. Do not add markdown, commentary or story prose. Preserve the strongest concept you intended; this is a formatting repair, not a request to reject the user's idea.\n\nORIGINAL CONCEPT-BUILDER INSTRUCTIONS:\n${conceptPrompt}\n\nPREVIOUS RESPONSE:\n${conceptOutput}`;
+        const repaired=await callStoryModel(repairPrompt,1600);
+        concept=parseConceptOutput(repaired);
+      }
+    }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
+    if(!concept){await refundReservedCredit();return res.status(502).json({error:'Moonbeam had trouble preparing this story idea. Please try again.'})}
 
     // Plan the complete illustrated book only AFTER the concept has been selected.
     const planningBase = String(prompt).split('\nOUTPUT\n')[0].replace('Write a completely original children’s story centred on the selected hero or co-heroes.','Design a completely original children’s story centred on the selected hero or co-heroes, but do not write its finished prose yet.').replace('Write an original, polished children’s story in natural ${language}.','Design an original, polished children’s story suitable for later writing in natural ${language}.');
