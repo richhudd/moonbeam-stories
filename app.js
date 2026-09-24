@@ -760,6 +760,22 @@ function recentStoryCreativeMemory(limit=10){
  }).filter(x=>x.title||x.summary)
 }
 
+function formatAverageStoryBuildTime(seconds){
+ const n=Math.max(1,Math.round(Number(seconds)||0));if(!n)return '';
+ const mins=Math.floor(n/60),secs=n%60;
+ const time=mins?`${mins} min${mins===1?'':'s'}${secs?` ${secs} sec${secs===1?'':'s'}`:''}`:`${secs} sec${secs===1?'':'s'}`;
+ const labels={'en-GB':'Average story creation time','en-US':'Average story creation time','es-ES':'Tiempo medio de creación','es-419':'Tiempo medio de creación','fr-FR':'Temps moyen de création','de-DE':'Durchschnittliche Erstellungszeit','it-IT':'Tempo medio di creazione','pt-BR':'Tempo médio de criação','pl-PL':'Średni czas tworzenia'};
+ return `${labels[language]||labels['en-GB']}: ${time}`
+}
+async function loadAverageStoryBuildTime(accessToken){
+ const el=$('preparingAverage');if(!el)return;
+ try{
+  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({action:'average-story-build-time'})});
+  const data=await r.json().catch(()=>({}));const seconds=Number(data?.averageSeconds||0);
+  if(r.ok&&seconds>0){el.textContent=formatAverageStoryBuildTime(seconds);el.hidden=false}else{el.hidden=true;el.textContent=''}
+ }catch{el.hidden=true;el.textContent=''}
+}
+
 function developerGenerationDiagnostic(stage,error,response=null,raw=''){
  if(!instagramDeveloperAccess)return error?.message||String(error||'Story generation failed.');
  const parts=[`Developer diagnostic — stage: ${stage}`];
@@ -784,11 +800,13 @@ async function generateStory(){
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
  const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
  if(!(await prepareStoryCreditConsent(accessToken)))return;
- const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy');
+ const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy'),preparingAverage=$('preparingAverage');
  $('status').textContent='';button.disabled=true;button.classList.add('is-generating');
  if(preparingTitle)preparingTitle.textContent=t().preparing;
  if(preparingCopy)preparingCopy.textContent=t().preparingCopy;
+ if(preparingAverage){preparingAverage.hidden=true;preparingAverage.textContent=''}
  if(preparing)preparing.classList.remove('hidden');
+ loadAverageStoryBuildTime(accessToken);
  // Force the loading state to paint on iOS Safari before any network work begins.
  // Two animation frames are intentional: Safari can otherwise coalesce the DOM update
  // with the following fetch and the parent never sees the waiting indicator.

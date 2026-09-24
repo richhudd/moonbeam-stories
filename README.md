@@ -1,4 +1,12 @@
-# Moonbeam Stories V251.35
+# Moonbeam Stories V251.36
+
+## V251.36 — account anti-repetition + average build-time guidance
+
+- Confirms and retains the existing account-level anti-repetition system: the concept builder receives compact creative memory from up to 10 recent saved stories in the signed-in account and avoids repeating their underlying premise, story shape, props, discoveries, complications, payoff or ending unless the parent explicitly asks for it.
+- Adds an average story creation-time line beneath the Preparing your story hourglass.
+- The average is calculated from successful historical generation runs already recorded in `api_usage_events`: the successful concept/storyboard request duration plus the elapsed time from that completion to the matching successful final-story event. Failed runs are excluded.
+- The average endpoint reuses `/api/generate`; no new Serverless Function or Supabase schema is required.
+- Keeps V251.35 story prompts, developer diagnostics and V251.34 simplified developer demo-child generation unchanged.
 
 ## V251.35 — remove dual-audience humour + restore developer diagnostics
 

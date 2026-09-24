@@ -4195,3 +4195,6 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 .developer-audit-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .developer-audit-toolbar button:disabled{opacity:.45;cursor:not-allowed}
 .developer-editor-tools{flex-wrap:wrap;justify-content:flex-end;max-width:min(96vw,760px)}
+
+/* V251.36 — historical successful-build average beneath the preparing copy. */
+.story-preparing .preparing-average{margin-top:2px;font-size:13px!important;font-weight:700;color:#cfc5ee!important;opacity:.95}

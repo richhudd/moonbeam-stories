@@ -1,4 +1,4 @@
-const {logUsage,estimateGBP}=require('../_usage');
+const {logUsage,estimateGBP,SUPABASE_URL,SECRET_KEY,adminHeaders}=require('../_usage');
 const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('../_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -36,6 +36,42 @@ module.exports = async function handler(req, res) {
   const refundOuterReservation=async()=>{if(!creditReserved||!reservedUserId)return;creditReserved=false;try{await refundReservedStoryCredit(reservedUserId,reservedBatchId)}catch(refundError){console.error('credit refund error',refundError)}};
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    if (String(body.action || '').trim() === 'average-story-build-time') {
+      await verifyMoonbeamUser(req);
+      if (!SECRET_KEY) return res.status(200).json({averageSeconds:null,sampleSize:0});
+      try {
+        const params=new URLSearchParams();
+        params.set('select','event_type,metadata,created_at');
+        params.set('event_type','in.(generation_attempt,story_finalize)');
+        params.set('order','created_at.asc');
+        params.set('limit','5000');
+        const r=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?${params.toString()}`,{headers:adminHeaders()});
+        if(!r.ok)throw new Error(`Usage history returned HTTP ${r.status}`);
+        const rows=await r.json();
+        const attempts=new Map(),finals=new Map();
+        for(const row of Array.isArray(rows)?rows:[]){
+          const meta=row?.metadata||{},run=String(meta.generation_run_id||'').trim();if(!run)continue;
+          if(row.event_type==='generation_attempt'&&meta.status==='success')attempts.set(run,row);
+          if(row.event_type==='story_finalize')finals.set(run,row);
+        }
+        const durations=[];
+        for(const [run,finalRow] of finals){
+          const attempt=attempts.get(run);if(!attempt)continue;
+          const requestMs=Number(attempt?.metadata?.duration_ms||0);
+          const attemptAt=Date.parse(attempt.created_at||''),finalAt=Date.parse(finalRow.created_at||'');
+          if(!(requestMs>0)||!Number.isFinite(attemptAt)||!Number.isFinite(finalAt)||finalAt<attemptAt)continue;
+          const totalMs=requestMs+(finalAt-attemptAt);
+          if(totalMs>=1000&&totalMs<=30*60*1000)durations.push(totalMs);
+        }
+        if(!durations.length)return res.status(200).json({averageSeconds:null,sampleSize:0});
+        const averageSeconds=Math.round(durations.reduce((a,b)=>a+b,0)/durations.length/1000);
+        return res.status(200).json({averageSeconds,sampleSize:durations.length});
+      } catch(e){
+        console.error('average story build time failed',e);
+        return res.status(200).json({averageSeconds:null,sampleSize:0});
+      }
+    }
+
     if (String(body.action || '').trim() === 'developer-continuity-text') {
       const user = await verifyMoonbeamUser(req);
       const developerEmail = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
