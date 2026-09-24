@@ -1,17 +1,6 @@
-## V251.24
-- Rephrases V251.23's excitement layer to avoid repeatedly framing children's stories in terms of danger, peril or jeopardy.
-- Keeps the same creative goal through age-appropriate dramatic tension: urgency, uncertainty, meaningful obstacles, time pressure, unexpected complications and quick thinking.
-- Explicitly keeps tense moments adventurous rather than frightening and requires reassuring resolution, without weakening the existing child-safety rules.
-- Retains V251.23's anti-map/stock-discovery rule unchanged.
-- No UI, database, credit or API-function-count changes.
+# V251.26
 
-## V251.23
-- Adds **safe peril, not bland safety** across concept selection, storyboarding and final prose.
-- Adventure and mystery concepts may now include genuine age-calibrated urgency, jeopardy and “Oh no!/Quick!/How will they get out of this?” moments while remaining non-graphic and reassuringly resolved.
-- Prevents the later writing stage from sanding exciting storyboard moments down into procedure, supervision or explanation.
-- Tightens the recurring-map problem: maps, plans, charts and diagrams may not be used as generic clue/discovery mechanisms unless the parent premise or setting genuinely requires them; discoveries should preferably arise from observation, action and physical encounter.
-- Keeps peril optional when another form of fascination is stronger; this is not a compulsory danger formula.
-- No UI, database, credit or API-function-count changes.
+Built directly from the known-working V251.22 baseline. Adds only a concise concept-stage instruction for age-appropriate dramatic tension and page-turning interest in adventure/mystery stories. No structured-output changes, parser changes, reconciliation changes, illustration-pipeline changes, API additions, or database changes.
 
 ## V251.22
 - Strengthens the storyboard and final writing stages without changing the concept builder.
@@ -753,9 +742,3 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 - If the first concept response is malformed, makes one formatting-repair attempt before failing.
 - Replaces the misleading ‘could not find a strong story concept’ error with a neutral technical retry message.
 - No Supabase schema change.
-
-
-## V251.25
-- Fixed concept-builder reliability by using Responses API Structured Outputs with a strict JSON schema for the four concept fields.
-- The existing tolerant parser and one repair attempt remain as fallbacks.
-- No creative/story philosophy, safety, illustration, credit, or database changes.
