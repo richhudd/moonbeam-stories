@@ -753,3 +753,9 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 - If the first concept response is malformed, makes one formatting-repair attempt before failing.
 - Replaces the misleading ‘could not find a strong story concept’ error with a neutral technical retry message.
 - No Supabase schema change.
+
+
+## V251.25
+- Fixed concept-builder reliability by using Responses API Structured Outputs with a strict JSON schema for the four concept fields.
+- The existing tolerant parser and one repair attempt remain as fallbacks.
+- No creative/story philosophy, safety, illustration, credit, or database changes.

@@ -307,11 +307,13 @@ Create one concise but precise character_bible for every recurring character. Th
 
 For ANY selected Cast member with a supplied reference photo — child, adult or pet — underlying physical identity comes authoritatively from that exact photo. Preserve the recognisable face, apparent age, hair, approximate skin tone, body proportions and other identifying physical characteristics shown by the reference; for pets preserve the recognisable species/breed appearance and proportions. Any optional Male/Female marker for a photographed human Cast member is authoritative and must be preserved consistently. Story-world clothing, costume, role, status, abilities and story-required fictional characteristics or transformations are free to follow the story and must not be mistaken for conflicting real-world identity. The bible should identify photographed Cast members by their supplied name, kind and narrative role and record only story-world appearance or continuity details needed for the book while keeping the underlying person or pet recognisable. Do not invent decorative hair accessories for a photographed Cast member marked male unless they are clearly visible in the reference photo or explicitly required by the Parent Story Idea. A photographed adult is just as identity-locked as a photographed child, and a photographed pet is just as identity-locked as a photographed human. Every illustration_prompt must use the SAME supplied Cast names and preserve established continuity unless the STORY itself explicitly requires a change. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
 
-    async function callStoryModel(input, maxOutputTokens = 5000) {
+    async function callStoryModel(input, maxOutputTokens = 5000, jsonSchema = null) {
+      const requestBody = { model: 'gpt-5.6-luna', input, max_output_tokens: maxOutputTokens };
+      if (jsonSchema) requestBody.text = { format: { type: 'json_schema', name: jsonSchema.name, strict: true, schema: jsonSchema.schema } };
       const r = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'gpt-5.6-luna', input, max_output_tokens: maxOutputTokens })
+        body: JSON.stringify(requestBody)
       });
       const raw = await r.text();
       let data;
@@ -448,13 +450,27 @@ Return JSON ONLY:
       }
       return null;
     }
+    const conceptSchema={
+      name:'moonbeam_story_concept',
+      schema:{
+        type:'object',
+        additionalProperties:false,
+        properties:{
+          central_premise:{type:'string'},
+          why_a_child_would_care:{type:'string'},
+          direction:{type:'string'},
+          ending_destination:{type:'string'}
+        },
+        required:['central_premise','why_a_child_would_care','direction','ending_destination']
+      }
+    };
     let concept=null;let conceptOutput='';
     try{
-      conceptOutput=await callStoryModel(conceptPrompt,1600);
+      conceptOutput=await callStoryModel(conceptPrompt,1600,conceptSchema);
       concept=parseConceptOutput(conceptOutput);
       if(!concept){
         const repairPrompt=`The previous concept-builder response could not be parsed. Return ONLY one valid JSON object with exactly these keys: central_premise, why_a_child_would_care, direction, ending_destination. Do not add markdown, commentary or story prose. Preserve the strongest concept you intended; this is a formatting repair, not a request to reject the user's idea.\n\nORIGINAL CONCEPT-BUILDER INSTRUCTIONS:\n${conceptPrompt}\n\nPREVIOUS RESPONSE:\n${conceptOutput}`;
-        const repaired=await callStoryModel(repairPrompt,1600);
+        const repaired=await callStoryModel(repairPrompt,1600,conceptSchema);
         concept=parseConceptOutput(repaired);
       }
     }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
