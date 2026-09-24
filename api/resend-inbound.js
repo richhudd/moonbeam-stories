@@ -206,40 +206,98 @@ async function developerInstagramDemoChild(req,res,body={}){
   const apiKey=String(process.env.OPENAI_API_KEY||'').trim().replace(/^[\'\"]|[\'\"]$/g,'');
   if(!apiKey)return res.status(503).json({error:'OPENAI_API_KEY is not configured in Vercel.'});
   const existingNames=(Array.isArray(body?.existingNames)?body.existingNames:[]).map(x=>String(x||'').trim()).filter(Boolean).slice(0,80);
+  const varietySeed=crypto.randomBytes(10).toString('hex');
   const requestedAge=Number.parseInt(String(body?.age??''),10);
   const requestedGender=String(body?.gender||'random').trim().toLowerCase();
   const age=Number.isInteger(requestedAge)&&requestedAge>=3&&requestedAge<=12?requestedAge:crypto.randomInt(3,13);
   const gender=requestedGender==='female'||requestedGender==='male'?requestedGender:(crypto.randomInt(0,2)?'female':'male');
+  const broadCategory=weightedPick([
+    {label:'White',weight:81.7,subprofiles:[
+      {label:'White British fair',weight:48,skinTones:[{value:'fair skin',weight:45},{value:'light skin',weight:40},{value:'light skin with freckles',weight:15}],hairColours:[{value:'medium brown',weight:34},{value:'dark brown',weight:18},{value:'dark blonde',weight:16},{value:'blonde',weight:15},{value:'light brown',weight:9},{value:'black',weight:4},{value:'auburn',weight:2},{value:'red',weight:2}],eyeColours:[{value:'blue-grey',weight:48},{value:'brown or hazel',weight:27},{value:'green or intermediate',weight:25}],hairTextures:[{value:'straight',weight:52},{value:'wavy',weight:35},{value:'curly',weight:13}]},
+      {label:'White British brown-haired',weight:34,skinTones:[{value:'fair skin',weight:25},{value:'light skin',weight:45},{value:'light-to-medium skin',weight:30}],hairColours:[{value:'medium brown',weight:42},{value:'dark brown',weight:27},{value:'light brown',weight:12},{value:'dark blonde',weight:8},{value:'black',weight:6},{value:'auburn',weight:3},{value:'red',weight:2}],eyeColours:[{value:'blue-grey',weight:41},{value:'brown or hazel',weight:34},{value:'green or intermediate',weight:25}],hairTextures:[{value:'straight',weight:48},{value:'wavy',weight:37},{value:'curly',weight:15}]},
+      {label:'White other European',weight:18,skinTones:[{value:'fair skin',weight:15},{value:'light skin',weight:35},{value:'light-to-medium skin',weight:35},{value:'olive-toned skin',weight:15}],hairColours:[{value:'dark brown',weight:32},{value:'medium brown',weight:30},{value:'black',weight:12},{value:'light brown',weight:12},{value:'dark blonde',weight:9},{value:'blonde',weight:5}],eyeColours:[{value:'blue-grey',weight:30},{value:'brown or hazel',weight:43},{value:'green or intermediate',weight:27}],hairTextures:[{value:'straight',weight:42},{value:'wavy',weight:40},{value:'curly',weight:18}]}
+    ]},
+    {label:'Asian or Asian British',weight:9.3,subprofiles:[
+      {label:'Indian heritage',weight:35,skinTones:[{value:'medium brown skin',weight:45},{value:'light brown skin',weight:30},{value:'golden-brown skin',weight:25}],hairColours:[{value:'black',weight:72},{value:'dark brown',weight:26},{value:'medium brown',weight:2}],eyeColours:[{value:'brown or hazel',weight:95},{value:'green or intermediate',weight:4},{value:'blue-grey',weight:1}],hairTextures:[{value:'straight',weight:44},{value:'wavy',weight:40},{value:'curly',weight:16}]},
+      {label:'Pakistani heritage',weight:30,skinTones:[{value:'medium brown skin',weight:42},{value:'light brown skin',weight:28},{value:'golden-brown skin',weight:20},{value:'olive-toned skin',weight:10}],hairColours:[{value:'black',weight:76},{value:'dark brown',weight:22},{value:'medium brown',weight:2}],eyeColours:[{value:'brown or hazel',weight:96},{value:'green or intermediate',weight:3},{value:'blue-grey',weight:1}],hairTextures:[{value:'straight',weight:38},{value:'wavy',weight:44},{value:'curly',weight:18}]},
+      {label:'Bangladeshi heritage',weight:10,skinTones:[{value:'medium brown skin',weight:40},{value:'golden-brown skin',weight:35},{value:'light brown skin',weight:25}],hairColours:[{value:'black',weight:80},{value:'dark brown',weight:18},{value:'medium brown',weight:2}],eyeColours:[{value:'brown or hazel',weight:97},{value:'green or intermediate',weight:2},{value:'blue-grey',weight:1}],hairTextures:[{value:'straight',weight:35},{value:'wavy',weight:45},{value:'curly',weight:20}]},
+      {label:'East or Southeast Asian heritage',weight:25,skinTones:[{value:'light skin',weight:18},{value:'light-to-medium skin',weight:52},{value:'medium skin',weight:30}],hairColours:[{value:'black',weight:84},{value:'dark brown',weight:15},{value:'medium brown',weight:1}],eyeColours:[{value:'brown or hazel',weight:97},{value:'green or intermediate',weight:2},{value:'blue-grey',weight:1}],hairTextures:[{value:'straight',weight:76},{value:'wavy',weight:20},{value:'curly',weight:4}]}
+    ]},
+    {label:'Black, Black British, Caribbean or African',weight:4.0,subprofiles:[
+      {label:'Black African heritage',weight:65,skinTones:[{value:'deep brown skin',weight:48},{value:'dark brown skin',weight:34},{value:'medium-deep brown skin',weight:18}],hairColours:[{value:'black',weight:90},{value:'dark brown',weight:10}],eyeColours:[{value:'brown or hazel',weight:98},{value:'green or intermediate',weight:2}],hairTextures:[{value:'coily',weight:58},{value:'tightly curled',weight:34},{value:'curly',weight:8}]},
+      {label:'Black Caribbean heritage',weight:35,skinTones:[{value:'deep brown skin',weight:28},{value:'dark brown skin',weight:37},{value:'medium brown skin',weight:35}],hairColours:[{value:'black',weight:86},{value:'dark brown',weight:14}],eyeColours:[{value:'brown or hazel',weight:97},{value:'green or intermediate',weight:3}],hairTextures:[{value:'coily',weight:46},{value:'tightly curled',weight:34},{value:'curly',weight:20}]}
+    ]},
+    {label:'Mixed or Multiple ethnic groups',weight:2.9,subprofiles:[
+      {label:'Mixed White and Black heritage',weight:45,skinTones:[{value:'medium brown skin',weight:28},{value:'light brown skin',weight:34},{value:'light-to-medium brown skin',weight:38}],hairColours:[{value:'dark brown',weight:36},{value:'black',weight:34},{value:'medium brown',weight:18},{value:'light brown',weight:8},{value:'dark blonde',weight:4}],eyeColours:[{value:'brown or hazel',weight:58},{value:'green or intermediate',weight:24},{value:'blue-grey',weight:18}],hairTextures:[{value:'curly',weight:38},{value:'coily',weight:18},{value:'wavy',weight:32},{value:'straight',weight:12}]},
+      {label:'Mixed White and Asian heritage',weight:35,skinTones:[{value:'light-to-medium skin',weight:30},{value:'light brown skin',weight:34},{value:'medium skin',weight:36}],hairColours:[{value:'dark brown',weight:34},{value:'medium brown',weight:28},{value:'black',weight:16},{value:'light brown',weight:12},{value:'dark blonde',weight:7},{value:'blonde',weight:3}],eyeColours:[{value:'brown or hazel',weight:60},{value:'green or intermediate',weight:20},{value:'blue-grey',weight:20}],hairTextures:[{value:'straight',weight:38},{value:'wavy',weight:40},{value:'curly',weight:22}]},
+      {label:'Other mixed heritage',weight:20,skinTones:[{value:'light-to-medium skin',weight:24},{value:'medium skin',weight:33},{value:'light brown skin',weight:23},{value:'medium brown skin',weight:20}],hairColours:[{value:'dark brown',weight:32},{value:'medium brown',weight:28},{value:'black',weight:20},{value:'light brown',weight:10},{value:'dark blonde',weight:6},{value:'blonde',weight:4}],eyeColours:[{value:'brown or hazel',weight:52},{value:'green or intermediate',weight:24},{value:'blue-grey',weight:24}],hairTextures:[{value:'straight',weight:28},{value:'wavy',weight:38},{value:'curly',weight:24},{value:'coily',weight:10}]}
+    ]},
+    {label:'Other ethnic group',weight:2.1,subprofiles:[
+      {label:'Middle Eastern or North African heritage',weight:55,skinTones:[{value:'olive-toned skin',weight:36},{value:'light brown skin',weight:34},{value:'medium skin',weight:30}],hairColours:[{value:'black',weight:46},{value:'dark brown',weight:42},{value:'medium brown',weight:12}],eyeColours:[{value:'brown or hazel',weight:86},{value:'green or intermediate',weight:11},{value:'blue-grey',weight:3}],hairTextures:[{value:'straight',weight:34},{value:'wavy',weight:46},{value:'curly',weight:20}]},
+      {label:'Latin American heritage',weight:25,skinTones:[{value:'light brown skin',weight:30},{value:'medium skin',weight:30},{value:'olive-toned skin',weight:22},{value:'light-to-medium skin',weight:18}],hairColours:[{value:'dark brown',weight:40},{value:'black',weight:30},{value:'medium brown',weight:20},{value:'light brown',weight:8},{value:'dark blonde',weight:2}],eyeColours:[{value:'brown or hazel',weight:73},{value:'green or intermediate',weight:17},{value:'blue-grey',weight:10}],hairTextures:[{value:'straight',weight:34},{value:'wavy',weight:44},{value:'curly',weight:22}]},
+      {label:'Other non-white heritage',weight:20,skinTones:[{value:'medium skin',weight:35},{value:'light brown skin',weight:30},{value:'olive-toned skin',weight:20},{value:'medium brown skin',weight:15}],hairColours:[{value:'dark brown',weight:34},{value:'black',weight:28},{value:'medium brown',weight:22},{value:'light brown',weight:10},{value:'dark blonde',weight:6}],eyeColours:[{value:'brown or hazel',weight:68},{value:'green or intermediate',weight:20},{value:'blue-grey',weight:12}],hairTextures:[{value:'straight',weight:34},{value:'wavy',weight:38},{value:'curly',weight:20},{value:'coily',weight:8}]}
+    ]}
+  ])||{label:'White',subprofiles:[{label:'White British fair',skinTones:[{value:'fair skin',weight:1}],hairColours:[{value:'medium brown',weight:1}],eyeColours:[{value:'blue-grey',weight:1}],hairTextures:[{value:'straight',weight:1}]}]};
+  const subProfile=weightedPick(broadCategory.subprofiles)||broadCategory.subprofiles[0];
+  const skinTone=weightedValue(subProfile.skinTones,'light skin');
+  const hairColour=weightedValue(subProfile.hairColours,'brown');
+  const eyeColour=weightedValue(subProfile.eyeColours,'brown or hazel');
+  const hairTexture=weightedValue(subProfile.hairTextures,'straight');
+  const hairStyle=gender==='male'?randomItem(['short tidy hair','slightly messy short hair','neatly cropped hair','a softly tousled cut','a simple side-parted cut']):randomItem(['shoulder-length hair','a simple bob','hair tied back plainly','loose shoulder-length hair','a neat side-parted style']);
+  const buildDescriptor=weightedValue([{value:'a slim build',weight:32},{value:'an average build',weight:52},{value:'a sturdy build',weight:16}],'an average build');
+  const faceDescriptor=weightedValue([{value:'a naturally attractive, believable face',weight:42},{value:'a warm, appealing face',weight:30},{value:'a cheerful, expressive face',weight:28}],'a naturally attractive, believable face');
+  const featureDescriptor=randomItem(['soft chubby cheeks','slightly prominent ears','a scattering of freckles','a faint birthmark','glasses','a slightly gap-toothed smile','unruly hair','']);
+  const clothingDescriptor=randomItem(['a plain T-shirt','a simple striped top','a knit jumper','a casual hoodie','a lightweight jacket over a T-shirt','a simple long-sleeved top'])||'a plain T-shirt';
+  const backgroundDescriptor=randomItem(['a leafy park path','a back garden with greenery','a quiet playground','a schoolyard edge','a brick terrace street','a seaside promenade','a local football pitch sideline','a softly blurred woodland path','a quiet urban courtyard','a front garden by a low wall'])||'a leafy park path';
   try{
+    const conceptPrompt=`Invent ONE completely fictional demo child for Moonbeam Stories marketing. This is not a real customer and must not be based on any real child.
+
+VARIETY SEED: ${varietySeed}
+Existing Cast first names to avoid if practical: ${existingNames.length?existingNames.join(', '):'none'}.
+
+The demographic and visual brief is FIXED. Use it exactly:
+- age: ${age}
+- gender: "${gender}"
+- broad UK demographic bucket: ${broadCategory.label}
+- more specific profile: ${subProfile.label}
+- skin tone: ${skinTone}
+- hair: ${hairColour} ${hairTexture} hair, with ${hairStyle}
+- eyes: ${eyeColour}
+- body type: ${buildDescriptor}
+- face: ${faceDescriptor}${featureDescriptor?`; extra detail: ${featureDescriptor}`:''}
+- clothing: ${clothingDescriptor}
+- portrait background: ${backgroundDescriptor}
+
+Requirements:
+- choose a plausible FIRST NAME ONLY (no surname), suitable in contemporary Britain and fitting this profile;
+- write a concise appearance description that stays faithful to the fixed brief;
+- the child should be naturally attractive, warm, expressive and visually appealing as the star of a professionally illustrated children's book, while remaining believable and individual rather than airbrushed or artificially perfect.
+
+Return JSON only with exactly this shape:
+{"name":"string","age":${age},"gender":"${gender}","appearance":"string"}`;
+    const conceptResponse=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:conceptPrompt,max_output_tokens:450})});
+    const raw=await conceptResponse.text();let data={};try{data=JSON.parse(raw)}catch{}
+    if(!conceptResponse.ok)throw new Error(data?.error?.message||`Demo-child invention failed (${conceptResponse.status}).`);
+    let output=typeof data.output_text==='string'?data.output_text:'';
+    if(!output&&Array.isArray(data.output))for(const item of data.output||[])for(const part of item?.content||[])if(typeof part?.text==='string')output+=part.text;
+    const concept=extractJsonObject(output)||{};
     const fallbackNames={male:['Sam','Leo','Noah','Oscar','Theo','Max','Arlo','Elliot','Isaac','Reuben','Zayn','Jude'],female:['Emily','Maya','Ava','Sofia','Amelia','Mila','Ruby','Nina','Layla','Elsie','Aisha','Zara']};
     let fallbackPool=(fallbackNames[gender]||[]).filter(n=>!existingNames.some(x=>String(x).toLowerCase()===String(n).toLowerCase()));
     if(!fallbackPool.length)fallbackPool=fallbackNames[gender]||['Sam'];
     const fallbackName=fallbackPool[crypto.randomInt(0,fallbackPool.length)];
-    const namePrompt=`Invent one plausible first name for a completely fictional ${age}-year-old ${gender==='male'?'boy':'girl'} in the UK. Do not use any of these existing Cast names: ${existingNames.join(', ')||'none'}. Return ONLY the first name, with no explanation.`;
-    const nameResponse=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:namePrompt,max_output_tokens:300})});
-    const nameRaw=await nameResponse.text();let nameData={};try{nameData=JSON.parse(nameRaw)}catch{}
-    let nameOutput='';
-    if(nameResponse.ok){
-      if(typeof nameData.output_text==='string')nameOutput=nameData.output_text;
-      if(!nameOutput&&Array.isArray(nameData.output))for(const item of nameData.output||[])for(const part of item?.content||[])if(typeof part?.text==='string')nameOutput+=part.text;
-    }
-    const candidate=String(nameOutput||fallbackName).trim().split(/\s+/)[0].replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'’-]/g,'').slice(0,28)||fallbackName;
+    const rawName=String(concept.name||fallbackName).trim().replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'’-]/g,'').slice(0,28)||fallbackName;
     const lowerExisting=new Set(existingNames.map(x=>String(x).toLowerCase()));
-    const name=lowerExisting.has(candidate.toLowerCase())?fallbackName:candidate;
-    await logUsage({event_type:'instagram_demo_child_profile',estimated_cost_gbp:0,metadata:{model:'gpt-5.6-luna',user_id:verified.user.id,age,gender}});
+    const name=lowerExisting.has(rawName.toLowerCase())?fallbackName:rawName;
+    const fallbackAppearance=`${gender==='male'?'boy':'girl'} with ${skinTone}, ${eyeColour} eyes, ${hairColour} ${hairTexture} hair worn as ${hairStyle}, ${buildDescriptor}, ${faceDescriptor}${featureDescriptor?`, ${featureDescriptor}`:''}, wearing ${clothingDescriptor}.`;
+    const appearance=String(concept.appearance||fallbackAppearance).replace(/\s+/g,' ').trim().slice(0,700)||fallbackAppearance;
+    await logUsage({event_type:'instagram_demo_child_profile',estimated_cost_gbp:0,metadata:{model:'gpt-5.6-luna',user_id:verified.user.id,age,gender,broad_category:broadCategory.label,sub_profile:subProfile.label,hair_colour:hairColour,eye_colour:eyeColour,background:backgroundDescriptor}});
 
-    const portraitPrompt=`Create a natural PHOTOREALISTIC head-and-shoulders portrait of ONE completely fictional ${age}-year-old ${gender==='male'?'boy':'girl'} named ${name}. Invent the child's appearance freely. The child must be entirely fictional and must not resemble or be based on any real child or public figure.
-
-The child should look natural, appealing and believable, like a real child photographed casually on a modern mobile phone. Use natural contemporary everyday clothing, a relaxed friendly expression, believable skin and hair texture, soft natural daylight, and camera height around the child's eye level.
-
-Place the child in a realistic everyday setting and use gentle shallow depth-of-field / Portrait-mode background blur, as a modern phone camera would. The background should remain recognisably real rather than becoming a plain or artificial backdrop. The image must NOT look like a professional studio portrait, fashion shoot, modelling photograph, school ID photo, passport photo, poster, illustration, cartoon, 3D render or painting.
-
-No text, captions, logos, borders, signs, watermarks, costumes, other people or animals. ${gender==='male'?'Do not add decorative hair accessories unless they arise naturally from the invented appearance. ':''}`;
+    const portraitPrompt=`Create a high-quality PHOTOREALISTIC head-and-shoulders portrait photograph of ONE completely fictional ${age}-year-old ${gender==='male'?'boy':'girl'} named ${name}. This person must be invented and must not resemble or be based on any real child or public figure.\n\nUse this appearance faithfully: ${appearance}\n\nHard requirements:\n- believable ${broadCategory.label.toLowerCase()} / ${subProfile.label} appearance\n- relaxed friendly expression\n- believable skin, hair and eye texture\n- natural contemporary child clothing\n- soft natural daylight\n- camera at the child's eye level\n- background should be ${backgroundDescriptor}, slightly blurred with shallow depth of field\n- the child should look ordinary and real rather than glamorised or model-perfect\n- the child may look slim, average, stockier or heavier as stated; do not slim them down\n- keep any freckles, glasses, birthmarks, gap-toothed smile or other ordinary features if mentioned\n\nThe result should look like a normal high-quality family portrait photograph, not a fashion shoot, school ID photo, passport photo, poster, illustration, cartoon, 3D render or painting. The background must not be a plain white, plain grey or studio backdrop. No text, captions, logos, borders, signs, watermarks, props held toward camera, costumes, other people or animals. ${gender==='male'?'Do not add hair clips, bows, barrettes, decorative stars, tiaras or ornamental headbands. ':''}Aim for a naturally appealing, distinctive face suitable for a children's-book lead character, without turning the child into a generic AI-perfect model.`;
     const imageResponse=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-image-2.5-flare',prompt:portraitPrompt,size:'1024x1024',quality:'medium',output_format:'jpeg'})});
     const imageRaw=await imageResponse.text();let imageData={};try{imageData=JSON.parse(imageRaw)}catch{}
     if(!imageResponse.ok)throw new Error(imageData?.error?.message||`Demo portrait failed (${imageResponse.status}).`);
     const item=Array.isArray(imageData.data)?imageData.data[0]:null;if(!item||typeof item.b64_json!=='string')throw new Error('The demo portrait service returned no image.');
-    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:false}),metadata:{model:'gpt-image-2.5-flare',user_id:verified.user.id,instagram_demo_child_portrait:true,synthetic:true,age,gender}});
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:false}),metadata:{model:'gpt-image-2.5-flare',user_id:verified.user.id,instagram_demo_child_portrait:true,synthetic:true,broad_category:broadCategory.label,sub_profile:subProfile.label}});
     return res.status(200).json({ok:true,profile:{name,age,gender,portraitDataUrl:`data:image/jpeg;base64,${item.b64_json}`,synthetic:true}});
   }catch(error){console.error('instagram demo child',error);return res.status(502).json({ok:false,error:error?.message||'Could not invent the demo child.'});}
 }
