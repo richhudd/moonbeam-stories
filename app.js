@@ -736,6 +736,21 @@ async function prepareStoryCreditConsent(accessToken){
    return false;
  }
 }
+function storyboardIllustrationPrompt(plan,index){
+ const scenes=Array.isArray(plan?.scenes)?plan.scenes:[];const scene=scenes[index]||{};
+ const all=scenes.map((x,i)=>`SCENE ${i+1}: EVENT: ${x.event||''} | WHY: ${x.why_it_follows||''} | VISUAL: ${x.visual_moment||''} | CHANGE: ${x.what_changes||''} | CONTINUITY: ${x.continuity||''}`).join('\n');
+ return `STORYBOARD-FIRST BOOK. Read the COMPLETE six-scene production plan before drawing this image. You are drawing SCENE ${index+1} OF 6.\n\nWHOLE STORY PREMISE:\n${plan?.premise||''}\n\nWHOLE STORY ARC INCLUDING ENDING:\n${plan?.story_arc||''}\nENDING: ${plan?.ending||''}\n\nCOMPLETE VISUAL STORYBOARD:\n${all}\n\nCURRENT SCENE — DRAW THIS, NOT AN EARLIER OR LATER EVENT:\n${scene.visual_moment||scene.event||''}\n\nThis illustration must make sense as one moment in the complete visual sequence. Preserve facts established by earlier scenes, anticipate later scenes so you do not reveal their payoff too early, and reserve the strongest visual climax for the scene the storyboard assigns it to. Do not invent a competing plot.`
+}
+async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null){
+ let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+ const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:storyboardIllustrationPrompt(plan,index),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:child?.referenceImages||[],continuityImage:continuityImage||null,generationRunId,requiredStoryImage:true,storyImageIndex:index})});
+ const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{};if(!response.ok||!data?.image)throw new Error(data?.error||`Illustration service failed (${response.status})`);return data.image
+}
+function storyboardThumbnail(dataUrl){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const max=320,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.72))};img.onerror=()=>reject(new Error('A storyboard illustration could not be prepared for the writer.'));img.src=dataUrl})}
+async function createStoryboardArtwork(plan,child,generationRunId){
+ const images=[];let previous=null;for(let i=0;i<6;i++){const image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous);images.push(image);previous=image}return images
+}
+
 async function generateStory(){
  syncGenerationAdapter246();
  if(activeProfileId&&!currentChildPhoto)currentChildPhoto=await childPhotoGetForProfile(activeProfileId);
@@ -763,11 +778,18 @@ async function generateStory(){
    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child})});
    const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}
    if(!response.ok){throw new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`)}
-   if(!data?.story)throw new Error('The story service did not return a story.');
+   if(!data?.plan||!Array.isArray(data.plan.scenes)||data.plan.scenes.length!==6)throw new Error('The story service did not return a complete visual storyboard.');
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
    child.generationRunId=data.generationRunId||null;
+   if(preparingCopy)preparingCopy.textContent='Moonbeam is illustrating the whole adventure before writing it…';
+   const storyboardArtwork=await createStoryboardArtwork(data.plan,child,child.generationRunId);
+   if(preparingCopy)preparingCopy.textContent='Moonbeam is writing the story around the finished pictures…';
+   const thumbnails=await Promise.all(storyboardArtwork.map(storyboardThumbnail));
+   let finalToken=await currentAccessToken();if(!finalToken)finalToken=await refreshAccessToken();if(!finalToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+   const finalResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${finalToken}`},body:JSON.stringify({action:'finalize-storyboard-story',child,plan:data.plan,images:thumbnails,generationRunId:child.generationRunId})});
+   const finalRaw=await finalResponse.text();let finalData=null;try{finalData=JSON.parse(finalRaw)}catch{};if(!finalResponse.ok)throw new Error(finalData?.error||`Story finishing failed (${finalResponse.status})`);if(!finalData?.story)throw new Error('Moonbeam could not finish the illustrated story.');
    clearSetupDraft();
-   renderStory(data.story,null,child)
+   renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork})
  }catch(e){
    console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
  }finally{
@@ -775,7 +797,7 @@ async function generateStory(){
  }
 }
 
-function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',coverByline:s.coverByline||options.savedAssets?.coverByline||'',dedication:s.dedication||options.savedAssets?.dedication||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},artwork:{cover:null,pages:{}}}}
+function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',coverByline:s.coverByline||options.savedAssets?.coverByline||'',dedication:s.dedication||options.savedAssets?.dedication||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},prebuiltArtwork:Array.isArray(options.prebuiltArtwork)&&options.prebuiltArtwork.length>0,artwork:{cover:null,pages:Object.fromEntries((options.prebuiltArtwork||[]).map((image,i)=>[i,image]))}}}
 function renderStory(s,image,child,options={}){
  currentBook=buildBook(s,image,child,options);
  const el=$('story');el.classList.remove('hidden');
@@ -923,6 +945,7 @@ async function savedAssetUrl(path){if(!path||!currentBook?.isSaved)return null;i
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index,prompt);
  const frame=document.querySelector('.illustration-frame');if(!silent&&(!frame||book.currentPage!==index))return;
+ if(book.prebuiltArtwork&&book.artwork?.pages?.[index]){const image=book.artwork.pages[index];if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}
  if(book.isSaved){
   // An accepted developer replacement is already canonical in memory. Honour that exact
   // image immediately instead of reloading the saved path and risking an older cached blob.

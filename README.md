@@ -691,3 +691,12 @@ Developer manual editing now accepts general text and illustration corrections/i
 - Fixed accepted developer illustration replacements reverting visually to the original image.
 - Saved-book rendering now honours the exact accepted canonical in-memory illustration instead of immediately reloading the saved asset path.
 - The accepted replacement is still persisted to Supabase storage and the local saved-art cache before the editor closes.
+
+
+## V251.17
+- Storyboard-first generation experiment: Moonbeam now plans the complete six-scene story arc without finished prose.
+- All six page illustrations are generated from the complete plan before the final story is written.
+- Every illustration sees the whole arc, including later scenes and the ending, while sequential generation preserves visual continuity.
+- The final writer receives the original idea, complete plan and reduced copies of all six finished illustrations, then writes the six balanced reading spreads around that visual reality.
+- Finished storyboard artwork is reused directly in the reader; it is not regenerated after the prose is written.
+- No Supabase schema change required.

@@ -87,6 +87,31 @@ module.exports = async function handler(req, res) {
       if (!description) throw new Error('The KDP description came back empty.');
       return res.status(200).json({ description });
     }
+    if (String(body.action || '').trim() === 'finalize-storyboard-story') {
+      const moonbeamUser = await verifyMoonbeamUser(req);
+      const plan = body.plan || {};
+      const child = body.child || {};
+      const images = Array.isArray(body.images) ? body.images.filter(x=>/^data:image\/(?:jpeg|png|webp);base64,/i.test(String(x||''))).slice(0,6) : [];
+      const scenes = Array.isArray(plan.scenes) ? plan.scenes.slice(0,6) : [];
+      if (scenes.length !== 6 || images.length !== 6) return res.status(400).json({error:'The visual storyboard is incomplete.'});
+      const age = Number(child.age)||7;
+      const language = String(child.language||'en-GB');
+      const languageGuide = {'en-GB':'natural contemporary British English with British spelling','en-US':'natural contemporary American English','es-ES':'natural Spanish from Spain','es-419':'natural neutral Latin American Spanish','fr-FR':'natural French from France','de-DE':'natural German from Germany','it-IT':'natural Italian from Italy','pt-BR':'natural Brazilian Portuguese','pl-PL':'natural contemporary Polish'}[language]||'natural British English';
+      const planText = JSON.stringify(plan,null,2);
+      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. The book has already been planned and its SIX finished page illustrations already exist. Write the polished story NOW, using BOTH the production plan and the actual finished illustrations as authoritative inputs.\n\nORIGINAL STORY IDEA:\n${String(child.storyIdea||'').trim()||'No parent story idea was supplied.'}\n\nPRODUCTION PLAN / STORYBOARD:\n${planText}\n\nRULES:\n- Write for age ${age} in ${languageGuide}.\n- The plan is authoritative about the central plot, causal sequence, character roles and intended ending.\n- The six attached images are presented in storyboard order, SCENE 1 through SCENE 6. They are authoritative about clearly visible reality: locations, positions, clothing, objects, colours, physical actions and other visible facts. Never write something that clearly contradicts an image.\n- Harmless visual details introduced by an image may be incorporated naturally, but accidental visual details must not hijack or change the central plot.\n- The illustrations are selected moments, NOT six captions. Do not merely describe what the reader can already see. Use prose for action before/after the pictured moment, dialogue, thought, motivation, cause and effect, anticipation, humour, transitions and consequences.\n- Fulfil the promise of the premise. Make what happens interesting; do not replace adventure with procedures, maintenance, checklists or technical exposition unless the premise specifically requires them.\n- Ordinary objects and natural phenomena have no consciousness or agency unless the plan deliberately establishes fantasy. Avoid decorative personification and strained faux-poetic comparisons.\n- Preserve exact supplied Cast names. Do not invent surnames, relatives, friends or recurring principal characters absent from the plan.\n- Produce one continuous coherent story of about 650-750 words across exactly SIX balanced reading spreads.\n- Spread 1 about 105-125 words; spreads 2-5 about 105-125 words each; spread 6 about 90-115 words.\n- No headings inside the prose.\n\nReturn JSON ONLY in exactly this shape:\n{"title":"string","opening":"spread 1 prose","pages":[{"text":"spread 2 prose"},{"text":"spread 3 prose"},{"text":"spread 4 prose"},{"text":"spread 5 prose"}],"closing":"spread 6 prose"}`;
+      const content=[{type:'input_text',text:finalPrompt},...images.map((image_url,i)=>({type:'input_image',image_url,detail:'low'}))];
+      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:[{role:'user',content}],max_output_tokens:5000})});
+      const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};
+      if(!r.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)})}
+      let output=typeof data.output_text==='string'?data.output_text:'';if(!output&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')output+=part.text;
+      const clean=String(output||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/i,'');let parsed=null;try{parsed=JSON.parse(clean)}catch{const a=clean.indexOf('{'),b=clean.lastIndexOf('}');if(a>=0&&b>a)try{parsed=JSON.parse(clean.slice(a,b+1))}catch{}}
+      if(!parsed||!parsed.title||!parsed.opening||!parsed.closing||!Array.isArray(parsed.pages)||parsed.pages.length!==4)return res.status(502).json({error:'Moonbeam could not reconcile the finished illustrations into the final story.'});
+      const story={title:String(parsed.title).trim(),opening:String(parsed.opening).trim(),character_bible:String(plan.character_bible||'').trim(),pages:parsed.pages.map((pg,i)=>({text:String(pg?.text||'').trim(),illustration_prompt:String(scenes[i+1]?.visual_moment||scenes[i+1]?.event||'').trim()})),closing:String(parsed.closing).trim()};
+      if(story.pages.some(pg=>!pg.text))return res.status(502).json({error:'The finished story contained an empty page.'});
+      await logUsage({event_type:'story_finalize',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:String(body.generationRunId||'')}});
+      return res.status(200).json({story});
+    }
+
     const child = body.child || {};
     const cast = Array.isArray(child.cast) ? child.cast.filter(m=>m&&m.name&&m.role) : [];
     const heroes = cast.filter(m=>m.role==='hero'&&m.kind==='child');
@@ -359,125 +384,24 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
       return normal;
     }
 
-    let firstOutput = '';
-    let story = null;
-    try {
-      firstOutput = await callStoryModel(prompt);
-      story = normaliseStory(parseStoryOutput(firstOutput));
-    } catch (e) {
-      if (e.openaiStatus) { await refundReservedCredit(); return res.status(502).json({ error: e.message, openai_status: e.openaiStatus }); }
-      throw e;
-    }
-
-    // If the model produced almost-JSON, ask it to repair its own output once rather than
-    // showing the reader a formatting error. This also catches missing required fields.
-    if (!story) {
-      const repairInput = `Repair the following Moonbeam Stories response into VALID JSON ONLY. Do not add markdown, commentary or code fences. Preserve the story wording and plot as much as possible, BUT the creative brief and age rules below remain mandatory during repair.\n\n${storyIdea ? `PARENT STORY IDEA: ${storyIdea}` : 'NO PARENT STORY IDEA: preserve the generated story premise; do not impose a genre, reality level, magic rule, companion, object, quest, twist or moral during repair.'}\n\nAGE RULES: Child age ${age}, band ${ageBand}. ${ageProfile.writing} Forbidden: ${ageProfile.forbidden}.\n\nEnsure the result has exactly this top-level shape:\n{"title":"string","opening":"string","character_bible":"string","pages":[{"text":"string","illustration_prompt":"string"}],"closing":"string"}\nThe pages array should contain exactly ${pageCount} story page objects. Every page must have non-empty text and illustration_prompt. All selected Cast personal names must be reproduced exactly as supplied. Never invent or append a surname, middle name, nickname, pet name or other unsupplied personal name. Fictional titles, ranks, roles and forms of address may be used when they arise naturally from the story and do not alter the supplied personal name. The selected Story Cast is the complete principal cast: do not invent additional named, recurring, familial, companion, friend, helper, rival or plot-significant characters. Unnamed setting-appropriate background people may appear only incidentally and must not become participants with their own subplot, family unit, recurring identity or central story function. Never invent relatives or friends for selected Cast members unless explicitly established in the Parent Story Idea. Preserve any supplied optional Male/Female marker for human Cast members consistently. If a Cast member is marked male, do not invent decorative hair accessories for him unless clearly visible in the uploaded reference photo or explicitly required by the Parent Story Idea. For every selected Cast member with a supplied reference photo, treat that photo as authoritative underlying physical identity regardless of whether the member is a child, adult or pet; preserve recognisable identity while allowing story-established clothing, roles, abilities and fictional transformations. Preserve or reconstruct a precise character_bible for every recurring non-photo character: exact human age (never an age range), stable face/skin/eyes/hair/build, fixed clothing colours/items and permanent distinctive features; for recurring animals, robots or fantastical beings, fixed species/body/material/colour/size/features. Do not age, redesign or visually redefine recurring characters between illustration prompts. Preserve genuine narrative progression without imposing a formula. Preserve the creative standard: imagination should come from interesting coherent events rather than arbitrary whimsy; coherence must not become mundane procedure; plausibility constrains imagination rather than replacing it; make the child an active cause of meaningful events where appropriate; compress technical detail that merely documents a process; ordinary reality applies unless fantasy is deliberately established; do not personify ordinary objects, buildings, landscapes or natural phenomena for decorative effect; do not add stock cosy props or snacks; and reject strained faux-poetic comparisons that sound cute but do not make sense. Avoid static repetition. Each illustration_prompt should prioritise the principal action, discovery, interaction, emotion or consequence that advances the page, remain physically coherent with established spatial facts, preserve recurring visual elements, and where natural use a meaningfully different composition from neighbouring scenes. Do not rewrite the story merely to manufacture camera variety. If the response was truncated or cannot be repaired faithfully, recreate the missing material so the story is complete and coherent.\n\nRESPONSE TO REPAIR:\n${firstOutput.slice(0, 26000)}`;
-      try {
-        const repairedOutput = await callStoryModel(repairInput, 5000);
-        story = normaliseStory(parseStoryOutput(repairedOutput));
-      } catch (e) {
-        if (e.openaiStatus) { await refundReservedCredit(); return res.status(502).json({ error: e.message, openai_status: e.openaiStatus }); }
-        throw e;
-      }
-    }
-
-    if (!story) {
-      await refundReservedCredit();
-      return res.status(502).json({ error: 'Moonbeam could not finish this story correctly. Please tap Make Tonight’s Story again.' });
-    }
-
-    const wordCount = value => String(value || '').trim().split(/\s+/).filter(Boolean).length;
-
-    // Models occasionally return one page too many/few even when the prompt is explicit.
-    // Never expose that implementation detail to the reader. Reflow the story prose locally
-    // into the exact requested number of pages while keeping sentence order and plot intact.
-    function splitIntoSentences(text) {
-      const clean = String(text || '').replace(/\s+/g, ' ').trim();
-      if (!clean) return [];
-      const matches = clean.match(/[^.!?…]+(?:[.!?…]+[\"'’”)]*|$)/g);
-      return (matches || [clean]).map(x => x.trim()).filter(Boolean);
-    }
-
-    function rebalancePages(pages, wanted) {
-      const source = Array.isArray(pages) ? pages.filter(Boolean) : [];
-      const allText = source.map(p => String(p.text || '').trim()).filter(Boolean).join(' ');
-      const sentences = splitIntoSentences(allText);
-      if (!sentences.length) return source.slice(0, wanted);
-
-      const totalWords = sentences.reduce((n, x) => n + wordCount(x), 0);
-      const target = Math.max(1, Math.round(totalWords / wanted));
-      const buckets = [];
-      let si = 0;
-
-      for (let pageIndex = 0; pageIndex < wanted; pageIndex++) {
-        const remainingPages = wanted - pageIndex;
-        const remainingSentences = sentences.length - si;
-        const bucket = [];
-        let words = 0;
-
-        while (si < sentences.length) {
-          const sentence = sentences[si];
-          const sw = wordCount(sentence);
-          // Leave at least one sentence for each remaining page where possible.
-          if (bucket.length && words + sw > target && remainingSentences > remainingPages - 1) break;
-          bucket.push(sentence);
-          words += sw;
-          si++;
-          if (si >= sentences.length) break;
-          if (words >= target && (sentences.length - si) >= (remainingPages - 1)) break;
-        }
-
-        // Last page receives anything left over.
-        if (pageIndex === wanted - 1 && si < sentences.length) {
-          bucket.push(...sentences.slice(si));
-          si = sentences.length;
-        }
-
-        const pageText = bucket.join(' ').trim();
-        // If prose has to be rebalanced, old illustration prompts no longer
-        // reliably correspond to the new page boundaries. Derive the fallback
-        // direction from the finished page itself instead of duplicating or
-        // misassigning a neighbouring page's scene.
-        const prompt = `Illustrate one specific moment from this page: ${pageText.slice(0,520)}`;
-        buckets.push({ text: pageText, illustration_prompt: prompt });
-      }
-      return buckets;
-    }
-
-    if (!Array.isArray(story.pages)) story.pages = [];
-    const originalPageCount = story.pages.length;
-    const originalCounts = story.pages.map(p => wordCount(p && p.text));
-    const needsReflow = story.pages.length !== pageCount || originalCounts.some(n => n < 75 || n > 145);
-    if (needsReflow) story.pages = rebalancePages(story.pages, pageCount);
-
-    // Defensive fallback for malformed model output: guarantee exactly the selected count.
-    while (story.pages.length < pageCount) {
-      story.pages.push({ text: '', illustration_prompt: 'A charming children’s storybook illustration matching this part of the adventure.' });
-    }
-    if (story.pages.length > pageCount) story.pages = story.pages.slice(0, pageCount);
-
-    const textScreens = [story.opening, ...story.pages.map(p => p && p.text), story.closing];
-    const counts = textScreens.map(wordCount);
-
-    const generationRunId = await createGenerationRun(moonbeamUser.id);
-    await logUsage({event_type:'story',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    // V251.17: plan the complete illustrated book before writing any finished prose.
+    // The planning model is structurally restricted to production facts and six visual beats.
+    const planningBase = String(prompt).split('\nOUTPUT\n')[0].replace('Write a completely original children’s story centred on the selected hero or co-heroes.','Design a completely original children’s story centred on the selected hero or co-heroes, but do not write its finished prose yet.').replace('Write an original, polished children’s story in natural ${language}.','Design an original, polished children’s story suitable for later writing in natural ${language}.');
+    const planningPrompt = `${planningBase}\n\nSTORYBOARD-FIRST OVERRIDE — THIS REPLACES THE OUTPUT INSTRUCTIONS ABOVE FOR THIS CALL\nDo NOT write the finished story yet. Do NOT write narrative prose, dialogue, page text, literary description or polished storytelling. This stage is a production plan only.\n\nDesign the complete story from beginning to end, including the actual ending, so every illustration can know the entire arc before any picture is made. The premise must be fulfilled, the events must have coherent cause and effect, and the six visual scenes must form a varied, intelligible sequence rather than six isolated portraits. Do not create visual variety by changing established facts.\n\nEach scene must be brief and factual. EVENT says what actually happens. WHY_IT_FOLLOWS states the causal connection. VISUAL_MOMENT identifies the single finished picture to draw. WHAT_CHANGES explains why this beat matters. CONTINUITY records only concrete visual facts that later scenes must preserve. No field may contain finished story prose.\n\nThe character_bible is a production model sheet, not prose. For every recurring non-photo character give stable age/species, build, face, hair/fur/material, colours, clothing and distinctive features. For photographed Cast, preserve the supplied identity and use the bible only for story-world clothing and continuity. Establish recurring vehicles, rooms, buildings, machines and plot-important objects clearly enough that all six images can preserve the same design.\n\nReturn JSON ONLY in exactly this shape:\n{"title_working":"string","premise":"one plain sentence","story_arc":"2-4 plain factual sentences covering the complete plot and ending","ending":"one plain factual sentence","character_bible":"fixed visual continuity description","scenes":[{"scene":1,"event":"one plain sentence","why_it_follows":"one plain sentence","visual_moment":"one concrete visual scene","what_changes":"one plain sentence","continuity":"brief concrete visual facts"},{"scene":2,"event":"...","why_it_follows":"...","visual_moment":"...","what_changes":"...","continuity":"..."},{"scene":3,"event":"...","why_it_follows":"...","visual_moment":"...","what_changes":"...","continuity":"..."},{"scene":4,"event":"...","why_it_follows":"...","visual_moment":"...","what_changes":"...","continuity":"..."},{"scene":5,"event":"...","why_it_follows":"...","visual_moment":"...","what_changes":"...","continuity":"..."},{"scene":6,"event":"...","why_it_follows":"...","visual_moment":"...","what_changes":"...","continuity":"..."}]}\n\nBefore returning the plan, check silently that the six pictures together would make sense to someone who knows the premise, that later illustrations do not need to invent facts the plan failed to establish, and that the visual climax has not accidentally been spent on an earlier incidental moment.`;
+    let planOutput='';let plan=null;
+    try{
+      planOutput=await callStoryModel(planningPrompt,4200);
+      for(const candidate of candidateJsonStrings(planOutput)){try{const x=JSON.parse(candidate);if(x&&Array.isArray(x.scenes)&&x.scenes.length===6){plan=x;break}}catch{}}
+    }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
+    if(!plan){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not create the visual storyboard correctly. Please try again.'})}
+    plan.title_working=String(plan.title_working||'').trim();plan.premise=String(plan.premise||'').trim();plan.story_arc=String(plan.story_arc||'').trim();plan.ending=String(plan.ending||'').trim();plan.character_bible=String(plan.character_bible||'').trim();
+    plan.scenes=plan.scenes.slice(0,6).map((x,i)=>({scene:i+1,event:String(x?.event||'').trim(),why_it_follows:String(x?.why_it_follows||'').trim(),visual_moment:String(x?.visual_moment||'').trim(),what_changes:String(x?.what_changes||'').trim(),continuity:String(x?.continuity||'').trim()}));
+    if(!plan.premise||!plan.story_arc||!plan.ending||!plan.character_bible||plan.scenes.some(x=>!x.event||!x.visual_moment)){await refundReservedCredit();return res.status(502).json({error:'Moonbeam produced an incomplete visual storyboard. Please try again.'})}
+    const generationRunId=await createGenerationRun(moonbeamUser.id);
+    await logUsage({event_type:'story_plan',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
     await logSupportAttempt('success',{credit_deducted:!developerDemo,credit_refunded:false,generation_run_id:generationRunId});
-    creditReserved = false;
-    return res.status(200).json({
-      creditsRemaining,
-      generationRunId,
-      story,
-      image: null,
-      layout: {
-        requestedLength: length,
-        storyPages: pageCount,
-        displayedTextPages: pageCount + 2,
-        pageWordCounts: counts,
-        automaticallyReflowed: needsReflow,
-        originalStoryPages: originalPageCount
-      }
-    });
+    creditReserved=false;
+    return res.status(200).json({creditsRemaining,generationRunId,plan,image:null,layout:{requestedLength:length,storyPages:4,displayedTextPages:6,storyboardFirst:true}});
   } catch (e) {
     console.error('generate error', e);
     const hadReservedCredit=creditReserved;
