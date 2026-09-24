@@ -1,3 +1,11 @@
+## V251.22
+- Strengthens the storyboard and final writing stages without changing the concept builder.
+- Requires the selected premise to be exploited and developed rather than merely demonstrated across interchangeable middle scenes.
+- Adds a middle-story dependency test: if scenes can be swapped or removed without materially changing the story, the storyboard must be redesigned.
+- Encourages organic escalation through curiosity, humour, discovery, suspense, surprise, scale, consequence or emotional development without imposing an obstacle/attempt/setback/solution formula.
+- Prevents the story from ending just as the premise becomes interesting and asks the final third to exploit the central idea fully.
+- Discourages manufactured storybook flourishes and clever-sounding but empty lines.
+
 # Moonbeam Stories V251.16
 
 V251.16 repairs the developer-only cover text editor. Title and author/dedication are now edited directly in the browser and saved exactly as typed, rather than calling the missing `developer-cover-text` API action. Saved-book edits persist to the existing saved story record and invalidate saved KDP description/keyword metadata. No database migration or new API function is required.
