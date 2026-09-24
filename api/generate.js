@@ -135,9 +135,16 @@ module.exports = async function handler(req, res) {
       const age = Number(child.age)||7;
       const language = String(child.language||'en-GB');
       const languageGuide = {'en-GB':'natural contemporary British English with British spelling','en-US':'natural contemporary American English','es-ES':'natural Spanish from Spain','es-419':'natural neutral Latin American Spanish','fr-FR':'natural French from France','de-DE':'natural German from Germany','it-IT':'natural Italian from Italy','pt-BR':'natural Brazilian Portuguese','pl-PL':'natural contemporary Polish'}[language]||'natural British English';
+      const finalAgeBand=age<=4?'3-4':age<=7?'5-7':age<=10?'8-10':'11-12';
+      const finalAgeGuide={
+        '3-4':{prose:'Write for a three- or four-year-old being read to aloud: very short clear sentences, familiar concrete words, simple syntax, action/dialogue/sound/repetition over explanation, and let the pictures carry visible detail. Keep the imaginative plot; simplify the telling, not the idea.',total:'about 360-460 words',spread:'55-75 words',closing:'50-70 words'},
+        '5-7':{prose:'Use lively accessible prose, clear cause-and-effect, natural dialogue and manageable suspense without over-explaining.',total:'about 560-680 words',spread:'90-115 words',closing:'80-105 words'},
+        '8-10':{prose:'Use richer vocabulary, varied sentences, stronger consequences and character agency; trust the reader to infer straightforward things.',total:'about 650-760 words',spread:'105-128 words',closing:'90-115 words'},
+        '11-12':{prose:'Write genuinely sophisticated fiction for an eleven- or twelve-year-old: richer natural vocabulary, varied sentence structure, subtler humour, stronger suspense, layered motivation, inference, mistakes and consequences. Do not talk down to the reader or explain every implication.',total:'about 720-850 words',spread:'118-145 words',closing:'100-125 words'}
+      }[finalAgeBand];
       const planText = JSON.stringify(plan,null,2);
-      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. The book has already been planned and its SIX finished page illustrations already exist. Write the polished story NOW, using BOTH the production plan and the actual finished illustrations as authoritative inputs.\n\nORIGINAL STORY IDEA:\n${String(child.storyIdea||'').trim()||'No parent story idea was supplied.'}\n\nPRODUCTION PLAN / STORYBOARD:\n${planText}\n\nRULES:\n- Write for age ${age} in ${languageGuide}.\n- The plan is authoritative about the central plot, causal sequence, character roles and intended ending.\n- The six attached images are presented in storyboard order, SCENE 1 through SCENE 6. They are authoritative about clearly visible reality: locations, positions, clothing, objects, colours, physical actions and other visible facts. Never write something that clearly contradicts an image.\n- Harmless visual details introduced by an image may be incorporated naturally, but accidental visual details must not hijack or change the central plot.\n- The illustrations are selected moments, NOT six captions. Do not merely describe what the reader can already see. Use prose for action before/after the pictured moment, dialogue, thought, motivation, cause and effect, anticipation, humour, transitions and consequences.\n- Fulfil the promise of the premise. Make what happens interesting; do not replace adventure with procedures, maintenance, checklists or technical exposition unless the premise specifically requires them.
-- Preserve and amplify the storyboard's entertainment value. If it establishes comedy, let comic situations escalate and pay off. If it establishes suspense or child-safe peril, let the reader genuinely feel the uncertainty and urgency before the reassuring outcome; do not soften the decisive event into a mild description where nothing seems at stake. Do not insert extra adult reassurance, safety checks, maps, notes or professional intervention that neutralise uncertainty which the storyboard deliberately preserves.\n- EXPLOIT THE PREMISE rather than merely explaining or demonstrating it. The middle of the story must develop: later events should depend on, build on, transform or deepen earlier ones. Do not turn several spreads into interchangeable examples of the same activity.\n- Preserve the plan's organic story shape. Do not retrofit a compulsory obstacle-attempt-setback-solution structure. Development may come through discovery, comedy, escalation, changing circumstances, revelation, awe, relationship, suspense or any other form natural to this particular story.\n- Make each spread earn the next one. The reader should have a reason to continue, and the final third should exploit the central idea rather than simply winding down after the setup.\n- Ordinary objects and natural phenomena have no consciousness or agency unless the plan deliberately establishes fantasy. Avoid decorative personification and strained faux-poetic comparisons.\n- Do not manufacture a charming, profound or storybook sentence merely to decorate the prose. Prefer a clear, natural sentence that means something specific in the scene over a clever-sounding flourish.\n- Preserve exact supplied Cast names. Do not invent surnames, relatives, friends or recurring principal characters absent from the plan.\n- Produce one continuous coherent story of about 650-750 words across exactly SIX balanced reading spreads.\n- Spread 1 about 105-125 words; spreads 2-5 about 105-125 words each; spread 6 about 90-115 words.\n- No headings inside the prose.\n\nReturn JSON ONLY in exactly this shape:\n{"title":"string","opening":"spread 1 prose","pages":[{"text":"spread 2 prose"},{"text":"spread 3 prose"},{"text":"spread 4 prose"},{"text":"spread 5 prose"}],"closing":"spread 6 prose"}`;
+      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. The book has already been planned and its SIX finished page illustrations already exist. Write the polished story NOW, using BOTH the production plan and the actual finished illustrations as authoritative inputs.\n\nORIGINAL STORY IDEA:\n${String(child.storyIdea||'').trim()||'No parent story idea was supplied.'}\n\nPRODUCTION PLAN / STORYBOARD:\n${planText}\n\nRULES:\n- Write for age ${age} in ${languageGuide}. ${finalAgeGuide.prose}\n- The plan is authoritative about the central plot, causal sequence, character roles and intended ending.\n- The six attached images are presented in storyboard order, SCENE 1 through SCENE 6. They are authoritative about clearly visible reality: locations, positions, clothing, objects, colours, physical actions and other visible facts. Never write something that clearly contradicts an image.\n- Harmless visual details introduced by an image may be incorporated naturally, but accidental visual details must not hijack or change the central plot.\n- The illustrations are selected moments, NOT six captions. Do not merely describe what the reader can already see. Use prose for action before/after the pictured moment, dialogue, thought, motivation, cause and effect, anticipation, humour, transitions and consequences.\n- Fulfil the promise of the premise. Make what happens interesting; do not replace adventure with procedures, maintenance, checklists or technical exposition unless the premise specifically requires them.
+- Preserve and amplify the storyboard's entertainment value. If it establishes comedy, let comic situations escalate and pay off. If it establishes suspense or child-safe peril, let the reader genuinely feel the uncertainty and urgency before the reassuring outcome; do not soften the decisive event into a mild description where nothing seems at stake. Do not insert extra adult reassurance, safety checks, maps, notes or professional intervention that neutralise uncertainty which the storyboard deliberately preserves.\n- EXPLOIT THE PREMISE rather than merely explaining or demonstrating it. The middle of the story must develop: later events should depend on, build on, transform or deepen earlier ones. Do not turn several spreads into interchangeable examples of the same activity.\n- Preserve the plan's organic story shape. Do not retrofit a compulsory obstacle-attempt-setback-solution structure. Development may come through discovery, comedy, escalation, changing circumstances, revelation, awe, relationship, suspense or any other form natural to this particular story.\n- Make each spread earn the next one. The reader should have a reason to continue, and the final third should exploit the central idea rather than simply winding down after the setup.\n- Ordinary objects and natural phenomena have no consciousness or agency unless the plan deliberately establishes fantasy. Avoid decorative personification and strained faux-poetic comparisons.\n- Do not manufacture a charming, profound or storybook sentence merely to decorate the prose. Prefer a clear, natural sentence that means something specific in the scene over a clever-sounding flourish.\n- Preserve exact supplied Cast names. Do not invent surnames, relatives, friends or recurring principal characters absent from the plan.\n- Produce one continuous coherent story of ${finalAgeGuide.total} across exactly SIX balanced reading spreads.\n- Spread 1 about ${finalAgeGuide.spread}; spreads 2-5 about ${finalAgeGuide.spread} each; spread 6 about ${finalAgeGuide.closing}.\n- No headings inside the prose.\n\nReturn JSON ONLY in exactly this shape:\n{"title":"string","opening":"spread 1 prose","pages":[{"text":"spread 2 prose"},{"text":"spread 3 prose"},{"text":"spread 4 prose"},{"text":"spread 5 prose"}],"closing":"spread 6 prose"}`;
       const content=[{type:'input_text',text:finalPrompt},...images.map((image_url,i)=>({type:'input_image',image_url,detail:'low'}))];
       const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:[{role:'user',content}],max_output_tokens:5000})});
       const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};
@@ -198,46 +205,54 @@ module.exports = async function handler(req, res) {
       'pl-PL': 'Pisz naturalnym, współczesnym językiem polskim odpowiednim dla dziecka. Używaj idiomatycznej polszczyzny, naturalnych dialogów i poprawnej gramatyki.'
     }[language] || 'Write in natural British English.';
     // Standard Moonbeam format: opening + 4 story pages + closing = 6 reading spreads.
-    const lengthConfig = { pages: 4, totalScreens: 6, totalWords: 'about 650-750 words' };
+    // V251.42: prose density and narrative sophistication now scale across the full 3–12 range.
+    const ageBand = age <= 4 ? '3-4' : age <= 7 ? '5-7' : age <= 10 ? '8-10' : '11-12';
+    const ageProfiles = {
+      '3-4': {
+        label:'early-years',
+        writing:'Write for a child of three or four being read to aloud. Use very short, clear sentences, familiar concrete vocabulary, simple syntax and unmistakable cause-and-effect. Prefer action, natural dialogue, sound, repetition and anticipation over explanation or descriptive detail. Let the illustration carry much of what can be seen. Avoid abstract phrasing, long lists, subordinate-clause-heavy sentences and sophisticated scenic description. Keep the plot imaginative and eventful rather than making it babyish.',
+        stakes:'gentle but eventful; brief safe peril, urgency, near-misses, getting temporarily stuck or separated, racing to avoid a harmless consequence, and other clearly recoverable tension are allowed; no crime, horror, death-focused plots, abduction, weapons, war, serious injury or frightening villains',
+        forbidden:'murder, true crime, kidnapping, abduction, realistic weapons, war, horror, gore, serious injury, death-focused plots, predatory threat, terrifying monsters, adult criminal behaviour',
+        totalWords:'about 360-460 words', perScreen:'55-75 words', closingWords:'50-70 words'
+      },
+      '5-7': {
+        label:'younger-reader',
+        writing:'Use lively, accessible prose, clear motivations and strong cause-and-effect. Dialogue, humour, vivid action and manageable suspense are welcome. Keep explanations economical and vocabulary natural for a young child without flattening the imagination.',
+        stakes:'exciting but child-safe; no murder/true crime, graphic violence, realistic weapon use, horror, abduction plots or adult criminal menace',
+        forbidden:'murder, true crime, kidnapping, abduction, graphic injury, realistic weapon use, horror, gore, adult criminal menace',
+        totalWords:'about 560-680 words', perScreen:'90-115 words', closingWords:'80-105 words'
+      },
+      '8-10': {
+        label:'middle-childhood',
+        writing:'Use richer vocabulary and more varied sentence structure, with stronger twists, consequences, humour and character agency where natural. Trust the reader to infer straightforward things without repeatedly explaining them.',
+        stakes:'meaningful child-safe suspense and jeopardy without graphic violence, horror, abduction plots or adult criminal menace',
+        forbidden:'graphic violence, gore, torture, sexual content, true-crime treatment, sadistic threat, adult horror',
+        totalWords:'about 650-760 words', perScreen:'105-128 words', closingWords:'90-115 words'
+      },
+      '11-12': {
+        label:'older-child',
+        writing:'Write genuinely sophisticated fiction for an eleven- or twelve-year-old, not enlarged younger-child prose. Use natural richer vocabulary, varied sentence structure, subtler humour, layered motivation, stronger suspense and greater uncertainty. Allow mistakes, difficult choices, inference, clever improvisation and consequences without having the narrator explain every implication. Do not talk down to the reader or make the prose artificially ornate.',
+        stakes:'stronger meaningful jeopardy and uncertainty suitable for an older child, while avoiding graphic violence, sexual content, true-crime treatment, torture, gore or adult horror',
+        forbidden:'graphic violence, gore, torture, sexual content, true-crime treatment, sadistic threat, adult horror',
+        totalWords:'about 720-850 words', perScreen:'118-145 words', closingWords:'100-125 words'
+      }
+    };
+    const ageProfile = ageProfiles[ageBand];
+    const lengthConfig = { pages: 4, totalScreens: 6, totalWords: ageProfile.totalWords };
     const pageCount = 4;
     const lengthGuide = lengthConfig.totalWords;
-    const targetPerScreen = '105-125 words';
+    const targetPerScreen = ageProfile.perScreen;
 
     // V250.13: creative cleanup. A blank Story Idea no longer receives a genre/reality/magic/
     // companion/object/twist blueprint. The storyteller chooses the premise freely within the
     // age-safety, Cast and technical output constraints below.
     const storyIdea = String(child.storyIdea || '').trim();
 
-    const ageBand = age <= 5 ? '3-5' : age <= 8 ? '6-8' : '9-12';
-    const ageProfiles = {
-      '3-5': {
-        label:'early-years',
-        writing:'Use short, clear sentences, concrete language, simple cause-and-effect and frequent reassuring cues. Keep the central situation easy to understand. Excitement, wonder and fantasy are welcome when they arise from the premise, but frightening or threatening moments must be brief and quickly reassuring.',
-        stakes:'gentle but eventful; brief safe peril, urgency, near-misses, getting temporarily stuck or separated, racing to avoid a harmless consequence, and other clearly recoverable tension are allowed; no crime, horror, death-focused plots, abduction, weapons, war, serious injury or frightening villains',
-        forbidden:'murder, true crime, kidnapping, abduction, realistic weapons, war, horror, gore, serious injury, death-focused plots, predatory threat, terrifying monsters, adult criminal behaviour'
-      },
-      '6-8': {
-        label:'younger-reader',
-        writing:'Use lively but accessible prose, clear motivations, strong cause-and-effect, humour and moderate suspense where natural. Mild peril may occur but must remain clearly child-safe, non-graphic and recover into reassurance.',
-        stakes:'exciting but child-safe; no murder/true crime, graphic violence, realistic weapon use, horror, abduction plots or adult criminal menace',
-        forbidden:'murder, true crime, kidnapping, abduction, graphic injury, realistic weapon use, horror, gore, adult criminal menace'
-      },
-      '9-12': {
-        label:'older-child',
-        writing:'Use richer vocabulary, more layered motivations, stronger suspense, subtler humour and a more sophisticated story where natural, while remaining clearly suitable for a child. Peril can feel meaningful but must not become graphic, horrific or adult in subject matter.',
-        stakes:'meaningful story stakes without graphic violence, sexual content, true-crime treatment, torture, gore or adult horror',
-        forbidden:'graphic violence, gore, torture, sexual content, true-crime treatment, sadistic threat, adult horror'
-      }
-    };
-    const ageProfile = ageProfiles[ageBand];
-
-    // V251.19: developmental excitement guidance for the conception/planning stage.
-    // These are broad creative signals, not subject lists or stereotypes. Explicit Story Ideas,
-    // Cast details and stated interests/dislikes always outrank demographic tendencies.
     const excitementProfiles = {
-      '3-5': 'For roughly ages 3-5, strong story appeal often comes from immediately understandable experiences, movement, anticipation, repetition-with-variation, playful surprise, animals, physical comedy, striking scale contrasts and emotionally clear situations. Let mishaps and suspense feel exciting but quickly recoverable. Keep the central fascination concrete and visually graspable.',
-      '6-8': 'For roughly ages 6-8, strong story appeal often comes from exploration, secrets, surprising discoveries, unusual animals or machines, speed and scale, competition, mastery, mild peril, mischievous humour, being trusted with something important, going somewhere children normally cannot go, knowing or noticing something adults have missed, and an ordinary day becoming extraordinary.',
-      '9-12': 'For roughly ages 9-12, strong story appeal often comes from mysteries, ingenious plans, exploration, rivalry, competence, secrets, unusual knowledge, bigger worlds, stronger suspense, twists, independence and more layered relationships and motivations.'
+      '3-4': 'For ages 3-4, strong story appeal often comes from immediately understandable experiences, movement, anticipation, repetition-with-variation, playful surprise, animals, physical comedy, striking scale contrasts and emotionally clear situations. Let mishaps and suspense feel exciting but quickly recoverable. Keep the central fascination concrete and visually graspable.',
+      '5-7': 'For ages 5-7, strong story appeal often comes from exploration, secrets, surprising discoveries, unusual animals or machines, speed and scale, mild peril, mischievous humour, being trusted with something important and an ordinary day becoming extraordinary.',
+      '8-10': 'For ages 8-10, strong story appeal often comes from exploration, mysteries, competence, secrets, unusual knowledge, competition, stronger twists, independence, comic consequences and situations whose solution is not immediately obvious.',
+      '11-12': 'For ages 11-12, strong story appeal often comes from mysteries, ingenious plans, exploration, rivalry, competence, secrets, bigger worlds, stronger suspense, reversals, independence, difficult choices and layered relationships or motivations. Trust the reader with ambiguity and inference rather than explaining everything.'
     };
     const excitementProfile = excitementProfiles[ageBand];
 
@@ -322,7 +337,7 @@ REAL-BOOK PAGE BALANCE — MANDATORY
 The app displays ONE text page beside ONE equally sized illustration. Every displayed text page must therefore contain approximately the same amount of prose.
 - Write the opening at approximately ${targetPerScreen}.
 - Write EACH of the ${pageCount} page.text fields at approximately ${targetPerScreen}.
-- Write the closing at approximately 90-115 words.
+- Write the closing at approximately ${ageProfile.closingWords}.
 - Never make one page a few sentences while another is several long paragraphs.
 - Keep each displayed page self-contained enough to turn naturally, but do not add headings inside the prose.
 - Use exactly ${lengthConfig.totalScreens} displayed text pages in total.
@@ -470,7 +485,7 @@ Silently consider several FUNDAMENTALLY DIFFERENT concepts before choosing one. 
 
 ACCOUNT-LEVEL VARIETY — RECENT SAVED STORIES:
 ${recentMemory}
-Treat these as creative memory for the whole Moonbeam account. Avoid repeating their underlying premise, story shape, central situation, distinctive props, discoveries, complications, payoff or ending merely with different nouns or scenery. A train replacing a boat, or a kite replacing a ribbon, does not make the underlying story different. This is an anti-repetition rule, not a ban: if the parent's new Story Idea explicitly requires something used before, honour the parent's request.
+Treat these as creative memory for the whole Moonbeam account. Compare candidate ideas by ABSTRACT STORY DNA, not surface nouns. Silently reduce each recent story and each candidate to: central extraordinary mechanism or rule; kind/direction of journey or transformation; source of tension; escalation pattern; decisive climax; and way normality/resolution is reached. Reject a candidate when several of those are substantially the same as a recent story even if the setting, object, character or scenery differs. For example, “rain carries a child upward into an impossible high world and later returns them to normal” and “fountain water forms stairs carrying a child high above the world before melting and returning them” are too similar in story DNA. A train replacing a boat, or a kite replacing a ribbon, likewise does not make the underlying story different. Seek a genuinely different mechanism, experience and resolution. This is an anti-repetition rule, not a ban: if the parent's new Story Idea explicitly requires something used before, honour the parent's request.
 
 
 Return JSON ONLY:

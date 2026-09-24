@@ -1,3 +1,8 @@
+## V251.42
+- Recalibrated story prose across ages 3–12: ages 3–4 now get substantially shorter, simpler read-aloud prose while preserving imaginative plots; ages 11–12 get more sophisticated language, inference, suspense, agency and consequences. Ages 5–10 remain close to the current successful middle range.
+- Strengthened account-level anti-repetition so concept selection compares abstract story DNA — mechanism, journey/transformation, tension, escalation, climax and resolution — rather than accepting the same underlying story with different scenery or props.
+- No illustration-engine, credit, database or API-endpoint changes.
+
 ## V251.41
 - Added a live “You have been waiting…” elapsed-time counter beneath the average story creation time on the Preparing Story screen. It starts at generation, updates every second, and stops/resets when generation finishes or fails.
 - No story-generation, illustration, credit, or database changes.
