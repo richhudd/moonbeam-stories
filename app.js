@@ -743,8 +743,8 @@ function storyboardIllustrationPrompt(plan,index){
 }
 async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null){
  let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
- const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:storyboardIllustrationPrompt(plan,index),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:child?.referenceImages||[],continuityImage:continuityImage||null,generationRunId,requiredStoryImage:true,storyImageIndex:index})});
- const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{};if(!response.ok||!data?.image)throw new Error(data?.error||`Illustration service failed (${response.status})`);return data.image
+ let response=null,raw='';try{response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:storyboardIllustrationPrompt(plan,index),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:child?.referenceImages||[],continuityImage:continuityImage||null,generationRunId,requiredStoryImage:true,storyImageIndex:index})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic(`illustration ${index+1} request`,networkError,response,raw))}
+ let data=null;try{data=JSON.parse(raw)}catch{};if(!response.ok||!data?.image){const base=new Error(data?.error||`Illustration service failed (${response.status})`);throw new Error(developerGenerationDiagnostic(`illustration ${index+1} response`,base,response,raw))}return data.image
 }
 function storyboardThumbnail(dataUrl){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const max=320,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.72))};img.onerror=()=>reject(new Error('A storyboard illustration could not be prepared for the writer.'));img.src=dataUrl})}
 async function createStoryboardArtwork(plan,child,generationRunId){
@@ -758,6 +758,16 @@ function recentStoryCreativeMemory(limit=10){
   const text=[st.opening||'',pages,st.closing||''].join(' ').replace(/\s+/g,' ').trim();
   return {title:String(x?.title||st.title||`Recent story ${i+1}`).slice(0,120),summary:text.slice(0,900)};
  }).filter(x=>x.title||x.summary)
+}
+
+function developerGenerationDiagnostic(stage,error,response=null,raw=''){
+ if(!instagramDeveloperAccess)return error?.message||String(error||'Story generation failed.');
+ const parts=[`Developer diagnostic — stage: ${stage}`];
+ if(response){parts.push(`HTTP: ${response.status} ${response.statusText||''}`.trim());parts.push(`response.ok: ${response.ok}`)}
+ const message=error?.message||String(error||'Unknown error');parts.push(`error: ${error?.name||'Error'}: ${message}`);
+ if(typeof navigator!=='undefined')parts.push(`browser online: ${navigator.onLine}`);
+ const preview=String(raw||'').replace(/\s+/g,' ').trim();if(preview)parts.push(`response preview: ${preview.slice(0,1200)}`);
+ return parts.join('\n');
 }
 
 async function generateStory(){
@@ -784,9 +794,10 @@ async function generateStory(){
  // with the following fetch and the parent never sees the waiting indicator.
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
-   const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child,recentStories:recentStoryCreativeMemory(10)})});
-   const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}
-   if(!response.ok){throw new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`)}
+   let response=null,raw='';
+   try{response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child,recentStories:recentStoryCreativeMemory(10)})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('concept/storyboard request',networkError,response,raw))}
+   let data=null;try{data=JSON.parse(raw)}catch{}
+   if(!response.ok){const base=new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`);throw new Error(developerGenerationDiagnostic('concept/storyboard response',base,response,raw))}
    if(!data?.plan||!Array.isArray(data.plan.scenes)||data.plan.scenes.length!==6)throw new Error('The story service did not return a complete visual storyboard.');
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
    child.generationRunId=data.generationRunId||null;
@@ -795,8 +806,9 @@ async function generateStory(){
    if(preparingCopy)preparingCopy.textContent='Moonbeam is writing the story around the finished pictures…';
    const thumbnails=await Promise.all(storyboardArtwork.map(storyboardThumbnail));
    let finalToken=await currentAccessToken();if(!finalToken)finalToken=await refreshAccessToken();if(!finalToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
-   const finalResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${finalToken}`},body:JSON.stringify({action:'finalize-storyboard-story',child,plan:data.plan,images:thumbnails,generationRunId:child.generationRunId})});
-   const finalRaw=await finalResponse.text();let finalData=null;try{finalData=JSON.parse(finalRaw)}catch{};if(!finalResponse.ok)throw new Error(finalData?.error||`Story finishing failed (${finalResponse.status})`);if(!finalData?.story)throw new Error('Moonbeam could not finish the illustrated story.');
+   let finalResponse=null,finalRaw='';
+   try{finalResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${finalToken}`},body:JSON.stringify({action:'finalize-storyboard-story',child,plan:data.plan,images:thumbnails,generationRunId:child.generationRunId})});finalRaw=await finalResponse.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('final story request',networkError,finalResponse,finalRaw))}
+   let finalData=null;try{finalData=JSON.parse(finalRaw)}catch{};if(!finalResponse.ok){const base=new Error(finalData?.error||`Story finishing failed (${finalResponse.status})`);throw new Error(developerGenerationDiagnostic('final story response',base,finalResponse,finalRaw))}if(!finalData?.story)throw new Error(developerGenerationDiagnostic('final story validation',new Error('Moonbeam could not finish the illustrated story.'),finalResponse,finalRaw));
    clearSetupDraft();
    renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork})
  }catch(e){
