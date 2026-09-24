@@ -1,7 +1,3 @@
-# V251.26
-
-Built directly from the known-working V251.22 baseline. Adds only a concise concept-stage instruction for age-appropriate dramatic tension and page-turning interest in adventure/mystery stories. No structured-output changes, parser changes, reconciliation changes, illustration-pipeline changes, API additions, or database changes.
-
 ## V251.22
 - Strengthens the storyboard and final writing stages without changing the concept builder.
 - Requires the selected premise to be exploited and developed rather than merely demonstrated across interchangeable middle scenes.

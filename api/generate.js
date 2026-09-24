@@ -416,8 +416,6 @@ A location, outing, journey, activity or attractive setting is NOT by itself a s
 
 Use the CHILD APPEAL guidance above as creative fuel, not a checklist. Seek an idea with genuine child-level fascination: excitement, discovery, comedy, mystery, awe, extraordinary access, achievement, suspense, surprise, relationship or another compelling experience appropriate to the premise. Do not manufacture interest through arbitrary whimsy or personification.
 
-Coherence is the floor, not the goal. For an adventure or mystery, include age-appropriate dramatic tension: something may go wrong, become urgent, reveal an unexpected complication, or require quick thinking. There should be a point where a child genuinely wants to know what happens next. Keep this adventurous and reassuring rather than traumatic or disturbing. Do not turn a promising premise into a gentle tour, explanation or procedure in which nothing consequential happens.
-
 Do not default to the recurring safe pattern “something is lost/stuck/tangled/broken/blown away -> child notices -> child fixes/rescues/returns it -> everything is restored.” Such events are allowed only when the parent specifically calls for them or when they are incidental to a substantially more original central conception.
 
 CONTEMPORARY AUTHENTICITY: Do not use stock children's-adventure shorthand merely to signal adventure. Maps, backpacks, torches, keys, notes, mysterious boxes, snacks, picnics, badges, ribbons and similar props should appear only when the particular premise gives them a genuine reason to exist. Contemporary children should behave plausibly for the setting unless the premise establishes otherwise.
