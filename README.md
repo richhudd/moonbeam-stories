@@ -700,3 +700,15 @@ Developer manual editing now accepts general text and illustration corrections/i
 - The final writer receives the original idea, complete plan and reduced copies of all six finished illustrations, then writes the six balanced reading spreads around that visual reality.
 - Finished storyboard artwork is reused directly in the reader; it is not regenerated after the prose is written.
 - No Supabase schema change required.
+
+
+## V251.18
+Removed residual problem-solution/beat forcing from the storyboard planner. Storyboard scenes now contain only event, visual moment and continuity; explicit WHY_IT_FOLLOWS and WHAT_CHANGES fields are gone. Creative guidance no longer foregrounds obstacles, consequences, problem-solving or child-as-fixer.
+
+
+## V251.19
+- Adds soft developmental child-appeal guidance to the story conception/storyboard stage.
+- Focuses on compelling experiences rather than age/gender subject stereotypes.
+- Explicit Story Ideas, interests, dislikes and Cast context outrank demographic tendencies.
+- Gender is treated only as a weak optional signal and never as a restriction.
+- No API or Supabase schema changes.

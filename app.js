@@ -738,7 +738,7 @@ async function prepareStoryCreditConsent(accessToken){
 }
 function storyboardIllustrationPrompt(plan,index){
  const scenes=Array.isArray(plan?.scenes)?plan.scenes:[];const scene=scenes[index]||{};
- const all=scenes.map((x,i)=>`SCENE ${i+1}: EVENT: ${x.event||''} | WHY: ${x.why_it_follows||''} | VISUAL: ${x.visual_moment||''} | CHANGE: ${x.what_changes||''} | CONTINUITY: ${x.continuity||''}`).join('\n');
+ const all=scenes.map((x,i)=>`SCENE ${i+1}: EVENT: ${x.event||''} | VISUAL: ${x.visual_moment||''} | CONTINUITY: ${x.continuity||''}`).join('\n');
  return `STORYBOARD-FIRST BOOK. Read the COMPLETE six-scene production plan before drawing this image. You are drawing SCENE ${index+1} OF 6.\n\nWHOLE STORY PREMISE:\n${plan?.premise||''}\n\nWHOLE STORY ARC INCLUDING ENDING:\n${plan?.story_arc||''}\nENDING: ${plan?.ending||''}\n\nCOMPLETE VISUAL STORYBOARD:\n${all}\n\nCURRENT SCENE — DRAW THIS, NOT AN EARLIER OR LATER EVENT:\n${scene.visual_moment||scene.event||''}\n\nThis illustration must make sense as one moment in the complete visual sequence. Preserve facts established by earlier scenes, anticipate later scenes so you do not reveal their payoff too early, and reserve the strongest visual climax for the scene the storyboard assigns it to. Do not invent a competing plot.`
 }
 async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null){
