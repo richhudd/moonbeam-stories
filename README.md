@@ -744,6 +744,10 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 - Retains the V251.27 developer diagnostics. No story prompt, parser, illustration, reconciliation, API-count, or database changes.
 
 
-## V251.29
+## V251.30
 - Keeps the V251.28 4,000-token concept-builder allowance.
 - Strengthens concept, storyboard and final-author guidance for comedy, excitement, suspense and age-appropriate safe peril without changing the generation pipeline.
+
+
+## V251.30
+Strengthens the story concept architecture so adventure/mystery concepts require a genuine dramatic engine, adults do not neutralise the central adventure, safety shapes consequences rather than preventing events, and stock map/plan/note/key devices are not used as default navigation or discovery mechanisms. Retains the proven 4,000-token concept-builder limit.
