@@ -125,6 +125,8 @@ module.exports = async function handler(req, res) {
     }
     if (String(body.action || '').trim() === 'finalize-storyboard-story') {
       const moonbeamUser = await verifyMoonbeamUser(req);
+      const developerEmail = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
+      const developerDiagnostic = !!developerEmail && String(moonbeamUser.email || '').trim().toLowerCase() === developerEmail;
       const plan = body.plan || {};
       const child = body.child || {};
       const images = Array.isArray(body.images) ? body.images.filter(x=>/^data:image\/(?:jpeg|png|webp);base64,/i.test(String(x||''))).slice(0,6) : [];
@@ -139,10 +141,13 @@ module.exports = async function handler(req, res) {
       const content=[{type:'input_text',text:finalPrompt},...images.map((image_url,i)=>({type:'input_image',image_url,detail:'low'}))];
       const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:[{role:'user',content}],max_output_tokens:5000})});
       const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};
-      if(!r.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)})}
+      const usage=data?.usage||{};
+      const finalDiagnostic=developerDiagnostic?{stage:'final story reconciliation',model:'gpt-5.6-luna',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:5000,raw_response_chars:raw.length}:null;
+      if(!r.ok){const e=data?.error;const payload={error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)};if(finalDiagnostic)payload.developer_diagnostic=finalDiagnostic;return res.status(502).json(payload)}
       let output=typeof data.output_text==='string'?data.output_text:'';if(!output&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')output+=part.text;
+      if(finalDiagnostic)finalDiagnostic.output_chars=output.length;
       const clean=String(output||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/i,'');let parsed=null;try{parsed=JSON.parse(clean)}catch{const a=clean.indexOf('{'),b=clean.lastIndexOf('}');if(a>=0&&b>a)try{parsed=JSON.parse(clean.slice(a,b+1))}catch{}}
-      if(!parsed||!parsed.title||!parsed.opening||!parsed.closing||!Array.isArray(parsed.pages)||parsed.pages.length!==4)return res.status(502).json({error:'Moonbeam could not reconcile the finished illustrations into the final story.'});
+      if(!parsed||!parsed.title||!parsed.opening||!parsed.closing||!Array.isArray(parsed.pages)||parsed.pages.length!==4){const payload={error:'Moonbeam could not reconcile the finished illustrations into the final story.'};if(finalDiagnostic){finalDiagnostic.parse_valid=!!parsed;finalDiagnostic.output_tail=output.slice(-800);payload.developer_diagnostic=finalDiagnostic}return res.status(502).json(payload)}
       const story={title:String(parsed.title).trim(),opening:String(parsed.opening).trim(),character_bible:String(plan.character_bible||'').trim(),pages:parsed.pages.map((pg,i)=>({text:String(pg?.text||'').trim(),illustration_prompt:String(scenes[i+1]?.visual_moment||scenes[i+1]?.event||'').trim()})),closing:String(parsed.closing).trim()};
       if(story.pages.some(pg=>!pg.text))return res.status(502).json({error:'The finished story contained an empty page.'});
       await logUsage({event_type:'story_finalize',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:String(body.generationRunId||'')}});
@@ -342,7 +347,8 @@ Create one concise but precise character_bible for every recurring character. Th
 
 For ANY selected Cast member with a supplied reference photo — child, adult or pet — underlying physical identity comes authoritatively from that exact photo. Preserve the recognisable face, apparent age, hair, approximate skin tone, body proportions and other identifying physical characteristics shown by the reference; for pets preserve the recognisable species/breed appearance and proportions. Any optional Male/Female marker for a photographed human Cast member is authoritative and must be preserved consistently. Story-world clothing, costume, role, status, abilities and story-required fictional characteristics or transformations are free to follow the story and must not be mistaken for conflicting real-world identity. The bible should identify photographed Cast members by their supplied name, kind and narrative role and record only story-world appearance or continuity details needed for the book while keeping the underlying person or pet recognisable. Do not invent decorative hair accessories for a photographed Cast member marked male unless they are clearly visible in the reference photo or explicitly required by the Parent Story Idea. A photographed adult is just as identity-locked as a photographed child, and a photographed pet is just as identity-locked as a photographed human. Every illustration_prompt must use the SAME supplied Cast names and preserve established continuity unless the STORY itself explicitly requires a change. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
 
-    async function callStoryModel(input, maxOutputTokens = 5000) {
+    const developerTextDiagnostics=[];
+    async function callStoryModel(input, maxOutputTokens = 5000, diagnosticStage = 'story text') {
       const r = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -351,6 +357,10 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
       const raw = await r.text();
       let data;
       try { data = JSON.parse(raw); } catch { data = {}; }
+      if (developerDemo) {
+        const usage=data?.usage||{};
+        developerTextDiagnostics.push({stage:diagnosticStage,model:'gpt-5.6-luna',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:maxOutputTokens,raw_response_chars:raw.length});
+      }
       if (!r.ok) {
         const e = data && data.error;
         const message = typeof e === 'string' ? e : (e && (e.message || e.code || e.type)) || `OpenAI returned HTTP ${r.status}`;
@@ -491,11 +501,11 @@ Return JSON ONLY:
     }
     let concept=null;let conceptOutput='';
     try{
-      conceptOutput=await callStoryModel(conceptPrompt,4000);
+      conceptOutput=await callStoryModel(conceptPrompt,4000,'concept generation');
       concept=parseConceptOutput(conceptOutput);
       if(!concept){
         const repairPrompt=`The previous concept-builder response could not be parsed. Return ONLY one valid JSON object with exactly these keys: central_premise, why_a_child_would_care, direction, ending_destination. Do not add markdown, commentary or story prose. Preserve the strongest concept you intended; this is a formatting repair, not a request to reject the user's idea.\n\nORIGINAL CONCEPT-BUILDER INSTRUCTIONS:\n${conceptPrompt}\n\nPREVIOUS RESPONSE:\n${conceptOutput}`;
-        const repaired=await callStoryModel(repairPrompt,4000);
+        const repaired=await callStoryModel(repairPrompt,4000,'concept JSON repair');
         concept=parseConceptOutput(repaired);
       }
     }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
@@ -532,7 +542,7 @@ Return JSON ONLY in exactly this shape:
 Before returning the plan, check silently that the six pictures together would make sense to someone who knows the premise, that later illustrations do not need to invent facts the plan failed to establish, and that the visual climax has not accidentally been spent on an earlier incidental moment.`;
     let planOutput='';let plan=null;
     try{
-      planOutput=await callStoryModel(planningPrompt,4200);
+      planOutput=await callStoryModel(planningPrompt,4200,'storyboard planning');
       for(const candidate of candidateJsonStrings(planOutput)){try{const x=JSON.parse(candidate);if(x&&Array.isArray(x.scenes)&&x.scenes.length===6){plan=x;break}}catch{}}
     }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
     if(!plan){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not create the visual storyboard correctly. Please try again.'})}
@@ -544,7 +554,7 @@ Before returning the plan, check silently that the six pictures together would m
     await logUsage({event_type:'story_plan',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
     await logSupportAttempt('success',{credit_deducted:!developerDemo,credit_refunded:false,generation_run_id:generationRunId});
     creditReserved=false;
-    return res.status(200).json({creditsRemaining,generationRunId,plan,image:null,layout:{requestedLength:length,storyPages:4,displayedTextPages:6,storyboardFirst:true}});
+    return res.status(200).json({creditsRemaining,generationRunId,plan,image:null,layout:{requestedLength:length,storyPages:4,displayedTextPages:6,storyboardFirst:true},...(developerDemo?{developer_diagnostics:developerTextDiagnostics}:{})});
   } catch (e) {
     console.error('generate error', e);
     const hadReservedCredit=creditReserved;

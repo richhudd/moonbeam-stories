@@ -1,4 +1,8 @@
-# Moonbeam Stories V251.36
+# Moonbeam Stories V251.37
+
+## V251.37 — developer token diagnostics
+
+Developer-only generation failures now report OpenAI token usage for concept generation, storyboard planning and final story reconciliation, including configured output ceilings and incomplete-response reasons where available. Normal-user error messages are unchanged.
 
 ## V251.36 — account anti-repetition + average build-time guidance
 

@@ -776,17 +776,22 @@ async function loadAverageStoryBuildTime(accessToken){
  }catch{el.hidden=true;el.textContent=''}
 }
 
+let lastDeveloperTextDiagnostics=[];
 function developerGenerationDiagnostic(stage,error,response=null,raw=''){
  if(!instagramDeveloperAccess)return error?.message||String(error||'Story generation failed.');
  const parts=[`Developer diagnostic — stage: ${stage}`];
  if(response){parts.push(`HTTP: ${response.status} ${response.statusText||''}`.trim());parts.push(`response.ok: ${response.ok}`)}
  const message=error?.message||String(error||'Unknown error');parts.push(`error: ${error?.name||'Error'}: ${message}`);
  if(typeof navigator!=='undefined')parts.push(`browser online: ${navigator.onLine}`);
- const preview=String(raw||'').replace(/\s+/g,' ').trim();if(preview)parts.push(`response preview: ${preview.slice(0,1200)}`);
+ let payload=null;try{payload=JSON.parse(String(raw||''))}catch{}
+ const diagnostics=[...lastDeveloperTextDiagnostics];if(payload?.developer_diagnostic)diagnostics.push(payload.developer_diagnostic);
+ if(diagnostics.length){parts.push('token usage:');for(const d of diagnostics){parts.push(`- ${d.stage||'AI stage'}: input ${d.input_tokens??'n/a'} | output ${d.output_tokens??'n/a'} / max ${d.max_output_tokens??'n/a'} | total ${d.total_tokens??'n/a'} | status ${d.response_status??d.http_status??'n/a'}${d.incomplete_reason?` | incomplete: ${d.incomplete_reason}`:''}${d.output_chars!=null?` | output chars ${d.output_chars}`:''}`);if(d.output_tail)parts.push(`  output tail: ${String(d.output_tail).replace(/\s+/g,' ').slice(-800)}`)}}
+ const preview=String(raw||'').replace(/\s+/g,' ').trim();if(preview)parts.push(`response preview: ${preview.slice(0,1600)}`);
  return parts.join('\n');
 }
 
 async function generateStory(){
+ lastDeveloperTextDiagnostics=[];
  syncGenerationAdapter246();
  if(activeProfileId&&!currentChildPhoto)currentChildPhoto=await childPhotoGetForProfile(activeProfileId);
  let resolvedReferencePhoto=null;
@@ -815,6 +820,7 @@ async function generateStory(){
    let response=null,raw='';
    try{response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child,recentStories:recentStoryCreativeMemory(10)})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('concept/storyboard request',networkError,response,raw))}
    let data=null;try{data=JSON.parse(raw)}catch{}
+   if(instagramDeveloperAccess&&Array.isArray(data?.developer_diagnostics))lastDeveloperTextDiagnostics=data.developer_diagnostics;
    if(!response.ok){const base=new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`);throw new Error(developerGenerationDiagnostic('concept/storyboard response',base,response,raw))}
    if(!data?.plan||!Array.isArray(data.plan.scenes)||data.plan.scenes.length!==6)throw new Error('The story service did not return a complete visual storyboard.');
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
