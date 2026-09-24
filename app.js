@@ -751,6 +751,15 @@ async function createStoryboardArtwork(plan,child,generationRunId){
  const images=[];let previous=null;for(let i=0;i<6;i++){const image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous);images.push(image);previous=image}return images
 }
 
+function recentStoryCreativeMemory(limit=10){
+ const stories=Array.isArray(cloudStories)?cloudStories.slice(0,limit):[];
+ return stories.map((x,i)=>{
+  const st=x?.story||{};const pages=Array.isArray(st.pages)?st.pages.map(p=>String(p?.text||'')).join(' '):'';
+  const text=[st.opening||'',pages,st.closing||''].join(' ').replace(/\s+/g,' ').trim();
+  return {title:String(x?.title||st.title||`Recent story ${i+1}`).slice(0,120),summary:text.slice(0,900)};
+ }).filter(x=>x.title||x.summary)
+}
+
 async function generateStory(){
  syncGenerationAdapter246();
  if(activeProfileId&&!currentChildPhoto)currentChildPhoto=await childPhotoGetForProfile(activeProfileId);
@@ -775,7 +784,7 @@ async function generateStory(){
  // with the following fetch and the parent never sees the waiting indicator.
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
-   const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child})});
+   const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child,recentStories:recentStoryCreativeMemory(10)})});
    const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}
    if(!response.ok){throw new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`)}
    if(!data?.plan||!Array.isArray(data.plan.scenes)||data.plan.scenes.length!==6)throw new Error('The story service did not return a complete visual storyboard.');

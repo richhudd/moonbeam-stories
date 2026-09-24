@@ -400,11 +400,50 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
       return normal;
     }
 
-    // V251.17: plan the complete illustrated book before writing any finished prose.
-    // The planning model is structurally restricted to production facts and six visual beats.
+    // V251.20: choose a compelling, account-aware concept BEFORE storyboarding it.
+    // The concept call is deliberately not allowed to write scenes or prose. It sees a compact
+    // account-wide memory of recent saved stories so a pack of credits produces genuinely varied books.
+    const recentStoriesRaw=Array.isArray(body.recentStories)?body.recentStories.slice(0,10):[];
+    const recentStories=recentStoriesRaw.map((x,i)=>({title:String(x?.title||`Recent story ${i+1}`).slice(0,120),summary:String(x?.summary||'').replace(/\s+/g,' ').trim().slice(0,900)})).filter(x=>x.title||x.summary);
+    const recentMemory=recentStories.length?recentStories.map((x,i)=>`${i+1}. ${x.title}: ${x.summary}`).join('\n'):'No recent saved stories are available for this account.';
+    const conceptBase = String(prompt).split('\nOUTPUT\n')[0].replace('Write a completely original children’s story centred on the selected hero or co-heroes.','Invent the strongest central concept for a completely original children’s story centred on the selected hero or co-heroes. Do not plan scenes or write story prose yet.').replace('Write an original, polished children’s story in natural ${language}.','Invent an original story concept suitable for later writing in natural ${language}.');
+    const conceptPrompt=`${conceptBase}
+
+CONCEPT-BUILDER OVERRIDE — THIS REPLACES ALL STORY/OUTPUT INSTRUCTIONS ABOVE FOR THIS CALL
+Your ONLY job is to find a story worth telling. Do not write the story. Do not divide it into scenes. Do not write dialogue, narration, page text or illustration prompts.
+
+A location, outing, journey, activity or attractive setting is NOT by itself a sufficient story concept. Find the particular thing that happens which makes THIS experience memorable. Ask silently: “What would this child be excited to tell somebody happened?” If the answer is merely that the child visited somewhere, saw scenery, played normally, learned something, helped with a minor everyday inconvenience or restored something to how it was before, reject that conception and find a stronger one.
+
+Use the CHILD APPEAL guidance above as creative fuel, not a checklist. Seek an idea with genuine child-level fascination: excitement, discovery, comedy, mystery, awe, extraordinary access, achievement, suspense, surprise, relationship or another compelling experience appropriate to the premise. Do not manufacture interest through arbitrary whimsy or personification.
+
+Do not default to the recurring safe pattern “something is lost/stuck/tangled/broken/blown away -> child notices -> child fixes/rescues/returns it -> everything is restored.” Such events are allowed only when the parent specifically calls for them or when they are incidental to a substantially more original central conception.
+
+CONTEMPORARY AUTHENTICITY: Do not use stock children's-adventure shorthand merely to signal adventure. Maps, backpacks, torches, keys, notes, mysterious boxes, snacks, picnics, badges, ribbons and similar props should appear only when the particular premise gives them a genuine reason to exist. Contemporary children should behave plausibly for the setting unless the premise establishes otherwise.
+
+ACCOUNT-LEVEL VARIETY — RECENT SAVED STORIES:
+${recentMemory}
+Treat these as creative memory for the whole Moonbeam account. Avoid repeating their underlying premise, story shape, central situation, distinctive props, discoveries, complications, payoff or ending merely with different nouns or scenery. A train replacing a boat, or a kite replacing a ribbon, does not make the underlying story different. This is an anti-repetition rule, not a ban: if the parent's new Story Idea explicitly requires something used before, honour the parent's request.
+
+Silently consider several FUNDAMENTALLY DIFFERENT possible concepts before choosing one. Different means a different kind of experience and story, not five variants of the same mishap.
+
+Return JSON ONLY:
+{"central_premise":"1-2 plain factual sentences stating what actually happens","why_a_child_would_care":"one plain sentence identifying the compelling experience","direction":"one plain sentence defining the intended kind of story and reality level","ending_destination":"one plain factual sentence stating where the story ultimately arrives"}`;
+    let concept=null;let conceptOutput='';
+    try{conceptOutput=await callStoryModel(conceptPrompt,1600);for(const candidate of candidateJsonStrings(conceptOutput)){try{const x=JSON.parse(candidate);if(x?.central_premise&&x?.why_a_child_would_care&&x?.ending_destination){concept=x;break}}catch{}}}catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
+    if(!concept){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not find a strong story concept. Please try again.'})}
+    concept={central_premise:String(concept.central_premise||'').trim(),why_a_child_would_care:String(concept.why_a_child_would_care||'').trim(),direction:String(concept.direction||'').trim(),ending_destination:String(concept.ending_destination||'').trim()};
+
+    // Plan the complete illustrated book only AFTER the concept has been selected.
     const planningBase = String(prompt).split('\nOUTPUT\n')[0].replace('Write a completely original children’s story centred on the selected hero or co-heroes.','Design a completely original children’s story centred on the selected hero or co-heroes, but do not write its finished prose yet.').replace('Write an original, polished children’s story in natural ${language}.','Design an original, polished children’s story suitable for later writing in natural ${language}.');
     const planningPrompt = `${planningBase}\n\nSTORYBOARD-FIRST OVERRIDE — THIS REPLACES THE OUTPUT INSTRUCTIONS ABOVE FOR THIS CALL
 Do NOT write the finished story yet. Do NOT write narrative prose, dialogue, page text, literary description or polished storytelling. This stage is a production plan only.
+
+CHOSEN STORY CONCEPT — AUTHORITATIVE:
+CENTRAL PREMISE: ${concept.central_premise}
+WHY IT IS COMPELLING: ${concept.why_a_child_would_care}
+DIRECTION: ${concept.direction}
+ENDING DESTINATION: ${concept.ending_destination}
+Do not replace this with an easier, safer or more conventional story. The storyboard's job is to realise this concept visually and coherently.
 
 Design the complete story from beginning to end, including the actual ending, so every illustration can know the entire arc before any picture is made. Fulfil the premise and make the six visual scenes a varied, intelligible sequence rather than six isolated portraits. Do not impose a problem-solution structure, a sequence of obstacles, attempts, setbacks or repairs, or any other predetermined plot pattern. Do not create visual variety by changing established facts.
 
@@ -422,10 +461,11 @@ Before returning the plan, check silently that the six pictures together would m
       for(const candidate of candidateJsonStrings(planOutput)){try{const x=JSON.parse(candidate);if(x&&Array.isArray(x.scenes)&&x.scenes.length===6){plan=x;break}}catch{}}
     }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
     if(!plan){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not create the visual storyboard correctly. Please try again.'})}
-    plan.title_working=String(plan.title_working||'').trim();plan.premise=String(plan.premise||'').trim();plan.story_arc=String(plan.story_arc||'').trim();plan.ending=String(plan.ending||'').trim();plan.character_bible=String(plan.character_bible||'').trim();
+    plan.concept=concept;plan.title_working=String(plan.title_working||'').trim();plan.premise=String(plan.premise||'').trim();plan.story_arc=String(plan.story_arc||'').trim();plan.ending=String(plan.ending||'').trim();plan.character_bible=String(plan.character_bible||'').trim();
     plan.scenes=plan.scenes.slice(0,6).map((x,i)=>({scene:i+1,event:String(x?.event||'').trim(),visual_moment:String(x?.visual_moment||'').trim(),continuity:String(x?.continuity||'').trim()}));
     if(!plan.premise||!plan.story_arc||!plan.ending||!plan.character_bible||plan.scenes.some(x=>!x.event||!x.visual_moment)){await refundReservedCredit();return res.status(502).json({error:'Moonbeam produced an incomplete visual storyboard. Please try again.'})}
     const generationRunId=await createGenerationRun(moonbeamUser.id);
+    await logUsage({event_type:'story_concept',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId,recent_story_count:recentStories.length}});
     await logUsage({event_type:'story_plan',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
     await logSupportAttempt('success',{credit_deducted:!developerDemo,credit_refunded:false,generation_run_id:generationRunId});
     creditReserved=false;

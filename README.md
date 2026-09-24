@@ -712,3 +712,12 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 - Explicit Story Ideas, interests, dislikes and Cast context outrank demographic tendencies.
 - Gender is treated only as a weak optional signal and never as a restriction.
 - No API or Supabase schema changes.
+
+
+## V251.20 — Concept builder + account creative memory
+- Adds a dedicated concept-builder pass before the six-scene storyboard. The concept pass cannot write story prose or scenes; it must first identify a genuinely compelling child-centred premise.
+- Rejects outings/settings as sufficient stories on their own and explicitly checks what the child would be excited to tell somebody happened.
+- Adds account-level anti-repetition using compact summaries of the 10 most recent saved stories. The concept builder is told not to recycle underlying plot shapes, distinctive props, discoveries or endings merely with different nouns/settings.
+- Adds contemporary-authenticity guidance so stock adventure shorthand such as maps, backpacks, keys, ribbons and snacks appears only when naturally required.
+- Keeps V251.17+ storyboard-first production: chosen concept -> storyboard -> six illustrations -> final prose written from the plan and finished pictures.
+- No Supabase schema change and no new API endpoint.
