@@ -738,3 +738,7 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 - If the first concept response is malformed, makes one formatting-repair attempt before failing.
 - Replaces the misleading ‘could not find a strong story concept’ error with a neutral technical retry message.
 - No Supabase schema change.
+
+
+## V251.27
+Developer diagnostic build based directly on V251.22. Story-generation behaviour is unchanged. If the concept-builder fails for the configured Moonbeam developer account, the returned error now includes the OpenAI response status, incomplete details, response/output sizes and output item/content types, plus a short preview of the first concept response. This is diagnostic only and does not change prompts, token budgets, parsing, retries, storyboard generation, final reconciliation, illustration generation, credits, or database schema.
