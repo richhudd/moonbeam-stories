@@ -1,3 +1,10 @@
+## V251.24
+- Rephrases V251.23's excitement layer to avoid repeatedly framing children's stories in terms of danger, peril or jeopardy.
+- Keeps the same creative goal through age-appropriate dramatic tension: urgency, uncertainty, meaningful obstacles, time pressure, unexpected complications and quick thinking.
+- Explicitly keeps tense moments adventurous rather than frightening and requires reassuring resolution, without weakening the existing child-safety rules.
+- Retains V251.23's anti-map/stock-discovery rule unchanged.
+- No UI, database, credit or API-function-count changes.
+
 ## V251.23
 - Adds **safe peril, not bland safety** across concept selection, storyboarding and final prose.
 - Adventure and mystery concepts may now include genuine age-calibrated urgency, jeopardy and “Oh no!/Quick!/How will they get out of this?” moments while remaining non-graphic and reassuringly resolved.
