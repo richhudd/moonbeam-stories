@@ -1,3 +1,11 @@
+## V251.33 — stronger page-turn tension, comedy and parent-level wit
+- Built directly from V251.32.
+- Strengthens the concept builder so competitions and challenges cannot rely on winning or losing alone for tension; where appropriate they need a consequential surprise, reversal, escalating complication, comic disaster, safe near-miss or similarly compelling development.
+- Strengthens storyboarding so comedy develops through consequences, reactions, reversals and misunderstandings, while adventure/mystery normally contains at least one genuine page-turn uncertainty.
+- Adds a restrained dual-audience layer to the writing stage: occasional subtle humour for the adult reading aloud, while every line remains completely suitable and understandable for the child.
+- Keeps the adult layer sparse (normally no more than two or three moments across six spreads), avoids crude/adult subject matter and lazy adult-signifier jokes, and scales subtlety with the child’s age.
+- Preserves existing coherence, anti-whimsy/personification, anti-stock-map/notes/keys, account anti-repetition, age-safety, Cast and illustration systems. No illustration-prompt, UI, Supabase schema or API-function-count changes.
+
 ## V251.22
 - Strengthens the storyboard and final writing stages without changing the concept builder.
 - Requires the selected premise to be exploited and developed rather than merely demonstrated across interchangeable middle scenes.
