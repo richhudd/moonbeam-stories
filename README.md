@@ -742,3 +742,8 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 ## V251.28
 - Increased only the concept-builder and concept-format-repair `max_output_tokens` allowance from 1600 to 4000 after diagnostics confirmed both calls were ending `incomplete` with `reason: max_output_tokens` before producing visible output.
 - Retains the V251.27 developer diagnostics. No story prompt, parser, illustration, reconciliation, API-count, or database changes.
+
+
+## V251.29
+- Keeps the V251.28 4,000-token concept-builder allowance.
+- Strengthens concept, storyboard and final-author guidance for comedy, excitement, suspense and age-appropriate safe peril without changing the generation pipeline.
