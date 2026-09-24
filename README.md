@@ -1,6 +1,6 @@
-# Moonbeam Stories V251.15
+# Moonbeam Stories V251.16
 
-V251.15 repairs the developer-only cover text editor. Title and author/dedication are now edited directly in the browser and saved exactly as typed, rather than calling the missing `developer-cover-text` API action. Saved-book edits persist to the existing saved story record and invalidate saved KDP description/keyword metadata. No database migration or new API function is required.
+V251.16 repairs the developer-only cover text editor. Title and author/dedication are now edited directly in the browser and saved exactly as typed, rather than calling the missing `developer-cover-text` API action. Saved-book edits persist to the existing saved story record and invalidate saved KDP description/keyword metadata. No database migration or new API function is required.
 
 # Moonbeam Stories V251.14
 
@@ -685,3 +685,9 @@ Developer manual editing now accepts general text and illustration corrections/i
 - Manual text override remains and saves exactly what is typed.
 - Illustration editing remains non-destructive: describe the change, preview a draft, Accept / refine instruction and Try again / Keep original.
 - No accepted content is replaced until the developer explicitly accepts it (manual text Save remains explicit).
+
+
+## V251.16
+- Fixed accepted developer illustration replacements reverting visually to the original image.
+- Saved-book rendering now honours the exact accepted canonical in-memory illustration instead of immediately reloading the saved asset path.
+- The accepted replacement is still persisted to Supabase storage and the local saved-art cache before the editor closes.

@@ -923,7 +923,12 @@ async function savedAssetUrl(path){if(!path||!currentBook?.isSaved)return null;i
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index,prompt);
  const frame=document.querySelector('.illustration-frame');if(!silent&&(!frame||book.currentPage!==index))return;
- if(book.isSaved){const path=book.savedAssets?.pages?.[index];if(!path){if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p><small>This older saved story does not contain a cloud copy of this picture.</small></div>';return null}try{const image=await savedAssetUrl(path);book.artwork.pages[index]=image;if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}catch(e){console.error(e);if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p></div>';return null}}
+ if(book.isSaved){
+  // An accepted developer replacement is already canonical in memory. Honour that exact
+  // image immediately instead of reloading the saved path and risking an older cached blob.
+  const canonical=book.artwork?.pages?.[index];
+  if(canonical&&!force){if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,canonical);return canonical}
+  const path=book.savedAssets?.pages?.[index];if(!path){if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p><small>This older saved story does not contain a cloud copy of this picture.</small></div>';return null}try{const image=await savedAssetUrl(path);book.artwork.pages[index]=image;if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}catch(e){console.error(e);if(!silent&&frame)frame.innerHTML='<div class="illustration-error"><div class="moon">☾</div><p>Saved illustration unavailable</p></div>';return null}}
  if(!silent&&frame&&!illustrationCache.has(key))frame.innerHTML=`<div class="illustration-loading"><div class="spinner"></div><p>${escapeHtml(t().painting)}</p><small>${escapeHtml(t().paintingSmall)}</small></div>`;
  try{
    const coverSeedsContinuity=index===0;
