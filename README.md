@@ -1,3 +1,16 @@
+## V251.40
+- Restores/protects the developer demo-child **Gender** and **Age (3–12)** selectors.
+- The developer UI now self-heals those selectors if an older/stale HTML shell is paired with the current JavaScript.
+- Bumps the main CSS/JS/i18n cache-busting version so browsers do not reuse an older developer-generator interface after deployment.
+- Otherwise identical to V251.39; no story or illustration prompt changes.
+
+## V251.39
+
+- Consolidated the story-generation prompts without removing tonight's creative safeguards: anti-repetition, genuine child appeal, safe peril, situational comedy, coherent fantasy, anti-personification, and explicit protection against default maps/notes/keys/ribbons/rainbows remain.
+- Raised the concept bar against thin procedural stories and repeated mechanisms: concepts must have room to develop materially across the book, and storyboards now preserve rather than re-specify that creative intent.
+- Reduced duplicated creative instructions across base, concept and storyboard stages so each stage has a clearer job.
+- Developer token diagnostics now remain visible on the cover only and hide when reading begins.
+
 ## V251.38
 - Developer-only token report now remains visible after successful story generation, including concept/storyboard and final reconciliation usage.
 - Increased child-facing excitement and situational comedy without reintroducing adult/double-entendre humour.

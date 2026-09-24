@@ -988,7 +988,7 @@ async function loadCoverIllustration(force=false){
    return null;
  }
 }
-function showCover(){if(!currentBook)return;stopNarration();rememberReaderScroll();currentBook.currentPage=-1;const cover=$('coverView'),book=$('book'),controls=$('bookControls'),note=$('illustrationNote');if(book){book.classList.add('hidden');book.hidden=true;book.style.setProperty('display','none','important');book.setAttribute('aria-hidden','true')}if(controls){controls.classList.add('hidden');controls.hidden=true;controls.style.setProperty('display','none','important');controls.setAttribute('aria-hidden','true')}if(note){note.classList.add('hidden');note.hidden=true}if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.removeProperty('display');cover.setAttribute('aria-hidden','false')}persistCurrentDraft()}
+function showCover(){if(!currentBook)return;stopNarration();const tokenReport=$('developerTokenReport');if(tokenReport&&instagramDeveloperAccess&&lastDeveloperTextDiagnostics.length)tokenReport.hidden=false;rememberReaderScroll();currentBook.currentPage=-1;const cover=$('coverView'),book=$('book'),controls=$('bookControls'),note=$('illustrationNote');if(book){book.classList.add('hidden');book.hidden=true;book.style.setProperty('display','none','important');book.setAttribute('aria-hidden','true')}if(controls){controls.classList.add('hidden');controls.hidden=true;controls.style.setProperty('display','none','important');controls.setAttribute('aria-hidden','true')}if(note){note.classList.add('hidden');note.hidden=true}if(cover){cover.classList.remove('hidden');cover.hidden=false;cover.style.removeProperty('display');cover.setAttribute('aria-hidden','false')}persistCurrentDraft()}
 function beginStory(mode='self'){if(!currentBook)return;stopNarration();currentBook.readingMode=mode;currentBook.mobileSide='text';const cover=$('coverView'),book=$('book'),controls=$('bookControls');if(cover){cover.classList.add('hidden');cover.hidden=true;cover.style.setProperty('display','none','important');cover.setAttribute('aria-hidden','true')}if(book){book.classList.remove('hidden');book.hidden=false;book.style.removeProperty('display');book.setAttribute('aria-hidden','false')}if(controls){controls.classList.remove('hidden');controls.hidden=false;controls.style.removeProperty('display');controls.setAttribute('aria-hidden','false')}renderBookPage(0);if(mode==='narrated')scheduleNarration(120)}
 function illustrationKey(book,index,prompt=''){return `v48:${book.visualCacheId||book.cacheId}:${index}:${stableHash(String(prompt||''))}`}
 function previousIllustrationKey(book,index){if(index<=0)return null;return illustrationKey(book,index-1,getIllustrationPrompt(index-1))}
@@ -1156,7 +1156,17 @@ function resetInstagramDeveloperAccess(user=currentUser){
  instagramDeveloperAccessUserId=user?.id||null;
  $('instagramDemoChildBox')?.classList.add('hidden');
 }
-function mountInstagramDemoChildButton(){const box=$('instagramDemoChildBox');if(box)box.classList.toggle('hidden',!instagramDeveloperAccess)}
+function mountInstagramDemoChildButton(){
+ const box=$('instagramDemoChildBox');if(!box)return;
+ // Developer controls are deliberately self-healing so a stale/mismatched HTML shell cannot reduce the generator to a one-click random child.
+ if(!$('instagramDemoChildGender')||!$('instagramDemoChildAge')){
+  const button=$('instagramDemoChildButton');
+  const options=document.createElement('div');options.className='instagram-demo-child-options';
+  options.innerHTML='<label><span>Gender</span><select id="instagramDemoChildGender"><option value="random" selected>Random</option><option value="male">Boy</option><option value="female">Girl</option></select></label><label><span>Age</span><select id="instagramDemoChildAge"><option value="random" selected>Random</option>'+Array.from({length:10},(_,i)=>`<option value="${i+3}">${i+3}</option>`).join('')+'</select></label>';
+  if(button)box.insertBefore(options,button);else box.appendChild(options);
+ }
+ box.classList.toggle('hidden',!instagramDeveloperAccess);
+}
 function mountInstagramEndButton(){
  if(!instagramDeveloperAccess||!currentBook||currentBook.isShared||currentBook.currentPage!==currentBook.pages.length+2)return;
  const actions=document.querySelector('.end-actions');if(!actions)return;
@@ -1851,6 +1861,7 @@ async function runDeveloperCorrection(kind){
 }
 
 function renderBookPage(index){
+ const tokenReport=$('developerTokenReport');if(tokenReport)tokenReport.hidden=true;
  removeMobileSharedCreateButton();
  rememberReaderScroll();
  stopNarration();
