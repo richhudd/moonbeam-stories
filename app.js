@@ -777,6 +777,14 @@ async function loadAverageStoryBuildTime(accessToken){
 }
 
 let lastDeveloperTextDiagnostics=[];
+function showDeveloperTokenReport(diagnostics=[]){
+ if(!instagramDeveloperAccess||!Array.isArray(diagnostics)||!diagnostics.length)return;
+ let el=$('developerTokenReport');
+ if(!el){el=document.createElement('div');el.id='developerTokenReport';el.style.cssText='position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:99999;max-width:min(1100px,94vw);padding:9px 14px;border-radius:10px;background:rgba(36,25,54,.94);color:#fff;font:600 12px/1.35 system-ui,-apple-system,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.25);text-align:center;';document.body.appendChild(el)}
+ const total=diagnostics.reduce((n,d)=>n+(Number(d?.total_tokens)||0),0);
+ const rows=diagnostics.map(d=>`${d.stage||'AI stage'}: ${d.input_tokens??'n/a'} in · ${d.output_tokens??'n/a'} / ${d.max_output_tokens??'n/a'} out · ${d.total_tokens??'n/a'} total`);
+ el.textContent=`Developer token report — ${rows.join(' | ')}${total?` | combined: ${total}`:''}`;el.hidden=false;
+}
 function developerGenerationDiagnostic(stage,error,response=null,raw=''){
  if(!instagramDeveloperAccess)return error?.message||String(error||'Story generation failed.');
  const parts=[`Developer diagnostic — stage: ${stage}`];
@@ -833,6 +841,7 @@ async function generateStory(){
    let finalResponse=null,finalRaw='';
    try{finalResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${finalToken}`},body:JSON.stringify({action:'finalize-storyboard-story',child,plan:data.plan,images:thumbnails,generationRunId:child.generationRunId})});finalRaw=await finalResponse.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('final story request',networkError,finalResponse,finalRaw))}
    let finalData=null;try{finalData=JSON.parse(finalRaw)}catch{};if(!finalResponse.ok){const base=new Error(finalData?.error||`Story finishing failed (${finalResponse.status})`);throw new Error(developerGenerationDiagnostic('final story response',base,finalResponse,finalRaw))}if(!finalData?.story)throw new Error(developerGenerationDiagnostic('final story validation',new Error('Moonbeam could not finish the illustrated story.'),finalResponse,finalRaw));
+   if(instagramDeveloperAccess&&finalData?.developer_diagnostic){lastDeveloperTextDiagnostics=[...lastDeveloperTextDiagnostics,finalData.developer_diagnostic];showDeveloperTokenReport(lastDeveloperTextDiagnostics)}
    clearSetupDraft();
    renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork})
  }catch(e){

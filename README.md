@@ -1,3 +1,7 @@
+## V251.38
+- Developer-only token report now remains visible after successful story generation, including concept/storyboard and final reconciliation usage.
+- Increased child-facing excitement and situational comedy without reintroducing adult/double-entendre humour.
+
 # Moonbeam Stories V251.37
 
 ## V251.37 — developer token diagnostics
