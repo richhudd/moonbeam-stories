@@ -1,3 +1,11 @@
+## V251.23
+- Adds **safe peril, not bland safety** across concept selection, storyboarding and final prose.
+- Adventure and mystery concepts may now include genuine age-calibrated urgency, jeopardy and “Oh no!/Quick!/How will they get out of this?” moments while remaining non-graphic and reassuringly resolved.
+- Prevents the later writing stage from sanding exciting storyboard moments down into procedure, supervision or explanation.
+- Tightens the recurring-map problem: maps, plans, charts and diagrams may not be used as generic clue/discovery mechanisms unless the parent premise or setting genuinely requires them; discoveries should preferably arise from observation, action and physical encounter.
+- Keeps peril optional when another form of fascination is stronger; this is not a compulsory danger formula.
+- No UI, database, credit or API-function-count changes.
+
 ## V251.22
 - Strengthens the storyboard and final writing stages without changing the concept builder.
 - Requires the selected premise to be exploited and developed rather than merely demonstrated across interchangeable middle scenes.
