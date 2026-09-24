@@ -751,3 +751,17 @@ Removed residual problem-solution/beat forcing from the storyboard planner. Stor
 
 ## V251.30
 Strengthens the story concept architecture so adventure/mystery concepts require a genuine dramatic engine, adults do not neutralise the central adventure, safety shapes consequences rather than preventing events, and stock map/plan/note/key devices are not used as default navigation or discovery mechanisms. Retains the proven 4,000-token concept-builder limit.
+
+
+## V251.31
+- Adjusts the developer-only **Generate demo child** tool for publishing/marketing use.
+- Removes the deliberate counter-beautification bias toward plain, awkward or heavier fictional children.
+- Generated demo children are now naturally attractive, warm, expressive and visually appealing while remaining believable and individual rather than artificially perfect or model-like.
+- Body type remains naturally varied but neutral; no deliberate uglification or caricature.
+- Customer child profiles, story generation, illustration continuity and the 4,000-token concept limit are unchanged.
+
+
+## V251.32
+- Developer-only Generate demo child tool now lets the developer choose Boy, Girl or Random and age 3–12 or Random before generation.
+- Random remains the default for both controls, preserving the previous one-click behaviour.
+- Normal customer child creation and illustration behaviour are unchanged.

@@ -4125,6 +4125,7 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 .instagram-demo-child{margin-top:18px;padding-top:4px}
 .instagram-demo-child-divider{display:flex;align-items:center;gap:10px;margin:4px 0 10px;color:#8a8195;font:700 10px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase}
 .instagram-demo-child-divider::before,.instagram-demo-child-divider::after{content:"";height:1px;background:#ded5eb;flex:1}
+.instagram-demo-child-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}.instagram-demo-child-options label{display:flex;flex-direction:column;gap:5px;color:#5c4a5e;font-size:11px;font-weight:700}.instagram-demo-child-options select{width:100%;min-height:40px;border:1px solid #d8cfea;border-radius:10px;background:#fff;color:#332b42;padding:7px 10px;font:600 13px/1.2 Arial,Helvetica,sans-serif}
 .instagram-demo-child-button{width:100%;min-height:44px;border-style:dashed!important}
 .instagram-demo-child-help{margin:7px 4px 0;color:#837a91;font-size:11px;line-height:1.35;text-align:center}
 .instagram-demo-child-progress{position:fixed;inset:0;z-index:10050;background:rgba(20,15,34,.72);display:grid;place-items:center;padding:24px}

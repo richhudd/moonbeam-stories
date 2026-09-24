@@ -1162,8 +1162,11 @@ async function generateInstagramDemoChild(){
  let createdChildId=null;
  try{
   const access=await currentAccessToken();if(!access)throw new Error('Your Moonbeam session has expired. Please sign in again.');
-  setInstagramDemoChildProgress('Inventing a fictional child…','Moonbeam is choosing a name, age and appearance, then creating a portrait.');
-  const profileResponse=await fetch('/api/resend-inbound?action=instagram-demo-child',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({existingNames:castMembers246.filter(m=>m.kind==='child').map(m=>m.name)})});
+  const requestedGender=String($('instagramDemoChildGender')?.value||'random');
+  const requestedAge=String($('instagramDemoChildAge')?.value||'random');
+  const chosenBits=[];if(requestedGender==='male')chosenBits.push('a boy');else if(requestedGender==='female')chosenBits.push('a girl');if(/^\d+$/.test(requestedAge))chosenBits.push(`age ${requestedAge}`);
+  setInstagramDemoChildProgress('Inventing a fictional child…',chosenBits.length?`Moonbeam is inventing ${chosenBits.join(', ')}, choosing a name and appearance, then creating a portrait.`:'Moonbeam is choosing a name, age and appearance, then creating a portrait.');
+  const profileResponse=await fetch('/api/resend-inbound?action=instagram-demo-child',{method:'POST',headers:{Authorization:`Bearer ${access}`,'Content-Type':'application/json'},body:JSON.stringify({existingNames:castMembers246.filter(m=>m.kind==='child').map(m=>m.name),gender:requestedGender,age:requestedAge})});
   const profileRaw=await profileResponse.text();let profileData={};try{profileData=JSON.parse(profileRaw)}catch{}
   if(!profileResponse.ok||!profileData?.ok||!profileData?.profile)throw new Error(profileData?.error||'Moonbeam could not invent the demo child.');
   const profile=profileData.profile;if(!/^data:image\/jpeg;base64,/i.test(profile.portraitDataUrl||''))throw new Error('The fictional child portrait was not returned correctly.');
