@@ -133,8 +133,8 @@ Do not use oversized or doll-like eyes, enlarged heads, button noses, chibi prop
       return `CURRENT ILLUSTRATION ONLY — SAFE VISUAL BRIEF\n${current}\n\nShow only this current moment. The child must be visibly secure on stable ground. Keep any hazardous condition clearly separated from the child by distance, structure, barrier or viewpoint. The story may contain danger, but this image must depict the child in an unambiguously safe physical position. Do not depict falling, drowning, crushing, entrapment, injury, or a child directly in the path of floodwater, debris, traffic, machinery or another immediate hazard.`;
     })();
 
-    const correctionPrefix = developerCorrection ? `SURGICAL IMAGE EDIT MODE. The FIRST supplied reference image is the existing illustration being corrected and is the visual master. Preserve all unrelated visible details as closely as possible. Do NOT create a new composition. Change only the developer-identified error and the minimum dependent detail required for physical coherence. The usual instruction below to create a new composition does NOT apply to this correction request.\n\n` : '';
-    const finalPrompt = `${correctionPrefix}Create a single full-page illustration for a premium children's storybook.
+    const correctionPrefix = '';
+    const normalGenerationPrompt = `${correctionPrefix}Create a single full-page illustration for a premium children's storybook.
 
 ${MOONBEAM_HOUSE_STYLE}
 ${identityDirection}
@@ -178,6 +178,12 @@ IMPORTANT
 - ONE continuous scene only: never create a collage, contact sheet, comic strip, grid, split screen, diptych, triptych, multiple panels, inset pictures or multiple frames.
 - The finished output must look like one uninterrupted full-page painting viewed through one camera/composition.
 - Square composition suitable for the right-hand page of a children's book.`;
+
+    // V251.57: developer correction is a true edit-only path. Do not wrap the user's
+    // correction in the normal story-illustration prompt: that caused the edit model to
+    // re-stage/recompose the page from story prose instead of preserving the supplied image.
+    const surgicalCorrectionPrompt = `SURGICAL EDIT OF THE FIRST ATTACHED IMAGE ONLY.\n\nThe FIRST attached image is the existing Moonbeam illustration and is the sole authority for scene, crop, composition, camera, perspective, staging, poses, positions, background, lighting, colours and rendering style. This is NOT a request to illustrate or reinterpret a story. Do not invent a new scene. Do not move, add, remove or redesign anything unless the requested change explicitly requires it.\n\n${prompt}\n\n${wholeBookContinuityDirection}\n${identityDirection}\n\nPRESERVATION RULE: make the smallest possible visual edit. Everything outside the requested correction must remain as close as the image-edit model can preserve it. If identity continuity is relevant, use the text continuity canon and Cast identity references only to correct that identity detail; never use them to alter composition, pose, staging or action. Preserve the existing painted style rather than regenerating it. No text or typography.`;
+    const finalPrompt = developerCorrection ? surgicalCorrectionPrompt : normalGenerationPrompt;
 
     const callImageModel=async(requestPrompt)=>{
       let response;

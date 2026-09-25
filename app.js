@@ -1910,13 +1910,14 @@ async function runDeveloperCorrection(kind){
    const basePrompt=getIllustrationPrompt(index),currentArtwork=await correctionCurrentArtwork(book,index);
    if(!currentArtwork)throw new Error('The existing illustration could not be loaded for correction.');
    const artworkRefs=await correctionAllArtworkReferences(book,index,currentArtwork),castRefs=await correctionReferenceImages(book);
-   // Artwork comes first so the current page is always reference #1. Cast photos follow
-   // as identity references. The server distinguishes them by kind instead of treating
-   // every attached image as a Cast photograph.
+   // Correction mode deliberately does NOT send page prose/storyboard/scene facts to the
+   // image editor. The current artwork is the sole scene/composition authority. Other book
+   // artwork is analysed server-side for identity continuity only and is never attached to
+   // the edit request itself. Cast photos remain identity references only.
    const refs=[...artworkRefs,...castRefs];
-   const correctionPrompt=`SURGICAL CORRECTION. The FIRST reference image is the actual existing illustration and is the visual master. Preserve it as closely as possible: same composition, framing, camera angle, characters, likenesses, poses, expressions, clothing, lighting, colours, background, objects, scale and style. Change ONLY the specific error identified below. Do not redesign, re-stage, embellish or reinterpret unrelated parts.\n\nDEVELOPER CORRECTION — AUTHORITATIVE:\n${instruction}\n\nPAGE SCENE FACTS:\n${basePrompt}\n\nEvery other visible detail in the existing illustration should remain unchanged unless changing it is strictly necessary to make the requested correction physically coherent.`;
+   const correctionPrompt=`EDIT THE SUPPLIED EXISTING ILLUSTRATION. Do not reinterpret the story and do not generate a new scene.\n\nREQUESTED CHANGE — AUTHORITATIVE:\n${instruction}\n\nChange only the pixels/details necessary for that requested correction. Preserve the existing crop, composition, camera position, perspective, setting, background, every person and object's position, poses, expressions, clothing, lighting, colours, scale and painted rendering everywhere else. If the requested change concerns a recurring character's identity, restore only that identity detail while leaving the character's current pose, size and location unchanged.`;
    const key=`${illustrationKey(book,index,basePrompt)}:developer-surgical-correction:${Date.now()}`;
-   const image=await requestIllustration(key,correctionPrompt,`EDIT PRIORITY: developer correction first; preserve the existing illustration everywhere else. Review ALL attached book artwork together for recurring-character and world continuity; where the current page conflicts with the established majority design of a recurring character or object, restore the established design unless the developer instruction says otherwise. Preserve Cast likeness. ${book.character_bible||''}`,true,refs,true,index,null,true);
+   const image=await requestIllustration(key,correctionPrompt,'',true,refs,true,index,null,true);
    showDeveloperCandidate({kind:'illustration',index,image,instruction});if(st)st.textContent='Review the replacement illustration. The original has not been changed.';return;
   }
   closeDeveloperCorrection();renderBookPage(index);

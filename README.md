@@ -1,3 +1,14 @@
+# Moonbeam Stories V251.57
+
+- Rebuilt developer illustration correction as a true edit-only path.
+- Correction requests no longer send page prose, storyboard scene facts, event-selection instructions, composition-generation rules or the normal Moonbeam new-illustration prompt to the image editor.
+- The existing page is the sole scene/composition master. Whole-book artwork is used only in the separate text continuity analysis and is not attached to the edit model.
+- Cast photos remain identity references only.
+- The image editor is instructed to make the smallest requested change and preserve crop, camera, staging, poses, positions, background, lighting, colours and rendering elsewhere.
+- Normal story/cover illustration generation is unchanged. No SQL required. API endpoint count unchanged.
+
+---
+
 # Moonbeam Stories V251.56
 
 - Replaces the V251.54/V251.55 multi-image correction architecture. Whole-book artwork is no longer attached to the image-edit model.
