@@ -1937,8 +1937,7 @@ async function runDeveloperCorrection(kind,maskReady=false){
    const artworkRefs=await correctionAllArtworkReferences(book,index,currentArtwork),castRefs=await correctionReferenceImages(book);
    // Correction mode deliberately does NOT send page prose/storyboard/scene facts to the
    // image editor. The current artwork is the sole scene/composition authority. Other book
-   // artwork is analysed server-side for identity continuity only and is never attached to
-   // the edit request itself. Cast photos remain identity references only.
+   // Other book artwork is sent only as compact evidence. The server selects at most two images that actually show the entity named in the developer correction and attaches those selected images as canonical identity references. Cast photos remain authoritative identity references for Cast members.
    const refs=[...artworkRefs,...castRefs];
    const correctionPrompt=`EDIT THE SUPPLIED EXISTING ILLUSTRATION. Do not reinterpret the story and do not generate a new scene.\n\nREQUESTED CHANGE — AUTHORITATIVE:\n${instruction}\n\nChange only the pixels/details necessary for that requested correction. Preserve the existing crop, composition, camera position, perspective, setting, background, every person and object's position, poses, expressions, clothing, lighting, colours, scale and painted rendering everywhere else. If the requested change concerns a recurring character's identity, restore only that identity detail while leaving the character's current pose, size and location unchanged.`;
    const key=`${illustrationKey(book,index,basePrompt)}:developer-surgical-correction:${Date.now()}`;

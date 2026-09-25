@@ -1,3 +1,15 @@
+# Moonbeam Stories V251.60
+
+- Fixes the developer masked illustration corrector so recurring non-Cast characters, creatures, vehicles, machines and distinctive objects can be corrected from **actual visual references**, not a text-only reconstruction of their appearance.
+- The current page remains image #1 and the sole edit master; the painted mask remains the hard editable boundary.
+- Moonbeam reviews the compact other-book artwork against the developer's correction instruction, selects at most two images that actually show the implicated recurring entity, and attaches only those selected images to the image edit as **canonical identity references**.
+- Canonical references control only what the entity looks like. The current page still controls pose, scale, orientation, expression, composition, camera, staging, background and lighting.
+- Cast photographs remain authoritative identity references for Cast members. If no other book image genuinely contains the corrected entity, no book reference is attached.
+- Removes the previous failure mode where the corrector reduced visual identity evidence to prose and then expected the image model to reconstruct the monster/machine/character from that prose.
+- Developer-only correction workflow; ordinary story illustration generation is unchanged. No SQL migration and no new Vercel endpoint.
+
+---
+
 # Moonbeam Stories V251.59
 
 - Replaces free-canvas developer illustration correction with a masked local-edit workflow.
