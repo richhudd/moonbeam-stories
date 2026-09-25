@@ -1,4 +1,15 @@
-# Moonbeam Stories V251.54 — whole-book continuity for illustration corrections
+# Moonbeam Stories V251.55
+
+- Fixes HTTP 413 failures in developer illustration correction introduced by whole-book continuity references.
+- Keeps the current illustration at full quality as the surgical edit master.
+- Downsamples the cover and other page illustrations to compact 448px JPEG continuity references before sending the correction request.
+- The correction model can still review artwork across the whole book for faces, teeth, fur, clothing, props and world continuity without sending every page at publication resolution.
+- Cast identity photographs remain separate identity references. Normal story generation is unchanged.
+- No SQL required and no API endpoint added.
+
+---
+
+# Moonbeam Stories V251.55 — whole-book continuity for illustration corrections
 
 - Developer **Correct illustration** now supplies the current page plus every available cover/page illustration from the same book to the image corrector, so it can compare recurring characters and objects across the complete illustrated story instead of seeing only the immediately preceding page.
 - The current illustration remains the surgical edit master for composition and staging. Other book images are explicitly labelled continuity references and cannot be mistaken for extra Cast members.

@@ -1757,23 +1757,30 @@ async function correctionReferenceImages(book){
  if(book?.child?.profileId){try{const photo=await castPhoto246(book.child.profileId);if(photo)refs.push({name:book.child.name||'main hero',kind:'child',role:'hero',gender:book.child.gender||null,image:photo})}catch{}}
  return refs
 }
+async function correctionContinuityThumbnail(dataUrl,max=448){
+ // Whole-book references are evidence, not edit masters. Downsample them before
+ // JSON transport so a correction can review the complete book without exceeding
+ // the serverless request-body limit (HTTP 413). The current page stays full quality.
+ if(!/^data:image\/(jpeg|png|webp);base64,/i.test(dataUrl||''))return dataUrl;
+ return await new Promise(resolve=>{const img=new Image();img.onerror=()=>resolve(dataUrl);img.onload=()=>{try{const scale=Math.min(1,max/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));if(scale>=1){resolve(dataUrl);return}const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round((img.naturalWidth||img.width)*scale));canvas.height=Math.max(1,Math.round((img.naturalHeight||img.height)*scale));canvas.getContext('2d',{alpha:false}).drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.68))}catch{resolve(dataUrl)}};img.src=dataUrl})
+}
 async function correctionAllArtworkReferences(book,index,currentArtwork){
  // Give the correction model the whole illustrated book, not just the preceding page.
- // The current page remains reference #1 (the surgical edit master). Every other
- // available book image is labelled as continuity artwork so recurring creatures,
- // faces, clothing, props and locations can be compared across the complete book.
+ // Reference #1 is the full-quality surgical edit master. Other pages are compact
+ // visual references: large enough for faces/teeth/clothing/props, small enough to
+ // keep the browser -> /api/illustrate JSON request safely below platform limits.
  const refs=[{name:'CURRENT PAGE — EDIT MASTER',kind:'edit-source',role:'primary',image:currentArtwork}];
- const add=(name,image)=>{if(image&&image!==currentArtwork)refs.push({name,kind:'continuity-artwork',role:'book-continuity',image})};
+ const add=async(name,image)=>{if(image&&image!==currentArtwork)refs.push({name,kind:'continuity-artwork',role:'book-continuity',image:await correctionContinuityThumbnail(image)})};
  let cover=book?.artwork?.cover||null;
  if(!cover&&book?.isSaved&&book?.savedAssets?.cover){try{cover=await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.cover))}catch{}}
- add('BOOK COVER — CONTINUITY REFERENCE',cover);
+ await add('BOOK COVER — CONTINUITY REFERENCE',cover);
  const pageCount=Math.max(6,Array.isArray(book?.artwork?.pages)?book.artwork.pages.length:0,Array.isArray(book?.savedAssets?.pages)?book.savedAssets.pages.length:0);
  for(let i=0;i<pageCount;i++){
   if(i===index)continue;
   let image=book?.artwork?.pages?.[i]||null;
   if(!image&&book?.isSaved&&book?.savedAssets?.pages?.[i]){try{image=await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.pages[i]))}catch{}}
   if(!image){try{const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(i)}finally{currentBook=prior}})();const key=illustrationKey(book,i,prompt);image=illustrationCache.get(key)||await persistentImageGet(key)||null}catch{}}
-  add(`BOOK PAGE ${i+1} — CONTINUITY REFERENCE`,image);
+  await add(`BOOK PAGE ${i+1} — CONTINUITY REFERENCE`,image);
  }
  return refs
 }
