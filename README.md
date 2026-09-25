@@ -860,7 +860,7 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Random remains the default for both controls, preserving the previous one-click behaviour.
 - Normal customer child creation and illustration behaviour are unchanged.
 
-## V251.50
+## V251.51
 - Separates narrative/storyboard context from image-generation context for required story illustrations.
 - Normal page illustration requests now send the already-planned current visual moment plus character/world continuity, rather than repeatedly exposing the image model to hazardous actions from all six scenes.
 - Safety retries are rebuilt as genuinely fresh minimal prompts instead of prepending instructions to the rejected long prompt.

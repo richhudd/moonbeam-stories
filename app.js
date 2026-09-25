@@ -1022,6 +1022,10 @@ async function savedAssetUrl(path){if(!path||!currentBook?.isSaved)return null;i
 async function loadIllustration(index,prompt,silent=false,force=false){
  const book=currentBook;if(!book||!prompt)return;const key=illustrationKey(book,index,prompt);
  const frame=document.querySelector('.illustration-frame');if(!silent&&(!frame||book.currentPage!==index))return;
+ // Once a page has accepted artwork, ordinary rendering must use it regardless of later
+ // text edits. Only an explicit force/retry or developer illustration correction may replace it.
+ const acceptedArtwork=book.artwork?.pages?.[index];
+ if(acceptedArtwork&&!force){if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,acceptedArtwork);return acceptedArtwork}
  if(book.prebuiltArtwork&&book.artwork?.pages?.[index]){const image=book.artwork.pages[index];if(currentBook===book&&book.currentPage===index)renderIllustrationIntoPage(index,image);return image}
  if(book.isSaved){
   // An accepted developer replacement is already canonical in memory. Honour that exact
@@ -1754,8 +1758,14 @@ async function correctionReferenceImages(book){
  return refs
 }
 async function persistCorrectedText(book,index,newText){
+ // Text and artwork are independent editorial assets. Capture the currently accepted
+ // illustration under the OLD text-derived cache key before changing any wording, then
+ // pin that exact image to the page so a text-only edit can never trigger regeneration.
+ let existingArtwork=book?.artwork?.pages?.[index]||null;
+ if(!existingArtwork){try{existingArtwork=await correctionCurrentArtwork(book,index)}catch{}}
  const total=book.pages.length+2;
  if(index===0)book.opening=newText;else if(index===total-1)book.closing=newText;else book.pages[index-1].text=newText;
+ if(existingArtwork){book.artwork=book.artwork||{pages:[]};book.artwork.pages=book.artwork.pages||[];book.artwork.pages[index]=existingArtwork}
  if(book.isSaved&&book.savedStoryId){
   const pages=book.pages.map(p=>({text:p.text||'',illustration_prompt:p.illustration_prompt||''}));
   const assets={...(book.savedAssets||{})};delete assets.kdp_description;
