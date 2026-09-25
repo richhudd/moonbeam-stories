@@ -115,12 +115,11 @@ ${prompt}
 
 IMPORTANT
 - This is an illustration for children aged 3-12.
-- Keep the mood warm, adventurous and reassuring.
+- Keep the mood warm, adventurous and reassuring. When a scene contains a drop, opening, water, traffic, moving vehicle, machinery or similar hazard, preserve the event and suspense but compose it so any child is visibly secure through sensible distance, positioning, barriers, handrails or camera viewpoint; do not depict injury or place the child directly in the hazard's path.
 - Follow the scene's actual setting, weather and time of day. Do NOT infer nighttime, moonlight, stars, darkness, sleep, bedrooms, pyjamas or bedtime imagery merely because this is a children's story. Use night only when the supplied scene genuinely calls for it.
 - No words, letters, captions, signs, logos or typography anywhere in the image.
 - Preserve the fixed Moonbeam realism level above; do not drift toward either photography or cartoon/animation rendering.
 - Compose the scene as a beautiful book illustration with clear focal characters and readable silhouettes.
-- VISUAL SAFETY STAGING: This is an illustrated children's book. Preserve the storyboard event, excitement, continuity and all important story facts. When choosing the composition, portray any danger in an age-appropriate, visually safe way. Keep children visibly secure around drops, openings, water, traffic, moving vehicles, machinery and similar hazards by using appropriate distance, barriers, handrails, viewpoint or positioning where needed. Do not remove the danger or change what happens in the story; only choose a safe visual depiction of it.
 - Keep character appearance consistent with the named Cast identity. When a reference photograph is supplied, that photograph is authoritative over any conflicting scene description, equally for children, adults and pets.
 - MALE CAST ACCESSORY RULE: when a photographed human Cast member is marked male, do not add decorative hair clips, bows, barrettes, star ornaments, tiaras, ornamental headbands or similar decorative hair accessories unless clearly present in the uploaded reference photo or explicitly required by the story.
 - CAST DISCIPLINE: do not promote incidental/background people into prominent companions, family members or recurring characters. Do not add an invented spouse, partner, child, relative or friend to a selected Cast member unless the scene explicitly requires that already-established person. Background crowds may exist naturally but should remain visually secondary.
@@ -150,7 +149,7 @@ IMPORTANT
     let first=await callImageModel(finalPrompt),result=first,safetyRetryUsed=false;
     if(safetyRejected(first)&&requiredStoryImage&&!developerCorrection){
       safetyRetryUsed=true;
-      const saferPrompt=`SAFETY RESTAGING REQUIRED: A previous rendering of this scene was rejected by the image safety system. Preserve the same storyboard event, named Cast identities, setting, continuity and all important story facts, but substantially change the visual composition to make the child's physical safety unambiguous. Increase distance from hazards, use barriers or handrails or a safer viewpoint where appropriate, and depict dangerous movement indirectly rather than placing the child in its immediate path. Do not remove the jeopardy, change the plot or add a new event.\n\n${finalPrompt}`;
+      const saferPrompt=`SAFER COMPOSITION RETRY FOR THE SAME STORY SCENE. Preserve the same storyboard event, Cast identities, setting, continuity, narrative meaning and excitement. The previous generated image was rejected by the image safety system, so materially restage only the composition: make any child's physical safety visually unambiguous using greater distance from hazards, a barrier or handrail, secure footing, or a safer camera viewpoint as appropriate. Keep dangerous movement out of the child's immediate path and avoid injury, blood, falling, drowning, crushing, frightening restraint, exposed bodies or ambiguous physical contact. Do not change the plot, remove the danger, add adult rescue or invent a new event.\n\n${finalPrompt}`;
       result=await callImageModel(saferPrompt);
     }
     const r=result.response,raw=result.raw,data=result.data;
