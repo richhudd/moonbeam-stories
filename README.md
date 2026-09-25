@@ -1,3 +1,14 @@
+# Moonbeam Stories V251.58
+
+- Replaces free-canvas developer illustration correction with a masked local-edit workflow.
+- The developer paints only the region allowed to change; Moonbeam sends a same-size PNG mask to OpenAI `/v1/images/edits`.
+- The current accepted page is converted to PNG and remains image #1/edit master; the mask applies to that image.
+- Other book illustrations are reviewed separately for text-only visual continuity and are never attached to the edit call.
+- Correction quality is raised to medium; ordinary story illustration generation remains low quality and unchanged.
+- No new API endpoint and no SQL required.
+
+---
+
 # Moonbeam Stories V251.57
 
 - Rebuilt developer illustration correction as a true edit-only path.

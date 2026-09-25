@@ -31,6 +31,7 @@ module.exports = async function handler(req, res) {
     if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
     const moonbeamUser = await verifyMoonbeamUser(req);
     const developerCorrectionRequested=body.developerCorrection===true;
+    const correctionMask = /^data:image\/png;base64,/i.test(body.correctionMask || '') ? body.correctionMask : '';
     const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
     const developerCorrection=developerCorrectionRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
     if(developerCorrectionRequested&&!developerCorrection)return res.status(403).json({error:'Developer access only.'});
@@ -182,7 +183,7 @@ IMPORTANT
     // V251.57: developer correction is a true edit-only path. Do not wrap the user's
     // correction in the normal story-illustration prompt: that caused the edit model to
     // re-stage/recompose the page from story prose instead of preserving the supplied image.
-    const surgicalCorrectionPrompt = `SURGICAL EDIT OF THE FIRST ATTACHED IMAGE ONLY.\n\nThe FIRST attached image is the existing Moonbeam illustration and is the sole authority for scene, crop, composition, camera, perspective, staging, poses, positions, background, lighting, colours and rendering style. This is NOT a request to illustrate or reinterpret a story. Do not invent a new scene. Do not move, add, remove or redesign anything unless the requested change explicitly requires it.\n\n${prompt}\n\n${wholeBookContinuityDirection}\n${identityDirection}\n\nPRESERVATION RULE: make the smallest possible visual edit. Everything outside the requested correction must remain as close as the image-edit model can preserve it. If identity continuity is relevant, use the text continuity canon and Cast identity references only to correct that identity detail; never use them to alter composition, pose, staging or action. Preserve the existing painted style rather than regenerating it. No text or typography.`;
+    const surgicalCorrectionPrompt = `SURGICAL MASKED EDIT OF THE FIRST ATTACHED IMAGE ONLY.\n\nThe FIRST attached image is the existing Moonbeam illustration and is the sole authority for scene, crop, composition, camera, perspective, staging, poses, positions, background, lighting, colours and rendering style. This is NOT a request to illustrate or reinterpret a story. Do not invent a new scene. Do not move, add, remove or redesign anything unless the requested change explicitly requires it.\n\n${prompt}\n\n${wholeBookContinuityDirection}\n${identityDirection}\n\nMASK RULE: the transparent region of the supplied mask is the only region authorised for change. Do not intentionally alter anything outside it. The mask is a hard editorial boundary, not a suggestion.\n\nPRESERVATION RULE: make the smallest possible visual edit within the mask. Everything outside the requested correction must remain as close as the image-edit model can preserve it. If identity continuity is relevant, use the text continuity canon and Cast identity references only to correct that identity detail; never use them to alter composition, pose, staging or action. Preserve the existing painted style rather than regenerating it. No text or typography.`;
     const finalPrompt = developerCorrection ? surgicalCorrectionPrompt : normalGenerationPrompt;
 
     const callImageModel=async(requestPrompt)=>{
@@ -192,8 +193,9 @@ IMPORTANT
         form.append('model', 'gpt-image-2.5-sunburst');
         form.append('prompt', requestPrompt);
         for(let i=0;i<imageEditRefs.length;i++){const match=String(imageEditRefs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`${imageEditRefs[i].kind==='edit-source'?'edit-master':'cast-reference'}-${i+1}.${extension}`);}
+        if(developerCorrection&&correctionMask){const mm=correctionMask.match(/^data:image\/png;base64,(.+)$/i);if(mm){const maskBytes=Buffer.from(mm[1],'base64');form.append('mask',new Blob([maskBytes],{type:'image/png'}),'edit-mask.png');}}
         if(continuityImage){const match=continuityImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(match){const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`previous-page-continuity.${extension}`);}}
-        form.append('size', '1024x1024');form.append('quality', 'low');form.append('output_format', 'webp');
+        form.append('size', '1024x1024');form.append('quality', developerCorrection?'medium':'low');form.append('output_format', 'webp');
         response=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:form});
       } else {
         response=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-image-2.5-flare',prompt:requestPrompt,size:'1024x1024',quality:'low',output_format:'webp'})});
