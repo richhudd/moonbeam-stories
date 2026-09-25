@@ -1,3 +1,21 @@
+## V251.44 — Isla publishing identity + bounded image-safety recovery
+
+- Completes **Isla Templeton** publishing support: **By Isla Templeton** cover byline, profile photo, fixed About the Author page, EPUB author metadata and Moonbeam link, matching Sam and Emily.
+- Highlights Sam, Emily and Isla as **Published author** entries in the developer Cast list.
+- For required story illustrations only, an OpenAI image-safety rejection now receives **one automatic child-safe reformulation retry**. There is no customer manual retry loop.
+- If that single recovery attempt is also safety-rejected, normal users receive the friendly Moonbeam completion message. Their reserved story credit is refunded before the UI can say **You have not been charged for this attempt**.
+- Developer failures retain the raw safety response and now show the exact storyboard scene prompt and continuity context Moonbeam was trying to depict, plus whether the automatic safety retry was used.
+- No new API endpoint and no database migration.
+
+
+## V251.43 — Isla Templeton EPUB author profile
+
+- Adds **Isla Templeton** to the existing developer Kindle/EPUB publishing workflow alongside Sam Alderwick and Emily Alderwick.
+- A single-hero Isla story now uses **By Isla Templeton** for the developer publishing byline.
+- EPUB export uses Isla's existing Moonbeam child/profile photo for the final **About the Author** page and embeds her fixed reusable author biography plus the Moonbeam Stories link.
+- EPUB metadata identifies the author as **Isla Templeton** and the series as **The Moonbeam Adventures of Isla Templeton**.
+- No API endpoint, database or illustration-generation changes.
+
 ## V251.42
 - Recalibrated story prose across ages 3–12: ages 3–4 now get substantially shorter, simpler read-aloud prose while preserving imaginative plots; ages 11–12 get more sophisticated language, inference, suspense, agency and consequences. Ages 5–10 remain close to the current successful middle range.
 - Strengthened account-level anti-repetition so concept selection compares abstract story DNA — mechanism, journey/transformation, tension, escalation, climax and resolution — rather than accepting the same underlying story with different scenery or props.

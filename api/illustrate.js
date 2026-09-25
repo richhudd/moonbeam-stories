@@ -1,5 +1,5 @@
 const {logUsage,countUsageEvents,estimateGBP}=require('../_usage');
-const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('../_credits');
+const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot,refundReservedStoryCredit}=require('../_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -21,6 +21,7 @@ module.exports = async function handler(req, res) {
     const continuityImage = /^data:image\/(?:jpeg|png|webp);base64,/i.test(body.continuityImage || '') ? body.continuityImage : '';
     const requiredStoryImage = body.requiredStoryImage === true;
     const storyImageIndex = Number.isInteger(body.storyImageIndex) ? body.storyImageIndex : null;
+    const storyCreditBatchId = String(body.storyCreditBatchId || '').trim();
     // V194: the client already sends the story's character bible as `style`.
     // It was previously ignored here, so recurring non-photo characters were being
     // re-invented independently on every image request. Treat it only as immutable
@@ -128,44 +129,51 @@ IMPORTANT
 - The finished output must look like one uninterrupted full-page painting viewed through one camera/composition.
 - Square composition suitable for the right-hand page of a children's book.`;
 
-    let r;
-    if (hasAnyReference) {
-      const form = new FormData();
-      form.append('model', 'gpt-image-2.5-sunburst');
-      form.append('prompt', finalPrompt);
-      for(let i=0;i<refs.length;i++){const match=String(refs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`cast-reference-${i+1}.${extension}`);}
-      if(continuityImage){const match=continuityImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(match){const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`previous-page-continuity.${extension}`);}}
-      form.append('size', '1024x1024');
-      form.append('quality', 'low');
-      form.append('output_format', 'webp');
-      r = await fetch('https://api.openai.com/v1/images/edits', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}` },
-        body: form
-      });
-    } else {
-      r = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'gpt-image-2.5-flare',
-          prompt: finalPrompt,
-          size: '1024x1024',
-          quality: 'low',
-          output_format: 'webp'
-        })
-      });
+    const callImageModel=async(requestPrompt)=>{
+      let response;
+      if (hasAnyReference) {
+        const form = new FormData();
+        form.append('model', 'gpt-image-2.5-sunburst');
+        form.append('prompt', requestPrompt);
+        for(let i=0;i<refs.length;i++){const match=String(refs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`cast-reference-${i+1}.${extension}`);}
+        if(continuityImage){const match=continuityImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(match){const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`previous-page-continuity.${extension}`);}}
+        form.append('size', '1024x1024');form.append('quality', 'low');form.append('output_format', 'webp');
+        response=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:form});
+      } else {
+        response=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-image-2.5-flare',prompt:requestPrompt,size:'1024x1024',quality:'low',output_format:'webp'})});
+      }
+      const responseRaw=await response.text();let responseData={};try{responseData=JSON.parse(responseRaw)}catch{}
+      return {response,raw:responseRaw,data:responseData};
+    };
+    const safetyRejected=(result)=>{if(result?.response?.ok)return false;const e=result?.data?.error;const msg=String(typeof e==='string'?e:(e?.message||e?.code||e?.type||result?.raw||'')).toLowerCase();return msg.includes('safety')||msg.includes('moderation')||msg.includes('content policy')||msg.includes('policy violation')};
+    let first=await callImageModel(finalPrompt),result=first,safetyRetryUsed=false;
+    if(safetyRejected(first)&&requiredStoryImage&&!developerCorrection){
+      safetyRetryUsed=true;
+      const saferPrompt=`CHILD-SAFE REFORMULATION FOR THE SAME STORY SCENE. This is a benign illustrated children's story for ages 3-12. Preserve the same named Cast identities, setting, continuity, story event and narrative meaning, but depict the moment in the safest clear non-graphic way. Avoid injury detail, threatening framing, exposed bodies, distress emphasis, dangerous imitation detail or ambiguous physical contact. If the scene contains jeopardy, show it as mild storybook suspense with everyone visibly safe and appropriately clothed. Do not add any new event.\n\n${finalPrompt}`;
+      result=await callImageModel(saferPrompt);
     }
-
-    const raw = await r.text();
-    let data;
-    try { data = JSON.parse(raw); } catch { data = {}; }
-
+    const r=result.response,raw=result.raw,data=result.data;
     if (!r.ok) {
-      const e = data && data.error;
-      const message = typeof e === 'string' ? e : (e && (e.message || e.code || e.type)) || `OpenAI returned HTTP ${r.status}`;
+      const e=data&&data.error,message=typeof e==='string'?e:(e&&(e.message||e.code||e.type))||`OpenAI returned HTTP ${r.status}`;
+      const finalSafety=safetyRejected(result);
       await refundSlot();
-      return res.status(502).json({ error: String(message), openai_status: r.status });
+      if(finalSafety&&requiredStoryImage&&!developerCorrection){
+        let creditsRemaining=null,creditRefunded=false;
+        if(storyCreditBatchId){
+          try{
+            const runMeta={user_id:moonbeamUser.id,generation_run_id:generationRunId};
+            const already=await countUsageEvents('story_image_safety_refund',runMeta);
+            if(already===0){const marker=await logUsage({event_type:'story_image_safety_refund',estimated_cost_gbp:0,metadata:{...runMeta,story_image_index:storyImageIndex}});if(marker){creditsRemaining=await refundReservedStoryCredit(moonbeamUser.id,storyCreditBatchId);creditRefunded=true}}
+          }catch(refundError){console.error('story safety credit refund failed',refundError)}
+        }
+        const developerDiagnostic=developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail?{
+          stage:`illustration ${Number.isInteger(storyImageIndex)?storyImageIndex+1:'unknown'}`,
+          scene_prompt:prompt.slice(0,6000),character_continuity:characterContinuity.slice(0,3000),
+          first_rejection:first.raw.slice(0,1800),retry_rejection:raw.slice(0,1800),automatic_retry_used:safetyRetryUsed
+        }:undefined;
+        return res.status(502).json({error:String(message),code:'IMAGE_SAFETY_REJECTION',openai_status:r.status,automatic_retry_used:safetyRetryUsed,credit_refunded:creditRefunded,creditsRemaining,...(developerDiagnostic?{developer_image_diagnostic:developerDiagnostic}:{})});
+      }
+      return res.status(502).json({error:String(message),openai_status:r.status});
     }
 
     const item = Array.isArray(data.data) ? data.data[0] : null;

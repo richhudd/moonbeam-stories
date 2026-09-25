@@ -4201,3 +4201,7 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 
 /* V251.41 — live elapsed wait counter below the historical average. */
 .story-preparing .preparing-elapsed{margin-top:-8px;font-size:13px!important;font-weight:600;color:#cfc5ee!important;opacity:.95}
+
+/* V251.44 — developer Cast publishing identity */
+.cast-member.published-author{border-color:rgba(154,131,80,.5);box-shadow:inset 0 0 0 1px rgba(207,176,105,.14)}
+.published-author-badge{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#f4ead0;color:#765f28;font:700 10px/1.5 system-ui,-apple-system,sans-serif;vertical-align:2px;white-space:nowrap}

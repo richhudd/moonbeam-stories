@@ -561,7 +561,7 @@ Before returning the plan, check silently that the six pictures together would m
     await logUsage({event_type:'story_plan',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
     await logSupportAttempt('success',{credit_deducted:!developerDemo,credit_refunded:false,generation_run_id:generationRunId});
     creditReserved=false;
-    return res.status(200).json({creditsRemaining,generationRunId,plan,image:null,layout:{requestedLength:length,storyPages:4,displayedTextPages:6,storyboardFirst:true},...(developerDemo?{developer_diagnostics:developerTextDiagnostics}:{})});
+    return res.status(200).json({creditsRemaining,generationRunId,storyCreditBatchId:developerDemo?'':reservedBatchId,plan,image:null,layout:{requestedLength:length,storyPages:4,displayedTextPages:6,storyboardFirst:true},...(developerDemo?{developer_diagnostics:developerTextDiagnostics}:{})});
   } catch (e) {
     console.error('generate error', e);
     const hadReservedCredit=creditReserved;

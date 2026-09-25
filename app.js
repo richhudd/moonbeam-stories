@@ -43,6 +43,7 @@ let pendingInstagramPost=null;
 let pendingInstagramReel=null;
 let instagramDemoChildRunning=false;
 let castMembers246=[];
+let activeStoryCreditBatchId='';
 let storyHeroIds248=new Set(),storySupportIds248=new Set();
 let castEditor246={kind:'child',id:null,photo:null,originalPhoto:null};
 const requestedLanguage=new URLSearchParams(location.search).get('lang');
@@ -180,7 +181,7 @@ const coverLocales={
 function coverT(){return coverLocales[language]||coverLocales['en-GB']}
 function coverHeroNames(book=currentBook){const castNames=(book?.child?.cast||[]).filter(m=>m?.role==='hero').map(m=>String(m.name||'').trim()).filter(Boolean).slice(0,2);const savedNames=Array.isArray(book?.savedAssets?.heroNames)?book.savedAssets.heroNames.map(n=>String(n||'').trim()).filter(Boolean).slice(0,2):[];const names=castNames.length?castNames:savedNames;if(!names.length&&book?.child?.name)names.push(String(book.child.name).trim());return [...new Set(names)]}
 function coverHeroList(names,locale=language){if(names.length<2)return names[0]||'';const conjunction={'en-GB':'and','en-US':'and','es-ES':'y','es-419':'y','fr-FR':'et','de-DE':'und','it-IT':'e','pt-BR':'e','pl-PL':'i'}[locale]||'and';return `${names[0]} ${conjunction} ${names[1]}`}
-function developerChildCoverCredit(book=currentBook){if(!instagramDeveloperAccess)return '';const names=coverHeroNames(book);if(names.length!==1)return '';const name=String(names[0]||'').trim().toLowerCase();if(name==='sam')return 'By Sam Alderwick';if(name==='emily')return 'By Emily Alderwick';return ''}
+function developerChildCoverCredit(book=currentBook){if(!instagramDeveloperAccess)return '';const names=coverHeroNames(book);if(names.length!==1)return '';const name=String(names[0]||'').trim().toLowerCase();if(name==='sam')return 'By Sam Alderwick';if(name==='emily')return 'By Emily Alderwick';if(name==='isla')return 'By Isla Templeton';return ''}
 function coverSubtitle(book=currentBook){return String(book?.coverByline||book?.dedication||'').trim()||developerChildCoverCredit(book)||coverT().forChild(coverHeroList(coverHeroNames(book),language))}
 function refreshCoverSubtitle(){const el=$('coverSubtitle');if(el&&currentBook)el.textContent=coverSubtitle(currentBook)}
 function refreshCoverTextOverlay(book=currentBook){
@@ -743,8 +744,11 @@ function storyboardIllustrationPrompt(plan,index){
 }
 async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null){
  let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
- let response=null,raw='';try{response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:storyboardIllustrationPrompt(plan,index),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:child?.referenceImages||[],continuityImage:continuityImage||null,generationRunId,requiredStoryImage:true,storyImageIndex:index})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic(`illustration ${index+1} request`,networkError,response,raw))}
- let data=null;try{data=JSON.parse(raw)}catch{};if(!response.ok||!data?.image){const base=new Error(data?.error||`Illustration service failed (${response.status})`);throw new Error(developerGenerationDiagnostic(`illustration ${index+1} response`,base,response,raw))}return data.image
+ let response=null,raw='';try{response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:storyboardIllustrationPrompt(plan,index),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:child?.referenceImages||[],continuityImage:continuityImage||null,generationRunId,storyCreditBatchId:activeStoryCreditBatchId,requiredStoryImage:true,storyImageIndex:index})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic(`illustration ${index+1} request`,networkError,response,raw))}
+ let data=null;try{data=JSON.parse(raw)}catch{};if(!response.ok||!data?.image){
+  if(data?.code==='IMAGE_SAFETY_REJECTION'&&!instagramDeveloperAccess){if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));const msg=data?.credit_refunded===true?"We’re sorry, Moonbeam isn’t able to complete your story right now. Please try again later. You have not been charged for this attempt.":"We’re sorry, Moonbeam isn’t able to complete your story right now. Please try again later.";throw new Error(msg)}
+  const base=new Error(data?.error||`Illustration service failed (${response.status})`);throw new Error(developerGenerationDiagnostic(`illustration ${index+1} response`,base,response,raw))
+ }return data.image
 }
 function storyboardThumbnail(dataUrl){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const max=320,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.72))};img.onerror=()=>reject(new Error('A storyboard illustration could not be prepared for the writer.'));img.src=dataUrl})}
 async function createStoryboardArtwork(plan,child,generationRunId){
@@ -809,12 +813,13 @@ function developerGenerationDiagnostic(stage,error,response=null,raw=''){
  let payload=null;try{payload=JSON.parse(String(raw||''))}catch{}
  const diagnostics=[...lastDeveloperTextDiagnostics];if(payload?.developer_diagnostic)diagnostics.push(payload.developer_diagnostic);
  if(diagnostics.length){parts.push('token usage:');for(const d of diagnostics){parts.push(`- ${d.stage||'AI stage'}: input ${d.input_tokens??'n/a'} | output ${d.output_tokens??'n/a'} / max ${d.max_output_tokens??'n/a'} | total ${d.total_tokens??'n/a'} | status ${d.response_status??d.http_status??'n/a'}${d.incomplete_reason?` | incomplete: ${d.incomplete_reason}`:''}${d.output_chars!=null?` | output chars ${d.output_chars}`:''}`);if(d.output_tail)parts.push(`  output tail: ${String(d.output_tail).replace(/\s+/g,' ').slice(-800)}`)}}
+ if(payload?.developer_image_diagnostic){const d=payload.developer_image_diagnostic;parts.push(`image scene diagnostic: ${d.stage||stage}`);parts.push(`automatic safety retry used: ${d.automatic_retry_used===true}`);if(d.scene_prompt)parts.push(`scene Moonbeam was trying to depict:\n${d.scene_prompt}`);if(d.character_continuity)parts.push(`character/continuity context:\n${d.character_continuity}`);if(d.first_rejection)parts.push(`first safety response: ${String(d.first_rejection).replace(/\s+/g,' ').slice(0,1800)}`);if(d.retry_rejection)parts.push(`retry safety response: ${String(d.retry_rejection).replace(/\s+/g,' ').slice(0,1800)}`)}
  const preview=String(raw||'').replace(/\s+/g,' ').trim();if(preview)parts.push(`response preview: ${preview.slice(0,1600)}`);
  return parts.join('\n');
 }
 
 async function generateStory(){
- lastDeveloperTextDiagnostics=[];
+ lastDeveloperTextDiagnostics=[];activeStoryCreditBatchId='';
  syncGenerationAdapter246();
  if(activeProfileId&&!currentChildPhoto)currentChildPhoto=await childPhotoGetForProfile(activeProfileId);
  let resolvedReferencePhoto=null;
@@ -849,6 +854,7 @@ async function generateStory(){
    if(!response.ok){const base=new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`);throw new Error(developerGenerationDiagnostic('concept/storyboard response',base,response,raw))}
    if(!data?.plan||!Array.isArray(data.plan.scenes)||data.plan.scenes.length!==6)throw new Error('The story service did not return a complete visual storyboard.');
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
+   activeStoryCreditBatchId=String(data.storyCreditBatchId||'');
    child.generationRunId=data.generationRunId||null;
    if(preparingCopy)preparingCopy.textContent='Moonbeam is illustrating the whole adventure before writing it…';
    const storyboardArtwork=await createStoryboardArtwork(data.plan,child,child.generationRunId);
@@ -1630,7 +1636,8 @@ function mountMobileSharedCreateButton(book,sx){
 // V250.92 — developer-only fixed-layout Kindle EPUB export for Sam/Emily series.
 const KINDLE_AUTHOR_PROFILES={
  sam:{name:'Sam Alderwick',series:'The Moonbeam Adventures of Sam Alderwick',bio:'Sam Alderwick is a young storyteller with a big imagination and a taste for extraordinary adventures.\n\nSam creates his stories with Moonbeam Stories, turning his ideas into illustrated adventures in which he can travel anywhere, discover anything and never quite know what might happen next.\n\nWhen one adventure ends, there is always another waiting to begin.'},
- emily:{name:'Emily Alderwick',series:'The Moonbeam Adventures of Emily Alderwick',bio:'Emily Alderwick is a young storyteller who loves imagining new characters, curious places and adventures where anything can happen.\n\nEmily creates her stories with Moonbeam Stories, bringing her ideas to life as beautifully illustrated books and putting herself right at the heart of every adventure.\n\nEvery story begins with an idea. From there, who knows where it might lead?'}
+ emily:{name:'Emily Alderwick',series:'The Moonbeam Adventures of Emily Alderwick',bio:'Emily Alderwick is a young storyteller who loves imagining new characters, curious places and adventures where anything can happen.\n\nEmily creates her stories with Moonbeam Stories, bringing her ideas to life as beautifully illustrated books and putting herself right at the heart of every adventure.\n\nEvery story begins with an idea. From there, who knows where it might lead?'},
+ isla:{name:'Isla Templeton',series:'The Moonbeam Adventures of Isla Templeton',bio:'Isla Templeton is a young storyteller with a curious imagination and a love of adventures that begin with an unusual idea.\n\nIsla creates her stories with Moonbeam Stories, transforming her ideas into beautifully illustrated books where strange discoveries can lead anywhere and nothing is quite as ordinary as it first appears.\n\nEvery new story is a chance to discover what might happen next.'}
 };
 function kindleAuthorProfile(book=currentBook){if(!instagramDeveloperAccess||!book)return null;const names=coverHeroNames(book);if(names.length!==1)return null;return KINDLE_AUTHOR_PROFILES[String(names[0]||'').trim().toLowerCase()]||null}
 function kindleXml(s=''){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
@@ -1666,7 +1673,7 @@ async function ensureKdpDescription(book=currentBook,profile=kindleAuthorProfile
 function kindleKdpDescriptionPanel(book=currentBook){const d=String(book?.savedAssets?.kdp_description||'').trim();if(!d)return '';return `<div class="kdp-description-panel"><div class="kdp-description-title">KDP Description</div><textarea id="kdpDescriptionText" readonly>${escapeHtml(d)}</textarea><button class="secondary" id="copyKdpDescription" type="button">Copy KDP Description</button></div>`}
 async function copyKdpDescription(){const text=String(currentBook?.savedAssets?.kdp_description||'').trim();if(!text)return;try{await navigator.clipboard.writeText(text)}catch{const ta=$('kdpDescriptionText');if(ta){ta.focus();ta.select();document.execCommand('copy')}}const b=$('copyKdpDescription');if(b){const old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>{if(b)b.textContent=old},1400)}}
 async function downloadKindleEbook(){
- const book=currentBook,profile=kindleAuthorProfile(book);if(!book||!profile){alert('Kindle export is available for single-child Sam or Emily books on the developer account.');return}
+ const book=currentBook,profile=kindleAuthorProfile(book);if(!book||!profile){alert('Kindle export is available for single-child Sam, Emily or Isla books on the developer account.');return}
  const button=$('endKindleExport'),old=button?.textContent;if(button){button.disabled=true;button.textContent='Preparing Kindle eBook…'}
  try{
   if(!book.isSaved){alert('Please save the finished book before exporting it to Kindle.');return}
@@ -2458,7 +2465,7 @@ async function loadCastMembers246(){
 async function castPhoto246(id){return id?await childPhotoGetForProfile(id):null}
 async function renderCast246(){
  const children=$('castChildren'),adults=$('castAdults'),pets=$('castPets');if(!children||!adults||!pets)return;const x=castText246();
- const render=async(el,rows,empty)=>{if(!rows.length){el.innerHTML=`<div class="cast-empty">${escapeHtml(empty)}</div>`;return}el.innerHTML=(await Promise.all(rows.map(async m=>{const photo=await castPhoto246(m.id),g=castGenderLabel246(m.gender,x),meta=m.kind==='child'?[`${x.age} ${m.age}`,g].filter(Boolean).join(' · '):m.kind==='adult'?(g||''):(m.animal_type||'');return `<div class="cast-member" data-cast-kind="${m.kind}" data-cast-id="${escapeHtml(m.id)}" tabindex="0"><span class="cast-avatar">${photo?`<img src="${photo}" alt="">`:'<span>☾</span>'}</span><span class="cast-member-copy"><strong>${escapeHtml(m.name)}</strong><small>${escapeHtml(meta)}</small></span><button class="cast-menu-button" type="button" aria-label="Menu">⋯</button></div>`}))).join('');bindCastCards246(el)};
+ const render=async(el,rows,empty)=>{if(!rows.length){el.innerHTML=`<div class="cast-empty">${escapeHtml(empty)}</div>`;return}el.innerHTML=(await Promise.all(rows.map(async m=>{const photo=await castPhoto246(m.id),g=castGenderLabel246(m.gender,x),meta=m.kind==='child'?[`${x.age} ${m.age}`,g].filter(Boolean).join(' · '):m.kind==='adult'?(g||''):(m.animal_type||''),publisher=instagramDeveloperAccess&&m.kind==='child'&&['sam','emily','isla'].includes(String(m.name||'').trim().toLowerCase());return `<div class="cast-member${publisher?' published-author':''}" data-cast-kind="${m.kind}" data-cast-id="${escapeHtml(m.id)}" tabindex="0"><span class="cast-avatar">${photo?`<img src="${photo}" alt="">`:'<span>☾</span>'}</span><span class="cast-member-copy"><strong>${escapeHtml(m.name)}${publisher?' <span class="published-author-badge">Published author</span>':''}</strong><small>${escapeHtml(meta)}</small></span><button class="cast-menu-button" type="button" aria-label="Menu">⋯</button></div>`}))).join('');bindCastCards246(el)};
  await Promise.all([render(children,castMembers246.filter(m=>m.kind==='child'),x.emptyChild),render(adults,castMembers246.filter(m=>m.kind==='adult'),x.emptyAdult),render(pets,castMembers246.filter(m=>m.kind==='pet'),x.emptyPet)]);await renderStoryRoles248();
 }
 function castMember246(id){return castMembers246.find(m=>m.id===id)||null}
