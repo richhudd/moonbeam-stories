@@ -1,3 +1,11 @@
+## V251.45 — robust final-story reconciliation
+
+- Fixes a false final-reconciliation failure where OpenAI could return HTTP 200 with a completed story but Moonbeam discarded it because the final stage used a stricter one-off JSON parser than the rest of the story engine.
+- Final reconciliation now reuses Moonbeam's tolerant JSON extraction, including fenced/wrapped JSON and harmless trailing-comma recovery, without making another OpenAI call.
+- Developer diagnostics now identify the exact validation failure (parse failure, missing field, wrong page count or empty page), plus parsed keys/page count and bounded response head/tail.
+- No story prompt, illustration prompt, retry policy, credit logic, API endpoint or database changes.
+
+
 ## V251.44 — Isla publishing identity + bounded image-safety recovery
 
 - Completes **Isla Templeton** publishing support: **By Isla Templeton** cover byline, profile photo, fixed About the Author page, EPUB author metadata and Moonbeam link, matching Sam and Emily.

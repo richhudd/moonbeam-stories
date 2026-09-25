@@ -153,8 +153,35 @@ module.exports = async function handler(req, res) {
       if(!r.ok){const e=data?.error;const payload={error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)};if(finalDiagnostic)payload.developer_diagnostic=finalDiagnostic;return res.status(502).json(payload)}
       let output=typeof data.output_text==='string'?data.output_text:'';if(!output&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')output+=part.text;
       if(finalDiagnostic)finalDiagnostic.output_chars=output.length;
-      const clean=String(output||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/i,'');let parsed=null;try{parsed=JSON.parse(clean)}catch{const a=clean.indexOf('{'),b=clean.lastIndexOf('}');if(a>=0&&b>a)try{parsed=JSON.parse(clean.slice(a,b+1))}catch{}}
-      if(!parsed||!parsed.title||!parsed.opening||!parsed.closing||!Array.isArray(parsed.pages)||parsed.pages.length!==4){const payload={error:'Moonbeam could not reconcile the finished illustrations into the final story.'};if(finalDiagnostic){finalDiagnostic.parse_valid=!!parsed;finalDiagnostic.output_tail=output.slice(-800);payload.developer_diagnostic=finalDiagnostic}return res.status(502).json(payload)}
+      // V251.45: use the same tolerant JSON extraction already proven by the main story stages.
+      // Responses may be wrapped in markdown/a `story` object or contain harmless trailing commas;
+      // a completed, paid-for reconciliation must not be discarded merely because the wrapper is imperfect.
+      const parsed=parseStoryOutput(output);
+      const reconciliationIssues=[];
+      if(!parsed)reconciliationIssues.push('JSON could not be parsed');
+      else{
+        if(typeof parsed.title!=='string'||!parsed.title.trim())reconciliationIssues.push('missing title');
+        if(typeof parsed.opening!=='string'||!parsed.opening.trim())reconciliationIssues.push('missing opening');
+        if(!Array.isArray(parsed.pages))reconciliationIssues.push('pages is not an array');
+        else{
+          if(parsed.pages.length!==4)reconciliationIssues.push(`expected 4 middle pages, received ${parsed.pages.length}`);
+          parsed.pages.forEach((pg,i)=>{if(typeof pg?.text!=='string'||!pg.text.trim())reconciliationIssues.push(`page ${i+2} text is empty`)})
+        }
+        if(typeof parsed.closing!=='string'||!parsed.closing.trim())reconciliationIssues.push('missing closing');
+      }
+      if(reconciliationIssues.length){
+        const payload={error:'Moonbeam could not reconcile the finished illustrations into the final story.'};
+        if(finalDiagnostic){
+          finalDiagnostic.parse_valid=!!parsed;
+          finalDiagnostic.validation_issues=reconciliationIssues;
+          finalDiagnostic.parsed_keys=parsed&&typeof parsed==='object'?Object.keys(parsed).slice(0,20):[];
+          finalDiagnostic.parsed_page_count=Array.isArray(parsed?.pages)?parsed.pages.length:null;
+          finalDiagnostic.output_head=output.slice(0,500);
+          finalDiagnostic.output_tail=output.slice(-1000);
+          payload.developer_diagnostic=finalDiagnostic;
+        }
+        return res.status(502).json(payload)
+      }
       const story={title:String(parsed.title).trim(),opening:String(parsed.opening).trim(),character_bible:String(plan.character_bible||'').trim(),pages:parsed.pages.map((pg,i)=>({text:String(pg?.text||'').trim(),illustration_prompt:String(scenes[i+1]?.visual_moment||scenes[i+1]?.event||'').trim()})),closing:String(parsed.closing).trim()};
       if(story.pages.some(pg=>!pg.text))return res.status(502).json({error:'The finished story contained an empty page.'});
       await logUsage({event_type:'story_finalize',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:String(body.generationRunId||'')}});
