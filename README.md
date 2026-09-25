@@ -859,3 +859,11 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Developer-only Generate demo child tool now lets the developer choose Boy, Girl or Random and age 3–12 or Random before generation.
 - Random remains the default for both controls, preserving the previous one-click behaviour.
 - Normal customer child creation and illustration behaviour are unchanged.
+
+## V251.50
+- Separates narrative/storyboard context from image-generation context for required story illustrations.
+- Normal page illustration requests now send the already-planned current visual moment plus character/world continuity, rather than repeatedly exposing the image model to hazardous actions from all six scenes.
+- Safety retries are rebuilt as genuinely fresh minimal prompts instead of prepending instructions to the rejected long prompt.
+- Retry composition requires children to be visibly secure on stable ground with hazards separated by distance, structure, barrier or viewpoint.
+- Story danger, suspense, six-scene planning, Cast identity, previous-art continuity and visual-variety architecture remain intact.
+- No Supabase schema change and no API endpoint added.

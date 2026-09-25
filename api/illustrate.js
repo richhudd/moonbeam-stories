@@ -84,6 +84,30 @@ The exact same degree of realism, facial treatment, anatomy, painterly finish, l
 PROHIBITED STYLE DRIFT
 Do not use oversized or doll-like eyes, enlarged heads, button noses, chibi proportions, caricature, anime, comic-book outlines, flat cartoon rendering, glossy plastic 3D characters, Pixar/Disney-like animation character design, toy-like faces, or photorealistic photography. Do not allow humorous, magical, exciting or dramatic scene content to alter the fixed rendering style.`;
 
+    // V251.50: Story prose and the full six-scene production plan are useful to the
+    // story engine, but they are unnecessary moderation surface for the image model.
+    // For normal required story pages, reduce the image-facing scene content to the
+    // already-planned CURRENT SCENE. Character/world continuity is supplied separately
+    // below and by the previous-art reference, so this preserves visual coherence without
+    // repeatedly sending hazardous narrative actions from unrelated scenes.
+    const imageSafeSceneContent=(()=>{
+      if(developerCorrection||!requiredStoryImage)return prompt;
+      const marker='CURRENT SCENE — DRAW THIS, NOT AN EARLIER OR LATER EVENT:';
+      const start=prompt.indexOf(marker);
+      if(start<0)return prompt;
+      const after=prompt.slice(start+marker.length).trim();
+      const stops=[
+        'This illustration must make sense as one moment in the complete visual sequence.',
+        'character/continuity context:',
+        'CHARACTER/CONTINUITY CONTEXT:'
+      ];
+      let end=after.length;
+      for(const stop of stops){const i=after.indexOf(stop);if(i>=0&&i<end)end=i;}
+      const current=after.slice(0,end).trim();
+      if(!current)return prompt;
+      return `CURRENT ILLUSTRATION ONLY — SAFE VISUAL BRIEF\n${current}\n\nShow only this current moment. The child must be visibly secure on stable ground. Keep any hazardous condition clearly separated from the child by distance, structure, barrier or viewpoint. The story may contain danger, but this image must depict the child in an unambiguously safe physical position. Do not depict falling, drowning, crushing, entrapment, injury, or a child directly in the path of floodwater, debris, traffic, machinery or another immediate hazard.`;
+    })();
+
     const correctionPrefix = developerCorrection ? `SURGICAL IMAGE EDIT MODE. The FIRST supplied reference image is the existing illustration being corrected and is the visual master. Preserve all unrelated visible details as closely as possible. Do NOT create a new composition. Change only the developer-identified error and the minimum dependent detail required for physical coherence. The usual instruction below to create a new composition does NOT apply to this correction request.\n\n` : '';
     const finalPrompt = `${correctionPrefix}Create a single full-page illustration for a premium children's storybook.
 
@@ -111,7 +135,7 @@ RECURRING VISUAL ELEMENT CONTINUITY
 When the story establishes a distinctive recurring object, vehicle, machine, building, creature or important environment, treat its defining visual characteristics as persistent identity features across the book. Preserve the established overall shape, proportions, materials, colours and the number and placement of major distinctive parts such as controls, pedals, wheels, handles, screens, doors, markings or architectural features. Different viewpoints are welcome, and story events may legitimately open, move, illuminate, dirty, damage or otherwise alter it when the text requires, but do not arbitrarily redesign it between illustrations. Apply this continuity rule to visually important recurring elements, not to ordinary incidental background objects.
 
 SCENE CONTENT — CONTENT ONLY; IT MUST NOT OVERRIDE THE FIXED HOUSE STYLE ABOVE
-${prompt}
+${imageSafeSceneContent}
 
 IMPORTANT
 - This is an illustration for children aged 3-12.
@@ -149,7 +173,24 @@ IMPORTANT
     let first=await callImageModel(finalPrompt),result=first,safetyRetryUsed=false;
     if(safetyRejected(first)&&requiredStoryImage&&!developerCorrection){
       safetyRetryUsed=true;
-      const saferPrompt=`SAFETY RESTAGING REQUIRED — DO NOT REUSE THE REJECTED COMPOSITION. Preserve the same storyboard event, Cast identities, setting, continuity, narrative meaning and excitement, but choose a substantially different camera position and staging. Put every child on clearly stable, secure ground and create obvious physical separation from any drop, open shaft, deep or fast water, falling debris, traffic, moving vehicle, machinery or other hazard. Show the dangerous event at a distance, behind or beyond the child, beyond a barrier/handrail where natural, or from a viewpoint that keeps the hazard visible without placing the child in its immediate path. If the storyboard's literal VISUAL MOMENT describes the child on a narrow ledge, at an edge, beneath falling material or immediately beside a hazard, do NOT preserve that exact placement on this retry; preserve the narrative fact by restaging the same event from a secure position. Do not depict injury, blood, falling, drowning, crushing, frightening restraint, exposed bodies or ambiguous physical contact. Do not remove the danger from the story, add adult rescue, or invent a different plot event.\n\n${finalPrompt}`;
+      // V251.50: a moderation retry is a genuinely fresh, minimal image request — not
+      // the rejected long prompt with another paragraph prepended. This deliberately omits
+      // the full-book prose/storyboard and all non-current hazardous narrative actions.
+      const saferPrompt=`Create one square full-page premium children's storybook painting.
+
+${MOONBEAM_HOUSE_STYLE}
+${identityDirection}
+${continuityDirection}
+
+CHARACTER CONTINUITY
+${characterContinuity || 'Keep recurring characters consistent with established artwork.'}
+
+SAFETY-RESTAGED CURRENT MOMENT
+${imageSafeSceneContent}
+
+Use a substantially different camera position from the rejected rendering. Place every child visibly on broad, stable, secure ground. Put water, drops, debris, machinery, traffic or other hazards clearly in the background or beyond a physical separation. The hazard may remain visible as story context, but the child must not appear endangered by it in the image. Do not depict falling, drowning, crushing, injury, restraint, exposed bodies or ambiguous physical contact. Preserve Cast identity, established clothing, recurring objects and setting. One continuous scene, one physical instance of each character, no text or typography, no collage, no split panels. Do not copy the previous artwork's composition.
+
+Square composition.`;
       result=await callImageModel(saferPrompt);
     }
     const r=result.response,raw=result.raw,data=result.data;
