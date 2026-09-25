@@ -4205,3 +4205,18 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 /* V251.44 — developer Cast publishing identity */
 .cast-member.published-author{border-color:rgba(154,131,80,.5);box-shadow:inset 0 0 0 1px rgba(207,176,105,.14)}
 .published-author-badge{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#f4ead0;color:#765f28;font:700 10px/1.5 system-ui,-apple-system,sans-serif;vertical-align:2px;white-space:nowrap}
+
+
+/* V251.59 — bounded, coordinate-safe developer mask editor. */
+.developer-correction-dialog{overflow:auto;overscroll-behavior:contain}
+.developer-correction-card{width:min(760px,94vw);max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box}
+.developer-mask-panel{margin-top:14px}
+.developer-mask-stage{position:relative;width:min(100%,640px);aspect-ratio:1/1;margin:10px auto 0;overflow:hidden;border-radius:14px;background:#211a36;box-shadow:0 0 0 1px rgba(50,35,70,.18);touch-action:none;user-select:none}
+.developer-mask-stage img,.developer-mask-stage canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+.developer-mask-stage img{pointer-events:none}
+.developer-mask-stage canvas{z-index:2;cursor:crosshair;touch-action:none}
+.developer-mask-controls{position:sticky;bottom:-24px;z-index:4;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 0 2px;background:#fbf7ee}
+.developer-mask-controls label{display:flex;align-items:center;gap:8px;flex:1 1 180px;font:600 13px/1.2 system-ui,-apple-system,sans-serif}
+.developer-mask-controls input[type=range]{width:100%}
+@media(max-height:760px){.developer-correction-card{max-height:calc(100dvh - 16px);padding:18px}.developer-mask-stage{width:min(100%,52dvh)}}
+@media(max-width:700px){.developer-correction-dialog{padding:8px}.developer-correction-card{width:100%;max-height:calc(100dvh - 16px);padding:16px}.developer-mask-stage{width:min(100%,62dvh)}}

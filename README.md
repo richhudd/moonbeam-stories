@@ -1,4 +1,4 @@
-# Moonbeam Stories V251.58
+# Moonbeam Stories V251.59
 
 - Replaces free-canvas developer illustration correction with a masked local-edit workflow.
 - The developer paints only the region allowed to change; Moonbeam sends a same-size PNG mask to OpenAI `/v1/images/edits`.
@@ -927,3 +927,9 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Retry composition requires children to be visibly secure on stable ground with hazards separated by distance, structure, barrier or viewpoint.
 - Story danger, suspense, six-scene planning, Cast identity, previous-art continuity and visual-variety architecture remain intact.
 - No Supabase schema change and no API endpoint added.
+
+
+## V251.59
+- Fixes the developer masked-illustration editor so the complete image is bounded inside the correction dialog and the overlay canvas remains exactly aligned with it.
+- Prevents the public homepage flashing during signed-in session restoration on refresh.
+- Locks cover character rendering to the same naturalistic realism standard as interior illustrations.

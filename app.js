@@ -296,14 +296,14 @@ async function readSessionReliably({retryEmpty=false,attempts=3}={}){
 
 async function initSupabase(){
  const sharedToken=shareTokenFromLocation();if(sharedToken){await loadSharedStory(sharedToken);return}
- if(!supabaseClient){$('authStatus').textContent='Account service could not load.';return}
+ if(!supabaseClient){document.documentElement.classList.remove('auth-boot');$('authStatus').textContent='Account service could not load.';return}
  supabaseClient.auth.onAuthStateChange((event,session)=>{
    if(event==='PASSWORD_RECOVERY') setTimeout(()=>showPasswordRecovery(),0);
    if(session)setTimeout(()=>applyAuthSession(session),0);
    else if(event==='SIGNED_OUT')setTimeout(()=>applyAuthSession(null),0)
  });
  const restored=await readSessionReliably({retryEmpty:true,attempts:3});
- if(restored.error){console.warn('Initial Moonbeam session restoration failed',restored.error);setAuthStatus('Moonbeam could not verify your login. Please check your connection and try again.',true);return}
+ if(restored.error){document.documentElement.classList.remove('auth-boot');console.warn('Initial Moonbeam session restoration failed',restored.error);setAuthStatus('Moonbeam could not verify your login. Please check your connection and try again.',true);return}
  await applyAuthSession(restored.session);
 }
 const UI_STATUS_135={
@@ -320,6 +320,7 @@ const UI_STATUS_135={
 function uiStatus135(){return UI_STATUS_135[language]||UI_STATUS_135['en-GB']}
 function setAuthStatus(message,isError=false){const el=$('authStatus');if(!el)return;el.innerHTML=isError?`<span class="error">${escapeHtml(message)}</span>`:escapeHtml(message||'')}
 async function applyAuthSession(session){
+ document.documentElement.classList.remove('auth-boot');
  const previousUserId=currentUser?.id||null;
  const nextUser=session?.user||null;
  const sameSignedInUser=!!previousUserId&&!!nextUser&&previousUserId===nextUser.id;
@@ -912,6 +913,8 @@ STORY WORLD / CHARACTER CONTINUITY:
 ${book.character_bible||'Keep the hero and story world consistent.'}
 
 Read the complete finished story above before choosing the cover scene. The cover must represent the story that was actually written, not a generic interpretation of its title, genre or original premise. Preserve concrete story facts including location, time of day, weather, clothing, important props, vehicles, machines, buildings, creatures, their relative scale and distinctive appearance. Never substitute genre shorthand for a specifically established story element: if the story establishes a small lift, do not invent a rocket; if it takes place in a garden, do not relocate it to a beach; if the relevant scene is at midnight, do not turn it into bright daylight. Artistic freedom may fill only details the finished story leaves unspecified.
+
+VISUAL STYLE LOCK — IMPORTANT: This cover must look as though it was painted by exactly the same illustrator, with exactly the same degree of realism, as the interior story illustrations. Render the child with natural human facial proportions, realistic apparent age, fine skin and hair detail, and the same premium naturalistic painterly realism used inside the book. Do NOT make the cover child more cartoon-like, cute, doll-like, big-eyed, round-faced, simplified or CG-stylised merely because this is a cover. A dramatic cover composition is welcome; a different character-rendering style is not. Photo/Cast identity references remain authoritative for the child's face and appearance.
 
 Choose one compelling, coherent, physically possible moment that genuinely belongs to this finished story, from one camera position. This cover becomes the FIRST visual continuity reference for the book, so establish recurring machines, clothing, environment and plot-important objects carefully and consistently with the story. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
 }
