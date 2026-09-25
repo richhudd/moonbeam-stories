@@ -1,4 +1,13 @@
-# Moonbeam Stories V251.55
+# Moonbeam Stories V251.56
+
+- Replaces the V251.54/V251.55 multi-image correction architecture. Whole-book artwork is no longer attached to the image-edit model.
+- Developer illustration correction now runs a separate vision continuity review over the other book images and converts that review into a text-only visual identity canon.
+- The actual image edit receives only the current page as its edit master plus normal Cast photo references. This prevents other pages from contaminating composition, staging, poses or scene content.
+- The page being corrected is excluded from the continuity analysis, so an already-drifted correction cannot define its own identity canon.
+- When references disagree, the continuity review is instructed to prefer stable traits established in the earliest book references rather than averaging designs.
+- No SQL changes. API endpoint count unchanged.
+
+# Moonbeam Stories V251.56
 
 - Fixes HTTP 413 failures in developer illustration correction introduced by whole-book continuity references.
 - Keeps the current illustration at full quality as the surgical edit master.
@@ -9,7 +18,7 @@
 
 ---
 
-# Moonbeam Stories V251.55 — whole-book continuity for illustration corrections
+# Moonbeam Stories V251.56 — whole-book continuity for illustration corrections
 
 - Developer **Correct illustration** now supplies the current page plus every available cover/page illustration from the same book to the image corrector, so it can compare recurring characters and objects across the complete illustrated story instead of seeing only the immediately preceding page.
 - The current illustration remains the surgical edit master for composition and staging. Other book images are explicitly labelled continuity references and cannot be mistaken for extra Cast members.
