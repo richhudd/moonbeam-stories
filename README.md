@@ -1,3 +1,9 @@
+# Moonbeam Stories V251.46
+
+- Final reconciliation now uses a strict JSON schema that requires exactly four middle pages, so the model cannot return a seventh story spread while still staying inside the word/token budget.
+- Final reconciliation now explicitly resolves harmless repeated secondary-character text/image identity mismatches in favour of the finished illustrations (for example, a consistently illustrated king should not remain a queen in the prose).
+- No story-concept, storyboard, illustration, anti-repetition or credit logic changed in this build.
+
 ## V251.45 — robust final-story reconciliation
 
 - Fixes a false final-reconciliation failure where OpenAI could return HTTP 200 with a completed story but Moonbeam discarded it because the final stage used a stricter one-off JSON parser than the rest of the story engine.
