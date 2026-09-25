@@ -1,4 +1,4 @@
-# Moonbeam Stories V251.46
+# Moonbeam Stories V251.53
 
 - Final reconciliation now uses a strict JSON schema that requires exactly four middle pages, so the model cannot return a seventh story spread while still staying inside the word/token budget.
 - Final reconciliation now explicitly resolves harmless repeated secondary-character text/image identity mismatches in favour of the finished illustrations (for example, a consistently illustrated king should not remain a queen in the prose).
@@ -860,7 +860,15 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Random remains the default for both controls, preserving the previous one-click behaviour.
 - Normal customer child creation and illustration behaviour are unchanged.
 
-## V251.51
+## V251.53
+- Refines the V251.52 copyright/originality safeguard so it distinguishes protected works from original source material confidently in the UK public domain.
+- Close adaptations of confidently public-domain originals are permitted when requested; the model does not rely on a hard-coded catalogue of public-domain titles.
+- If public-domain status is uncertain, the source is treated as protected.
+- Later protected adaptations, translations, illustrations, films, television versions, games and editions remain excluded even when the underlying original is public domain.
+- Final story reconciliation preserves legitimate public-domain adaptations while retaining the protected-work safeguard.
+- No Supabase schema change and no API endpoint added.
+
+## V251.52
 - Separates narrative/storyboard context from image-generation context for required story illustrations.
 - Normal page illustration requests now send the already-planned current visual moment plus character/world continuity, rather than repeatedly exposing the image model to hazardous actions from all six scenes.
 - Safety retries are rebuilt as genuinely fresh minimal prompts instead of prepending instructions to the rejected long prompt.
