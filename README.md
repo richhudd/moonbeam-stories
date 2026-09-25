@@ -1,3 +1,13 @@
+# Moonbeam Stories V251.54 — whole-book continuity for illustration corrections
+
+- Developer **Correct illustration** now supplies the current page plus every available cover/page illustration from the same book to the image corrector, so it can compare recurring characters and objects across the complete illustrated story instead of seeing only the immediately preceding page.
+- The current illustration remains the surgical edit master for composition and staging. Other book images are explicitly labelled continuity references and cannot be mistaken for extra Cast members.
+- Cast photographs remain separate authoritative identity references.
+- Correction prompting now tells the model to restore the established majority design when a corrected page has drifted in details such as face shape, teeth, horns, fur, clothing or recurring props.
+- No change to normal story generation, manual text editing, Supabase schema, or API endpoint count.
+
+---
+
 # Moonbeam Stories V251.53
 
 - Final reconciliation now uses a strict JSON schema that requires exactly four middle pages, so the model cannot return a seventh story spread while still staying inside the word/token budget.

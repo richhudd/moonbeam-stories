@@ -1757,6 +1757,26 @@ async function correctionReferenceImages(book){
  if(book?.child?.profileId){try{const photo=await castPhoto246(book.child.profileId);if(photo)refs.push({name:book.child.name||'main hero',kind:'child',role:'hero',gender:book.child.gender||null,image:photo})}catch{}}
  return refs
 }
+async function correctionAllArtworkReferences(book,index,currentArtwork){
+ // Give the correction model the whole illustrated book, not just the preceding page.
+ // The current page remains reference #1 (the surgical edit master). Every other
+ // available book image is labelled as continuity artwork so recurring creatures,
+ // faces, clothing, props and locations can be compared across the complete book.
+ const refs=[{name:'CURRENT PAGE — EDIT MASTER',kind:'edit-source',role:'primary',image:currentArtwork}];
+ const add=(name,image)=>{if(image&&image!==currentArtwork)refs.push({name,kind:'continuity-artwork',role:'book-continuity',image})};
+ let cover=book?.artwork?.cover||null;
+ if(!cover&&book?.isSaved&&book?.savedAssets?.cover){try{cover=await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.cover))}catch{}}
+ add('BOOK COVER — CONTINUITY REFERENCE',cover);
+ const pageCount=Math.max(6,Array.isArray(book?.artwork?.pages)?book.artwork.pages.length:0,Array.isArray(book?.savedAssets?.pages)?book.savedAssets.pages.length:0);
+ for(let i=0;i<pageCount;i++){
+  if(i===index)continue;
+  let image=book?.artwork?.pages?.[i]||null;
+  if(!image&&book?.isSaved&&book?.savedAssets?.pages?.[i]){try{image=await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.pages[i]))}catch{}}
+  if(!image){try{const prompt=(()=>{const prior=currentBook;currentBook=book;try{return getIllustrationPrompt(i)}finally{currentBook=prior}})();const key=illustrationKey(book,i,prompt);image=illustrationCache.get(key)||await persistentImageGet(key)||null}catch{}}
+  add(`BOOK PAGE ${i+1} — CONTINUITY REFERENCE`,image);
+ }
+ return refs
+}
 async function persistCorrectedText(book,index,newText){
  // Text and artwork are independent editorial assets. Capture the currently accepted
  // illustration under the OLD text-derived cache key before changing any wording, then
@@ -1882,11 +1902,14 @@ async function runDeveloperCorrection(kind){
   }else{
    const basePrompt=getIllustrationPrompt(index),currentArtwork=await correctionCurrentArtwork(book,index);
    if(!currentArtwork)throw new Error('The existing illustration could not be loaded for correction.');
-   const castRefs=await correctionReferenceImages(book),continuity=await correctionPreviousArtwork(book,index);
-   const refs=[{name:'EXISTING ILLUSTRATION TO EDIT',kind:'edit-source',role:'primary',image:currentArtwork},...castRefs];
+   const artworkRefs=await correctionAllArtworkReferences(book,index,currentArtwork),castRefs=await correctionReferenceImages(book);
+   // Artwork comes first so the current page is always reference #1. Cast photos follow
+   // as identity references. The server distinguishes them by kind instead of treating
+   // every attached image as a Cast photograph.
+   const refs=[...artworkRefs,...castRefs];
    const correctionPrompt=`SURGICAL CORRECTION. The FIRST reference image is the actual existing illustration and is the visual master. Preserve it as closely as possible: same composition, framing, camera angle, characters, likenesses, poses, expressions, clothing, lighting, colours, background, objects, scale and style. Change ONLY the specific error identified below. Do not redesign, re-stage, embellish or reinterpret unrelated parts.\n\nDEVELOPER CORRECTION — AUTHORITATIVE:\n${instruction}\n\nPAGE SCENE FACTS:\n${basePrompt}\n\nEvery other visible detail in the existing illustration should remain unchanged unless changing it is strictly necessary to make the requested correction physically coherent.`;
    const key=`${illustrationKey(book,index,basePrompt)}:developer-surgical-correction:${Date.now()}`;
-   const image=await requestIllustration(key,correctionPrompt,`EDIT PRIORITY: developer correction first; preserve the existing illustration everywhere else; preserve Cast likeness; use preceding artwork only where the current image does not establish a detail. ${book.character_bible||''}`,true,refs,true,index,continuity,true);
+   const image=await requestIllustration(key,correctionPrompt,`EDIT PRIORITY: developer correction first; preserve the existing illustration everywhere else. Review ALL attached book artwork together for recurring-character and world continuity; where the current page conflicts with the established majority design of a recurring character or object, restore the established design unless the developer instruction says otherwise. Preserve Cast likeness. ${book.character_bible||''}`,true,refs,true,index,null,true);
    showDeveloperCandidate({kind:'illustration',index,image,instruction});if(st)st.textContent='Review the replacement illustration. The original has not been changed.';return;
   }
   closeDeveloperCorrection();renderBookPage(index);
