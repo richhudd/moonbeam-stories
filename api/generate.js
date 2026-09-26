@@ -1,32 +1,5 @@
 const {logUsage,estimateGBP,SUPABASE_URL,SECRET_KEY,adminHeaders}=require('../_usage');
 const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('../_credits');
-function candidateJsonStrings(text) {
-  const clean = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-  const candidates = [];
-  if (clean) candidates.push(clean);
-  let start = -1, depth = 0, inString = false, escaped = false;
-  for (let i = 0; i < clean.length; i++) {
-    const ch = clean[i];
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (ch === '\\\\') escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') { inString = true; continue; }
-    if (ch === '{') { if (depth === 0) start = i; depth++; }
-    else if (ch === '}' && depth > 0) { depth--; if (depth === 0 && start >= 0) { candidates.push(clean.slice(start, i + 1)); break; } }
-  }
-  return [...new Set(candidates.filter(Boolean))];
-}
-function parseStoryOutput(text) {
-  for (const candidate of candidateJsonStrings(text)) {
-    for (const version of [candidate, candidate.replace(/,\s*([}\]])/g, '$1')]) {
-      try { const parsed = JSON.parse(version); const story = parsed && parsed.story && typeof parsed.story === 'object' ? parsed.story : parsed; if (story && typeof story === 'object') return story; } catch {}
-    }
-  }
-  return null;
-}
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -173,10 +146,13 @@ module.exports = async function handler(req, res) {
 
 Study all six images together before deciding what the story is.
 
+PARENT'S ORIGINAL STORY IDEA:
+${String(child.storyIdea||'').trim()||'No specific story idea was supplied.'}
+
 CAST:
 ${castLines}
 
-The six pictures are your only creative source. There is no story, premise, storyboard, illustration brief or intended explanation for you to reconstruct.
+The parent's Story Idea tells you what sort of adventure was requested. Honour anything the parent explicitly establishes, but there is no hidden plot or predetermined story that you must reconstruct.
 
 Look carefully at what is actually depicted, including unusual details, changes between pictures, characters' expressions and interactions, and things that could have more than one explanation.
 
@@ -201,7 +177,7 @@ Return JSON ONLY in exactly this shape:
       const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:[{role:'user',content}],max_output_tokens:5000,text:{format:{type:'json_schema',name:'moonbeam_final_story',strict:true,schema:{type:'object',additionalProperties:false,required:['title','opening','pages','closing'],properties:{title:{type:'string'},opening:{type:'string'},pages:{type:'array',minItems:4,maxItems:4,items:{type:'object',additionalProperties:false,required:['text'],properties:{text:{type:'string'}}}},closing:{type:'string'}}}}}})});
       const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};
       const usage=data?.usage||{};
-      const finalDiagnostic=developerDiagnostic?{stage:'Story B from images',model:'gpt-5.6-luna',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:5000,raw_response_chars:raw.length}:null;
+      const finalDiagnostic=developerDiagnostic?{stage:'image-first final story',model:'gpt-5.6-luna',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:5000,raw_response_chars:raw.length}:null;
       if(!r.ok){const e=data?.error;const payload={error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)};if(finalDiagnostic)payload.developer_diagnostic=finalDiagnostic;return res.status(502).json(payload)}
       let output=typeof data.output_text==='string'?data.output_text:'';if(!output&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')output+=part.text;
       if(finalDiagnostic)finalDiagnostic.output_chars=output.length;
@@ -235,33 +211,7 @@ Return JSON ONLY in exactly this shape:
     supportUserId=moonbeamUser.id;
     const demoRequested=String(req.headers['x-moonbeam-demo-generation']||'').trim()==='1';
     const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
-    const isDeveloperAccount=!!(developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail);
-    const developerDemo=demoRequested&&isDeveloperAccount;
-    const developerTextDiagnostics=[];
-    async function callStoryModel(input, maxOutputTokens = 5000, diagnosticStage = 'story text') {
-      const r = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'gpt-5.6-luna', input, max_output_tokens: maxOutputTokens })
-      });
-      const raw = await r.text();
-      let data; try { data = JSON.parse(raw); } catch { data = {}; }
-      if (developerDemo) {
-        const usage=data?.usage||{};
-        developerTextDiagnostics.push({stage:diagnosticStage,model:'gpt-5.6-luna',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:maxOutputTokens,raw_response_chars:raw.length});
-      }
-      if (!r.ok) {
-        const e = data && data.error;
-        const message = typeof e === 'string' ? e : (e && (e.message || e.code || e.type)) || `OpenAI returned HTTP ${r.status}`;
-        const error = new Error(String(message)); error.openaiStatus = r.status; throw error;
-      }
-      let output = typeof data.output_text === 'string' ? data.output_text : '';
-      if (!output && Array.isArray(data.output)) for (const item of data.output) for (const part of (item.content || [])) {
-        if (typeof part.text === 'string') output += part.text;
-        else if (typeof part.output_text === 'string') output += part.output_text;
-      }
-      return String(output || '').trim();
-    }
+    const developerDemo=demoRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
     if(demoRequested&&!developerDemo)return res.status(403).json({error:'Developer access only.'});
     let creditsRemaining=null;
     if(!developerDemo){
@@ -311,42 +261,13 @@ Return JSON ONLY in exactly this shape:
     const storyIdea = String(child.storyIdea || '').trim();
 
     const ideaGuide = storyIdea
-      ? `PARENT STORY IDEA — AUTHORITATIVE\n${storyIdea}\nUse this as the premise for Story A. Do not replace it with a different premise.`
-      : `NO PARENT STORY IDEA\nInvent the premise freely.`;
+      ? `PARENT STORY IDEA — AUTHORITATIVE\n${storyIdea}\nUse this as the visual creative brief. Do not invent a competing premise.`
+      : `NO PARENT STORY IDEA\nInvent the visual situation freely.`;
 
     const castLines = cast.length ? cast.map(m=>{const detail=m.kind==='child'?`child, age ${m.age}${m.gender?`, ${m.gender}`:''}`:m.kind==='adult'?`adult${m.gender?`, ${m.gender}`:''}`:`${m.animal_type||'pet'}${m.breed?`, breed: ${m.breed}`:''}`;return `- ${m.name} — ${detail} — ${String(m.role).toUpperCase()}`}).join('\n') : `- ${child.name} — child, age ${age}${child.gender?`, ${child.gender}`:''} — HERO`;
     const visualIdentityRules = `Use every selected Cast member's supplied personal name exactly as given. Preserve supplied identity, age, gender where present, species/breed and reference-photo likeness. Do not invent surnames or family relationships. When a structured Story Cast is supplied, do not invent additional named recurring principal characters unless the Parent Story Idea explicitly requires them. Unnamed incidental background characters may appear when the setting naturally requires them.`;
 
-    // V251.62: Story A is deliberately disposable creative scaffolding. It exists only to
-    // generate six narratively meaningful illustrations. It is never returned to the browser
-    // and can therefore never leak into the final image-reading author call.
-    const storyAPrompt = `Write an original children's story from the parent's idea. This is Story A: a private seed story that will be illustrated and then discarded.
-
-STORY CAST
-${castLines}
-
-${ideaGuide}
-Things to avoid: ${child.dislikes || 'nothing specific'}
-Youngest hero age: ${age}
-Language: ${languageGuide}
-
-Make the story clever and funny. Write naturally rather than following a prescribed plot formula.
-
-The story must occupy exactly SIX balanced reading spreads. Each spread will receive one illustration, so each should contain a concrete moment that can genuinely be pictured. Preserve the exact supplied Cast names and details. Keep the content age-appropriate and non-graphic. Do not copy protected wording, characters, distinctive scenes, event sequences, dialogue or resolutions from protected works.
-
-Return JSON ONLY in exactly this shape:
-{"title":"working title","spreads":["spread 1","spread 2","spread 3","spread 4","spread 5","spread 6"]}`;
-    let storyAOutput='';let storyA=null;
-    try{
-      storyAOutput=await callStoryModel(storyAPrompt,4200,'private Story A');
-      for(const candidate of candidateJsonStrings(storyAOutput)){for(const version of [candidate,candidate.replace(/,\s*([}\]])/g,'$1')]){try{const x=JSON.parse(version);if(x&&Array.isArray(x.spreads)&&x.spreads.length===6){storyA=x;break}}catch{}}if(storyA)break}
-    }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
-    if(!storyA){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not create the private seed story correctly. Please try again.'})}
-    storyA.title=String(storyA.title||'').trim();
-    storyA.spreads=storyA.spreads.slice(0,6).map(x=>String(x||'').trim());
-    if(storyA.spreads.some(x=>!x)){await refundReservedCredit();return res.status(502).json({error:'Moonbeam produced an incomplete private seed story. Please try again.'})}
-
-    const planningPrompt = `You are illustrating a COMPLETE children's story that has already been written. Create exactly SIX finished illustration briefs: one faithful illustration for each of its six spreads.
+    const planningPrompt = `You are the visual planner for Moonbeam Stories. Create SIX finished illustration briefs for an as-yet-unwritten children's book.
 
 STORY CAST
 ${castLines}
@@ -354,17 +275,21 @@ ${castLines}
 VISUAL IDENTITY
 ${visualIdentityRules}
 
-PRIVATE STORY A — ILLUSTRATE THIS STORY FAITHFULLY
-TITLE: ${storyA.title||'(untitled)'}
-${storyA.spreads.map((x,i)=>`SPREAD ${i+1}:\n${x}`).join('\n\n')}
+${ideaGuide}
+Things to avoid: ${child.dislikes || 'nothing specific'}
+Youngest hero age for safety calibration: ${age}
 
-Do not invent a replacement story and do not try to leave room for a later writer. Your only creative job is to turn the six already-written story moments into strong finished pictures.
+Imagine whatever events you need internally in order to choose six interesting images that belong together, but do not output a story, plot, narration, dialogue, explanation, moral or ending. Output only what should visibly appear in the illustrations.
 
-The six illustrations must be mutually compatible and preserve recurring identities, clothing, creatures, important objects, vehicles and locations. Every scene must be physically and spatially coherent: characters, creatures, objects and surroundings must occupy plausible three-dimensional space and interact correctly with solid surfaces and one another. Nothing should intersect, merge, duplicate or occupy physically impossible positions.
+The six illustrations must be mutually compatible. Nothing clearly established in one illustration may make another illustration impossible. Changes between illustrations are welcome provided a coherent story could potentially explain them.
+
+Every individual scene must be physically and spatially coherent. Characters, creatures, objects and surroundings must occupy plausible three-dimensional space and interact correctly with solid surfaces and one another. Nothing should intersect, merge, duplicate or occupy physically impossible positions.
+
+Make the six pictures meaningfully different from one another while clearly belonging to the same unwritten book. Preserve established visual identities of recurring characters, creatures, important objects, vehicles and locations across the sequence. Leave ambiguous details ambiguous where possible so the eventual writer is free to decide what the pictures mean.
 
 The character_bible is a visual production model sheet only. For photographed Cast, the supplied reference remains the identity authority; use the bible for story-world clothing and visual continuity. For recurring non-photo characters, creatures, vehicles, rooms, buildings, machines and important objects, record only stable visible characteristics needed for consistent illustration.
 
-Each visual_moment must describe only the concrete visible content of that spread's illustration. Each continuity field records only concrete visual facts subsequent illustrations need to preserve. Do not include narration, dialogue, prose, morals or explanations in the illustration briefs.
+Each visual_moment describes one concrete finished picture and only things that can be seen. Each continuity field records only concrete visual facts subsequent illustrations need to preserve.
 
 Return JSON ONLY in exactly this shape:
 {"character_bible":"fixed visual continuity description","scenes":[{"scene":1,"visual_moment":"one concrete visible scene","continuity":"brief concrete visual facts"},{"scene":2,"visual_moment":"...","continuity":"..."},{"scene":3,"visual_moment":"...","continuity":"..."},{"scene":4,"visual_moment":"...","continuity":"..."},{"scene":5,"visual_moment":"...","continuity":"..."},{"scene":6,"visual_moment":"...","continuity":"..."}]}`;
@@ -381,7 +306,7 @@ Return JSON ONLY in exactly this shape:
     await logUsage({event_type:'story_plan',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
     await logSupportAttempt('success',{credit_deducted:!developerDemo,credit_refunded:false,generation_run_id:generationRunId});
     creditReserved=false;
-    return res.status(200).json({creditsRemaining,generationRunId,storyCreditBatchId:developerDemo?'':reservedBatchId,plan,image:null,layout:{requestedLength:length,storyPages:4,displayedTextPages:6,storyboardFirst:true},...(isDeveloperAccount?{developer_story_a:storyA}:{}) ,...(developerDemo?{developer_diagnostics:developerTextDiagnostics}:{})});
+    return res.status(200).json({creditsRemaining,generationRunId,storyCreditBatchId:developerDemo?'':reservedBatchId,plan,image:null,layout:{requestedLength:length,storyPages:4,displayedTextPages:6,storyboardFirst:true},...(developerDemo?{developer_diagnostics:developerTextDiagnostics}:{})});
   } catch (e) {
     console.error('generate error', e);
     const hadReservedCredit=creditReserved;

@@ -1,26 +1,4 @@
-# Moonbeam Stories V251.63
-
-## V251.63 — Developer Story A / Story B comparison
-
-- Developer account only: the generated reader now includes **Compare Story A / Story B**.
-- Story A is returned only to the configured developer account and is never supplied to the Story B writer.
-- The comparison shows both stories page-for-page so the rewrite can be judged directly.
-- Ordinary user accounts never receive Story A in the browser response.
-
-## V251.62 — Story A → pictures → Story B
-
-- Replaces the contradictory visual-first planner with a private, disposable **Story A**. The parent's Story Idea is used only to write Story A.
-- Story A is a complete six-spread children's story. A second private stage faithfully converts its six written spreads into six illustration briefs and a visual continuity model sheet.
-- The existing illustration pipeline then creates the six finished pictures with Cast references, physical/spatial coherence and previous-image continuity preserved.
-- Story A is never returned to the browser and is discarded after the illustration briefs are made.
-- The final **Story B** writer receives the six finished pictures together with only mechanical Cast, age and language information. It receives **no parent Story Idea, no Story A, no storyboard, no illustration prompts and no character bible**.
-- Story B is therefore free to reinterpret the visual evidence and find the cleverest and funniest coherent story the pictures could illustrate, rather than polishing or reconstructing Story A.
-- The browser also sends a deliberately sanitised child object to the Story B request, so the parent's Story Idea does not cross the final-writer request boundary at all.
-- Visual metadata is reattached only after Story B returns, preserving saved-story, cover, cache and developer-edit compatibility.
-- Existing credits, authentication, image generation, saving, reader, KDP, Instagram and developer correction infrastructure is retained. No SQL migration and no new Vercel endpoint.
-
----
-
+# Moonbeam Stories V251.61
 
 ## V251.61 — image-first story authoring
 
