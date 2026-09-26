@@ -1,4 +1,13 @@
-# Moonbeam Stories V251.88
+# Moonbeam Stories V251.90
+
+## V251.90
+- Developer-account story generation no longer receives recent/saved-story anti-repetition memory, allowing repeated runs of the same test premise without earlier saved books influencing Astra.
+- Applies to both Make Tonight's Story and Develop with Astra. The browser omits the memory and `/api/generate` independently enforces the developer bypass server-side.
+- Normal users are unchanged and retain the compact memory of up to 10 recent saved stories for repetition avoidance.
+- No database migration required.
+
+- Fixes developer Story Workshop preparation crash: initializes `developerTextDiagnostics` before Astra diagnostic collection.
+- No SQL changes.
 
 - Final Astra story writing no longer receives the finished interior image pixels.
 - Story architecture remains spread-by-spread and authoritative; each spread's event + art direction is the common source of truth for both Sunburst and final prose.

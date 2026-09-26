@@ -262,6 +262,7 @@ Return JSON ONLY with title, opening, pages, and closing. The pages array must c
     const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
     const isDeveloper=!!developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
     const developerDemo=demoRequested&&isDeveloper;
+    const developerTextDiagnostics=[];
     const requestedStoryPageCount=Number(child.storyPageCount)||6;
     const storyPageCount=isDeveloper?Math.max(6,Math.min(10,requestedStoryPageCount)):6;
     child.storyPageCount=storyPageCount;
@@ -478,7 +479,9 @@ Return JSON only in the exact schema requested by the current production stage.`
     // V251.21: choose a compelling, account-aware concept BEFORE storyboarding it; repair malformed concept JSON once before failing.
     // The concept call is deliberately not allowed to write scenes or prose. It sees a compact
     // account-wide memory of recent saved stories so a pack of credits produces genuinely varied books.
-    const recentStoriesRaw=Array.isArray(body.recentStories)?body.recentStories.slice(0,10):[];
+    // Developer generations intentionally ignore account story memory so repeated test runs are independent.
+    // Enforce this server-side as well as in the client; normal users retain the anti-repetition memory.
+    const recentStoriesRaw=isDeveloper?[]:(Array.isArray(body.recentStories)?body.recentStories.slice(0,10):[]);
     const recentStories=recentStoriesRaw.map((x,i)=>({title:String(x?.title||`Recent story ${i+1}`).slice(0,120),summary:String(x?.summary||'').replace(/\s+/g,' ').trim().slice(0,900)})).filter(x=>x.title||x.summary);
     const recentMemory=recentStories.length?recentStories.map((x,i)=>`${i+1}. ${x.title}: ${x.summary}`).join('\n'):'No recent saved stories are available for this account.';
     const conceptBase = String(prompt).split('\nOUTPUT\n')[0].replace('Write a completely original children’s story centred on the selected hero or co-heroes.','Invent the strongest central concept for a completely original children’s story centred on the selected hero or co-heroes. Do not plan scenes or write story prose yet.').replace('Write an original, polished children’s story in natural ${language}.','Invent an original story concept suitable for later writing in natural ${language}.');

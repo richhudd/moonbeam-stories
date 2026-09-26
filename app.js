@@ -845,6 +845,8 @@ async function requestPlannedCoverIllustration(plan,child,generationRunId,interi
 }
 
 function recentStoryCreativeMemory(limit=10){
+ // Developer testing must be repeatable: never feed saved-story anti-repetition memory into Astra.
+ if(instagramDeveloperAccess)return [];
  const stories=Array.isArray(cloudStories)?cloudStories.slice(0,limit):[];
  return stories.map((x,i)=>{
   const st=x?.story||{};const pages=Array.isArray(st.pages)?st.pages.map(p=>String(p?.text||'')).join(' '):'';
