@@ -1,3 +1,7 @@
+# V251.81
+
+- Increased the Story Idea input limit from 500 to 2,000 characters. No story-generation, Astra, Sunburst, pricing, recovery, or other behaviour changed.
+
 # V251.80
 
 - Normal reference-based Moonbeam story illustrations and covers now use GPT-Image-2.5 Sunburst at **medium** quality instead of low.
