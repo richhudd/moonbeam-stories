@@ -171,40 +171,41 @@ module.exports = async function handler(req, res) {
       const requestedCount=Number(child.storyPageCount)||Number(plan.scenes?.length)||6;
       const spreadCount=finalizeIsDeveloper?Math.max(6,Math.min(10,requestedCount)):6;
       const middleCount=spreadCount-2;
-      const images = Array.isArray(body.images) ? body.images.filter(x=>/^data:image\/(?:jpeg|png|webp);base64,/i.test(String(x||''))).slice(0,spreadCount) : [];
       const scenes = Array.isArray(plan.scenes) ? plan.scenes.slice(0,spreadCount) : [];
-      if (scenes.length !== spreadCount || images.length !== spreadCount) return res.status(400).json({error:'The visual storyboard is incomplete.'});
+      if (scenes.length !== spreadCount) return res.status(400).json({error:'The story production plan is incomplete.'});
       const age = Number(child.age)||7;
       const language = String(child.language||'en-GB');
       const languageGuide = {'en-GB':'natural contemporary British English with British spelling','en-US':'natural contemporary American English','es-ES':'natural Spanish from Spain','es-419':'natural neutral Latin American Spanish','fr-FR':'natural French from France','de-DE':'natural German from Germany','it-IT':'natural Italian from Italy','pt-BR':'natural Brazilian Portuguese','pl-PL':'natural contemporary Polish'}[language]||'natural British English';
       const planText = JSON.stringify(plan,null,2);
       const failureDiagnostics=Array.isArray(body.failureDiagnostics)?body.failureDiagnostics.slice(-5):[];
       const recoveryNote=failureDiagnostics.length?`\nRECOVERY DIAGNOSTICS FROM AN EARLIER FAILED FINALISATION/PRODUCTION ATTEMPT:\n${JSON.stringify(failureDiagnostics).slice(0,6000)}\nUse these diagnostics only to avoid repeating a technical/output mistake. Do not rewrite the story merely because a network or infrastructure failure occurred.\n`:'';
-      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. Its ${spreadCount} finished illustrations already exist. Write the finished book now.${recoveryNote}
+      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. The story architecture and complete page-by-page art direction were created before illustration. The illustrations have now been painted from that plan, but you are NOT being shown the finished image pixels. Write the finished book from the shared authoritative production plan.${recoveryNote}
 
 ORIGINAL STORY IDEA:
 ${String(child.storyIdea||'').trim()||'No parent story idea was supplied.'}
 
-PRODUCTION PLAN / STORYBOARD:
+AUTHORITATIVE STORY ARCHITECTURE + PAGE ART DIRECTION:
 ${planText}
 
 HARD REQUIREMENTS ONLY
 - Write content and language appropriate for a child aged ${age}, in ${languageGuide}.
 - You have complete literary autonomy. Choose prose, verse, rhyme, dialogue, repetition, mixed forms or any other form you believe makes the strongest story. Do not impose or avoid any particular plot structure, tone, genre, lesson, problem, climax or ending pattern.
 - Preserve exact supplied Cast names and facts. Never invent surnames or sensitive personal facts.
-- The plan establishes the intended book and the ${spreadCount} attached images are authoritative about clearly visible physical reality. Reconcile harmless visible details naturally without allowing accidental image details to replace the story.
-- The pictures are selected moments, not captions. Write the story rather than merely describing the pictures.
+- Treat each planned scene as a LOCKED SPREAD EVENT. The prose for spread N and the illustration for spread N must depict the same narrative event, characters, state changes and essential physical facts. Do not move an event to another spread, invent a contradictory event, or change what the art director commissioned.
+- Each scene's event, visual_moment and continuity fields tell you what Sunburst was commissioned to paint. Use them as the common source of truth for page alignment. You are free to decide HOW to tell that event in words.
+- Complement the illustration rather than captioning it. If the art direction already carries a visible action, transformation, scale, expression or setting, the prose may use dialogue, reaction, humour, suspense, thought, sound or other storytelling instead of redundantly describing every visible detail. Do not omit narrative information the reader needs merely because it is visual.
+- Do not infer or reconcile accidental details from the finished image output: you have deliberately not been shown those pixels. The production plan, not incidental painter variation, is authoritative.
 - Public-domain reproduction/adaptation is allowed when the underlying material is confidently public domain in the United Kingdom; do not import protected additions from later adaptations. Do not reproduce or closely imitate protected copyrighted expression.
-- Return exactly ${spreadCount} reading spreads: opening, ${middleCount} middle spreads and closing.
+- Return exactly ${spreadCount} reading spreads: opening, ${middleCount} middle spreads and closing, in the same order as scenes 1-${spreadCount}.
 - There is no target or minimum word count. Pages do not need to be similar lengths. HARD CEILING: no individual spread may exceed 220 words. Keep deliberate line breaks only when they serve your chosen literary form; Moonbeam's fixed-layout KDP renderer must be able to fit every spread legibly.
 - No headings inside the story text.
 
 Return JSON ONLY with title, opening, pages, and closing. The pages array must contain exactly ${middleCount} middle spreads so the complete book contains ${spreadCount} reading spreads.`;
-      const content=[{type:'input_text',text:finalPrompt},...images.map((image_url,i)=>({type:'input_image',image_url,detail:'low'}))];
+      const content=[{type:'input_text',text:finalPrompt}];
       const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:[{role:'user',content}],max_output_tokens:8000,text:{format:{type:'json_schema',name:'moonbeam_final_story',strict:true,schema:{type:'object',additionalProperties:false,required:['title','opening','pages','closing'],properties:{title:{type:'string'},opening:{type:'string'},pages:{type:'array',minItems:middleCount,maxItems:middleCount,items:{type:'object',additionalProperties:false,required:['text'],properties:{text:{type:'string'}}}},closing:{type:'string'}}}}}})});
       const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};
       const usage=data?.usage||{};
-      const finalDiagnostic=developerDiagnostic?{stage:'final story reconciliation',model:'gpt-6-astra',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:8000,raw_response_chars:raw.length}:null;
+      const finalDiagnostic=developerDiagnostic?{stage:'final story writing',model:'gpt-6-astra',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:8000,raw_response_chars:raw.length}:null;
       if(!r.ok){const e=data?.error;const payload={error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)};if(finalDiagnostic)payload.developer_diagnostic=finalDiagnostic;return res.status(502).json(payload)}
       let output=typeof data.output_text==='string'?data.output_text:'';if(!output&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')output+=part.text;
       if(finalDiagnostic)finalDiagnostic.output_chars=output.length;
@@ -227,7 +228,7 @@ Return JSON ONLY with title, opening, pages, and closing. The pages array must c
         spreadTexts.forEach((txt,i)=>{const wc=String(txt||'').trim().split(/\s+/).filter(Boolean).length;if(wc>220)reconciliationIssues.push(`spread ${i+1} exceeds the 220-word KDP ceiling (${wc} words)`) });
       }
       if(reconciliationIssues.length){
-        const payload={error:'Moonbeam could not reconcile the finished illustrations into the final story.'};
+        const payload={error:'Moonbeam could not complete the final story from the production plan.'};
         if(finalDiagnostic){
           finalDiagnostic.parse_valid=!!parsed;
           finalDiagnostic.validation_issues=reconciliationIssues;

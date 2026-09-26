@@ -1,6 +1,15 @@
-# V251.86
+# Moonbeam Stories V251.88
 
-## V251.86 — developer story-length selector visibility fix
+- Final Astra story writing no longer receives the finished interior image pixels.
+- Story architecture remains spread-by-spread and authoritative; each spread's event + art direction is the common source of truth for both Sunburst and final prose.
+- Astra writes each final page from that locked spread event and page-specific art commission, preserving exact text/illustration alignment without captioning incidental image details.
+- Finished interior thumbnails are still used by the cover pipeline so the cover can preserve whole-book visual continuity.
+- Safety-redesigned production plans remain authoritative for final prose.
+- No database migration required.
+
+# V251.87
+
+## V251.87 — developer story-length selector visibility fix
 
 Built directly on V251.85.
 
@@ -1176,3 +1185,10 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Astra's combined six-interior + cover art-direction stage now uses strict structured output with an exact six-scene schema and a larger output allowance.
 - Removed the obsolete second Astra cover-art-direction API path; cover generation uses the commission already created with the interior storyboard.
 - Developer-only Abort generation control is now compact.
+
+
+## V251.87
+- Fixed developer Story Workshop false-ready state after failed initial Astra planning.
+- Send to Astra and Create this book now remain disabled until a valid initial production plan exists.
+- Initial planning failures show the real diagnostic and a Retry initial development control.
+- Removed silent no-op guards: impossible missing-plan states now surface visibly instead of making buttons appear broken.
