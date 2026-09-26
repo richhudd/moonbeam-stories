@@ -1,12 +1,25 @@
+# Moonbeam Stories V251.64
+
+- Experimental writer-model upgrade from the clean V251.60 baseline.
+- The initial creative story concept and six-scene storyboard planning calls now use **GPT-6 Astra** instead of GPT-5.6 Luna.
+- The prompts, story architecture and page structure are otherwise unchanged, so this isolates writer-model quality as the variable being tested.
+- Final story reconciliation remains on GPT-5.6 Luna. KDP copy and other auxiliary text calls remain on GPT-5.6 Luna.
+- Image generation is completely unchanged: normal reference-based Moonbeam artwork continues through GPT-Image-2.5 Sunburst at low quality; developer correction remains Sunburst medium; no-reference generation remains Flare low.
+- No database migration and no API endpoint added.
+
+---
+
 # Moonbeam Stories V251.60
 
-## V251.60 — cover visual continuity + safe developer cover review
+- Fixes the developer masked illustration corrector so recurring non-Cast characters, creatures, vehicles, machines and distinctive objects can be corrected from **actual visual references**, not a text-only reconstruction of their appearance.
+- The current page remains image #1 and the sole edit master; the painted mask remains the hard editable boundary.
+- Moonbeam reviews the compact other-book artwork against the developer's correction instruction, selects at most two images that actually show the implicated recurring entity, and attaches only those selected images to the image edit as **canonical identity references**.
+- Canonical references control only what the entity looks like. The current page still controls pose, scale, orientation, expression, composition, camera, staging, background and lighting.
+- Cast photographs remain authoritative identity references for Cast members. If no other book image genuinely contains the corrected entity, no book reference is attached.
+- Removes the previous failure mode where the corrector reduced visual identity evidence to prose and then expected the image model to reconstruct the monster/machine/character from that prose.
+- Developer-only correction workflow; ordinary story illustration generation is unchanged. No SQL migration and no new Vercel endpoint.
 
-- Dedicated cover generation now receives the actual finished interior illustrations as visual references when they are available (including the six prebuilt storyboard illustrations used by the current story pipeline).
-- Interior artwork is explicitly authoritative for this book's realism level, painterly finish, lighting language, palette, atmosphere, story-specific wardrobe, and established recurring creatures/objects. Cast photographs remain identity references only.
-- Developer cover corrections now generate a non-destructive candidate. The existing cover is not overwritten until **Accept** is chosen. **Try again** generates another candidate and **Keep original** rejects it without changing the saved cover.
-- Developer cover correction has its own authenticated server path so it does not consume an ordinary story-image allowance and is not misrouted through the masked page-edit path.
-- No Supabase migration required. Vercel function count unchanged.
+---
 
 # Moonbeam Stories V251.59
 

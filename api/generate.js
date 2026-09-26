@@ -390,18 +390,21 @@ Create one concise but precise character_bible for every recurring character. Th
 For ANY selected Cast member with a supplied reference photo — child, adult or pet — underlying physical identity comes authoritatively from that exact photo. Preserve the recognisable face, apparent age, hair, approximate skin tone, body proportions and other identifying physical characteristics shown by the reference; for pets preserve the recognisable species/breed appearance and proportions. Any optional Male/Female marker for a photographed human Cast member is authoritative and must be preserved consistently. Story-world clothing, costume, role, status, abilities and story-required fictional characteristics or transformations are free to follow the story and must not be mistaken for conflicting real-world identity. The bible should identify photographed Cast members by their supplied name, kind and narrative role and record only story-world appearance or continuity details needed for the book while keeping the underlying person or pet recognisable. Do not invent decorative hair accessories for a photographed Cast member marked male unless they are clearly visible in the reference photo or explicitly required by the Parent Story Idea. A photographed adult is just as identity-locked as a photographed child, and a photographed pet is just as identity-locked as a photographed human. Every illustration_prompt must use the SAME supplied Cast names and preserve established continuity unless the STORY itself explicitly requires a change. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
 
     const developerTextDiagnostics=[];
+    // V251.64: use the strongest writer only for the initial creative story-design stages.
+    // Final reconciliation, KDP copy and all image-generation machinery remain unchanged.
+    const CREATIVE_STORY_MODEL = 'gpt-6-astra';
     async function callStoryModel(input, maxOutputTokens = 5000, diagnosticStage = 'story text') {
       const r = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'gpt-5.6-luna', input, max_output_tokens: maxOutputTokens })
+        body: JSON.stringify({ model: CREATIVE_STORY_MODEL, input, max_output_tokens: maxOutputTokens })
       });
       const raw = await r.text();
       let data;
       try { data = JSON.parse(raw); } catch { data = {}; }
       if (developerDemo) {
         const usage=data?.usage||{};
-        developerTextDiagnostics.push({stage:diagnosticStage,model:'gpt-5.6-luna',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:maxOutputTokens,raw_response_chars:raw.length});
+        developerTextDiagnostics.push({stage:diagnosticStage,model:CREATIVE_STORY_MODEL,http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:maxOutputTokens,raw_response_chars:raw.length});
       }
       if (!r.ok) {
         const e = data && data.error;
@@ -591,8 +594,8 @@ Before returning the plan, check silently that the six pictures together would m
     plan.scenes=plan.scenes.slice(0,6).map((x,i)=>({scene:i+1,event:String(x?.event||'').trim(),visual_moment:String(x?.visual_moment||'').trim(),continuity:String(x?.continuity||'').trim()}));
     if(!plan.premise||!plan.story_arc||!plan.ending||!plan.character_bible||plan.scenes.some(x=>!x.event||!x.visual_moment)){await refundReservedCredit();return res.status(502).json({error:'Moonbeam produced an incomplete visual storyboard. Please try again.'})}
     const generationRunId=await createGenerationRun(moonbeamUser.id);
-    await logUsage({event_type:'story_concept',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId,recent_story_count:recentStories.length}});
-    await logUsage({event_type:'story_plan',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:generationRunId}});
+    await logUsage({event_type:'story_concept',estimated_cost_gbp:estimateGBP('story'),metadata:{model:CREATIVE_STORY_MODEL,user_id:moonbeamUser.id,generation_run_id:generationRunId,recent_story_count:recentStories.length}});
+    await logUsage({event_type:'story_plan',estimated_cost_gbp:estimateGBP('story'),metadata:{model:CREATIVE_STORY_MODEL,user_id:moonbeamUser.id,generation_run_id:generationRunId}});
     await logSupportAttempt('success',{credit_deducted:!developerDemo,credit_refunded:false,generation_run_id:generationRunId});
     creditReserved=false;
     return res.status(200).json({creditsRemaining,generationRunId,storyCreditBatchId:developerDemo?'':reservedBatchId,plan,image:null,layout:{requestedLength:length,storyPages:4,displayedTextPages:6,storyboardFirst:true},...(developerDemo?{developer_diagnostics:developerTextDiagnostics}:{})});
