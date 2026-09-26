@@ -1,3 +1,16 @@
+# V251.86
+
+## V251.86 — developer story-length selector visibility fix
+
+Built directly on V251.85.
+
+- Fixes the developer-only 6–10 page/illustration selector being hidden by the legacy `.story-tone-select` CSS used to suppress the old Tone control.
+- The selector now appears visibly immediately below the Story Idea box on the Create Story page for the developer account.
+- Defaults to 6 pages + 6 illustrations and retains options 7, 8, 9 and 10.
+- Both Make Tonight's Story and Develop with Astra continue to use the selected value through the existing V251.85 generation/workshop plumbing.
+- Normal users remain hard-fixed at six and do not see this control.
+- No Supabase SQL changes.
+
 # V251.85
 
 ## V251.85 — paid-generation recovery and whole-book safety redesign
