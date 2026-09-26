@@ -260,6 +260,7 @@ $('language').value=language;
 $('language').addEventListener('change',()=>{language=$('language').value;localStorage.setItem('moonbeamLanguage',language);selected=new Set();applyLocale();setCastText246();updateSetupNav();renderStoryCredits();if(!$('shareStoryDialog')?.classList.contains('hidden'))applyShareDialogLocale();if(currentBook&&!$('story')?.classList.contains('hidden'))renderBookPage(currentBook.currentPage);persistSetupDraft(false);});
 applyLocale();
 $('generate').onclick=generateStory;
+$('developerAbortGeneration')?.addEventListener('click',abortDeveloperStoryGeneration);
 $('signIn')?.addEventListener('click',signInParent);
 $('signUp')?.addEventListener('click',signUpParent);
 $('signOut')?.addEventListener('click',signOutParent);
@@ -743,17 +744,43 @@ function storyboardIllustrationPrompt(plan,index){
  const all=scenes.map((x,i)=>`SCENE ${i+1}: EVENT: ${x.event||''} | VISUAL: ${x.visual_moment||''} | CONTINUITY: ${x.continuity||''}`).join('\n');
  return `STORYBOARD-FIRST BOOK. Read the COMPLETE six-scene production plan before drawing this image. You are drawing SCENE ${index+1} OF 6.\n\nWHOLE STORY PREMISE:\n${plan?.premise||''}\n\nWHOLE STORY ARC INCLUDING ENDING:\n${plan?.story_arc||''}\nENDING: ${plan?.ending||''}\n\nCOMPLETE VISUAL STORYBOARD:\n${all}\n\nCURRENT SCENE — DRAW THIS, NOT AN EARLIER OR LATER EVENT:\n${scene.visual_moment||scene.event||''}\n\nART DIRECTOR'S COMMISSION — AUTHORITATIVE. You are the PAINTER, not the art director. Render the specified moment and staging faithfully. Do not substitute a more generic, easier or more familiar composition; do not redesign recurring wardrobe, creatures, objects, vehicles, machines or locations; and do not change specified relative positions, scale, orientation, gaze, expression, gesture, pointing target or physical relationships. Preserve the production bible and continuity established by earlier scenes. Artistic judgement is limited to the mechanics of making the commissioned composition a beautiful, physically plausible Moonbeam painting. Do not invent a competing plot or staging.`
 }
-async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null){
+async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null,signal=null){
  let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
- let response=null,raw='';try{response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:storyboardIllustrationPrompt(plan,index),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:child?.referenceImages||[],continuityImage:continuityImage||null,generationRunId,storyCreditBatchId:activeStoryCreditBatchId,requiredStoryImage:true,storyImageIndex:index})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic(`illustration ${index+1} request`,networkError,response,raw))}
+ let response=null,raw='';try{response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:storyboardIllustrationPrompt(plan,index),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:child?.referenceImages||[],continuityImage:continuityImage||null,generationRunId,storyCreditBatchId:activeStoryCreditBatchId,requiredStoryImage:true,storyImageIndex:index}),signal});raw=await response.text()}catch(networkError){if(networkError?.name==='AbortError')throw networkError;throw new Error(developerGenerationDiagnostic(`illustration ${index+1} request`,networkError,response,raw))}
  let data=null;try{data=JSON.parse(raw)}catch{};if(!response.ok||!data?.image){
   if(data?.code==='IMAGE_SAFETY_REJECTION'&&!instagramDeveloperAccess){if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));const msg=data?.credit_refunded===true?"We’re sorry, Moonbeam isn’t able to complete your story right now. Please try again later. You have not been charged for this attempt.":"We’re sorry, Moonbeam isn’t able to complete your story right now. Please try again later.";throw new Error(msg)}
   const base=new Error(data?.error||`Illustration service failed (${response.status})`);throw new Error(developerGenerationDiagnostic(`illustration ${index+1} response`,base,response,raw))
  }return data.image
 }
 function storyboardThumbnail(dataUrl){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const max=320,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.72))};img.onerror=()=>reject(new Error('A storyboard illustration could not be prepared for the writer.'));img.src=dataUrl})}
-async function createStoryboardArtwork(plan,child,generationRunId){
- const images=[];let previous=null;for(let i=0;i<6;i++){const image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous);images.push(image);previous=image}return images
+async function createStoryboardArtwork(plan,child,generationRunId,signal=null){
+ const images=[];let previous=null;for(let i=0;i<6;i++){if(storyGenerationAbortRequested||signal?.aborted)throw new DOMException('Story generation aborted.','AbortError');const image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous,signal);images.push(image);previous=image}return images
+}
+
+function plannedCoverPrompt(plan,child){
+ return `FRONT COVER ARTWORK for the same Moonbeam book whose six interiors have already been painted.
+
+WHOLE STORY PREMISE:
+${plan?.premise||''}
+
+WHOLE STORY ARC INCLUDING ENDING:
+${plan?.story_arc||''}
+ENDING: ${plan?.ending||''}
+
+PRODUCTION DESIGN / VISUAL BIBLE:
+${plan?.character_bible||''}
+
+ASTRA ART DIRECTOR — AUTHORITATIVE COVER COMMISSION:
+${plan?.cover_direction||''}
+
+The supplied finished interior paintings are authoritative visual continuity references for how the Cast, wardrobe, creatures, machines, vehicles, objects, locations, palette and rendering were actually realised. Canonical Cast references remain authoritative for identity. You are the PAINTER, not the cover designer. Follow Astra's commissioned composition faithfully; do not choose a different scene, redesign recurring elements, simplify the staging, or alter specified positions, scale, orientation, expressions, gaze, gestures, wardrobe, object states or physical relationships. Match the same premium naturalistic painterly realism and apparent age used in the interiors. Keep the central/upper area usable for title typography added separately by Moonbeam. No words, letters, captions, logos, signs or readable text.`
+}
+async function requestPlannedCoverIllustration(plan,child,generationRunId,interiorThumbs,signal=null){
+ let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+ const castRefs=Array.isArray(child?.referenceImages)?child.referenceImages:child?.referencePhoto?[{name:child?.name||'main hero',kind:'child',role:'hero',image:child.referencePhoto}]:[];
+ const coverRefs=[...castRefs,...interiorThumbs.map((image,i)=>({name:`finished interior ${i+1}`,kind:'art-direction-reference',role:'visual-continuity',image}))];
+ let response=null,raw='';try{response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:plannedCoverPrompt(plan,child),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:coverRefs,generationRunId,storyCreditBatchId:activeStoryCreditBatchId,requiredStoryImage:true,storyImageIndex:6}),signal});raw=await response.text()}catch(networkError){if(networkError?.name==='AbortError')throw networkError;throw new Error(developerGenerationDiagnostic('cover painting request',networkError,response,raw))}
+ let data=null;try{data=JSON.parse(raw)}catch{};if(!response.ok||!data?.image){const base=new Error(data?.error||`Cover illustration service failed (${response.status})`);throw new Error(developerGenerationDiagnostic('cover painting response',base,response,raw))}return data.image
 }
 
 function recentStoryCreativeMemory(limit=10){
@@ -819,6 +846,16 @@ function developerGenerationDiagnostic(stage,error,response=null,raw=''){
  return parts.join('\n');
 }
 
+let storyGenerationAbortController=null;
+let storyGenerationAbortRequested=false;
+function abortDeveloperStoryGeneration(){
+ if(!instagramDeveloperAccess||!storyGenerationAbortController)return;
+ storyGenerationAbortRequested=true;
+ const abortButton=$('developerAbortGeneration');if(abortButton){abortButton.disabled=true;abortButton.textContent='Aborting…'}
+ const preparingCopy=$('preparingCopy');if(preparingCopy)preparingCopy.textContent='Stopping this story generation…';
+ storyGenerationAbortController.abort();
+}
+
 async function generateStory(){
  lastDeveloperTextDiagnostics=[];activeStoryCreditBatchId='';
  syncGenerationAdapter246();
@@ -834,7 +871,9 @@ async function generateStory(){
  if(!Number.isFinite(child.age)||child.age<3||child.age>12){$('status').textContent=t().errorAge;return}
  const accessToken=await currentAccessToken();if(!accessToken){$('status').innerHTML='<span class="error">Your session has expired. Please sign in again.</span>';return}
  if(!(await prepareStoryCreditConsent(accessToken)))return;
- const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy'),preparingAverage=$('preparingAverage'),preparingElapsed=$('preparingElapsed');
+ const button=$('generate'),preparing=$('storyPreparing'),preparingTitle=$('preparingTitle'),preparingCopy=$('preparingCopy'),preparingAverage=$('preparingAverage'),preparingElapsed=$('preparingElapsed'),abortButton=$('developerAbortGeneration');
+ storyGenerationAbortRequested=false;storyGenerationAbortController=new AbortController();const generationSignal=storyGenerationAbortController.signal;
+ if(abortButton){abortButton.hidden=!instagramDeveloperAccess;abortButton.disabled=false;abortButton.textContent='Abort generation'}
  $('status').textContent='';button.disabled=true;button.classList.add('is-generating');
  if(preparingTitle)preparingTitle.textContent=t().preparing;
  if(preparingCopy)preparingCopy.textContent=t().preparingCopy;
@@ -849,7 +888,7 @@ async function generateStory(){
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
    let response=null,raw='';
-   try{response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child,recentStories:recentStoryCreativeMemory(10)})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('concept/storyboard request',networkError,response,raw))}
+   try{response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child,recentStories:recentStoryCreativeMemory(10)}),signal:generationSignal});raw=await response.text()}catch(networkError){if(networkError?.name==='AbortError')throw networkError;throw new Error(developerGenerationDiagnostic('concept/storyboard request',networkError,response,raw))}
    let data=null;try{data=JSON.parse(raw)}catch{}
    if(instagramDeveloperAccess&&Array.isArray(data?.developer_diagnostics))lastDeveloperTextDiagnostics=data.developer_diagnostics;
    if(!response.ok){const base=new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`);throw new Error(developerGenerationDiagnostic('concept/storyboard response',base,response,raw))}
@@ -858,25 +897,27 @@ async function generateStory(){
    activeStoryCreditBatchId=String(data.storyCreditBatchId||'');
    child.generationRunId=data.generationRunId||null;
    if(preparingCopy)preparingCopy.textContent='Moonbeam is illustrating the whole adventure before writing it…';
-   const storyboardArtwork=await createStoryboardArtwork(data.plan,child,child.generationRunId);
+   const storyboardArtwork=await createStoryboardArtwork(data.plan,child,child.generationRunId,generationSignal);
    if(preparingCopy)preparingCopy.textContent='Moonbeam is writing the story around the finished pictures…';
    const thumbnails=await Promise.all(storyboardArtwork.map(storyboardThumbnail));
    let finalToken=await currentAccessToken();if(!finalToken)finalToken=await refreshAccessToken();if(!finalToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+   if(preparingCopy)preparingCopy.textContent='Moonbeam is writing the story and painting its cover…';
    let finalResponse=null,finalRaw='';
-   try{finalResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${finalToken}`},body:JSON.stringify({action:'finalize-storyboard-story',child,plan:data.plan,images:thumbnails,generationRunId:child.generationRunId})});finalRaw=await finalResponse.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('final story request',networkError,finalResponse,finalRaw))}
-   let finalData=null;try{finalData=JSON.parse(finalRaw)}catch{};if(!finalResponse.ok){const base=new Error(finalData?.error||`Story finishing failed (${finalResponse.status})`);throw new Error(developerGenerationDiagnostic('final story response',base,finalResponse,finalRaw))}if(!finalData?.story)throw new Error(developerGenerationDiagnostic('final story validation',new Error('Moonbeam could not finish the illustrated story.'),finalResponse,finalRaw));
+   const finalStoryPromise=(async()=>{try{finalResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${finalToken}`},body:JSON.stringify({action:'finalize-storyboard-story',child,plan:data.plan,images:thumbnails,generationRunId:child.generationRunId}),signal:generationSignal});finalRaw=await finalResponse.text()}catch(networkError){if(networkError?.name==='AbortError')throw networkError;throw new Error(developerGenerationDiagnostic('final story request',networkError,finalResponse,finalRaw))}let parsed=null;try{parsed=JSON.parse(finalRaw)}catch{};if(!finalResponse.ok){const base=new Error(parsed?.error||`Story finishing failed (${finalResponse.status})`);throw new Error(developerGenerationDiagnostic('final story response',base,finalResponse,finalRaw))}if(!parsed?.story)throw new Error(developerGenerationDiagnostic('final story validation',new Error('Moonbeam could not finish the illustrated story.'),finalResponse,finalRaw));return parsed})();
+   const coverPromise=requestPlannedCoverIllustration(data.plan,child,child.generationRunId,thumbnails,generationSignal);
+   const [finalData,prebuiltCover]=await Promise.all([finalStoryPromise,coverPromise]);
    if(instagramDeveloperAccess&&finalData?.developer_diagnostic){lastDeveloperTextDiagnostics=[...lastDeveloperTextDiagnostics,finalData.developer_diagnostic];showDeveloperTokenReport(lastDeveloperTextDiagnostics)}
    clearSetupDraft();
    finalData.story.productionPlan=data.plan;
-   renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork,productionPlan:data.plan})
+   renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork,prebuiltCover,productionPlan:data.plan})
  }catch(e){
-   console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
+   if(storyGenerationAbortRequested||e?.name==='AbortError'){$('status').textContent='Story generation aborted.'}else{console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'}
  }finally{
-   stopStoryWaitingCounter();button.disabled=false;button.classList.remove('is-generating');if(preparing)preparing.classList.add('hidden')
+   stopStoryWaitingCounter();button.disabled=false;button.classList.remove('is-generating');if(preparing)preparing.classList.add('hidden');if(abortButton){abortButton.hidden=true;abortButton.disabled=false;abortButton.textContent='Abort generation'}storyGenerationAbortController=null;storyGenerationAbortRequested=false
  }
 }
 
-function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',coverByline:s.coverByline||options.savedAssets?.coverByline||'',dedication:s.dedication||options.savedAssets?.dedication||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},productionPlan:options.productionPlan||s.productionPlan||null,prebuiltArtwork:Array.isArray(options.prebuiltArtwork)&&options.prebuiltArtwork.length>0,artwork:{cover:null,pages:Object.fromEntries((options.prebuiltArtwork||[]).map((image,i)=>[i,image]))}}}
+function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',coverByline:s.coverByline||options.savedAssets?.coverByline||'',dedication:s.dedication||options.savedAssets?.dedication||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},productionPlan:options.productionPlan||s.productionPlan||null,prebuiltArtwork:Array.isArray(options.prebuiltArtwork)&&options.prebuiltArtwork.length>0,artwork:{cover:options.prebuiltCover||null,pages:Object.fromEntries((options.prebuiltArtwork||[]).map((image,i)=>[i,image]))}}}
 function renderStory(s,image,child,options={}){
  currentBook=buildBook(s,image,child,options);
  const el=$('story');el.classList.remove('hidden');
@@ -894,9 +935,11 @@ function renderStory(s,image,child,options={}){
  // V250.91: the cover is now image zero for visual continuity. Build it first,
  // then let Scene 1 inherit its machines, clothing, environment and other established details.
  // If the dedicated cover fails, page generation still proceeds normally.
- Promise.resolve(loadCoverIllustration(false)).finally(()=>{
-   if(currentBook)prefetchIllustrations(-1,3);
- });
+ if(currentBook.artwork?.cover){
+   Promise.resolve(revealCoverImage($('coverImage'),currentBook.artwork.cover)).then(()=>{if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}).catch(()=>loadCoverIllustration(true)).finally(()=>{if(currentBook)prefetchIllustrations(-1,3)});
+ }else{
+   Promise.resolve(loadCoverIllustration(false)).finally(()=>{if(currentBook)prefetchIllustrations(-1,3)});
+ }
  $('save').onclick=saveCurrentStory;
  $('newStory').onclick=()=>startNewStory();
  if(currentBook.isShared){$('save')?.classList.add('hidden');$('newStory')?.classList.add('hidden')}
@@ -983,6 +1026,7 @@ async function coverInteriorThumbnails(book){
 }
 async function requestCoverArtDirection(book){
  let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+ if(String(book.productionPlan?.cover_direction||'').trim())return String(book.productionPlan.cover_direction).trim();
  const images=await coverInteriorThumbnails(book);
  const story={title:book.title||'',opening:book.opening||'',pages:(book.pages||[]).map(p=>({text:p?.text||''})),closing:book.closing||'',character_bible:book.character_bible||''};
  const plan=book.productionPlan||{character_bible:book.character_bible||'',scenes:(book.pages||[]).map(p=>({visual_moment:p?.illustration_prompt||''}))};

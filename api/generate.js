@@ -438,6 +438,11 @@ Return JSON only in the exact schema requested by the current production stage.`
     const conceptPrompt=`${conceptBase}
 
 CONCEPT STAGE — CREATIVE AUTONOMY
+
+RECENT STORIES FROM THIS ACCOUNT — REPETITION AVOIDANCE ONLY
+${recentMemory}
+Use this history only to avoid unnecessarily repeating substantially the same underlying story concept, distinctive mechanism or ending. It is not a creative template and must not constrain the kind, form, tone or structure of the new story. If the Parent Story Idea explicitly asks to revisit something similar, follow the parent.
+
 Do not write scenes or finished story text yet. Decide what story you believe makes the best book from the Parent Story Idea, Cast and child's age. You have complete creative autonomy over form, tone, structure, events and ending. Do not apply a preferred story formula or anti-formula.
 
 First assess the Parent Story Idea only for the hard safety/copyright constraints above. If it is inappropriate/unsafe for age ${age}, or requests impermissible protected copyrighted material, return a concise input_warning asking the parent to enter a different Story Idea. Do not silently reinterpret an inappropriate request. Public-domain reproduction/adaptation is allowed under the copyright rule above.
@@ -488,29 +493,31 @@ ${JSON.stringify(concept,null,2)}
 
 You have complete creative autonomy over how the concept becomes a story. Do not impose or avoid any particular narrative structure. Do not add creative requirements beyond the Parent Story Idea, age appropriateness, Cast facts, copyright/public-domain rule and six-spread product format.
 
-Create exactly six coherent, drawable moments covering the complete book, including the ending.
+Create exactly six coherent, drawable interior moments covering the complete book, including the ending. Also design the front cover in this same art-direction pass.
 
-At this stage you have a SECOND ROLE: you are the ART DIRECTOR AND VISUAL CONTINUITY DESIGNER for the entire six-illustration production. Sunburst is only the painter. Do not ask Sunburst to interpret the story, invent the staging, design recurring story elements, choose wardrobe, or repair visual logic for you. You must make those decisions before it paints.
+At this stage you have a SECOND ROLE: you are the ART DIRECTOR AND VISUAL CONTINUITY DESIGNER for the entire book: six interior illustrations plus the front cover. Sunburst is only the painter. Do not ask Sunburst to interpret the story, invent the staging, design recurring story elements, choose wardrobe, or repair visual logic for you. You must make those decisions before it paints.
 
 First design the coherent visual world for YOUR story. Use character_bible as the production design bible: establish the wardrobe you choose for recurring Cast, and concretely design recurring story-created creatures, vehicles, machines, buildings, locations and plot-important objects so that the same thing can be reproduced throughout the book. Record distinctive construction, materials, shape, scale, colours and other stable visual facts only where they matter. Canonical Cast photographs remain the absolute authority for personal identity; direct the photographed person but never redesign their face/body identity or invent identity-defining accessories absent from the reference.
 
 Then art-direct every scene precisely. EVENT states what actually happens. VISUAL_MOMENT is a direct commission to the painter for the exact single frame you have chosen. Specify the composition and physical geometry with enough precision that a skilled painter who has NOT read the story can stage it without making narrative decisions. Where relevant, state relative positions, distances, foreground/background placement, orientation, relative sizes, who or what is beside/behind/in front of/inside/on top of what, which objects are held and how, and the physical state of important objects. Direct character performance too: facial expression, head/body orientation, gaze target, gesture, pointing direction and interaction with other characters or objects whenever those details communicate the intended event. If a hand, gaze, gesture or spatial relationship matters, name its target unambiguously rather than leaving the painter to guess.
 
-Maintain continuity across all six briefs yourself. Once you establish wardrobe, an object/creature/machine design, scale, location layout or physical state, preserve it in later scenes unless your planned story deliberately changes it; when it changes, describe the change and carry the new state forward. CONTINUITY records the concrete facts that later scenes must preserve. Do not add detail merely to satisfy a checklist: precision serves your particular composition and story. But never delegate a consequential staging, design or continuity decision to Sunburst. No field may contain polished story prose.
+Maintain continuity across all six interior briefs and the cover yourself. Once you establish wardrobe, an object/creature/machine design, scale, location layout or physical state, preserve it in later scenes unless your planned story deliberately changes it; when it changes, describe the change and carry the new state forward. CONTINUITY records the concrete facts that later scenes must preserve. Do not add detail merely to satisfy a checklist: precision serves your particular composition and story. But never delegate a consequential staging, design or continuity decision to Sunburst. No field may contain polished story prose.
+
+Design the COVER as a separate commission after you have designed the six interiors. It should be the strongest single cover composition for the story as a whole; it need not duplicate an interior scene. Make every consequential composition/staging decision yourself just as for the interiors, preserve the same wardrobe/world/recurring designs, and leave calm usable space in the central/upper area for Moonbeam's separate title typography. Do not include or request words, letters, captions, logos, signs or readable text in the painting. The cover commission will be painted only after all six interiors exist, so the painter will also receive those finished paintings as continuity references.
 
 Do not invent surnames. Preserve supplied Cast facts exactly. Do not prescribe art style; Moonbeam controls rendering style separately.
 
 Return JSON ONLY in exactly this shape:
-{"premise":"string","story_arc":"string","ending":"string","character_bible":"string","scenes":[{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"}]}`;
+{"premise":"string","story_arc":"string","ending":"string","character_bible":"string","cover_direction":"one complete precise front-cover art-director brief","scenes":[{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"}]}`;
     let planOutput='';let plan=null;
     try{
       planOutput=await callStoryModel(planningPrompt,4200,'storyboard planning');
       for(const candidate of candidateJsonStrings(planOutput)){try{const x=JSON.parse(candidate);if(x&&Array.isArray(x.scenes)&&x.scenes.length===6){plan=x;break}}catch{}}
     }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
     if(!plan){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not create the visual storyboard correctly. Please try again.'})}
-    plan.concept=concept;plan.title_working=String(plan.title_working||'').trim();plan.premise=String(plan.premise||'').trim();plan.story_arc=String(plan.story_arc||'').trim();plan.ending=String(plan.ending||'').trim();plan.character_bible=String(plan.character_bible||'').trim();
+    plan.concept=concept;plan.title_working=String(plan.title_working||'').trim();plan.premise=String(plan.premise||'').trim();plan.story_arc=String(plan.story_arc||'').trim();plan.ending=String(plan.ending||'').trim();plan.character_bible=String(plan.character_bible||'').trim();plan.cover_direction=String(plan.cover_direction||'').trim();
     plan.scenes=plan.scenes.slice(0,6).map((x,i)=>({scene:i+1,event:String(x?.event||'').trim(),visual_moment:String(x?.visual_moment||'').trim(),continuity:String(x?.continuity||'').trim()}));
-    if(!plan.premise||!plan.story_arc||!plan.ending||!plan.character_bible||plan.scenes.some(x=>!x.event||!x.visual_moment)){await refundReservedCredit();return res.status(502).json({error:'Moonbeam produced an incomplete visual storyboard. Please try again.'})}
+    if(!plan.premise||!plan.story_arc||!plan.ending||!plan.character_bible||!plan.cover_direction||plan.scenes.some(x=>!x.event||!x.visual_moment)){await refundReservedCredit();return res.status(502).json({error:'Moonbeam produced an incomplete visual storyboard. Please try again.'})}
     const generationRunId=await createGenerationRun(moonbeamUser.id);
     await logUsage({event_type:'story_concept',estimated_cost_gbp:estimateGBP('story'),metadata:{model:CREATIVE_STORY_MODEL,user_id:moonbeamUser.id,generation_run_id:generationRunId,recent_story_count:recentStories.length}});
     await logUsage({event_type:'story_plan',estimated_cost_gbp:estimateGBP('story'),metadata:{model:CREATIVE_STORY_MODEL,user_id:moonbeamUser.id,generation_run_id:generationRunId}});

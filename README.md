@@ -1,3 +1,23 @@
+# Moonbeam Stories V251.75 — single-pass Astra art direction + parallel cover
+## V251.75
+- Astra now art-directs the front cover in the same planning pass as the six interior commissions.
+- The cover commission is stored on the production plan; normal new-story generation no longer makes a second Astra cover-art-direction call.
+- After all six interiors are finished, their compact continuity references are reused by two concurrent jobs: Astra writes the final story while Sunburst paints the already-planned cover.
+- Moonbeam waits for both jobs, then opens the completed book with the prebuilt cover.
+- Cover retry reuses Astra's stored cover commission rather than waking Astra again.
+- The cover is a required story image (index 6) for the secure illustration allowance/recovery path.
+- V251.74 developer Abort generation and ten-story anti-repetition memory are retained.
+
+
+- Adds a developer-account-only **Abort generation** button to the hourglass generation state.
+- Abort immediately stops the browser from starting any later Astra/Sunburst stages and cancels the active browser request where possible, so an abandoned test does not continue through the remaining six-image/final-writing pipeline. Work already submitted upstream may still finish and incur its own API cost.
+- Ordinary user accounts never see the abort control.
+- Reconnects the existing compact memory of up to 10 recent saved stories to Astra's story-architect/concept stage.
+- That history is explicitly repetition-avoidance context only: it must not act as a creative template or constrain form, tone, structure or genre, and an explicit parent request may revisit a similar idea.
+- No changes to Astra art direction, Sunburst model/quality, cover architecture, credits, or the shared usage/timing baseline.
+
+---
+
 # Moonbeam Stories V251.73 — Astra whole-book art director
 
 - Astra now has two explicit pre-painting roles: story architect, then whole-book art director / visual continuity designer.
