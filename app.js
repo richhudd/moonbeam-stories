@@ -158,11 +158,11 @@ async function removeChildPhoto(){await childPhotoDelete(currentPhotoKey());if(a
 async function pruneImageCache(){const db=await openImageDb();if(!db)return;try{const rows=await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readonly'),req=tx.objectStore(IMAGE_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([])});if(rows.length<=IMAGE_CACHE_LIMIT)return;rows.sort((a,b)=>(b.at||0)-(a.at||0));const remove=rows.slice(IMAGE_CACHE_LIMIT);await new Promise(resolve=>{const tx=db.transaction(IMAGE_STORE,'readwrite'),store=tx.objectStore(IMAGE_STORE);remove.forEach(r=>store.delete(r.key));tx.oncomplete=()=>resolve();tx.onerror=()=>resolve()})}catch{}}
 function stableHash(value){let h=2166136261>>>0;for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
 function makeStoryCacheId(s,child){return stableHash(JSON.stringify({t:s.title||'',o:s.opening||'',b:s.character_bible||'',p:(s.pages||[]).map(x=>[x.text||'',x.illustration_prompt||'']),c:s.closing||'',n:child?.name||'',a:child?.age||'',g:child?.gender||'',r:child?.referenceImages?stableHash(JSON.stringify(child.referenceImages.map(x=>[x.name,x.role,x.gender||'',(x.image||'').slice(-400)]))):child?.referencePhoto?stableHash(child.referencePhoto.slice(-1200)):'none'}))}
-async function requestIllustration(key,prompt,style,force=false,referenceImage=null,requiredStoryImage=false,storyImageIndex=null,continuityImage=null,developerCorrection=false,correctionMask=null,developerCoverCorrection=false){
+async function requestIllustration(key,prompt,style,force=false,referenceImage=null,requiredStoryImage=false,storyImageIndex=null,continuityImage=null,developerCorrection=false,correctionMask=null){
  if(!force&&illustrationCache.has(key))return illustrationCache.get(key);
  if(!force){const stored=await persistentImageGet(key);if(stored){illustrationCache.set(key,stored);return stored}}
  if(!force&&illustrationInflight.has(key))return illustrationInflight.get(key);
- const task=(async()=>{let attempts=0,authRefreshed=false;while(attempts<3){attempts++;let accessToken=await currentAccessToken();if(!accessToken){authRefreshed=true;accessToken=await refreshAccessToken()}if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:Array.isArray(referenceImage)?null:(referenceImage||null),referenceImages:Array.isArray(referenceImage)?referenceImage:null,continuityImage:continuityImage||null,generationRunId,requiredStoryImage:requiredStoryImage===true,storyImageIndex:Number.isInteger(storyImageIndex)?storyImageIndex:null,developerCorrection:developerCorrection===true,developerCoverCorrection:developerCoverCorrection===true,correctionMask:developerCorrection&&correctionMask?correctionMask:null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
+ const task=(async()=>{let attempts=0,authRefreshed=false;while(attempts<3){attempts++;let accessToken=await currentAccessToken();if(!accessToken){authRefreshed=true;accessToken=await refreshAccessToken()}if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');const generationRunId=currentBook?.generationRunId||null;if(!generationRunId)throw new Error('This saved story predates the secure illustration allowance.');const response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style,referenceImage:Array.isArray(referenceImage)?null:(referenceImage||null),referenceImages:Array.isArray(referenceImage)?referenceImage:null,continuityImage:continuityImage||null,generationRunId,requiredStoryImage:requiredStoryImage===true,storyImageIndex:Number.isInteger(storyImageIndex)?storyImageIndex:null,developerCorrection:developerCorrection===true,correctionMask:developerCorrection&&correctionMask?correctionMask:null})});const raw=await response.text();let data=null;try{data=JSON.parse(raw)}catch{}if(response.ok&&data?.image){
    if(referenceImage && data.usedReferencePhoto!==true) throw new Error('One or more Cast photo references were not accepted by the illustration service.');
    illustrationCache.set(key,data.image);persistentImagePut(key,data.image);return data.image}if(response.status===401&&!authRefreshed&&attempts<3){authRefreshed=true;const refreshedToken=await refreshAccessToken();if(refreshedToken)continue;throw new Error('Your Moonbeam session has expired. Please sign in again.')}if((response.status===429||response.status===503)&&attempts<3){const wait=Math.min(12000,1800*Math.pow(2,attempts-1));await new Promise(r=>setTimeout(r,wait));continue}throw new Error(data?.error||`Illustration service failed (${response.status})`)}throw new Error('Illustration service is busy. Please try again.')})();
  illustrationInflight.set(key,task);try{return await task}finally{illustrationInflight.delete(key)}
@@ -740,8 +740,8 @@ async function prepareStoryCreditConsent(accessToken){
 }
 function storyboardIllustrationPrompt(plan,index){
  const scenes=Array.isArray(plan?.scenes)?plan.scenes:[];const scene=scenes[index]||{};
- const all=scenes.map((x,i)=>`SCENE ${i+1}: EVENT: ${x.event||''} | VISUAL: ${x.visual_moment||''} | CONTINUITY: ${x.continuity||''}`).join('\n');
- return `STORYBOARD-FIRST BOOK. Read the COMPLETE six-scene production plan before drawing this image. You are drawing SCENE ${index+1} OF 6.\n\nWHOLE STORY PREMISE:\n${plan?.premise||''}\n\nWHOLE STORY ARC INCLUDING ENDING:\n${plan?.story_arc||''}\nENDING: ${plan?.ending||''}\n\nCOMPLETE VISUAL STORYBOARD:\n${all}\n\nCURRENT SCENE — DRAW THIS, NOT AN EARLIER OR LATER EVENT:\n${scene.visual_moment||scene.event||''}\n\nThis illustration must make sense as one moment in the complete visual sequence. Preserve facts established by earlier scenes, anticipate later scenes so you do not reveal their payoff too early, and reserve the strongest visual climax for the scene the storyboard assigns it to. Do not invent a competing plot.`
+ const all=scenes.map((x,i)=>`SCENE ${i+1}: VISUAL: ${x.visual_moment||''} | CONTINUITY: ${x.continuity||''}`).join('\n');
+ return `UNWRITTEN PICTURE BOOK — ILLUSTRATION ${index+1} OF 6.\n\nCOMPLETE VISUAL SEQUENCE:\n${all}\n\nCURRENT ILLUSTRATION — DRAW ONLY THIS VISIBLE MOMENT:\n${scene.visual_moment||''}\n\nCURRENT CONTINUITY FACTS:\n${scene.continuity||'Preserve established visible identities and designs.'}\n\nThese six pictures belong to the same unwritten book. Preserve concrete visual continuity and make this individual scene physically and spatially coherent. Do not add text, narration or lettering. Do not invent a hidden plot that changes what the visual brief asks you to draw.`
 }
 async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null){
  let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
@@ -754,15 +754,6 @@ async function requestStoryboardIllustration(plan,index,child,generationRunId,co
 function storyboardThumbnail(dataUrl){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const max=320,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.72))};img.onerror=()=>reject(new Error('A storyboard illustration could not be prepared for the writer.'));img.src=dataUrl})}
 async function createStoryboardArtwork(plan,child,generationRunId){
  const images=[];let previous=null;for(let i=0;i<6;i++){const image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous);images.push(image);previous=image}return images
-}
-
-function recentStoryCreativeMemory(limit=10){
- const stories=Array.isArray(cloudStories)?cloudStories.slice(0,limit):[];
- return stories.map((x,i)=>{
-  const st=x?.story||{};const pages=Array.isArray(st.pages)?st.pages.map(p=>String(p?.text||'')).join(' '):'';
-  const text=[st.opening||'',pages,st.closing||''].join(' ').replace(/\s+/g,' ').trim();
-  return {title:String(x?.title||st.title||`Recent story ${i+1}`).slice(0,120),summary:text.slice(0,900)};
- }).filter(x=>x.title||x.summary)
 }
 
 function formatAverageStoryBuildTime(seconds){
@@ -849,10 +840,10 @@ async function generateStory(){
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
    let response=null,raw='';
-   try{response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child,recentStories:recentStoryCreativeMemory(10)})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('concept/storyboard request',networkError,response,raw))}
+   try{response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child})});raw=await response.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('visual storyboard request',networkError,response,raw))}
    let data=null;try{data=JSON.parse(raw)}catch{}
    if(instagramDeveloperAccess&&Array.isArray(data?.developer_diagnostics))lastDeveloperTextDiagnostics=data.developer_diagnostics;
-   if(!response.ok){const base=new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`);throw new Error(developerGenerationDiagnostic('concept/storyboard response',base,response,raw))}
+   if(!response.ok){const base=new Error(typeof data?.error==='string'?data.error:`Story service failed (${response.status})`);throw new Error(developerGenerationDiagnostic('visual storyboard response',base,response,raw))}
    if(!data?.plan||!Array.isArray(data.plan.scenes)||data.plan.scenes.length!==6)throw new Error('The story service did not return a complete visual storyboard.');
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
    activeStoryCreditBatchId=String(data.storyCreditBatchId||'');
@@ -863,9 +854,13 @@ async function generateStory(){
    const thumbnails=await Promise.all(storyboardArtwork.map(storyboardThumbnail));
    let finalToken=await currentAccessToken();if(!finalToken)finalToken=await refreshAccessToken();if(!finalToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
    let finalResponse=null,finalRaw='';
-   try{finalResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${finalToken}`},body:JSON.stringify({action:'finalize-storyboard-story',child,plan:data.plan,images:thumbnails,generationRunId:child.generationRunId})});finalRaw=await finalResponse.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('final story request',networkError,finalResponse,finalRaw))}
+   try{finalResponse=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${finalToken}`},body:JSON.stringify({action:'finalize-storyboard-story',child,images:thumbnails,generationRunId:child.generationRunId})});finalRaw=await finalResponse.text()}catch(networkError){throw new Error(developerGenerationDiagnostic('final story request',networkError,finalResponse,finalRaw))}
    let finalData=null;try{finalData=JSON.parse(finalRaw)}catch{};if(!finalResponse.ok){const base=new Error(finalData?.error||`Story finishing failed (${finalResponse.status})`);throw new Error(developerGenerationDiagnostic('final story response',base,finalResponse,finalRaw))}if(!finalData?.story)throw new Error(developerGenerationDiagnostic('final story validation',new Error('Moonbeam could not finish the illustrated story.'),finalResponse,finalRaw));
    if(instagramDeveloperAccess&&finalData?.developer_diagnostic){lastDeveloperTextDiagnostics=[...lastDeveloperTextDiagnostics,finalData.developer_diagnostic];showDeveloperTokenReport(lastDeveloperTextDiagnostics)}
+   // V251.61: restore visual-production metadata only after the image-first writer has finished.
+   // The final writer never receives the storyboard, character bible or visual prompts.
+   finalData.story.character_bible=String(data.plan?.character_bible||'').trim();
+   finalData.story.pages=(finalData.story.pages||[]).map((pg,i)=>({...pg,illustration_prompt:String(data.plan?.scenes?.[i+1]?.visual_moment||'').trim()}));
    clearSetupDraft();
    renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork})
  }catch(e){
@@ -973,17 +968,6 @@ async function revealCoverImage(img,src){
  void img.offsetHeight;
  await nextPaint();
 }
-async function coverInteriorReferences(book=currentBook){
- const refs=[];
- const pageCount=Math.min(6,Math.max(Array.isArray(book?.pages)?book.pages.length:0,Array.isArray(book?.artwork?.pages)?book.artwork.pages.length:0,Array.isArray(book?.savedAssets?.pages)?book.savedAssets.pages.length:0));
- for(let i=0;i<pageCount;i++){
-  let image=book?.artwork?.pages?.[i]||null;
-  if(!image&&book?.isSaved&&book?.savedAssets?.pages?.[i]){try{image=await correctionBlobToDataUrl(await savedArtBlob(book.savedAssets.pages[i]))}catch{}}
-  if(!image){try{const prior=currentBook;currentBook=book;let prompt='';try{prompt=getIllustrationPrompt(i)}finally{currentBook=prior}const key=illustrationKey(book,i,prompt);image=illustrationCache.get(key)||await persistentImageGet(key)||null}catch{}}
-  if(image)refs.push({name:`INTERIOR PAGE ${i+1} — BOOK VISUAL AUTHORITY`,kind:'book-style-reference',role:'interior-visual-authority',image:await correctionContinuityThumbnail(image,384)});
- }
- return refs;
-}
 async function loadCoverIllustration(force=false){
  const book=currentBook;if(!book)return;
  if(book.isSaved){try{const path=book.savedAssets?.cover;if(!path)throw new Error('No cloud-saved cover');const image=await savedAssetUrl(path);if(currentBook===book){await revealCoverImage($('coverImage'),image);if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false;return null}}
@@ -1001,15 +985,12 @@ async function loadCoverIllustration(force=false){
  // the cover with an error/blank state.
  try{
    const key=coverKey(book);
-   const castRefs=await correctionReferenceImages(book);
-   const interiorRefs=await coverInteriorReferences(book);
-   const coverRefs=[...castRefs,...interiorRefs];
    const image=await requestIllustration(
      key,
      getCoverPrompt(book),
      `Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,
      force,
-     coverRefs.length?coverRefs:null
+     book.child?.referenceImages||book.child?.referencePhoto||null
    );
    if(currentBook===book){
      await revealCoverImage($('coverImage'),image);
@@ -1853,18 +1834,6 @@ async function persistCorrectedIllustration(book,index,image){
  }
 }
 
-async function persistCorrectedCover(book,image){
- book.artwork=book.artwork||{pages:[]};book.artwork.cover=image;
- if(book.isSaved&&book.savedStoryId){
-  const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');
-  const replacementBlob=dataUrlToBlob(image);const up=await supabaseClient.storage.from('saved-story-art').upload(path,replacementBlob,{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;
-  await savedArtPut(path,replacementBlob);const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};delete book.savedAssetUrls[path];
-  const assets={...(book.savedAssets||{})};delete assets.kdp_description;const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets;
- }
- persistCurrentDraft();
-}
-
-
 let developerCorrectionCandidate=null;
 let developerCoverTextKind=null;
 function openDeveloperCoverText(kind){
@@ -1909,7 +1878,7 @@ function showDeveloperCandidate(candidate){
  developerCorrectionCandidate=candidate;const panel=$('developerCandidatePanel'),body=$('developerCandidateBody'),label=$('developerCandidateLabel');
  if(!panel||!body)return;panel.classList.remove('hidden');$('developerManualTextPanel')?.classList.add('hidden');
  if(candidate.kind==='illustration'){
-  if(label)label.textContent=candidate.target==='cover'?'Proposed replacement cover — original is still safely saved':'Proposed replacement illustration — original is still safely saved';
+  if(label)label.textContent='Proposed replacement illustration — original is still safely saved';
   body.innerHTML=`<div class="developer-correction-status">You can refine or completely replace the instruction above before choosing Try again.</div><img src="${escapeHtml(candidate.image)}" alt="Proposed replacement illustration" style="display:block;max-width:100%;max-height:58vh;margin:.75rem auto;border-radius:12px">`;
  }else{
   if(label)label.textContent='Suggested replacement text — original is unchanged';
@@ -1920,10 +1889,9 @@ function showDeveloperCandidate(candidate){
 async function acceptDeveloperCandidate(){
  const c=developerCorrectionCandidate,book=currentBook,st=$('developerCorrectionStatus');if(!c||!book)return;
  try{
-  if(c.kind==='illustration'&&c.target==='cover')await persistCorrectedCover(book,c.image);
-  else if(c.kind==='illustration')await persistCorrectedIllustration(book,c.index,c.image);
+  if(c.kind==='illustration')await persistCorrectedIllustration(book,c.index,c.image);
   else await persistCorrectedText(book,c.index,c.text);
-  developerCorrectionCandidate=null;if(st)st.textContent='Accepted and saved.';closeDeveloperCorrection();if(c.target==='cover'){showCover()}else renderBookPage(c.index)
+  developerCorrectionCandidate=null;if(st)st.textContent='Accepted and saved.';closeDeveloperCorrection();renderBookPage(c.index)
  }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
 }
 function rejectDeveloperCandidate(){
@@ -1944,11 +1912,13 @@ async function runDeveloperCorrection(kind,maskReady=false){
  const buttons=[$('developerCorrectText'),$('developerCorrectImage')].filter(Boolean);buttons.forEach(b=>b.disabled=true);if(st)st.textContent=kind==='text'?'Correcting the text…':'Regenerating this illustration…';
  try{
   if(target==='cover'){
-   const castRefs=await correctionReferenceImages(book),interiorRefs=await coverInteriorReferences(book),refs=[...castRefs,...interiorRefs],story=correctionStoryPayload(book),fullStory=[story.opening,...story.pages.map(p=>p.text),story.closing].filter(Boolean).join('\n\n');
-   const prompt=`REPLACEMENT FRONT COVER ARTWORK for the finished children's story “${book.title||''}”.\n\nFINISHED STORY — AUTHORITATIVE:\n${fullStory}\n\nDEVELOPER CORRECTION — AUTHORITATIVE:\n${instruction}\n\nCreate a corrected replacement cover. The supplied INTERIOR PAGE references are the authoritative visual source for THIS BOOK: match their exact degree of realism, facial treatment, painterly finish, lighting language, colour palette, texture and atmosphere. Preserve story-specific clothing from the interiors. Any recurring creature, animal, machine, vehicle, location or distinctive object already visible in those interiors must remain recognisably the SAME established design; do not reinterpret it from prose. Cast photos control personal identity only and must not override the book-specific wardrobe or rendering treatment. Do not copy an interior composition: create a strong cover composition from the finished story while keeping the same visual world. Do not add title, author, dedication, logos or any text; Moonbeam overlays those separately.`;
-   const key=`${coverKey(book)}:developer-cover-candidate:${Date.now()}`;
-   const image=await requestIllustration(key,prompt,`Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,true,refs.length?refs:null,false,null,null,false,null,true);
-   showDeveloperCandidate({kind:'illustration',target:'cover',index:-1,image,instruction});if(st)st.textContent='Review the replacement cover. The original has not been changed.';return;
+   const refs=await correctionReferenceImages(book),story=correctionStoryPayload(book),fullStory=[story.opening,...story.pages.map(p=>p.text),story.closing].filter(Boolean).join('\n\n');
+   const prompt=`Front cover ARTWORK ONLY for the finished children's story “${book.title||''}”.\n\nFINISHED STORY — AUTHORITATIVE:\n${fullStory}\n\nDEVELOPER CORRECTION — AUTHORITATIVE:\n${instruction}\n\nThe existing cover artwork was rejected because of the inconsistency described above. Correct that inconsistency. Story facts and the developer instruction override artistic inference. Keep recurring characters faithful to their Moonbeam Cast references. Do not add title, author, dedication, logos or any text; Moonbeam overlays those separately.`;
+   const key=`${coverKey(book)}:developer-correction:${Date.now()}`;
+   const image=await requestIllustration(key,prompt,`Cover visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and important objects consistent.'}`,true,refs.length?refs:null,false,null,null,true);
+   book.artwork=book.artwork||{};book.artwork.cover=image;
+   if(book.isSaved&&book.savedStoryId){const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');const replacementBlob=dataUrlToBlob(image);const up=await supabaseClient.storage.from('saved-story-art').upload(path,replacementBlob,{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;await savedArtPut(path,replacementBlob);const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};delete book.savedAssetUrls[path];const assets={...(book.savedAssets||{})};delete assets.kdp_description;const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets}
+   persistCurrentDraft();closeDeveloperCorrection();const ci=$('coverImage');if(ci)await revealCoverImage(ci,image);return;
   }
   if(kind==='text'){
    const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
@@ -1962,8 +1932,7 @@ async function runDeveloperCorrection(kind,maskReady=false){
    const artworkRefs=await correctionAllArtworkReferences(book,index,currentArtwork),castRefs=await correctionReferenceImages(book);
    // Correction mode deliberately does NOT send page prose/storyboard/scene facts to the
    // image editor. The current artwork is the sole scene/composition authority. Other book
-   // artwork is analysed server-side for identity continuity only and is never attached to
-   // the edit request itself. Cast photos remain identity references only.
+   // Other book artwork is sent only as compact evidence. The server selects at most two images that actually show the entity named in the developer correction and attaches those selected images as canonical identity references. Cast photos remain authoritative identity references for Cast members.
    const refs=[...artworkRefs,...castRefs];
    const correctionPrompt=`EDIT THE SUPPLIED EXISTING ILLUSTRATION. Do not reinterpret the story and do not generate a new scene.\n\nREQUESTED CHANGE — AUTHORITATIVE:\n${instruction}\n\nChange only the pixels/details necessary for that requested correction. Preserve the existing crop, composition, camera position, perspective, setting, background, every person and object's position, poses, expressions, clothing, lighting, colours, scale and painted rendering everywhere else. If the requested change concerns a recurring character's identity, restore only that identity detail while leaving the character's current pose, size and location unchanged.`;
    const key=`${illustrationKey(book,index,basePrompt)}:developer-surgical-correction:${Date.now()}`;
