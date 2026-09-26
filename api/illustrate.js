@@ -31,12 +31,14 @@ module.exports = async function handler(req, res) {
     if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
     const moonbeamUser = await verifyMoonbeamUser(req);
     const developerCorrectionRequested=body.developerCorrection===true;
+    const developerCoverCorrectionRequested=body.developerCoverCorrection===true;
     const correctionMask = /^data:image\/png;base64,/i.test(body.correctionMask || '') ? body.correctionMask : '';
     const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
     const developerCorrection=developerCorrectionRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
-    if(developerCorrectionRequested&&!developerCorrection)return res.status(403).json({error:'Developer access only.'});
+    const developerCoverCorrection=developerCoverCorrectionRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
+    if((developerCorrectionRequested&&!developerCorrection)||(developerCoverCorrectionRequested&&!developerCoverCorrection))return res.status(403).json({error:'Developer access only.'});
     let recoverySlot=false;
-    try { if(!developerCorrection) await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
+    try { if(!developerCorrection&&!developerCoverCorrection) await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
     catch(e){
       // V206: the original nine image slots remain the primary anti-abuse budget.
       // If Safari/navigation discarded an otherwise legitimate required page request,
@@ -57,7 +59,7 @@ module.exports = async function handler(req, res) {
       if(!recoveryReservation) return res.status(503).json({error:'Moonbeam could not reserve an illustration recovery attempt. Please try again.',code:'RECOVERY_CHECK_FAILED'});
       recoverySlot=true;
     }
-    if(!recoverySlot&&!developerCorrection){slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;}
+    if(!recoverySlot&&!developerCorrection&&!developerCoverCorrection){slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;}
     const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(reservedUserId,reservedRunId,'image')}};
 
     const refs=(Array.isArray(referenceImages)?referenceImages:[]).filter(r=>r&&/^data:image\/(jpeg|png|webp);base64,/i.test(r.image||''));if(!refs.length&&/^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage||''))refs.push({name:'main hero',kind:'child',role:'hero',image:referenceImage});
@@ -66,7 +68,8 @@ module.exports = async function handler(req, res) {
     // other pages' staging/composition into the page being surgically corrected.
     const bookContinuityRefs=refs.filter(r=>String(r.kind||'')==='continuity-artwork');
     const imageEditRefs=refs.filter(r=>String(r.kind||'')!=='continuity-artwork');
-    const castRefs=imageEditRefs.map((r,i)=>({...r,attachmentIndex:i+1})).filter(r=>String(r.kind||'')!=='edit-source');
+    const coverVisualRefs=imageEditRefs.map((r,i)=>({...r,attachmentIndex:i+1})).filter(r=>String(r.kind||'')==='book-style-reference');
+    const castRefs=imageEditRefs.map((r,i)=>({...r,attachmentIndex:i+1})).filter(r=>String(r.kind||'')!=='edit-source'&&String(r.kind||'')!=='book-style-reference');
     const bookArtworkRefs=imageEditRefs.map((r,i)=>({...r,attachmentIndex:i+1})).filter(r=>String(r.kind||'')==='edit-source');
     const hasReference = imageEditRefs.length>0;
     const hasContinuityReference = Boolean(continuityImage) || bookContinuityRefs.length>0;
@@ -74,26 +77,25 @@ module.exports = async function handler(req, res) {
     const identityDirection = castRefs.length
       ? `\nIDENTITY REFERENCES — ABSOLUTE CAST IDENTITY LOCK\nThe attached Cast photographs are NOT generic inspiration. Each photograph is the authoritative identity reference for exactly ONE selected Cast member, mapped by actual attachment position as follows: ${castRefs.map(r=>`REFERENCE ${r.attachmentIndex} = ${r.name||'character'} | kind: ${r.kind||'character'} | role: ${r.role||'supporting'}${r.gender?` | marker: ${r.gender}`:''}`).join('; ')}.\nFor EVERY mapped Cast member, child, adult or pet, reproduce that specific individual whenever the named character appears. Adult identity references have exactly the same priority and force as child identity references. Do not invent an alternative face or appearance for a photographed adult and do not use the real photographed adult later as a different extra person. Preserve recognisable face shape, eyes, nose, mouth anatomy, hair colour/texture, approximate skin tone, apparent age and overall physical identity. The reference expression is NOT a pose that must be copied into every scene: let emotion follow the story naturally. You may safely reduce visible expression information — for example, a photographed toothy smile may become closed-mouth, neutral, serious, worried, surprised or thoughtful when the scene calls for it. But do NOT invent personal facial information that the reference does not reveal. In particular, if the reference does not show the person's teeth or an open-mouth smile, do not invent visible teeth or a broad open-mouth smile; convey happiness through a natural closed-mouth smile, cheeks, eyes and expression instead. If teeth/open-mouth smile are visible in the reference, that observed smile may be used when appropriate but is never compulsory. If a photographed human Cast member is marked male, do not invent hair clips, bows, barrettes, decorative stars, tiaras, ornamental headbands or similar decorative hair accessories unless the accessory is clearly visible in the uploaded reference photo or explicitly required by the story. An accidental accessory in earlier generated artwork is not authoritative and should not be preserved. For photographed pets preserve species/breed appearance, coat, body proportions and relative size. Translate each real identity naturally into the fixed Moonbeam painted style rather than making the result photographic. Reference background, clothing, gaze, head angle and pose are NOT identity requirements unless the scene calls for them. Never merge identities, swap faces, assign one reference to another named character, use a reference as a generic person, or create both an invented version and the real version of the same Cast member. One named Cast member = one stable visual identity across the whole book.`
       : '';
+    const coverVisualDirection = coverVisualRefs.length
+      ? `\nINTERIOR ARTWORK — AUTHORITATIVE VISUAL LANGUAGE FOR THIS BOOK\nThe attached references labelled as interior artwork are finished pages from THIS SAME BOOK. They are not generic inspiration and are not alternative scenes to copy. Use them as the authoritative evidence for the book-specific rendering treatment: exact degree of realism, facial treatment, painterly texture, lighting language, colour palette, atmosphere, story-specific wardrobe, and the established visual identity of recurring creatures, animals, machines, vehicles, locations and distinctive objects. A recurring entity shown in these pages must remain recognisably the SAME design on the cover. Do not copy an interior page's composition, pose or staging. Cast photographs remain authoritative for personal identity only; interior artwork is authoritative for this book's wardrobe and visual treatment.`
+      : '';
     let visualContinuityCanon='';
-    let canonicalBookRefs=[];
     if(developerCorrection&&bookContinuityRefs.length){
       try{
-        const content=[{type:'input_text',text:`You are selecting visual identity references for a surgical edit of one children's-book illustration. The developer's requested correction is:
-
-${String(prompt||'').slice(0,4000)}
-
-Inspect the supplied BOOK reference images. Identify which image or images actually show the SAME recurring person, creature, vehicle, machine or distinctive object implicated by that correction. Select at most TWO references that most clearly establish its intended visual identity. Prefer the earliest clear established appearance when later artwork disagrees. Do NOT select an image merely because it has a similar composition or setting. Return plain text beginning exactly with SELECT: followed by comma-separated reference numbers (for example SELECT: 2 or SELECT: 1,3), then one short sentence explaining the stable identity traits. If none genuinely shows the relevant entity, return SELECT: NONE.`}];
-        bookContinuityRefs.forEach((r,i)=>{content.push({type:'input_text',text:`BOOK REFERENCE ${i+1}: ${String(r.name||'BOOK CONTINUITY REFERENCE')}`});content.push({type:'input_image',image_url:r.image});});
-        const vr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:[{role:'user',content}],max_output_tokens:500})});
+        const content=[{type:'input_text',text:`You are the continuity supervisor for one illustrated children's book. Analyse the supplied BOOK COVER/PAGE reference images ONLY to extract a concise visual identity canon for recurring characters, creatures and distinctive recurring objects that could matter to a surgical correction. Do NOT describe scene composition, poses, camera angles, staging, locations of characters within a frame, or actions. Those must never leak into the image edit. Focus on stable identity traits: face shape and proportions, eyes, nose, mouth, exact visible tooth pattern, horns, fur/hair colour and texture, body proportions, clothing, and distinctive persistent object features. The image currently being corrected is deliberately NOT included in this analysis, so it cannot contaminate the canon. Prefer traits established consistently in the earliest supplied book references when later images disagree; do not average conflicting designs. State uncertainty where references genuinely disagree. Return plain text only, under 900 words.`}];
+        for(const r of bookContinuityRefs){content.push({type:'input_text',text:`${String(r.name||'BOOK CONTINUITY REFERENCE')}:`});content.push({type:'input_image',image_url:r.image});}
+        const vr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:[{role:'user',content}],max_output_tokens:1400})});
         const vraw=await vr.text();let vd={};try{vd=JSON.parse(vraw)}catch{}
-        if(vr.ok){let t=typeof vd.output_text==='string'?vd.output_text:'';if(!t&&Array.isArray(vd.output))for(const item of vd.output)for(const part of(item.content||[]))if(typeof part.text==='string')t+=part.text;visualContinuityCanon=t.trim().slice(0,4000);const m=visualContinuityCanon.match(/SELECT:\s*([^\n]+)/i);if(m&&!/NONE/i.test(m[1])){const indexes=[...m[1].matchAll(/\d+/g)].map(x=>Number(x[0])-1).filter(i=>i>=0&&i<bookContinuityRefs.length).slice(0,2);canonicalBookRefs=indexes.map(i=>bookContinuityRefs[i]);}}
-      }catch(e){console.error('developer canonical reference selection failed',e)}
+        if(vr.ok){let t=typeof vd.output_text==='string'?vd.output_text:'';if(!t&&Array.isArray(vd.output))for(const item of vd.output)for(const part of(item.content||[]))if(typeof part.text==='string')t+=part.text;visualContinuityCanon=t.trim().slice(0,12000)}
+      }catch(e){console.error('developer visual continuity analysis failed',e)}
     }
-    const wholeBookContinuityDirection = canonicalBookRefs.length
+    const wholeBookContinuityDirection = visualContinuityCanon
       ? `
-CANONICAL VISUAL REFERENCES — IDENTITY ONLY
-The additional BOOK REFERENCE image(s) attached after the edit master/Cast references were selected because they visibly contain the same recurring entity implicated by the developer's correction. They are the authoritative visual evidence for WHAT THAT ENTITY LOOKS LIKE. Use them to restore identity inside the mask only. The FIRST attached image remains the sole authority for pose, scale, orientation, expression, scene, crop, composition, camera, staging, background and lighting. Never copy those scene properties from a canonical reference.
+VISUAL CONTINUITY CANON — TEXT ONLY, FROM A SEPARATE WHOLE-BOOK REVIEW
 ${visualContinuityCanon}
+
+This canon is IDENTITY EVIDENCE ONLY. It must NEVER alter the current page's composition, setting, camera, pose, staging or action. The FIRST attached image remains the sole visual edit master. Use the canon only when the developer asks to restore or preserve a recurring identity/detail.
 `
       : '';
     const continuityDirection = continuityImage
@@ -143,6 +145,7 @@ Do not use oversized or doll-like eyes, enlarged heads, button noses, chibi prop
 
 ${MOONBEAM_HOUSE_STYLE}
 ${identityDirection}
+${coverVisualDirection}
 ${wholeBookContinuityDirection}
 ${continuityDirection}
 
@@ -197,7 +200,6 @@ IMPORTANT
         form.append('model', 'gpt-image-2.5-sunburst');
         form.append('prompt', requestPrompt);
         for(let i=0;i<imageEditRefs.length;i++){const match=String(imageEditRefs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`${imageEditRefs[i].kind==='edit-source'?'edit-master':'cast-reference'}-${i+1}.${extension}`);}
-        if(developerCorrection){for(let i=0;i<canonicalBookRefs.length;i++){const match=String(canonicalBookRefs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`canonical-identity-reference-${i+1}.${extension}`);}}
         if(developerCorrection&&correctionMask){const mm=correctionMask.match(/^data:image\/png;base64,(.+)$/i);if(mm){const maskBytes=Buffer.from(mm[1],'base64');form.append('mask',new Blob([maskBytes],{type:'image/png'}),'edit-mask.png');}}
         if(continuityImage){const match=continuityImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(match){const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`previous-page-continuity.${extension}`);}}
         form.append('size', '1024x1024');form.append('quality', developerCorrection?'medium':'low');form.append('output_format', 'webp');
@@ -263,7 +265,7 @@ Square composition.`;
       return res.status(502).json({ error: 'The image service returned no image.' });
     }
 
-    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasAnyReference}),metadata:{reference:hasReference,continuity_reference:hasContinuityReference,user_id:moonbeamUser.id,generation_run_id:generationRunId,required_story_image:requiredStoryImage===true,story_image_index:Number.isInteger(storyImageIndex)?storyImageIndex:null,recovery_slot:recoverySlot===true,developer_correction:developerCorrection===true}});
+    await logUsage({event_type:'image',estimated_cost_gbp:estimateGBP('image',{reference:hasAnyReference}),metadata:{reference:hasReference,continuity_reference:hasContinuityReference,user_id:moonbeamUser.id,generation_run_id:generationRunId,required_story_image:requiredStoryImage===true,story_image_index:Number.isInteger(storyImageIndex)?storyImageIndex:null,recovery_slot:recoverySlot===true,developer_correction:developerCorrection===true,developer_cover_correction:developerCoverCorrection===true}});
     slotReserved=false;
     return res.status(200).json({ image: `data:image/webp;base64,${item.b64_json}`, usedReferencePhoto: hasReference });
   } catch (e) {

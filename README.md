@@ -1,26 +1,12 @@
-# Moonbeam Stories V251.61
+# Moonbeam Stories V251.60
 
-## V251.61 — image-first story authoring
+## V251.60 — cover visual continuity + safe developer cover review
 
-- Removed the separate AI concept-author stage and the accumulated formula-driven story-planning machinery from new story generation.
-- The first AI stage now produces only a six-image visual storyboard plus a visual continuity model sheet. It does not output a premise, plot, event sequence, moral or ending.
-- Visual planning prioritises mutual compatibility between the six pictures and physically/spatially coherent scenes.
-- The six illustrations are still generated before prose, with Cast reference images and previous-image continuity preserved.
-- Added a hard creative reset before writing: the final author receives the six finished illustrations, the parent's original Story Idea, Cast basics, age and language — but not the storyboard, visual prompts, character bible, planned events or intended ending.
-- The final author is asked to find the cleverest and funniest coherent interpretation of the finished pictures and write the story from them, treating the images as evidence rather than captions.
-- Visual metadata (`character_bible` and middle-page `illustration_prompt` values) is reattached only after the writer returns, preserving saved-story, cover, cache and developer-edit compatibility without leaking the storyboard into the writer.
-- Existing credits, authentication, generation-run allowance, image generation, saving, reader, KDP, Instagram and developer correction infrastructure is retained.
-
-
-- Fixes the developer masked illustration corrector so recurring non-Cast characters, creatures, vehicles, machines and distinctive objects can be corrected from **actual visual references**, not a text-only reconstruction of their appearance.
-- The current page remains image #1 and the sole edit master; the painted mask remains the hard editable boundary.
-- Moonbeam reviews the compact other-book artwork against the developer's correction instruction, selects at most two images that actually show the implicated recurring entity, and attaches only those selected images to the image edit as **canonical identity references**.
-- Canonical references control only what the entity looks like. The current page still controls pose, scale, orientation, expression, composition, camera, staging, background and lighting.
-- Cast photographs remain authoritative identity references for Cast members. If no other book image genuinely contains the corrected entity, no book reference is attached.
-- Removes the previous failure mode where the corrector reduced visual identity evidence to prose and then expected the image model to reconstruct the monster/machine/character from that prose.
-- Developer-only correction workflow; ordinary story illustration generation is unchanged. No SQL migration and no new Vercel endpoint.
-
----
+- Dedicated cover generation now receives the actual finished interior illustrations as visual references when they are available (including the six prebuilt storyboard illustrations used by the current story pipeline).
+- Interior artwork is explicitly authoritative for this book's realism level, painterly finish, lighting language, palette, atmosphere, story-specific wardrobe, and established recurring creatures/objects. Cast photographs remain identity references only.
+- Developer cover corrections now generate a non-destructive candidate. The existing cover is not overwritten until **Accept** is chosen. **Try again** generates another candidate and **Keep original** rejects it without changing the saved cover.
+- Developer cover correction has its own authenticated server path so it does not consume an ordinary story-image allowance and is not misrouted through the masked page-edit path.
+- No Supabase migration required. Vercel function count unchanged.
 
 # Moonbeam Stories V251.59
 
