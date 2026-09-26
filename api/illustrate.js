@@ -66,7 +66,8 @@ module.exports = async function handler(req, res) {
     // other pages' staging/composition into the page being surgically corrected.
     const bookContinuityRefs=refs.filter(r=>String(r.kind||'')==='continuity-artwork');
     const imageEditRefs=refs.filter(r=>String(r.kind||'')!=='continuity-artwork');
-    const castRefs=imageEditRefs.map((r,i)=>({...r,attachmentIndex:i+1})).filter(r=>String(r.kind||'')!=='edit-source');
+    const castRefs=imageEditRefs.map((r,i)=>({...r,attachmentIndex:i+1})).filter(r=>!['edit-source','art-direction-reference'].includes(String(r.kind||'')));
+    const artDirectionRefs=imageEditRefs.map((r,i)=>({...r,attachmentIndex:i+1})).filter(r=>String(r.kind||'')==='art-direction-reference');
     const bookArtworkRefs=imageEditRefs.map((r,i)=>({...r,attachmentIndex:i+1})).filter(r=>String(r.kind||'')==='edit-source');
     const hasReference = imageEditRefs.length>0;
     const hasContinuityReference = Boolean(continuityImage) || bookContinuityRefs.length>0;
@@ -95,6 +96,11 @@ CANONICAL VISUAL REFERENCES — IDENTITY ONLY
 The additional BOOK REFERENCE image(s) attached after the edit master/Cast references were selected because they visibly contain the same recurring entity implicated by the developer's correction. They are the authoritative visual evidence for WHAT THAT ENTITY LOOKS LIKE. Use them to restore identity inside the mask only. The FIRST attached image remains the sole authority for pose, scale, orientation, expression, scene, crop, composition, camera, staging, background and lighting. Never copy those scene properties from a canonical reference.
 ${visualContinuityCanon}
 `
+      : '';
+    const artDirectionReferenceDirection = artDirectionRefs.length
+      ? `
+FINISHED INTERIOR ARTWORK — AUTHORITATIVE VISUAL CONTINUITY EVIDENCE
+The attached references identified as finished interior artwork show how Astra's production designs were actually realised earlier in this same book. Use them to reproduce recurring wardrobe, creatures, vehicles, machines, objects, locations, proportions, materials and other established visual designs exactly where they recur in the commissioned scene. They are continuity/design evidence only: do NOT copy an interior image's camera angle, crop, pose or staging unless Astra's current art direction explicitly calls for it. These are not additional Cast identity photographs.`
       : '';
     const continuityDirection = continuityImage
       ? `\nPREVIOUS ARTWORK — AUTHORITATIVE WORLD AND OBJECT CONTINUITY REFERENCE\nThe final attached image is the immediately preceding continuity artwork. Use it to preserve the established visual identity and physical state of recurring locations, buildings, rooms, vehicles, machines, props, clothing and other plot-important objects. This reference controls continuity only: do NOT copy its composition, camera angle, crop, poses or staging. Do not treat people visible in this artwork as additional identity photographs or extra Cast members.`
@@ -143,6 +149,7 @@ Do not use oversized or doll-like eyes, enlarged heads, button noses, chibi prop
 
 ${MOONBEAM_HOUSE_STYLE}
 ${identityDirection}
+${artDirectionReferenceDirection}
 ${wholeBookContinuityDirection}
 ${continuityDirection}
 
@@ -151,10 +158,11 @@ ${characterContinuity || 'Keep every recurring non-photo character exactly consi
 For every recurring non-photo character, treat the supplied description as a fixed model sheet. For every recurring PHOTO-REFERENCED character, the mapped photograph above is the primary fixed model sheet for identity and overrides any conflicting invented description. The same named or recurring character must remain the same person, animal, robot or creature in every illustration: preserve exact apparent age, sex where specified, facial structure, skin/fur/material colours, eye colour, hair/fur colour and texture, hairstyle, height/build, body proportions, distinctive features and established clothing/accessories. Never age a recurring character up or down. Never redesign, reinterpret or substitute them with a different-looking character. Unless the story explicitly changes clothing or appearance, preserve it exactly. If a recurring character is a child, they must remain visibly the stated age in every scene. Character continuity is higher priority than novelty of casting, but it must NOT change or override the fixed Moonbeam rendering style above.
 
 VISUAL STORYTELLING — COMPOSITION
-${developerCorrection ? 'This is a surgical correction: preserve the composition of the FIRST supplied reference image and change only the identified error.' : 'Illustrate WHAT IS HAPPENING, not merely where the protagonist is. Identify the principal action, discovery, interaction, emotional moment or consequence on this page and make that the visual subject. Keep recurring characters, locations and important objects consistent, but begin a new composition rather than copying the preceding picture.'} Use one physically possible scene from one camera position. Do not invent events or duplicate characters, buildings or objects.
+${developerCorrection ? 'This is a surgical correction: preserve the composition of the FIRST supplied reference image and change only the identified error.' : requiredStoryImage ? 'The CURRENT ILLUSTRATION brief below has already been composed by Astra acting as the book art director. Treat that brief as authoritative for the chosen instant, staging, important positions, actions, object relationships and story-relevant physical details. Your job is to render that directed composition faithfully in the fixed Moonbeam style, not to reinterpret the story, choose a different illustrative moment, simplify it into a generic scene, or substitute an easier composition. Make only the ordinary low-level artistic decisions needed to turn the brief into one coherent, physically possible image.' : 'Illustrate WHAT IS HAPPENING, not merely where the protagonist is. Identify the principal action, discovery, interaction, emotional moment or consequence on this page and make that the visual subject. Keep recurring characters, locations and important objects consistent, but begin a new composition rather than copying the preceding picture.'} Use one physically possible scene from one camera position. Do not invent events or duplicate characters, buildings or objects.
 
-ILLUSTRATE THE EVENT, NOT EVERY SENTENCE
-Treat the supplied page text and scene direction as context for the illustration, not as a checklist of every object, action and description that must appear. Understand the whole passage and choose ONE strongest illustrative moment. If several details compete, prioritise the event that changes or advances the story rather than an easier incidental object, static portrait or generic view of the setting. Build one clear coherent scene around that event. Include only the characters, objects and environmental details needed for that unified moment. Select one or two distinctive supporting details from the text when useful to tie the picture unmistakably to this page, but omit secondary details when including them would crowd, confuse or fragment the composition. Prefer visual clarity, strong composition and one believable unified moment over exhaustive literal coverage of the prose.
+${requiredStoryImage && !developerCorrection ? `ASTRA ART-DIRECTION AUTHORITY
+Do not independently select a different moment or decide that a story-critical directed detail is dispensable. If the art-direction brief specifies where an important object is, what a character is doing, or a physical relationship needed for the scene to make sense, preserve it. Do not add unrelated story elements merely to make the composition more decorative.` : `ILLUSTRATE THE EVENT, NOT EVERY SENTENCE
+Treat the supplied page text and scene direction as context for the illustration, not as a checklist of every object, action and description that must appear. Understand the whole passage and choose ONE strongest illustrative moment. If several details compete, prioritise the event that changes or advances the story rather than an easier incidental object, static portrait or generic view of the setting. Build one clear coherent scene around that event. Include only the characters, objects and environmental details needed for that unified moment. Select one or two distinctive supporting details from the text when useful to tie the picture unmistakably to this page, but omit secondary details when including them would crowd, confuse or fragment the composition. Prefer visual clarity, strong composition and one believable unified moment over exhaustive literal coverage of the prose.`}
 
 PHYSICAL AND SPATIAL COHERENCE
 Before composing the image, respect where the text and established continuity place each important character, object, vehicle component, doorway, window, control or piece of equipment. The depicted action must be physically possible from those positions. Do not silently move an exterior mechanism inside, change the geometry of a vehicle or room, or substitute a visually easier action for the page's actual consequential event. Preserve established clothing, important objects, vehicles, architecture and spatial relationships unless the story explicitly changes them.
@@ -219,6 +227,7 @@ IMPORTANT
 
 ${MOONBEAM_HOUSE_STYLE}
 ${identityDirection}
+${artDirectionReferenceDirection}
 ${wholeBookContinuityDirection}
 ${continuityDirection}
 

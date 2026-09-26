@@ -741,7 +741,7 @@ async function prepareStoryCreditConsent(accessToken){
 function storyboardIllustrationPrompt(plan,index){
  const scenes=Array.isArray(plan?.scenes)?plan.scenes:[];const scene=scenes[index]||{};
  const all=scenes.map((x,i)=>`SCENE ${i+1}: EVENT: ${x.event||''} | VISUAL: ${x.visual_moment||''} | CONTINUITY: ${x.continuity||''}`).join('\n');
- return `STORYBOARD-FIRST BOOK. Read the COMPLETE six-scene production plan before drawing this image. You are drawing SCENE ${index+1} OF 6.\n\nWHOLE STORY PREMISE:\n${plan?.premise||''}\n\nWHOLE STORY ARC INCLUDING ENDING:\n${plan?.story_arc||''}\nENDING: ${plan?.ending||''}\n\nCOMPLETE VISUAL STORYBOARD:\n${all}\n\nCURRENT SCENE — DRAW THIS, NOT AN EARLIER OR LATER EVENT:\n${scene.visual_moment||scene.event||''}\n\nThis illustration must make sense as one moment in the complete visual sequence. Preserve facts established by earlier scenes, anticipate later scenes so you do not reveal their payoff too early, and reserve the strongest visual climax for the scene the storyboard assigns it to. Do not invent a competing plot.`
+ return `STORYBOARD-FIRST BOOK. Read the COMPLETE six-scene production plan before drawing this image. You are drawing SCENE ${index+1} OF 6.\n\nWHOLE STORY PREMISE:\n${plan?.premise||''}\n\nWHOLE STORY ARC INCLUDING ENDING:\n${plan?.story_arc||''}\nENDING: ${plan?.ending||''}\n\nCOMPLETE VISUAL STORYBOARD:\n${all}\n\nCURRENT SCENE — DRAW THIS, NOT AN EARLIER OR LATER EVENT:\n${scene.visual_moment||scene.event||''}\n\nART DIRECTOR'S COMMISSION — AUTHORITATIVE. You are the PAINTER, not the art director. Render the specified moment and staging faithfully. Do not substitute a more generic, easier or more familiar composition; do not redesign recurring wardrobe, creatures, objects, vehicles, machines or locations; and do not change specified relative positions, scale, orientation, gaze, expression, gesture, pointing target or physical relationships. Preserve the production bible and continuity established by earlier scenes. Artistic judgement is limited to the mechanics of making the commissioned composition a beautiful, physically plausible Moonbeam painting. Do not invent a competing plot or staging.`
 }
 async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null){
  let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
@@ -867,7 +867,8 @@ async function generateStory(){
    let finalData=null;try{finalData=JSON.parse(finalRaw)}catch{};if(!finalResponse.ok){const base=new Error(finalData?.error||`Story finishing failed (${finalResponse.status})`);throw new Error(developerGenerationDiagnostic('final story response',base,finalResponse,finalRaw))}if(!finalData?.story)throw new Error(developerGenerationDiagnostic('final story validation',new Error('Moonbeam could not finish the illustrated story.'),finalResponse,finalRaw));
    if(instagramDeveloperAccess&&finalData?.developer_diagnostic){lastDeveloperTextDiagnostics=[...lastDeveloperTextDiagnostics,finalData.developer_diagnostic];showDeveloperTokenReport(lastDeveloperTextDiagnostics)}
    clearSetupDraft();
-   renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork})
+   finalData.story.productionPlan=data.plan;
+   renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork,productionPlan:data.plan})
  }catch(e){
    console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'
  }finally{
@@ -875,7 +876,7 @@ async function generateStory(){
  }
 }
 
-function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',coverByline:s.coverByline||options.savedAssets?.coverByline||'',dedication:s.dedication||options.savedAssets?.dedication||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},prebuiltArtwork:Array.isArray(options.prebuiltArtwork)&&options.prebuiltArtwork.length>0,artwork:{cover:null,pages:Object.fromEntries((options.prebuiltArtwork||[]).map((image,i)=>[i,image]))}}}
+function buildBook(s,image,child,options={}){const pages=Array.isArray(s.pages)?s.pages:[];const cacheId=options.cacheId||makeStoryCacheId(s,child);return{title:s.title||t().title,opening:s.opening||'',character_bible:s.character_bible||'',pages,closing:s.closing||'',coverByline:s.coverByline||options.savedAssets?.coverByline||'',dedication:s.dedication||options.savedAssets?.dedication||'',image:image||null,child,generationRunId:child?.generationRunId||null,storyId:Date.now()+'-'+Math.random().toString(36).slice(2),cacheId,visualCacheId:options.visualCacheId||cacheId,currentPage:-1,mobileSide:'text',readingMode:'self',draftScroll:options.draftScroll||{},isSaved:!!options.isSaved,isShared:!!options.isShared,shareToken:options.shareToken||null,shareSenderName:options.shareSenderName||'',savedAssets:options.savedAssets||{},savedStoryId:options.savedStoryId||null,returnToSavedLibrary:!!options.returnToSavedLibrary,savedAssetUrls:{},productionPlan:options.productionPlan||s.productionPlan||null,prebuiltArtwork:Array.isArray(options.prebuiltArtwork)&&options.prebuiltArtwork.length>0,artwork:{cover:null,pages:Object.fromEntries((options.prebuiltArtwork||[]).map((image,i)=>[i,image]))}}}
 function renderStory(s,image,child,options={}){
  currentBook=buildBook(s,image,child,options);
  const el=$('story');el.classList.remove('hidden');
@@ -902,7 +903,7 @@ function renderStory(s,image,child,options={}){
  if(!currentBook.isSaved&&!currentBook.isShared)persistCurrentDraft();
 }
 function coverKey(book){return `v48:${book.visualCacheId||book.cacheId}:cover`}
-function getCoverPrompt(book){
+function getCoverPrompt(book,artDirection=''){
  const wholeStory=[book.opening,...(book.pages||[]).flatMap(p=>[p?.text||'',p?.illustration_prompt||'']),book.closing].filter(Boolean).join('\n');
  return `Front cover illustration for an original premium children's adventure called “${book.title}”. Main child/hero: ${book.child?.name||'the child'}, age ${book.child?.age||7}.
 
@@ -912,11 +913,14 @@ ${wholeStory}
 STORY WORLD / CHARACTER CONTINUITY:
 ${book.character_bible||'Keep the hero and story world consistent.'}
 
-Read the complete finished story above before choosing the cover scene. The cover must represent the story that was actually written, not a generic interpretation of its title, genre or original premise. Preserve concrete story facts including location, time of day, weather, clothing, important props, vehicles, machines, buildings, creatures, their relative scale and distinctive appearance. Never substitute genre shorthand for a specifically established story element: if the story establishes a small lift, do not invent a rocket; if it takes place in a garden, do not relocate it to a beach; if the relevant scene is at midnight, do not turn it into bright daylight. Artistic freedom may fill only details the finished story leaves unspecified.
+ASTRA ART DIRECTOR — AUTHORITATIVE COVER COMMISSION:
+${artDirection||'Follow the finished story and established visual continuity exactly.'}
+
+You are the PAINTER, not the cover designer. Follow Astra's commissioned composition slavishly. Do not choose a different scene, redesign recurring elements, simplify the staging into genre shorthand, or alter specified positions, relative scale, orientation, expressions, gaze, gestures, wardrobe, object states or physical relationships. The finished story remains authoritative if any accidental ambiguity exists.
 
 VISUAL STYLE LOCK — IMPORTANT: This cover must look as though it was painted by exactly the same illustrator, with exactly the same degree of realism, as the interior story illustrations. Render the child with natural human facial proportions, realistic apparent age, fine skin and hair detail, and the same premium naturalistic painterly realism used inside the book. Do NOT make the cover child more cartoon-like, cute, doll-like, big-eyed, round-faced, simplified or CG-stylised merely because this is a cover. A dramatic cover composition is welcome; a different character-rendering style is not. Photo/Cast identity references remain authoritative for the child's face and appearance.
 
-Choose one compelling, coherent, physically possible moment that genuinely belongs to this finished story, from one camera position. This cover becomes the FIRST visual continuity reference for the book, so establish recurring machines, clothing, environment and plot-important objects carefully and consistently with the story. Show only one physical instance of every character, building, landmark and object. Do not combine interior and exterior viewpoints, use a cutaway, or reproduce a story-page composition. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
+Render Astra's single coherent cover composition from one camera position. Show only one physical instance of every character, building, landmark and object unless Astra explicitly requires otherwise. Do not combine incompatible viewpoints or add a cutaway. Keep the central and upper areas calm enough for title typography added by the app. No words, letters, captions, logos, signs or readable text in the image.`
 }
 function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}
 function dataUrlToBlobUrl(dataUrl){
@@ -973,6 +977,18 @@ async function revealCoverImage(img,src){
  void img.offsetHeight;
  await nextPaint();
 }
+async function coverInteriorThumbnails(book){
+ const pages=(book?.artwork?.pages||[]).filter(x=>/^data:image\/(?:jpeg|png|webp);base64,/i.test(String(x||''))).slice(0,6);
+ return Promise.all(pages.map(storyboardThumbnail));
+}
+async function requestCoverArtDirection(book){
+ let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+ const images=await coverInteriorThumbnails(book);
+ const story={title:book.title||'',opening:book.opening||'',pages:(book.pages||[]).map(p=>({text:p?.text||''})),closing:book.closing||'',character_bible:book.character_bible||''};
+ const plan=book.productionPlan||{character_bible:book.character_bible||'',scenes:(book.pages||[]).map(p=>({visual_moment:p?.illustration_prompt||''}))};
+ const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({action:'cover-art-direction',story,plan,images,generationRunId:book.generationRunId||''})});
+ const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};if(!r.ok||!String(data?.cover_direction||'').trim())throw new Error(data?.error||'Moonbeam could not prepare the cover composition.');return String(data.cover_direction).trim();
+}
 async function loadCoverIllustration(force=false){
  const book=currentBook;if(!book)return;
  if(book.isSaved){try{const path=book.savedAssets?.cover;if(!path)throw new Error('No cloud-saved cover');const image=await savedAssetUrl(path);if(currentBook===book){await revealCoverImage($('coverImage'),image);if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false;return null}}
@@ -990,12 +1006,16 @@ async function loadCoverIllustration(force=false){
  // the cover with an error/blank state.
  try{
    const key=coverKey(book);
+   const artDirection=await requestCoverArtDirection(book);
+   const castRefs=Array.isArray(book.child?.referenceImages)?book.child.referenceImages:book.child?.referencePhoto?[{name:book.child?.name||'main hero',kind:'child',role:'hero',image:book.child.referencePhoto}]:[];
+   const interiorThumbs=await coverInteriorThumbnails(book);
+   const coverRefs=[...castRefs,...interiorThumbs.map((image,i)=>({name:`finished interior ${i+1}`,kind:'art-direction-reference',role:'visual-continuity',image}))];
    const image=await requestIllustration(
      key,
-     getCoverPrompt(book),
+     getCoverPrompt(book,artDirection),
      `Story visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,
      force,
-     book.child?.referenceImages||book.child?.referencePhoto||null
+     coverRefs.length?coverRefs:null
    );
    if(currentBook===book){
      await revealCoverImage($('coverImage'),image);

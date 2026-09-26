@@ -1,4 +1,24 @@
-# Moonbeam Stories V251.71
+# Moonbeam Stories V251.73 — Astra whole-book art director
+
+- Astra now has two explicit pre-painting roles: story architect, then whole-book art director / visual continuity designer.
+- Astra designs recurring story-created objects, creatures, vehicles, machines, locations and wardrobe, while canonical Cast photos remain authoritative for identity.
+- Each of the six visual briefs now directs composition precisely where relevant: relative position/size, orientation, physical relationships, object state, facial expression, gaze, gesture and pointing targets.
+- Astra is responsible for carrying those visual decisions and deliberate state changes consistently through all six scenes.
+- Sunburst is explicitly treated as the painter: it renders Astra's commission rather than choosing or simplifying the staging. Image model and quality settings are unchanged.
+- After Astra writes the final story, Astra returns to the art-director role to design the cover from the finished story plus the six actual interior paintings. Sunburst then paints that commissioned cover.
+- The cover receives compact copies of the six finished interiors as visual-continuity evidence, in addition to canonical Cast references.
+- No changes to story-writing autonomy, image quality, credits, shared usage baseline or generation-time baseline.
+
+---
+
+# Moonbeam Stories V251.72
+
+## V251.72 — Astra art-directs the storyboard illustrations
+- The storyboard stage now explicitly makes Astra the art director for all six interior illustrations.
+- Each `visual_moment` is a direct composition brief to Sunburst: Astra specifies the exact intended instant and any story-critical positions, actions, physical relationships and object states needed for the scene to make sense.
+- Sunburst is instructed to render Astra’s directed composition rather than independently choosing a different illustrative moment or simplifying it into a generic scene.
+- No image model, image quality, house style, story-writing model, story structure, baseline, credit or account behaviour has changed.
+
 
 ## Shared generation/usage baseline
 
