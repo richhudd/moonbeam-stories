@@ -52,6 +52,9 @@ if(!locales[language]) language='en-GB';
 if(requestedLanguage&&locales[requestedLanguage])localStorage.setItem('moonbeamLanguage',language);
 let selected = new Set();
 let saved=[]; try{saved=JSON.parse(localStorage.getItem('moonbeamStories')||'[]');if(!Array.isArray(saved))saved=[]}catch{saved=[]}
+// V251.79: this state is read by renderLibrary() during initial locale rendering,
+// so it must exist before applyInterfaceLocale() can call renderLibrary().
+let partialGenerations=[];
 let currentBook=null, illustrationCache=new Map();
 // V201 — resilient local draft for newly generated, not-yet-saved stories.
 // The draft survives Safari tab eviction, browser restarts and desktop refreshes.
@@ -740,7 +743,6 @@ async function prepareStoryCreditConsent(accessToken){
    return false;
  }
 }
-let partialGenerations=[];
 function partialStoryLabel(row){const c=row?.child||{},idea=String(c.storyIdea||'').trim().replace(/\s+/g,' ');const short=idea?idea.slice(0,55)+(idea.length>55?'…':''):'Untitled story';return `${c.name||'Story'} — ${short}`}
 function partialProgress(row){const n=Array.isArray(row?.artwork_paths)?row.artwork_paths.filter(Boolean).length:0;return `${n} of 6 illustrations completed`}
 async function loadPartialGenerations(){if(!currentUser){partialGenerations=[];return[]}const q=await supabaseClient.from('partial_story_generations').select('*').eq('parent_id',currentUser.id).order('updated_at',{ascending:false}).limit(20);if(q.error){console.warn('Partial generations unavailable',q.error);partialGenerations=[];return[]}partialGenerations=q.data||[];renderLibrary();return partialGenerations}
@@ -906,6 +908,7 @@ async function generateStory(){
  // Two animation frames are intentional: Safari can otherwise coalesce the DOM update
  // with the following fetch and the parent never sees the waiting indicator.
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ let partialCheckpointId=null;
  try{
    let response=null,raw='';
    try{response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({child,recentStories:recentStoryCreativeMemory(10)}),signal:generationSignal});raw=await response.text()}catch(networkError){if(networkError?.name==='AbortError')throw networkError;throw new Error(developerGenerationDiagnostic('concept/storyboard request',networkError,response,raw))}
@@ -916,7 +919,7 @@ async function generateStory(){
    if(Number.isFinite(Number(data.creditsRemaining)))renderStoryCredits(Number(data.creditsRemaining));else await loadStoryCredits();
    activeStoryCreditBatchId=String(data.storyCreditBatchId||'');
    child.generationRunId=data.generationRunId||null;
-   let partialCheckpointId=null;try{partialCheckpointId=await createPartialCheckpoint(data.plan,child,child.generationRunId,activeStoryCreditBatchId)}catch(checkpointError){console.warn('Generation checkpoint could not be created',checkpointError)}
+   try{partialCheckpointId=await createPartialCheckpoint(data.plan,child,child.generationRunId,activeStoryCreditBatchId)}catch(checkpointError){console.warn('Generation checkpoint could not be created',checkpointError)}
    if(preparingCopy)preparingCopy.textContent='Moonbeam is illustrating the whole adventure before writing it…';
    const storyboardArtwork=await createStoryboardArtwork(data.plan,child,child.generationRunId,generationSignal,partialCheckpointId);
    if(preparingCopy)preparingCopy.textContent='Moonbeam is writing the story around the finished pictures…';
@@ -933,9 +936,28 @@ async function generateStory(){
    if(partialCheckpointId)await deletePartialGeneration(partialCheckpointId);
    renderStory(finalData.story,null,child,{prebuiltArtwork:storyboardArtwork,prebuiltCover,productionPlan:data.plan})
  }catch(e){
-   if(storyGenerationAbortRequested||e?.name==='AbortError'){$('status').textContent='Story generation aborted.'}else{console.error(e);await loadStoryCredits();$('status').innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>'}
+   const intentionallyStopped=storyGenerationAbortRequested||e?.name==='AbortError';
+   if(intentionallyStopped){$('status').textContent='Story generation stopped. Your progress has been saved.'}
+   else{
+     console.error(e);await loadStoryCredits();
+     if(partialCheckpointId){
+       await loadPartialGenerations();
+       stopStoryWaitingCounter();
+       if(preparingTitle)preparingTitle.textContent=navigator.onLine?'Your story has been safely paused':'You’re offline';
+       if(preparingCopy)preparingCopy.textContent=navigator.onLine?'Something interrupted Moonbeam while creating your story. The parts already created have been saved.':'Your connection was lost while Moonbeam was creating your story. The parts already created have been saved.';
+       if(preparingAverage)preparingAverage.hidden=true;if(preparingElapsed)preparingElapsed.hidden=true;
+       const oldRecovery=document.getElementById('preparingRecoveryActions');if(oldRecovery)oldRecovery.remove();
+       const recovery=document.createElement('div');recovery.id='preparingRecoveryActions';recovery.className='preparing-recovery-actions';recovery.innerHTML=`<button class="primary" id="preparingResume" type="button">Resume story generation</button><button class="secondary" id="preparingLater" type="button">Save for later</button><button class="secondary partial-discard" id="preparingDiscard" type="button">Discard permanently</button><small class="preparing-recovery-note">${navigator.onLine?'Continue from where Moonbeam stopped.':'Resume will be available when your connection returns.'}</small>`;
+       preparing?.appendChild(recovery);const resume=recovery.querySelector('#preparingResume');if(resume)resume.disabled=!navigator.onLine;
+       recovery.querySelector('#preparingResume')?.addEventListener('click',async()=>{if(!navigator.onLine)return;preparing?.classList.add('hidden');recovery.remove();await resumePartialGeneration(partialCheckpointId)});
+       recovery.querySelector('#preparingLater')?.addEventListener('click',async()=>{await savePartialForLater(partialCheckpointId);preparing?.classList.add('hidden')});
+       recovery.querySelector('#preparingDiscard')?.addEventListener('click',async()=>{await discardPartialGeneration(partialCheckpointId);preparing?.classList.add('hidden')});
+       const onlineHandler=()=>{if(!document.body.contains(recovery)){window.removeEventListener('online',onlineHandler);return}if(resume)resume.disabled=false;const note=recovery.querySelector('.preparing-recovery-note');if(note)note.textContent='Your connection is back. Continue from where Moonbeam stopped.';if(preparingTitle)preparingTitle.textContent='Your story has been safely paused';if(preparingCopy)preparingCopy.textContent='The parts already created have been saved.'};window.addEventListener('online',onlineHandler);
+       $('status').textContent='';
+     }else $('status').innerHTML='<span class="error">Moonbeam could not finish creating this story. Please try again.</span>';
+   }
  }finally{
-   stopStoryWaitingCounter();button.disabled=false;button.classList.remove('is-generating');if(preparing)preparing.classList.add('hidden');if(abortButton){abortButton.hidden=true;abortButton.disabled=false;abortButton.textContent='Abort generation'}storyGenerationAbortController=null;storyGenerationAbortRequested=false
+   stopStoryWaitingCounter();button.disabled=false;button.classList.remove('is-generating');if(preparing&&!document.getElementById('preparingRecoveryActions'))preparing.classList.add('hidden');if(abortButton){abortButton.hidden=true;abortButton.disabled=false;abortButton.textContent='Abort generation'}storyGenerationAbortController=null;storyGenerationAbortRequested=false
  }
 }
 

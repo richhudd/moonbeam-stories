@@ -1,3 +1,19 @@
+
+## V251.79 — startup regression fix
+
+- Fixes the blank Moonbeam shell introduced in V251.77/V251.78.
+- Root cause: `applyInterfaceLocale()` renders the Saved Stories library during startup before the new `partialGenerations` `let` binding had been initialized, causing a JavaScript temporal-dead-zone `ReferenceError`.
+- `partialGenerations` is now initialized with the other application state before any startup rendering can read it.
+- Keeps the V251.77 checkpoint/resume system and V251.78 plain-English interrupted-generation recovery UI unchanged.
+# Moonbeam Stories V251.79 — Preparing Story recovery guidance
+
+## V251.79
+- When automatic retries still cannot complete a generation, normal users now get a plain-language recovery state directly on the Preparing Story screen instead of a technical failure.
+- If a checkpoint exists, Moonbeam explains that completed work is safe and offers **Resume story generation**, **Save for later**, or **Discard permanently** immediately.
+- If the browser is offline, the screen says so in ordinary language, keeps Resume disabled until connectivity returns, then enables it without requiring a refresh.
+- Developer diagnostics remain separate; ordinary users are not shown HTTP/OpenAI/Vercel terminology.
+- The V251.77 Supabase checkpoint infrastructure is unchanged; no additional SQL is required beyond `SUPABASE_V251_77_PARTIAL_GENERATIONS.sql`.
+
 # Moonbeam Stories V251.77 — resilient image retries + resumable partial generations
 
 ## V251.77
