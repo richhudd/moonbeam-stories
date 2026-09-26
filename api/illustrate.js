@@ -1,5 +1,5 @@
 const {logUsage,countUsageEvents,estimateGBP}=require('../_usage');
-const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot,refundReservedStoryCredit}=require('../_credits');
+const {verifyMoonbeamUser,consumeGenerationSlot,refundGenerationSlot}=require('../_credits');
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -222,51 +222,23 @@ IMPORTANT
     const safetyRejected=(result)=>{if(result?.response?.ok)return false;const e=result?.data?.error;const msg=String(typeof e==='string'?e:(e?.message||e?.code||e?.type||result?.raw||'')).toLowerCase();return msg.includes('safety')||msg.includes('moderation')||msg.includes('content policy')||msg.includes('policy violation')};
     const transientImageError=(e)=>{const code=String(e?.cause?.code||e?.code||'').toUpperCase(),msg=String(e?.message||'').toLowerCase();return ['ECONNRESET','ETIMEDOUT','EAI_AGAIN','ECONNREFUSED','UND_ERR_SOCKET'].includes(code)||msg.includes('terminated')||msg.includes('fetch failed')||msg.includes('socket')};
     const callImageModelResilient=async(requestPrompt)=>{let last=null;for(let attempt=0;attempt<3;attempt++){try{const result=await callImageModel(requestPrompt);if(result?.response?.status===429||[500,502,503,504].includes(result?.response?.status)){last=result;if(attempt<2){await new Promise(r=>setTimeout(r,900*(attempt+1)));continue}}return result}catch(e){last=e;if(!transientImageError(e)||attempt>=2)throw e;console.warn('Transient OpenAI image transport error; retrying',attempt+1,e?.cause?.code||e?.message);await new Promise(r=>setTimeout(r,900*(attempt+1)))}}if(last?.response)return last;throw last};
-    let first=await callImageModelResilient(finalPrompt),result=first,safetyRetryUsed=false;
-    if(safetyRejected(first)&&requiredStoryImage&&!developerCorrection){
-      safetyRetryUsed=true;
-      // V251.50: a moderation retry is a genuinely fresh, minimal image request — not
-      // the rejected long prompt with another paragraph prepended. This deliberately omits
-      // the full-book prose/storyboard and all non-current hazardous narrative actions.
-      const saferPrompt=`Create one square full-page premium children's storybook painting.
-
-${MOONBEAM_HOUSE_STYLE}
-${identityDirection}
-${artDirectionReferenceDirection}
-${wholeBookContinuityDirection}
-${continuityDirection}
-
-CHARACTER CONTINUITY
-${characterContinuity || 'Keep recurring characters consistent with established artwork.'}
-
-SAFETY-RESTAGED CURRENT MOMENT
-${imageSafeSceneContent}
-
-Use a substantially different camera position from the rejected rendering. Place every child visibly on broad, stable, secure ground. Put water, drops, debris, machinery, traffic or other hazards clearly in the background or beyond a physical separation. The hazard may remain visible as story context, but the child must not appear endangered by it in the image. Do not depict falling, drowning, crushing, injury, restraint, exposed bodies or ambiguous physical contact. Preserve Cast identity, established clothing, recurring objects and setting. One continuous scene, one physical instance of each character, no text or typography, no collage, no split panels. Do not copy the previous artwork's composition.
-
-Square composition.`;
-      result=await callImageModelResilient(saferPrompt);
-    }
+    // V251.85: safety recovery is orchestrated at book level in app.js.
+    // Do NOT spend a second image call here: one rejection must first send Astra the
+    // whole remaining visual plan so it can redesign the failed scene, every later
+    // scene and the cover before exactly one replacement image is attempted.
+    let result=await callImageModelResilient(finalPrompt);
     const r=result.response,raw=result.raw,data=result.data;
     if (!r.ok) {
       const e=data&&data.error,message=typeof e==='string'?e:(e&&(e.message||e.code||e.type))||`OpenAI returned HTTP ${r.status}`;
       const finalSafety=safetyRejected(result);
       await refundSlot();
       if(finalSafety&&requiredStoryImage&&!developerCorrection){
-        let creditsRemaining=null,creditRefunded=false;
-        if(storyCreditBatchId){
-          try{
-            const runMeta={user_id:moonbeamUser.id,generation_run_id:generationRunId};
-            const already=await countUsageEvents('story_image_safety_refund',runMeta);
-            if(already===0){const marker=await logUsage({event_type:'story_image_safety_refund',estimated_cost_gbp:0,metadata:{...runMeta,story_image_index:storyImageIndex}});if(marker){creditsRemaining=await refundReservedStoryCredit(moonbeamUser.id,storyCreditBatchId);creditRefunded=true}}
-          }catch(refundError){console.error('story safety credit refund failed',refundError)}
-        }
         const developerDiagnostic=developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail?{
           stage:`illustration ${Number.isInteger(storyImageIndex)?storyImageIndex+1:'unknown'}`,
           scene_prompt:prompt.slice(0,6000),character_continuity:characterContinuity.slice(0,3000),
-          first_rejection:first.raw.slice(0,1800),retry_rejection:raw.slice(0,1800),automatic_retry_used:safetyRetryUsed
+          rejection:raw.slice(0,1800)
         }:undefined;
-        return res.status(502).json({error:String(message),code:'IMAGE_SAFETY_REJECTION',openai_status:r.status,automatic_retry_used:safetyRetryUsed,credit_refunded:creditRefunded,creditsRemaining,...(developerDiagnostic?{developer_image_diagnostic:developerDiagnostic}:{})});
+        return res.status(502).json({error:String(message),code:'IMAGE_SAFETY_REJECTION',openai_status:r.status,automatic_retry_used:false,credit_refunded:false,...(developerDiagnostic?{developer_image_diagnostic:developerDiagnostic}:{})});
       }
       return res.status(502).json({error:String(message),openai_status:r.status});
     }

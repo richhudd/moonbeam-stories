@@ -1,3 +1,23 @@
+# V251.85
+
+## V251.85 — paid-generation recovery and whole-book safety redesign
+
+Built directly on deployed V251.84.
+
+- Normal users can no longer discard partially generated stories. Their recovery choices are Resume or Save for later; developer-only discard/abort controls remain available to the developer account.
+- Once a valid story has entered production and has a resumable checkpoint, later production failure does not refund the story credit. The credit remains attached to that generation and resuming it consumes no additional story credit. Pre-production rejection/failure before a resumable story exists retains the existing refund behaviour.
+- Removes the old image-safety story-credit refund.
+- Removes the old immediate second Sunburst safety retry inside `/api/illustrate`; a safety rejection now returns to the book-level recovery controller after one rejected image request.
+- On the first image-safety rejection, Astra receives the diagnostic plus the complete remaining art plan and redesigns the failed illustration, every later illustration, and the cover as one safety-focused pass. Successful earlier illustrations remain locked.
+- Moonbeam then makes exactly one automatic replacement attempt at the failed position. If that replacement is rejected, or any later image in the already safety-redesigned sequence is rejected, the story is frozen as **Needs assistance** rather than spending further automatic image attempts.
+- Normal users see a plain-language **Contact Moonbeam** state for a Needs assistance story. Completed work and the consumed credit remain attached to that partial story; there is no automatic refund and no misleading Resume action.
+- Developer account can open a Needs assistance story and explicitly authorise a developer-assisted recovery. Astra first redesigns the blocked remaining artwork again using the saved failure history before another image is attempted.
+- Failure diagnostics are persisted inside the partial story's production plan (`_moonbeam_failure_diagnostics`). They record the failed stage/class and useful service details without exposing raw diagnostics to ordinary users.
+- Resumed final-story generation supplies relevant saved diagnostics to Astra so it can avoid repeating an output/production mistake; infrastructure/transport diagnostics explicitly do not invite creative rewriting.
+- Cover safety failures use the same one-redesign/one-replacement policy.
+- Fixes the V251.84 Story Workshop action routing so developer workshop chat/commit actions are reachable independently of final-story generation.
+- No new Supabase SQL is required for V251.85; diagnostics and recovery state use the existing V251.77 partial-generation record.
+
 # V251.84
 
 ## V251.84 — consolidated developer publishing build

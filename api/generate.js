@@ -129,12 +129,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ description });
     }
 
-    if (String(body.action || '').trim() === 'finalize-storyboard-story') {
-      const moonbeamUser = await verifyMoonbeamUser(req);
-      const developerEmail = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
-      const developerDiagnostic = !!developerEmail && String(moonbeamUser.email || '').trim().toLowerCase() === developerEmail;
-      const plan = body.plan || {};
-      if (String(body.action || '').trim() === 'developer-story-workshop-chat') {
+    if (String(body.action || '').trim() === 'developer-story-workshop-chat') {
       const user=await verifyMoonbeamUser(req);const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();if(!developerEmail||String(user.email||'').trim().toLowerCase()!==developerEmail)return res.status(403).json({error:'Developer access only.'});
       const child=body.child||{},plan=body.plan||{},message=String(body.message||'').trim(),history=Array.isArray(body.history)?body.history.slice(-20):[];const pageCount=Math.max(6,Math.min(10,Number(child.storyPageCount)||6));if(!message||!Array.isArray(plan.scenes)||plan.scenes.length!==pageCount)return res.status(400).json({error:'The workshop needs a valid message and production plan.'});
       const cast=(Array.isArray(child.cast)?child.cast:[]).map(x=>({name:x.name,kind:x.kind,role:x.role,age:x.age||null,gender:x.gender||null,animal_type:x.animal_type||null,breed:x.breed||null}));
@@ -146,6 +141,30 @@ module.exports = async function handler(req, res) {
     if (String(body.action || '').trim() === 'developer-story-workshop-commit') {
       const user=await verifyMoonbeamUser(req);const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();if(!developerEmail||String(user.email||'').trim().toLowerCase()!==developerEmail)return res.status(403).json({error:'Developer access only.'});const child=body.child||{},plan=body.plan||{},pageCount=Math.max(6,Math.min(10,Number(child.storyPageCount)||6));if(!Array.isArray(plan.scenes)||plan.scenes.length!==pageCount||!plan.character_bible||!plan.cover_direction)return res.status(400).json({error:'The approved workshop plan is incomplete.'});let reservation;try{reservation=await reserveStoryCredit(user.id)}catch(e){return res.status(e.status||500).json({error:e.message,code:e.code||'CREDIT_ERROR'})}try{const generationRunId=await createGenerationRun(user.id);return res.status(200).json({creditsRemaining:reservation.remaining,generationRunId,storyCreditBatchId:reservation.batchId,plan})}catch(e){try{await refundReservedStoryCredit(user.id,reservation.batchId)}catch{}throw e}
     }
+
+    // V251.85: after the first image-safety rejection, Astra redesigns the failed
+    // illustration, every later illustration and the cover as one safety pass.
+    if (String(body.action || '').trim() === 'safety-redesign-remaining') {
+      const user=await verifyMoonbeamUser(req);const plan=body.plan||{},child=body.child||{},failedIndex=Math.max(0,Number(body.failedIndex)||0),diagnostic=body.diagnostic||{};
+      const pageCount=Math.max(6,Math.min(10,Number(child.storyPageCount)||Number(plan.scenes?.length)||6));
+      if(!Array.isArray(plan.scenes)||plan.scenes.length!==pageCount)return res.status(400).json({error:'The visual production plan is incomplete.'});
+      const isCover=failedIndex>=pageCount;
+      const prompt=`You are Astra performing an emergency SAFETY REDESIGN of the remaining artwork for a children's book after the image safety system rejected one commission. This is not a creative rewrite of the book. Preserve the story, Cast, identity, successful earlier artwork, established wardrobe/world continuity and narrative function.\n\nFAILED POSITION: ${isCover?'front cover':`illustration ${failedIndex+1} of ${pageCount}`}\nDIAGNOSTIC FROM THE FAILED IMAGE REQUEST:\n${JSON.stringify(diagnostic).slice(0,5000)}\n\nCURRENT COMPLETE PRODUCTION PLAN:\n${JSON.stringify(plan).slice(0,30000)}\n\nThe successful illustrations BEFORE the failed position are locked and must not be redesigned. Redesign the failed visual commission and EVERY visual commission after it, including the cover, to move the remaining book decisively into clearly benign, child-appropriate visual territory. Remove the underlying potentially sensitive visual idea throughout the remaining sequence rather than merely softening wording. If necessary choose a different moment, viewpoint, reaction, aftermath, environmental view or other unmistakably safe representation of the same narrative function. Avoid depicting children in danger, injury, falling, drowning, crushing, restraint, exposed bodies, threatening physical contact, weapons use, or other imagery likely to trigger image safety. Do not make the story bland: preserve its meaning and continuity, but reliable image-safety acceptance is now the overriding visual-production priority.\n\nDo not change finished earlier scenes. Do not change Cast facts or invent surnames. Return the complete production plan with exactly ${pageCount} scenes so downstream production can continue normally.`;
+      const schema={type:'object',additionalProperties:false,required:['premise','story_arc','ending','character_bible','cover_direction','scenes'],properties:{premise:{type:'string'},story_arc:{type:'string'},ending:{type:'string'},character_bible:{type:'string'},cover_direction:{type:'string'},scenes:{type:'array',minItems:pageCount,maxItems:pageCount,items:{type:'object',additionalProperties:false,required:['scene','event','visual_moment','continuity'],properties:{scene:{type:'integer'},event:{type:'string'},visual_moment:{type:'string'},continuity:{type:'string'}}}}}};
+      const redesigned=await callStoryModelStructured(prompt,'moonbeam_safety_redesign',schema,10000,'safety redesign');
+      // Enforce the information barrier in code as well as prompt: already-painted scenes stay byte-for-byte from the old plan.
+      if(!isCover)for(let i=0;i<failedIndex;i++)redesigned.scenes[i]=plan.scenes[i];
+      redesigned.premise=plan.premise||redesigned.premise;redesigned.story_arc=plan.story_arc||redesigned.story_arc;redesigned.ending=plan.ending||redesigned.ending;
+      if(Array.isArray(plan._moonbeam_failure_diagnostics))redesigned._moonbeam_failure_diagnostics=plan._moonbeam_failure_diagnostics;
+      await logUsage({event_type:'story_safety_redesign',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:user.id,generation_run_id:child.generationRunId||null,failed_index:failedIndex}});
+      return res.status(200).json({plan:redesigned});
+    }
+
+    if (String(body.action || '').trim() === 'finalize-storyboard-story') {
+      const moonbeamUser = await verifyMoonbeamUser(req);
+      const developerEmail = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
+      const developerDiagnostic = !!developerEmail && String(moonbeamUser.email || '').trim().toLowerCase() === developerEmail;
+      const plan = body.plan || {};
 
     const child = body.child || {};
       const finalizeIsDeveloper=!!developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
@@ -159,7 +178,9 @@ module.exports = async function handler(req, res) {
       const language = String(child.language||'en-GB');
       const languageGuide = {'en-GB':'natural contemporary British English with British spelling','en-US':'natural contemporary American English','es-ES':'natural Spanish from Spain','es-419':'natural neutral Latin American Spanish','fr-FR':'natural French from France','de-DE':'natural German from Germany','it-IT':'natural Italian from Italy','pt-BR':'natural Brazilian Portuguese','pl-PL':'natural contemporary Polish'}[language]||'natural British English';
       const planText = JSON.stringify(plan,null,2);
-      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. Its ${spreadCount} finished illustrations already exist. Write the finished book now.
+      const failureDiagnostics=Array.isArray(body.failureDiagnostics)?body.failureDiagnostics.slice(-5):[];
+      const recoveryNote=failureDiagnostics.length?`\nRECOVERY DIAGNOSTICS FROM AN EARLIER FAILED FINALISATION/PRODUCTION ATTEMPT:\n${JSON.stringify(failureDiagnostics).slice(0,6000)}\nUse these diagnostics only to avoid repeating a technical/output mistake. Do not rewrite the story merely because a network or infrastructure failure occurred.\n`:'';
+      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. Its ${spreadCount} finished illustrations already exist. Write the finished book now.${recoveryNote}
 
 ORIGINAL STORY IDEA:
 ${String(child.storyIdea||'').trim()||'No parent story idea was supplied.'}
