@@ -1,9 +1,8 @@
-const { SUPABASE_URL, SECRET_KEY, adminHeaders } = require('../_usage');
+const { SUPABASE_URL, SECRET_KEY, adminHeaders, getUsageBaselineUTC } = require('../_usage');
 
 const PUBLISHABLE_KEY =
   String(process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q').trim();
 
-const DEFAULT_BASELINE_UTC = '2026-09-26T13:38:25Z';
 const MOONBEAM_ALL_TIME_START_UTC = '2026-09-07T23:00:00Z'; // 8 Sep 2026 00:00 BST
 
 function unixSeconds(v) {
@@ -72,13 +71,25 @@ function eventsForUser(events,userId,mode='only'){
 
 module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
-  if(req.method!=='GET')return res.status(405).json({error:'GET only'});
+  if(!['GET','POST'].includes(req.method))return res.status(405).json({error:'GET or POST only'});
   const verified=await verifyDeveloper(req);
   if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
 
-  const baselineUTC=String(process.env.MOONBEAM_USAGE_BASELINE_UTC||DEFAULT_BASELINE_UTC).trim();
+  if(req.method==='POST'){
+    const body=typeof req.body==='string'?JSON.parse(req.body||'{}'):(req.body||{});
+    if(String(body.action||'')!=='reset-baseline')return res.status(400).json({error:'Unknown action.'});
+    const baselineUTC=new Date().toISOString();
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/moonbeam_admin_settings`,{
+      method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=representation'}),
+      body:JSON.stringify({key:'usage_baseline_utc',value:baselineUTC,updated_at:baselineUTC})
+    });
+    if(!r.ok){console.error('baseline reset failed',r.status,await r.text());return res.status(500).json({error:'Could not reset the baseline.'})}
+    return res.status(200).json({ok:true,baselineUTC});
+  }
+
+  const baselineUTC=await getUsageBaselineUTC();
   const baselineSeconds=unixSeconds(baselineUTC);
-  if(!baselineSeconds)return res.status(500).json({error:'MOONBEAM_USAGE_BASELINE_UTC is invalid.'});
+  if(!baselineSeconds)return res.status(500).json({error:'Usage baseline is invalid.'});
   const now=Math.floor(Date.now()/1000);
 
   const er=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?select=event_type,estimated_cost_gbp,created_at,metadata&order=created_at.asc`,{headers:adminHeaders()});

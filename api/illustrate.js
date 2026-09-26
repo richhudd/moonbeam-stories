@@ -31,12 +31,15 @@ module.exports = async function handler(req, res) {
     if (!generationRunId) return res.status(400).json({ error: 'This story does not have a valid generation allowance.' });
     const moonbeamUser = await verifyMoonbeamUser(req);
     const developerCorrectionRequested=body.developerCorrection===true;
+    const developerWorkshopPreviewRequested=body.developerWorkshopPreview===true;
     const correctionMask = /^data:image\/png;base64,/i.test(body.correctionMask || '') ? body.correctionMask : '';
     const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
-    const developerCorrection=developerCorrectionRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
-    if(developerCorrectionRequested&&!developerCorrection)return res.status(403).json({error:'Developer access only.'});
+    const isDeveloper=!!developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
+    const developerCorrection=developerCorrectionRequested&&isDeveloper;
+    const developerWorkshopPreview=developerWorkshopPreviewRequested&&isDeveloper;
+    if((developerCorrectionRequested&&!developerCorrection)||(developerWorkshopPreviewRequested&&!developerWorkshopPreview))return res.status(403).json({error:'Developer access only.'});
     let recoverySlot=false;
-    try { if(!developerCorrection) await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
+    try { if(!developerCorrection&&!developerWorkshopPreview) await consumeGenerationSlot(moonbeamUser.id,generationRunId,'image'); }
     catch(e){
       // V206: the original nine image slots remain the primary anti-abuse budget.
       // If Safari/navigation discarded an otherwise legitimate required page request,
@@ -57,7 +60,7 @@ module.exports = async function handler(req, res) {
       if(!recoveryReservation) return res.status(503).json({error:'Moonbeam could not reserve an illustration recovery attempt. Please try again.',code:'RECOVERY_CHECK_FAILED'});
       recoverySlot=true;
     }
-    if(!recoverySlot&&!developerCorrection){slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;}
+    if(!recoverySlot&&!developerCorrection&&!developerWorkshopPreview){slotReserved=true;reservedUserId=moonbeamUser.id;reservedRunId=generationRunId;}
     const refundSlot=async()=>{if(slotReserved){slotReserved=false;await refundGenerationSlot(reservedUserId,reservedRunId,'image')}};
 
     const refs=(Array.isArray(referenceImages)?referenceImages:[]).filter(r=>r&&/^data:image\/(jpeg|png|webp);base64,/i.test(r.image||''));if(!refs.length&&/^data:image\/(jpeg|png|webp);base64,/i.test(referenceImage||''))refs.push({name:'main hero',kind:'child',role:'hero',image:referenceImage});

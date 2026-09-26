@@ -1,6 +1,5 @@
-const {logUsage,estimateGBP,SUPABASE_URL,SECRET_KEY,adminHeaders}=require('../_usage');
+const {logUsage,estimateGBP,getUsageBaselineUTC,SUPABASE_URL,SECRET_KEY,adminHeaders}=require('../_usage');
 const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('../_credits');
-const DEFAULT_USAGE_BASELINE_UTC='2026-09-26T13:38:25Z';
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -47,8 +46,7 @@ module.exports = async function handler(req, res) {
         // V251.71: the hourglass average always uses the exact same baseline as
         // Usage & economics. Resetting MOONBEAM_USAGE_BASELINE_UTC therefore resets
         // both measurements together for every account after a generation change.
-        const usageBaselineUTC=String(process.env.MOONBEAM_USAGE_BASELINE_UTC||DEFAULT_USAGE_BASELINE_UTC).trim();
-        if(!Number.isFinite(Date.parse(usageBaselineUTC)))throw new Error('MOONBEAM_USAGE_BASELINE_UTC is invalid.');
+        const usageBaselineUTC=await getUsageBaselineUTC();
         params.set('created_at',`gte.${new Date(usageBaselineUTC).toISOString()}`);
         params.set('order','created_at.asc');
         params.set('limit','5000');
@@ -136,15 +134,32 @@ module.exports = async function handler(req, res) {
       const developerEmail = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
       const developerDiagnostic = !!developerEmail && String(moonbeamUser.email || '').trim().toLowerCase() === developerEmail;
       const plan = body.plan || {};
-      const child = body.child || {};
-      const images = Array.isArray(body.images) ? body.images.filter(x=>/^data:image\/(?:jpeg|png|webp);base64,/i.test(String(x||''))).slice(0,6) : [];
-      const scenes = Array.isArray(plan.scenes) ? plan.scenes.slice(0,6) : [];
-      if (scenes.length !== 6 || images.length !== 6) return res.status(400).json({error:'The visual storyboard is incomplete.'});
+      if (String(body.action || '').trim() === 'developer-story-workshop-chat') {
+      const user=await verifyMoonbeamUser(req);const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();if(!developerEmail||String(user.email||'').trim().toLowerCase()!==developerEmail)return res.status(403).json({error:'Developer access only.'});
+      const child=body.child||{},plan=body.plan||{},message=String(body.message||'').trim(),history=Array.isArray(body.history)?body.history.slice(-20):[];const pageCount=Math.max(6,Math.min(10,Number(child.storyPageCount)||6));if(!message||!Array.isArray(plan.scenes)||plan.scenes.length!==pageCount)return res.status(400).json({error:'The workshop needs a valid message and production plan.'});
+      const cast=(Array.isArray(child.cast)?child.cast:[]).map(x=>({name:x.name,kind:x.kind,role:x.role,age:x.age||null,gender:x.gender||null,animal_type:x.animal_type||null,breed:x.breed||null}));
+      const workshopPrompt=`You are Astra, the private story developer and art director inside the Moonbeam developer Story Workshop. You are speaking conversationally with Moonbeam's developer about ONE proposed children's book before production. This is not a general chatbot. Stay tightly focused on developing this book.\n\nORIGINAL STORY IDEA:\n${String(child.storyIdea||'').slice(0,4000)}\n\nCAST (authoritative; never invent surnames or contradict these facts):\n${JSON.stringify(cast)}\nYoungest hero age: ${Number(child.age)||9}. Required reading spreads: exactly ${pageCount}.\n\nCURRENT STRUCTURED PRODUCTION PLAN:\n${JSON.stringify(plan)}\n\nRECENT WORKSHOP CONVERSATION:\n${history.map(x=>`${x.role==='you'?'DEVELOPER':'ASTRA'}: ${String(x.text||'').slice(0,4000)}`).join('\n')}\n\nLATEST DEVELOPER MESSAGE:\n${message}\n\nRespond naturally and concisely to the developer. Treat their latest decisions as authoritative for this book. Revise the structured production plan whenever the conversation changes the story architecture, visual design, staging, ending, page allocation, recurring design, or other production decision. Preserve good existing decisions that were not changed. The plan must always retain exactly ${pageCount} coherent drawable scenes and a cover direction. Do not write the finished story prose yet.\n\nIf the developer asks to SEE, SHOW, PREVIEW or VISUALISE a creature, character, object, vehicle, location or other design, set preview_prompt to a complete standalone Sunburst painting commission for exactly that requested concept image. The preview is a design reference, not a book page, and should show the requested state clearly. Otherwise preview_prompt must be empty. Give preview_label a short useful label.\n\nIf the developer clearly says the most recently shown preview is approved, right, final, to keep, or should be used for the book, set approve_last_preview=true. Do not approve it merely because they discuss it. A later approved preview will be supplied to Sunburst as a production reference.\n\nHard constraints remain: age appropriate; no sexual content, graphic violence/gore, dangerous instructions, self-harm encouragement or adult horror; copyright/public-domain rules; supplied Cast identity/facts authoritative; no invented surnames. The developer may intentionally request a genuinely intimidating storybook monster for a nine-year-old: that is compatible with age appropriateness provided it does not become grotesque or adult horror.\n\nReturn the structured response only.`;
+      const schema={type:'object',additionalProperties:false,required:['reply','plan','preview_prompt','preview_label','approve_last_preview'],properties:{reply:{type:'string'},plan:{type:'object',additionalProperties:false,required:['premise','story_arc','ending','character_bible','cover_direction','scenes'],properties:{premise:{type:'string'},story_arc:{type:'string'},ending:{type:'string'},character_bible:{type:'string'},cover_direction:{type:'string'},scenes:{type:'array',minItems:pageCount,maxItems:pageCount,items:{type:'object',additionalProperties:false,required:['scene','event','visual_moment','continuity'],properties:{scene:{type:'integer'},event:{type:'string'},visual_moment:{type:'string'},continuity:{type:'string'}}}}}},preview_prompt:{type:'string'},preview_label:{type:'string'},approve_last_preview:{type:'boolean'}}};
+      const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:workshopPrompt,max_output_tokens:12000,text:{format:{type:'json_schema',name:'moonbeam_developer_story_workshop',strict:true,schema}}})});const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Astra returned HTTP ${rr.status}`)})}let out=typeof data.output_text==='string'?data.output_text:'';if(!out&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')out+=part.text;let parsed;try{parsed=JSON.parse(out)}catch{return res.status(502).json({error:'Astra returned an invalid workshop response.'})}if(!parsed?.plan||!Array.isArray(parsed.plan.scenes)||parsed.plan.scenes.length!==pageCount)return res.status(502).json({error:'Astra returned an incomplete workshop plan.'});await logUsage({event_type:'developer_story_workshop_chat',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:user.id}});return res.status(200).json(parsed);
+    }
+
+    if (String(body.action || '').trim() === 'developer-story-workshop-commit') {
+      const user=await verifyMoonbeamUser(req);const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();if(!developerEmail||String(user.email||'').trim().toLowerCase()!==developerEmail)return res.status(403).json({error:'Developer access only.'});const child=body.child||{},plan=body.plan||{},pageCount=Math.max(6,Math.min(10,Number(child.storyPageCount)||6));if(!Array.isArray(plan.scenes)||plan.scenes.length!==pageCount||!plan.character_bible||!plan.cover_direction)return res.status(400).json({error:'The approved workshop plan is incomplete.'});let reservation;try{reservation=await reserveStoryCredit(user.id)}catch(e){return res.status(e.status||500).json({error:e.message,code:e.code||'CREDIT_ERROR'})}try{const generationRunId=await createGenerationRun(user.id);return res.status(200).json({creditsRemaining:reservation.remaining,generationRunId,storyCreditBatchId:reservation.batchId,plan})}catch(e){try{await refundReservedStoryCredit(user.id,reservation.batchId)}catch{}throw e}
+    }
+
+    const child = body.child || {};
+      const finalizeIsDeveloper=!!developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
+      const requestedCount=Number(child.storyPageCount)||Number(plan.scenes?.length)||6;
+      const spreadCount=finalizeIsDeveloper?Math.max(6,Math.min(10,requestedCount)):6;
+      const middleCount=spreadCount-2;
+      const images = Array.isArray(body.images) ? body.images.filter(x=>/^data:image\/(?:jpeg|png|webp);base64,/i.test(String(x||''))).slice(0,spreadCount) : [];
+      const scenes = Array.isArray(plan.scenes) ? plan.scenes.slice(0,spreadCount) : [];
+      if (scenes.length !== spreadCount || images.length !== spreadCount) return res.status(400).json({error:'The visual storyboard is incomplete.'});
       const age = Number(child.age)||7;
       const language = String(child.language||'en-GB');
       const languageGuide = {'en-GB':'natural contemporary British English with British spelling','en-US':'natural contemporary American English','es-ES':'natural Spanish from Spain','es-419':'natural neutral Latin American Spanish','fr-FR':'natural French from France','de-DE':'natural German from Germany','it-IT':'natural Italian from Italy','pt-BR':'natural Brazilian Portuguese','pl-PL':'natural contemporary Polish'}[language]||'natural British English';
       const planText = JSON.stringify(plan,null,2);
-      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. Its six finished illustrations already exist. Write the finished book now.
+      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. Its ${spreadCount} finished illustrations already exist. Write the finished book now.
 
 ORIGINAL STORY IDEA:
 ${String(child.storyIdea||'').trim()||'No parent story idea was supplied.'}
@@ -156,20 +171,19 @@ HARD REQUIREMENTS ONLY
 - Write content and language appropriate for a child aged ${age}, in ${languageGuide}.
 - You have complete literary autonomy. Choose prose, verse, rhyme, dialogue, repetition, mixed forms or any other form you believe makes the strongest story. Do not impose or avoid any particular plot structure, tone, genre, lesson, problem, climax or ending pattern.
 - Preserve exact supplied Cast names and facts. Never invent surnames or sensitive personal facts.
-- The plan establishes the intended book and the six attached images are authoritative about clearly visible physical reality. Reconcile harmless visible details naturally without allowing accidental image details to replace the story.
+- The plan establishes the intended book and the ${spreadCount} attached images are authoritative about clearly visible physical reality. Reconcile harmless visible details naturally without allowing accidental image details to replace the story.
 - The pictures are selected moments, not captions. Write the story rather than merely describing the pictures.
 - Public-domain reproduction/adaptation is allowed when the underlying material is confidently public domain in the United Kingdom; do not import protected additions from later adaptations. Do not reproduce or closely imitate protected copyrighted expression.
-- Return exactly SIX reading spreads: opening, four middle spreads and closing.
+- Return exactly ${spreadCount} reading spreads: opening, ${middleCount} middle spreads and closing.
 - There is no target or minimum word count. Pages do not need to be similar lengths. HARD CEILING: no individual spread may exceed 220 words. Keep deliberate line breaks only when they serve your chosen literary form; Moonbeam's fixed-layout KDP renderer must be able to fit every spread legibly.
 - No headings inside the story text.
 
-Return JSON ONLY in exactly this shape:
-{"title":"string","opening":"spread 1","pages":[{"text":"spread 2"},{"text":"spread 3"},{"text":"spread 4"},{"text":"spread 5"}],"closing":"spread 6"}`;
+Return JSON ONLY with title, opening, pages, and closing. The pages array must contain exactly ${middleCount} middle spreads so the complete book contains ${spreadCount} reading spreads.`;
       const content=[{type:'input_text',text:finalPrompt},...images.map((image_url,i)=>({type:'input_image',image_url,detail:'low'}))];
-      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:[{role:'user',content}],max_output_tokens:5000,text:{format:{type:'json_schema',name:'moonbeam_final_story',strict:true,schema:{type:'object',additionalProperties:false,required:['title','opening','pages','closing'],properties:{title:{type:'string'},opening:{type:'string'},pages:{type:'array',minItems:4,maxItems:4,items:{type:'object',additionalProperties:false,required:['text'],properties:{text:{type:'string'}}}},closing:{type:'string'}}}}}})});
+      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:[{role:'user',content}],max_output_tokens:8000,text:{format:{type:'json_schema',name:'moonbeam_final_story',strict:true,schema:{type:'object',additionalProperties:false,required:['title','opening','pages','closing'],properties:{title:{type:'string'},opening:{type:'string'},pages:{type:'array',minItems:middleCount,maxItems:middleCount,items:{type:'object',additionalProperties:false,required:['text'],properties:{text:{type:'string'}}}},closing:{type:'string'}}}}}})});
       const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};
       const usage=data?.usage||{};
-      const finalDiagnostic=developerDiagnostic?{stage:'final story reconciliation',model:'gpt-6-astra',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:5000,raw_response_chars:raw.length}:null;
+      const finalDiagnostic=developerDiagnostic?{stage:'final story reconciliation',model:'gpt-6-astra',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:8000,raw_response_chars:raw.length}:null;
       if(!r.ok){const e=data?.error;const payload={error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)};if(finalDiagnostic)payload.developer_diagnostic=finalDiagnostic;return res.status(502).json(payload)}
       let output=typeof data.output_text==='string'?data.output_text:'';if(!output&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')output+=part.text;
       if(finalDiagnostic)finalDiagnostic.output_chars=output.length;
@@ -184,7 +198,7 @@ Return JSON ONLY in exactly this shape:
         if(typeof parsed.opening!=='string'||!parsed.opening.trim())reconciliationIssues.push('missing opening');
         if(!Array.isArray(parsed.pages))reconciliationIssues.push('pages is not an array');
         else{
-          if(parsed.pages.length!==4)reconciliationIssues.push(`expected 4 middle pages, received ${parsed.pages.length}`);
+          if(parsed.pages.length!==middleCount)reconciliationIssues.push(`expected ${middleCount} middle pages, received ${parsed.pages.length}`);
           parsed.pages.forEach((pg,i)=>{if(typeof pg?.text!=='string'||!pg.text.trim())reconciliationIssues.push(`page ${i+2} text is empty`)})
         }
         if(typeof parsed.closing!=='string'||!parsed.closing.trim())reconciliationIssues.push('missing closing');
@@ -224,7 +238,11 @@ Return JSON ONLY in exactly this shape:
     supportUserId=moonbeamUser.id;
     const demoRequested=String(req.headers['x-moonbeam-demo-generation']||'').trim()==='1';
     const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
-    const developerDemo=demoRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
+    const isDeveloper=!!developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
+    const developerDemo=demoRequested&&isDeveloper;
+    const requestedStoryPageCount=Number(child.storyPageCount)||6;
+    const storyPageCount=isDeveloper?Math.max(6,Math.min(10,requestedStoryPageCount)):6;
+    child.storyPageCount=storyPageCount;
     if(demoRequested&&!developerDemo)return res.status(403).json({error:'Developer access only.'});
     let creditsRemaining=null;
     if(!developerDemo){
@@ -262,7 +280,7 @@ Return JSON ONLY in exactly this shape:
       '8-10': {label:'middle-childhood', forbidden:'sexual content, graphic violence, gore, torture, dangerous instructions, self-harm encouragement, true-crime treatment or adult horror'},
       '11-12': {label:'older-child', forbidden:'sexual content, graphic violence, gore, torture, dangerous instructions, self-harm encouragement, true-crime treatment or adult horror'}
     }[ageBand];
-    const pageCount = 4;
+    const pageCount = storyPageCount-2;
     const storyIdea = String(child.storyIdea || '').trim();
     const ideaGuide = storyIdea
       ? `PARENT STORY IDEA — AUTHORITATIVE\n${storyIdea}\nUse this as the story brief. If it is unsafe/inappropriate for the child's age or requests protected copyrighted expression, flag it instead of silently replacing or reinterpreting it.`
@@ -298,7 +316,7 @@ Do not reproduce, continue, translate, closely imitate or disguise protected cop
 If the Parent Story Idea requests unsafe/inappropriate content or impermissible use of protected copyrighted material, DO NOT reinterpret it into a different story. The concept stage must flag the input so Moonbeam can ask the parent for a new Story Idea.
 
 FORMAT — HARD PRODUCT CONSTRAINT
-The finished book has exactly SIX reading spreads: opening, four middle spreads and closing. Each spread must correspond to one coherent illustratable moment. The six moments must form one coherent book, but no particular plot structure is required.
+The finished book has exactly ${storyPageCount} reading spreads: opening, ${storyPageCount-2} middle spreads and closing. Each spread must correspond to one coherent illustratable moment. The ${storyPageCount} moments must form one coherent book, but no particular plot structure is required.
 There is no target or minimum word count and pages do not need to be similar lengths. KDP publishability is a hard ceiling: no individual finished reading spread may exceed 220 words. Use line breaks only when they are part of the chosen literary form; the final renderer will also enforce physical page fit.
 Do not put headings inside the story text.
 
@@ -493,37 +511,36 @@ Return JSON ONLY:
     const planningPrompt = `${planningBase}
 
 STORYBOARD STAGE — CREATIVE AUTONOMY
-Do not write finished story prose, dialogue or page text. Create the six-scene production plan for the concept below.
+Do not write finished story prose, dialogue or page text. Create the ${storyPageCount}-scene production plan for the concept below.
 
 CHOSEN CONCEPT — AUTHORITATIVE
 ${JSON.stringify(concept,null,2)}
 
-You have complete creative autonomy over how the concept becomes a story. Do not impose or avoid any particular narrative structure. Do not add creative requirements beyond the Parent Story Idea, age appropriateness, Cast facts, copyright/public-domain rule and six-spread product format.
+You have complete creative autonomy over how the concept becomes a story. Do not impose or avoid any particular narrative structure. Do not add creative requirements beyond the Parent Story Idea, age appropriateness, Cast facts, copyright/public-domain rule and ${storyPageCount}-spread product format.
 
-Create exactly six coherent, drawable interior moments covering the complete book, including the ending. Also design the front cover in this same art-direction pass.
+Create exactly ${storyPageCount} coherent, drawable interior moments covering the complete book, including the ending. Also design the front cover in this same art-direction pass.
 
-At this stage you have a SECOND ROLE: you are the ART DIRECTOR AND VISUAL CONTINUITY DESIGNER for the entire book: six interior illustrations plus the front cover. Sunburst is only the painter. Do not ask Sunburst to interpret the story, invent the staging, design recurring story elements, choose wardrobe, or repair visual logic for you. You must make those decisions before it paints.
+At this stage you have a SECOND ROLE: you are the ART DIRECTOR AND VISUAL CONTINUITY DESIGNER for the entire book: ${storyPageCount} interior illustrations plus the front cover. Sunburst is only the painter. Do not ask Sunburst to interpret the story, invent the staging, design recurring story elements, choose wardrobe, or repair visual logic for you. You must make those decisions before it paints.
 
 First design the coherent visual world for YOUR story. Use character_bible as the production design bible: establish the wardrobe you choose for recurring Cast, and concretely design recurring story-created creatures, vehicles, machines, buildings, locations and plot-important objects so that the same thing can be reproduced throughout the book. Record distinctive construction, materials, shape, scale, colours and other stable visual facts only where they matter. Canonical Cast photographs remain the absolute authority for personal identity; direct the photographed person but never redesign their face/body identity or invent identity-defining accessories absent from the reference.
 
 Then art-direct every scene precisely. EVENT states what actually happens. VISUAL_MOMENT is a direct commission to the painter for the exact single frame you have chosen. Specify the composition and physical geometry with enough precision that a skilled painter who has NOT read the story can stage it without making narrative decisions. Where relevant, state relative positions, distances, foreground/background placement, orientation, relative sizes, who or what is beside/behind/in front of/inside/on top of what, which objects are held and how, and the physical state of important objects. Direct character performance too: facial expression, head/body orientation, gaze target, gesture, pointing direction and interaction with other characters or objects whenever those details communicate the intended event. If a hand, gaze, gesture or spatial relationship matters, name its target unambiguously rather than leaving the painter to guess.
 
-Maintain continuity across all six interior briefs and the cover yourself. Once you establish wardrobe, an object/creature/machine design, scale, location layout or physical state, preserve it in later scenes unless your planned story deliberately changes it; when it changes, describe the change and carry the new state forward. CONTINUITY records the concrete facts that later scenes must preserve. Do not add detail merely to satisfy a checklist: precision serves your particular composition and story. But never delegate a consequential staging, design or continuity decision to Sunburst. No field may contain polished story prose.
+Maintain continuity across all ${storyPageCount} interior briefs and the cover yourself. Once you establish wardrobe, an object/creature/machine design, scale, location layout or physical state, preserve it in later scenes unless your planned story deliberately changes it; when it changes, describe the change and carry the new state forward. CONTINUITY records the concrete facts that later scenes must preserve. Do not add detail merely to satisfy a checklist: precision serves your particular composition and story. But never delegate a consequential staging, design or continuity decision to Sunburst. No field may contain polished story prose.
 
-Design the COVER as a separate commission after you have designed the six interiors. It should be the strongest single cover composition for the story as a whole; it need not duplicate an interior scene. Make every consequential composition/staging decision yourself just as for the interiors, preserve the same wardrobe/world/recurring designs, and leave calm usable space in the central/upper area for Moonbeam's separate title typography. Do not include or request words, letters, captions, logos, signs or readable text in the painting. The cover commission will be painted only after all six interiors exist, so the painter will also receive those finished paintings as continuity references.
+Design the COVER as a separate commission after you have designed the ${storyPageCount} interiors. It should be the strongest single cover composition for the story as a whole; it need not duplicate an interior scene. Make every consequential composition/staging decision yourself just as for the interiors, preserve the same wardrobe/world/recurring designs, and leave calm usable space in the central/upper area for Moonbeam's separate title typography. Do not include or request words, letters, captions, logos, signs or readable text in the painting. The cover commission will be painted only after all ${storyPageCount} interiors exist, so the painter will also receive those finished paintings as continuity references.
 
 Do not invent surnames. Preserve supplied Cast facts exactly. Do not prescribe art style; Moonbeam controls rendering style separately.
 
-Return JSON ONLY in exactly this shape:
-{"premise":"string","story_arc":"string","ending":"string","character_bible":"string","cover_direction":"one complete precise front-cover art-director brief","scenes":[{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"}]}`;
+Return JSON ONLY with premise, story_arc, ending, character_bible, cover_direction and scenes. The scenes array must contain exactly ${storyPageCount} objects, each with event, visual_moment and continuity.`;
     let plan=null;
-    const storyboardSchema={type:'object',additionalProperties:false,required:['premise','story_arc','ending','character_bible','cover_direction','scenes'],properties:{premise:{type:'string'},story_arc:{type:'string'},ending:{type:'string'},character_bible:{type:'string'},cover_direction:{type:'string'},scenes:{type:'array',minItems:6,maxItems:6,items:{type:'object',additionalProperties:false,required:['event','visual_moment','continuity'],properties:{event:{type:'string'},visual_moment:{type:'string'},continuity:{type:'string'}}}}}};
+    const storyboardSchema={type:'object',additionalProperties:false,required:['premise','story_arc','ending','character_bible','cover_direction','scenes'],properties:{premise:{type:'string'},story_arc:{type:'string'},ending:{type:'string'},character_bible:{type:'string'},cover_direction:{type:'string'},scenes:{type:'array',minItems:storyPageCount,maxItems:storyPageCount,items:{type:'object',additionalProperties:false,required:['event','visual_moment','continuity'],properties:{event:{type:'string'},visual_moment:{type:'string'},continuity:{type:'string'}}}}}};
     try{
-      plan=await callStoryModelStructured(planningPrompt,'moonbeam_visual_storyboard',storyboardSchema,6500,'storyboard planning');
+      plan=await callStoryModelStructured(planningPrompt,'moonbeam_visual_storyboard',storyboardSchema,10000,'storyboard planning');
     }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}await refundReservedCredit();return res.status(502).json({error:e.message||'Moonbeam could not create the visual storyboard correctly. Please try again.'})}
     if(!plan){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not create the visual storyboard correctly. Please try again.'})}
     plan.concept=concept;plan.title_working=String(plan.title_working||'').trim();plan.premise=String(plan.premise||'').trim();plan.story_arc=String(plan.story_arc||'').trim();plan.ending=String(plan.ending||'').trim();plan.character_bible=String(plan.character_bible||'').trim();plan.cover_direction=String(plan.cover_direction||'').trim();
-    plan.scenes=plan.scenes.slice(0,6).map((x,i)=>({scene:i+1,event:String(x?.event||'').trim(),visual_moment:String(x?.visual_moment||'').trim(),continuity:String(x?.continuity||'').trim()}));
+    plan.scenes=plan.scenes.slice(0,storyPageCount).map((x,i)=>({scene:i+1,event:String(x?.event||'').trim(),visual_moment:String(x?.visual_moment||'').trim(),continuity:String(x?.continuity||'').trim()}));
     if(!plan.premise||!plan.story_arc||!plan.ending||!plan.character_bible||!plan.cover_direction||plan.scenes.some(x=>!x.event||!x.visual_moment)){await refundReservedCredit();return res.status(502).json({error:'Moonbeam produced an incomplete visual storyboard. Please try again.'})}
     const generationRunId=await createGenerationRun(moonbeamUser.id);
     await logUsage({event_type:'story_concept',estimated_cost_gbp:estimateGBP('story'),metadata:{model:CREATIVE_STORY_MODEL,user_id:moonbeamUser.id,generation_run_id:generationRunId,recent_story_count:recentStories.length}});

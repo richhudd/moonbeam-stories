@@ -63,6 +63,23 @@ async function countUsageEvents(eventType, metadataContains={}) {
   }
 }
 
+
+const DEFAULT_USAGE_BASELINE_UTC = '2026-09-26T13:38:25Z';
+async function getUsageBaselineUTC() {
+  if (SECRET_KEY) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/moonbeam_admin_settings?select=value&key=eq.usage_baseline_utc&limit=1`, { headers: adminHeaders() });
+      if (r.ok) {
+        const rows = await r.json();
+        const value = String(rows?.[0]?.value || '').trim();
+        if (Number.isFinite(Date.parse(value))) return new Date(value).toISOString();
+      } else console.error('baseline setting read failed', r.status, await r.text());
+    } catch (e) { console.error('baseline setting read failed', e); }
+  }
+  const fallback = String(process.env.MOONBEAM_USAGE_BASELINE_UTC || DEFAULT_USAGE_BASELINE_UTC).trim();
+  return Number.isFinite(Date.parse(fallback)) ? new Date(fallback).toISOString() : DEFAULT_USAGE_BASELINE_UTC;
+}
+
 function estimateGBP(kind, meta={}) {
   if (kind === 'story') return Number(process.env.MOONBEAM_COST_STORY_GBP || 0);
   if (kind === 'image') {
@@ -74,4 +91,4 @@ function estimateGBP(kind, meta={}) {
   return 0;
 }
 
-module.exports = { logUsage, countUsageEvents, estimateGBP, SUPABASE_URL, SECRET_KEY, adminHeaders };
+module.exports = { logUsage, countUsageEvents, estimateGBP, getUsageBaselineUTC, SUPABASE_URL, SECRET_KEY, adminHeaders };

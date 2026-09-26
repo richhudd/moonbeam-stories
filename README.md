@@ -1,3 +1,34 @@
+# V251.84
+
+## V251.84 — consolidated developer publishing build
+
+Built from V251.83, which itself contains the requested V251.82 and V251.83 changes, while V251.81 remains the user's last deployed baseline.
+
+- Carries forward V251.82 developer Usage & economics **Reset baseline** control. Run `SUPABASE_V251_82_USAGE_BASELINE.sql` once before deploying this build if it has not already been run. The reset changes the persistent since-baseline point used by both usage/cost reporting and average story-build time; historical totals remain intact.
+- Carries forward V251.83 developer-only **6–10 page + illustration selector**. Ordinary users remain fixed at six spreads.
+- Carries forward V251.83 **4,000-character Story Idea** field.
+- Adds a developer-only **Develop with Astra** route beside normal story creation. Normal Create Story remains unchanged and fully automatic.
+- Develop with Astra performs Astra's concept/story architecture and whole-book art-direction pass, then pauses before any book illustrations are generated.
+- The Story Workshop is conversational and developer-only. It can revise the structured production plan, discuss the book, and understand natural requests to show a visual preview.
+- When the developer asks to see a design, Astra can commission a single Sunburst concept preview. The developer can discuss/revise it and approve it; approved previews are carried into production as art-direction references.
+- Full production starts only after the explicit **Create this book** action. At that point the normal credit reservation, checkpoint/recovery, sequential interior illustration, final Astra writing and cover pipeline takes over.
+- Workshop access is hard-gated to `MOONBEAM_DEVELOPER_EMAIL`; it is not exposed to normal accounts or any future Pro entitlement.
+- No new Supabase migration is required for the Workshop itself.
+
+
+- Developer account only: choose 6–10 reading pages/illustrations per generated story. Ordinary users remain fixed at 6.
+- Story Idea limit increased from 2,000 to 4,000 characters.
+- Storyboard planning, final Astra reconciliation, illustration loop, cover continuity references, and partial-generation resume now follow the selected developer page count.
+- No new Supabase SQL required.
+
+# V251.82
+
+- Adds a developer-only **Reset baseline** control to the Usage & economics screen.
+- Resetting stores the new baseline persistently in Supabase, so it survives deployments and no longer requires a new build.
+- The same baseline drives both usage/cost **since baseline** figures and the average story-creation-time counter.
+- Resetting does not delete historical usage events and does not alter All-time, This month, Today, Yesterday or Last 7 days.
+- Run `SUPABASE_V251_82_USAGE_BASELINE.sql` once before using the reset button.
+
 # V251.81
 
 - Increased the Story Idea input limit from 500 to 2,000 characters. No story-generation, Astra, Sunburst, pricing, recovery, or other behaviour changed.

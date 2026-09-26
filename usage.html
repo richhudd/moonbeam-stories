@@ -58,7 +58,7 @@
 
  u.innerHTML=`
   <section class="usage-section">
-   <div class="usage-section-head"><h2>Usage & economics</h2><p>Baseline: ${baseline}. Historical totals are preserved. Overall, developer-account and other-user baseline columns all begin at exactly the same baseline.</p></div>
+   <div class="usage-section-head"><h2>Usage & economics</h2><p>Baseline: ${baseline}. Historical totals are preserved. Overall, developer-account and other-user baseline columns all begin at exactly the same baseline.</p><button id="resetBaseline" class="secondary usage-reset-baseline" type="button">Reset baseline</button></div>
    <div class="usage-table-wrap"><table class="usage-economics">
     <thead><tr><th>Metric</th>${cols.map(([,label])=>`<th>${label}</th>`).join('')}</tr></thead>
     <tbody>
@@ -91,6 +91,16 @@
    </table></div>
   </section>`;
 
+ const resetBaseline=document.getElementById('resetBaseline');
+ if(resetBaseline)resetBaseline.onclick=async()=>{
+  if(!confirm('Reset usage & timing baseline?\n\nUsage since baseline and average story creation time will restart from now. Historical records will not be deleted.'))return;
+  resetBaseline.disabled=true; resetBaseline.textContent='Resetting…';
+  try{
+   const rr=await fetch('/api/usage-summary',{method:'POST',headers:{Authorization:'Bearer '+s.access_token,'Content-Type':'application/json'},body:JSON.stringify({action:'reset-baseline'})});
+   const rd=await rr.json(); if(!rr.ok)throw new Error(rd.error||'Could not reset baseline.');
+   location.reload();
+  }catch(e){alert(e.message||String(e));resetBaseline.disabled=false;resetBaseline.textContent='Reset baseline'}
+ };
 
  async function loadSupportInbox(){
   const box=document.getElementById('supportInbox'); if(!box)return;
