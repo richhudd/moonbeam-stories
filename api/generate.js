@@ -1,5 +1,32 @@
 const {logUsage,estimateGBP,SUPABASE_URL,SECRET_KEY,adminHeaders}=require('../_usage');
 const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('../_credits');
+function candidateJsonStrings(text) {
+  const clean = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  const candidates = [];
+  if (clean) candidates.push(clean);
+  let start = -1, depth = 0, inString = false, escaped = false;
+  for (let i = 0; i < clean.length; i++) {
+    const ch = clean[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === '{') { if (depth === 0) start = i; depth++; }
+    else if (ch === '}' && depth > 0) { depth--; if (depth === 0 && start >= 0) { candidates.push(clean.slice(start, i + 1)); break; } }
+  }
+  return [...new Set(candidates.filter(Boolean))];
+}
+function parseStoryOutput(text) {
+  for (const candidate of candidateJsonStrings(text)) {
+    for (const version of [candidate, candidate.replace(/,\s*([}\]])/g, '$1')]) {
+      try { const parsed = JSON.parse(version); const story = parsed && parsed.story && typeof parsed.story === 'object' ? parsed.story : parsed; if (story && typeof story === 'object') return story; } catch {}
+    }
+  }
+  return null;
+}
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -212,6 +239,31 @@ Return JSON ONLY in exactly this shape:
     const demoRequested=String(req.headers['x-moonbeam-demo-generation']||'').trim()==='1';
     const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
     const developerDemo=demoRequested&&developerEmail&&String(moonbeamUser.email||'').trim().toLowerCase()===developerEmail;
+    const developerTextDiagnostics=[];
+    async function callStoryModel(input, maxOutputTokens = 5000, diagnosticStage = 'story text') {
+      const r = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-5.6-luna', input, max_output_tokens: maxOutputTokens })
+      });
+      const raw = await r.text();
+      let data; try { data = JSON.parse(raw); } catch { data = {}; }
+      if (developerDemo) {
+        const usage=data?.usage||{};
+        developerTextDiagnostics.push({stage:diagnosticStage,model:'gpt-5.6-luna',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:maxOutputTokens,raw_response_chars:raw.length});
+      }
+      if (!r.ok) {
+        const e = data && data.error;
+        const message = typeof e === 'string' ? e : (e && (e.message || e.code || e.type)) || `OpenAI returned HTTP ${r.status}`;
+        const error = new Error(String(message)); error.openaiStatus = r.status; throw error;
+      }
+      let output = typeof data.output_text === 'string' ? data.output_text : '';
+      if (!output && Array.isArray(data.output)) for (const item of data.output) for (const part of (item.content || [])) {
+        if (typeof part.text === 'string') output += part.text;
+        else if (typeof part.output_text === 'string') output += part.output_text;
+      }
+      return String(output || '').trim();
+    }
     if(demoRequested&&!developerDemo)return res.status(403).json({error:'Developer access only.'});
     let creditsRemaining=null;
     if(!developerDemo){
