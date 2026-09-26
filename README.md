@@ -1,3 +1,15 @@
+# Moonbeam Stories V251.77 — resilient image retries + resumable partial generations
+
+## V251.77
+- Adds narrowly targeted automatic retries for transient OpenAI image transport failures such as `ECONNRESET` / terminated sockets, plus temporary 429/5xx image responses.
+- Adds account-level generation checkpoints in Supabase. Astra's plan and every successfully completed interior illustration are persisted during generation.
+- Interrupted stories can resume from the first unfinished illustration without consuming another story credit or regenerating completed artwork.
+- On reconnect/sign-in, active interrupted generations offer **Resume generation**, **Save for later**, or **Discard permanently**.
+- Saved-for-later work appears on Saved Stories in a separate **Partially generated stories** section; clicking it shows the same three choices.
+- Temporary labels use child name + shortened original Story Idea, falling back to “Untitled story”.
+- Developer Abort remains developer-only and now leaves the checkpoint available for recovery.
+- Requires `SUPABASE_V251_77_PARTIAL_GENERATIONS.sql` once before deploying this version.
+
 # Moonbeam Stories V251.76 — single-pass Astra art direction + parallel cover
 ## V251.76
 - Astra now art-directs the front cover in the same planning pass as the six interior commissions.

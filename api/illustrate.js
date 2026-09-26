@@ -217,7 +217,9 @@ IMPORTANT
       return {response,raw:responseRaw,data:responseData};
     };
     const safetyRejected=(result)=>{if(result?.response?.ok)return false;const e=result?.data?.error;const msg=String(typeof e==='string'?e:(e?.message||e?.code||e?.type||result?.raw||'')).toLowerCase();return msg.includes('safety')||msg.includes('moderation')||msg.includes('content policy')||msg.includes('policy violation')};
-    let first=await callImageModel(finalPrompt),result=first,safetyRetryUsed=false;
+    const transientImageError=(e)=>{const code=String(e?.cause?.code||e?.code||'').toUpperCase(),msg=String(e?.message||'').toLowerCase();return ['ECONNRESET','ETIMEDOUT','EAI_AGAIN','ECONNREFUSED','UND_ERR_SOCKET'].includes(code)||msg.includes('terminated')||msg.includes('fetch failed')||msg.includes('socket')};
+    const callImageModelResilient=async(requestPrompt)=>{let last=null;for(let attempt=0;attempt<3;attempt++){try{const result=await callImageModel(requestPrompt);if(result?.response?.status===429||[500,502,503,504].includes(result?.response?.status)){last=result;if(attempt<2){await new Promise(r=>setTimeout(r,900*(attempt+1)));continue}}return result}catch(e){last=e;if(!transientImageError(e)||attempt>=2)throw e;console.warn('Transient OpenAI image transport error; retrying',attempt+1,e?.cause?.code||e?.message);await new Promise(r=>setTimeout(r,900*(attempt+1)))}}if(last?.response)return last;throw last};
+    let first=await callImageModelResilient(finalPrompt),result=first,safetyRetryUsed=false;
     if(safetyRejected(first)&&requiredStoryImage&&!developerCorrection){
       safetyRetryUsed=true;
       // V251.50: a moderation retry is a genuinely fresh, minimal image request — not
@@ -240,7 +242,7 @@ ${imageSafeSceneContent}
 Use a substantially different camera position from the rejected rendering. Place every child visibly on broad, stable, secure ground. Put water, drops, debris, machinery, traffic or other hazards clearly in the background or beyond a physical separation. The hazard may remain visible as story context, but the child must not appear endangered by it in the image. Do not depict falling, drowning, crushing, injury, restraint, exposed bodies or ambiguous physical contact. Preserve Cast identity, established clothing, recurring objects and setting. One continuous scene, one physical instance of each character, no text or typography, no collage, no split panels. Do not copy the previous artwork's composition.
 
 Square composition.`;
-      result=await callImageModel(saferPrompt);
+      result=await callImageModelResilient(saferPrompt);
     }
     const r=result.response,raw=result.raw,data=result.data;
     if (!r.ok) {
