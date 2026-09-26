@@ -1,6 +1,6 @@
-# Moonbeam Stories V251.90
+# Moonbeam Stories V251.91
 
-## V251.90
+## V251.91
 - Developer-account story generation no longer receives recent/saved-story anti-repetition memory, allowing repeated runs of the same test premise without earlier saved books influencing Astra.
 - Applies to both Make Tonight's Story and Develop with Astra. The browser omits the memory and `/api/generate` independently enforces the developer bypass server-side.
 - Normal users are unchanged and retain the compact memory of up to 10 recent saved stories for repetition avoidance.
@@ -1201,3 +1201,11 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Send to Astra and Create this book now remain disabled until a valid initial production plan exists.
 - Initial planning failures show the real diagnostic and a Retry initial development control.
 - Removed silent no-op guards: impossible missing-plan states now surface visibly instead of making buttons appear broken.
+
+
+## V251.91 — durable pre-illustration checkpoint
+- Workshop production now MUST persist Astra's approved story architecture and complete art-direction plan before illustration 1 is requested.
+- Approved Workshop concept references are included in that checkpoint, so a first-image failure can resume the same designed book rather than rerunning Astra planning.
+- One-click generation now uses the same fail-closed rule: if its post-Astra checkpoint cannot be saved, Moonbeam stops before Sunburst rather than spending image calls without recoverable state.
+- Workshop production failures now leave a persistent visible developer diagnostic instead of being cleared by the final cleanup block.
+- No database migration is required.
