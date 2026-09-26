@@ -1,4 +1,75 @@
-# Moonbeam Stories V251.64
+# Moonbeam Stories V251.71
+
+## Shared generation/usage baseline
+
+- The average story creation time beneath the generation hourglass now always uses the same `MOONBEAM_USAGE_BASELINE_UTC` baseline as the developer **Usage & economics** page.
+- The current shared baseline remains **26 September 2026, 14:38:25 BST (13:38:25 UTC)**.
+- Future baseline resets therefore reset both the usage/economics measurement and the all-account hourglass generation-time average together; there is no longer a separate hard-coded hourglass reset date.
+- No story generation, Astra, illustration, KDP, credits, Cast or editing behaviour is changed.
+
+---
+
+# Moonbeam Stories V251.70
+
+## Reset hourglass average story-generation time
+
+- Resets the average story creation-time figure shown beneath the generation hourglass for all accounts at 26 September 2026, 15:10 BST (14:10 UTC).
+- Historical generation timings before that point are excluded from the average.
+- New successful story generations repopulate the average automatically using the existing calculation.
+- No story-writing, Astra, illustration, pricing, credit, reader, Cast or developer-edit behaviour is changed.
+
+---
+
+# Moonbeam Stories V251.69
+
+## V251.69 — usage economics account split + yesterday
+
+- Keeps every existing Usage & economics period column.
+- Renames the existing baseline column to **Overall since baseline** and adds **Developer since baseline** and **Other users since baseline**, all using the same V251.68 baseline timestamp.
+- Adds **Yesterday** as an additional period column.
+- Developer/other usage is split from the authenticated `user_id` already stored on usage events; no database migration is required.
+- Keeps actual organisation-level OpenAI Costs API figures for periods where OpenAI can supply them. It does not fabricate an end-user split of that organisation bill.
+- Adds Moonbeam's existing per-event tracked attributable cost and attributable cost/story rows in GBP, which can be separated by developer vs other users.
+- No story generation, image generation, reader, KDP, Cast, credit or editing behaviour is changed.
+
+---
+
+# Moonbeam Stories V251.68
+
+## V251.68 — Astra cost-comparison baseline reset
+
+- Resets the developer **Usage & economics** `Since baseline` default to **26 Sep 2026 14:38:25 BST (13:38:25 UTC)** so subsequent usage and OpenAI cost can be compared after the Astra rollout.
+- Historical **All-time**, **This month**, **Today**, and **Last 7 days** periods are unchanged.
+- No story-generation, illustration, reader, KDP, Cast, account, or developer-correction behaviour is changed.
+
+---
+
+# Moonbeam Stories V251.67
+
+## V251.67 — developer text editor context patch
+
+- Changes only the developer-only AI text-correction prompt.
+- The existing GPT-6 Astra corrector continues to receive the complete finished six-page story and now explicitly reads it as authoritative surrounding context before replacing the selected page.
+- Narrow correction instructions preserve the existing literary form and voice as closely as possible; explicit broad/page-rewrite instructions may freely rewrite the selected page so it flows correctly between the unchanged surrounding pages.
+- The developer instruction is authoritative. No other Moonbeam behaviour is changed.
+
+---
+
+# Moonbeam Stories V251.66
+
+## V251.66 — Astra creative autonomy + KDP-safe page ceiling
+
+- Removes accumulated creative/story-shape/prose prescriptions from concept, storyboard and final-writing stages. Astra chooses literary form, tone, structure, events and ending.
+- Retains only hard age-safety, Cast integrity, copyright/public-domain, six-spread, visual-continuity and machine-output constraints.
+- Never invents surnames. Public-domain reproduction/adaptation remains allowed; protected copyrighted expression is not.
+- Unsafe/age-inappropriate or impermissibly copyrighted Story Idea inputs are flagged and returned to the parent for a new input rather than silently reinterpreted.
+- Removes creative word-count targets and equal-page-length requirements. Each spread has only a 220-word absolute KDP ceiling.
+- Kindle text rendering now chooses among the existing 47/43/39/35px sizes by actual wrapped line height rather than word-count bands, and refuses a page that cannot fit at the minimum safe size.
+- Image generation, cover continuity, developer correction tools and API count are otherwise unchanged.
+
+---
+
+# Moonbeam Stories V251.65
 
 - Experimental writer-model upgrade from the clean V251.60 baseline.
 - The initial creative story concept and six-scene storyboard planning calls now use **GPT-6 Astra** instead of GPT-5.6 Luna.

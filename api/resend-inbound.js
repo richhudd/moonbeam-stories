@@ -216,7 +216,7 @@ async function developerInstagramDemoChild(req,res,body={}){
     if(!fallbackPool.length)fallbackPool=fallbackNames[gender]||['Sam'];
     const fallbackName=fallbackPool[crypto.randomInt(0,fallbackPool.length)];
     const namePrompt=`Invent one plausible first name for a completely fictional ${age}-year-old ${gender==='male'?'boy':'girl'} in the UK. Do not use any of these existing Cast names: ${existingNames.join(', ')||'none'}. Return ONLY the first name, with no explanation.`;
-    const nameResponse=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:namePrompt,max_output_tokens:300})});
+    const nameResponse=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:namePrompt,max_output_tokens:300})});
     const nameRaw=await nameResponse.text();let nameData={};try{nameData=JSON.parse(nameRaw)}catch{}
     let nameOutput='';
     if(nameResponse.ok){
@@ -226,7 +226,7 @@ async function developerInstagramDemoChild(req,res,body={}){
     const candidate=String(nameOutput||fallbackName).trim().split(/\s+/)[0].replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'’-]/g,'').slice(0,28)||fallbackName;
     const lowerExisting=new Set(existingNames.map(x=>String(x).toLowerCase()));
     const name=lowerExisting.has(candidate.toLowerCase())?fallbackName:candidate;
-    await logUsage({event_type:'instagram_demo_child_profile',estimated_cost_gbp:0,metadata:{model:'gpt-5.6-luna',user_id:verified.user.id,age,gender}});
+    await logUsage({event_type:'instagram_demo_child_profile',estimated_cost_gbp:0,metadata:{model:'gpt-6-astra',user_id:verified.user.id,age,gender}});
 
     const portraitPrompt=`Create a natural PHOTOREALISTIC head-and-shoulders portrait of ONE completely fictional ${age}-year-old ${gender==='male'?'boy':'girl'} named ${name}. Invent the child's appearance freely. The child must be entirely fictional and must not resemble or be based on any real child or public figure.
 

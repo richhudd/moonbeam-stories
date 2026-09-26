@@ -23,13 +23,15 @@
  const d=await r.json(); if(!r.ok){u.textContent=d.error||'Could not load usage';return}
 
  const money=n=>n==null?'—':'$'+Number(n).toFixed(4);
+ const pounds=n=>n==null?'—':'£'+Number(n).toFixed(4);
  const num=n=>n==null?'—':Number(n).toLocaleString('en-GB');
  const baseline=new Date(d.baselineUTC).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/London',timeZoneName:'short'});
  const allTimeStart=new Date(d.allTimeStartUTC).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/London',timeZoneName:'short'});
  const P=d.periods||{};
- const cols=[['allTime','All-time'],['sinceBaseline','Since baseline'],['thisMonth','This month'],['today','Today'],['last7Days','Last 7 days']];
+ const cols=[['allTime','All-time'],['sinceBaseline','Overall since baseline'],['developerSinceBaseline','Developer since baseline'],['otherUsersSinceBaseline','Other users since baseline'],['thisMonth','This month'],['today','Today'],['yesterday','Yesterday'],['last7Days','Last 7 days']];
  const row=(label,key,fmt=num)=>`<tr><th>${label}</th>${cols.map(([k])=>`<td>${fmt(P[k]?.[key])}</td>`).join('')}</tr>`;
  const costRow=(label,key)=>`<tr><th>${label}</th>${cols.map(([k])=>`<td>${money(P[k]?.[key])}</td>`).join('')}</tr>`;
+ const trackedCostRow=(label,key)=>`<tr><th>${label}</th>${cols.map(([k])=>`<td>${pounds(P[k]?.[key])}</td>`).join('')}</tr>`;
  const users=(d.users||[]);
  const userRows=users.length?users.map(x=>`
    <tr>
@@ -56,7 +58,7 @@
 
  u.innerHTML=`
   <section class="usage-section">
-   <div class="usage-section-head"><h2>Usage & economics</h2><p>Baseline: ${baseline}. Historical totals are preserved; the “Since baseline” column excludes earlier activity.</p></div>
+   <div class="usage-section-head"><h2>Usage & economics</h2><p>Baseline: ${baseline}. Historical totals are preserved. Overall, developer-account and other-user baseline columns all begin at exactly the same baseline.</p></div>
    <div class="usage-table-wrap"><table class="usage-economics">
     <thead><tr><th>Metric</th>${cols.map(([,label])=>`<th>${label}</th>`).join('')}</tr></thead>
     <tbody>
@@ -65,9 +67,11 @@
      ${row('Narrations','narrations')}
      ${costRow('OpenAI cost','openAICostUSD')}
      ${costRow('Cost / story','averageStoryCostUSD')}
+     ${trackedCostRow('Tracked attributable cost','trackedCostGBP')}
+     ${trackedCostRow('Tracked attributable cost / story','trackedCostPerStoryGBP')}
     </tbody>
    </table></div>
-   <p class="${d.openai?.available?'usage-note':'usage-warning'}">${costNote} <strong>All-time</strong> is fixed from ${allTimeStart}. <strong>This month</strong> uses the start of the current UTC month to now and is the column to compare with OpenAI Platform's monthly spend.</p>
+   <p class="${d.openai?.available?'usage-note':'usage-warning'}">${costNote} <strong>All-time</strong> is fixed from ${allTimeStart}. <strong>This month</strong> uses the start of the current UTC month to now and is the column to compare with OpenAI Platform's monthly spend. OpenAI's organisation Costs API does not attribute its actual bill to Moonbeam end-user IDs, so actual USD OpenAI cost is intentionally shown as — in the developer/other-user split columns. The £ tracked-attributable rows use Moonbeam's per-event cost logging and can be split by account without inventing an allocation.</p>
    <p class="usage-note">Registered accounts: <strong>${num(P.allTime?.registeredUsers)}</strong></p>
   </section>
 

@@ -1,5 +1,6 @@
 const {logUsage,estimateGBP,SUPABASE_URL,SECRET_KEY,adminHeaders}=require('../_usage');
 const {verifyMoonbeamUser,reserveStoryCredit,refundReservedStoryCredit,createGenerationRun}=require('../_credits');
+const DEFAULT_USAGE_BASELINE_UTC='2026-09-26T13:38:25Z';
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -43,6 +44,12 @@ module.exports = async function handler(req, res) {
         const params=new URLSearchParams();
         params.set('select','event_type,metadata,created_at');
         params.set('event_type','in.(generation_attempt,story_finalize)');
+        // V251.71: the hourglass average always uses the exact same baseline as
+        // Usage & economics. Resetting MOONBEAM_USAGE_BASELINE_UTC therefore resets
+        // both measurements together for every account after a generation change.
+        const usageBaselineUTC=String(process.env.MOONBEAM_USAGE_BASELINE_UTC||DEFAULT_USAGE_BASELINE_UTC).trim();
+        if(!Number.isFinite(Date.parse(usageBaselineUTC)))throw new Error('MOONBEAM_USAGE_BASELINE_UTC is invalid.');
+        params.set('created_at',`gte.${new Date(usageBaselineUTC).toISOString()}`);
         params.set('order','created_at.asc');
         params.set('limit','5000');
         const r=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?${params.toString()}`,{headers:adminHeaders()});
@@ -80,8 +87,8 @@ module.exports = async function handler(req, res) {
       const total=pages.length+2;if(!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=total||!instruction)return res.status(400).json({error:'A valid page and correction instruction are required.'});
       const target=pageIndex===0?String(story.opening||''):pageIndex===total-1?String(story.closing||''):String(pages[pageIndex-1]?.text||'');
       const full=[story.opening,...pages.map(p=>p?.text||''),story.closing].filter(Boolean).join('\n\n');
-      const prompt=`You are making one tightly controlled editorial correction to a finished children's story.\n\nFULL FINISHED STORY:\n${full}\n\nTARGET PAGE TEXT:\n${target}\n\nDEVELOPER'S AUTHORITATIVE CORRECTION INSTRUCTION:\n${instruction}\n\nReturn ONLY the replacement text for the target page. Preserve the existing story, voice, tense, approximate length, plot, characterisation and surrounding continuity. Change only what is necessary to resolve the stated inconsistency. Do not rewrite unrelated details, do not add commentary, and do not mention the correction process. The replacement must fit naturally between the preceding and following pages and must be physically/logically possible given the finished story.`;
-      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:prompt,max_output_tokens:700})});
+      const prompt=`You are editing one page of a finished children's story.\n\nFULL FINISHED STORY (authoritative context; only the target page may be changed):\n${full}\n\nTARGET PAGE TEXT:\n${target}\n\nDEVELOPER'S AUTHORITATIVE EDITING INSTRUCTION:\n${instruction}\n\nReturn ONLY the replacement text for the target page. Read the complete finished story before rewriting the target page so the replacement flows naturally from the preceding page and into the following page and remains coherent with facts established elsewhere in the book. The developer's instruction is authoritative about the scope and nature of the edit: if it requests a narrow correction, change only what is needed and preserve the existing literary form, voice, tense, rhythm, rhyme or lack of rhyme, dialogue style and formatting as closely as possible; if it explicitly requests a broader or complete rewrite, you may freely rewrite the target page to fulfil that request while leaving the surrounding pages as fixed context. Do not independently impose a preferred story structure, prose style or literary form. Do not add commentary or mention the editing process.`;
+      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:700})});
       const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok){const e=data?.error;throw new Error(typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`))}
       let text=typeof data.output_text==='string'?data.output_text:'';if(!text&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')text+=part.text;
       text=text.trim().replace(/^["']|["']$/g,'').trim();if(!text)throw new Error('The corrected page text came back empty.');
@@ -106,7 +113,7 @@ module.exports = async function handler(req, res) {
       const r = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'gpt-5.6-luna', input: kdpPrompt, max_output_tokens: 500 })
+        body: JSON.stringify({ model: 'gpt-6-astra', input: kdpPrompt, max_output_tokens: 500 })
       });
       const raw = await r.text();
       let data = {};
@@ -135,21 +142,33 @@ module.exports = async function handler(req, res) {
       const age = Number(child.age)||7;
       const language = String(child.language||'en-GB');
       const languageGuide = {'en-GB':'natural contemporary British English with British spelling','en-US':'natural contemporary American English','es-ES':'natural Spanish from Spain','es-419':'natural neutral Latin American Spanish','fr-FR':'natural French from France','de-DE':'natural German from Germany','it-IT':'natural Italian from Italy','pt-BR':'natural Brazilian Portuguese','pl-PL':'natural contemporary Polish'}[language]||'natural British English';
-      const finalAgeBand=age<=4?'3-4':age<=7?'5-7':age<=10?'8-10':'11-12';
-      const finalAgeGuide={
-        '3-4':{prose:'Write for a three- or four-year-old being read to aloud: very short clear sentences, familiar concrete words, simple syntax, action/dialogue/sound/repetition over explanation, and let the pictures carry visible detail. Keep the imaginative plot; simplify the telling, not the idea.',total:'about 360-460 words',spread:'55-75 words',closing:'50-70 words'},
-        '5-7':{prose:'Use lively accessible prose, clear cause-and-effect, natural dialogue and manageable suspense without over-explaining.',total:'about 560-680 words',spread:'90-115 words',closing:'80-105 words'},
-        '8-10':{prose:'Use richer vocabulary, varied sentences, stronger consequences and character agency; trust the reader to infer straightforward things.',total:'about 650-760 words',spread:'105-128 words',closing:'90-115 words'},
-        '11-12':{prose:'Write genuinely sophisticated fiction for an eleven- or twelve-year-old: richer natural vocabulary, varied sentence structure, subtler humour, stronger suspense, layered motivation, inference, mistakes and consequences. Do not talk down to the reader or explain every implication.',total:'about 720-850 words',spread:'118-145 words',closing:'100-125 words'}
-      }[finalAgeBand];
       const planText = JSON.stringify(plan,null,2);
-      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. The book has already been planned and its SIX finished page illustrations already exist. Write the polished story NOW, using BOTH the production plan and the actual finished illustrations as authoritative inputs.\n\nORIGINAL STORY IDEA:\n${String(child.storyIdea||'').trim()||'No parent story idea was supplied.'}\n\nPRODUCTION PLAN / STORYBOARD:\n${planText}\n\nRULES:\n- Write for age ${age} in ${languageGuide}. ${finalAgeGuide.prose}\n- The plan is authoritative about the central plot, causal sequence, principal character roles and intended ending.\n- The six attached images are presented in storyboard order, SCENE 1 through SCENE 6. They are authoritative about clearly visible reality: locations, positions, clothing, objects, colours, physical actions and other visible facts. Never write something that clearly contradicts an image.\n- Harmless visual details introduced by an image may be incorporated naturally, but accidental visual details must not hijack or change the central plot.\n- For a secondary non-Cast character, if the finished illustrations consistently establish an obvious visible identity detail differently from the plan (for example king rather than queen), reconcile the prose to the finished illustrations when doing so does not alter the central plot. Do not preserve a repeated text/image contradiction merely because the earlier plan used different wording.\n- The illustrations are selected moments, NOT six captions. Do not merely describe what the reader can already see. Use prose for action before/after the pictured moment, dialogue, thought, motivation, cause and effect, anticipation, humour, transitions and consequences.\n- Fulfil the promise of the premise. Make what happens interesting; do not replace adventure with procedures, maintenance, checklists or technical exposition unless the premise specifically requires them.
-- Preserve and amplify the storyboard's entertainment value. If it establishes comedy, let comic situations escalate and pay off. If it establishes suspense or child-safe peril, let the reader genuinely feel the uncertainty and urgency before the reassuring outcome; do not soften the decisive event into a mild description where nothing seems at stake. Do not insert extra adult reassurance, safety checks, maps, notes or professional intervention that neutralise uncertainty which the storyboard deliberately preserves.\n- EXPLOIT THE PREMISE rather than merely explaining or demonstrating it. The middle of the story must develop: later events should depend on, build on, transform or deepen earlier ones. Do not turn several spreads into interchangeable examples of the same activity.\n- Preserve the plan's organic story shape. Do not retrofit a compulsory obstacle-attempt-setback-solution structure. Development may come through discovery, comedy, escalation, changing circumstances, revelation, awe, relationship, suspense or any other form natural to this particular story.\n- Make each spread earn the next one. The reader should have a reason to continue, and the final third should exploit the central idea rather than simply winding down after the setup.\n- Ordinary objects and natural phenomena have no consciousness or agency unless the plan deliberately establishes fantasy. Avoid decorative personification and strained faux-poetic comparisons.\n- Do not manufacture a charming, profound or storybook sentence merely to decorate the prose. Prefer a clear, natural sentence that means something specific in the scene over a clever-sounding flourish.\n- Preserve exact supplied Cast names. Do not invent surnames, relatives, friends or recurring principal characters absent from the plan.\n- COPYRIGHT/PUBLIC DOMAIN/ORIGINALITY: Preserve an explicitly requested close adaptation when the production plan is based on ORIGINAL source material confidently in the public domain in the United Kingdom. Public-domain characters, plot, setting and events may be used, but do not import protected material added by later adaptations, translations, editions, illustrations, films, television versions, games or other derivative works. For protected works, never restore or introduce protected wording, characters, distinctive event sequences, scenes, dialogue, reveals or resolution copied or closely imitated from the named work. If public-domain status is uncertain, treat the source as protected.\n- Produce one continuous coherent story of ${finalAgeGuide.total} across exactly SIX balanced reading spreads.\n- Spread 1 about ${finalAgeGuide.spread}; spreads 2-5 about ${finalAgeGuide.spread} each; spread 6 about ${finalAgeGuide.closing}.\n- No headings inside the prose.\n\nReturn JSON ONLY in exactly this shape:\n{"title":"string","opening":"spread 1 prose","pages":[{"text":"spread 2 prose"},{"text":"spread 3 prose"},{"text":"spread 4 prose"},{"text":"spread 5 prose"}],"closing":"spread 6 prose"}`;
+      const finalPrompt = `You are the final author for a Moonbeam illustrated children's book. Its six finished illustrations already exist. Write the finished book now.
+
+ORIGINAL STORY IDEA:
+${String(child.storyIdea||'').trim()||'No parent story idea was supplied.'}
+
+PRODUCTION PLAN / STORYBOARD:
+${planText}
+
+HARD REQUIREMENTS ONLY
+- Write content and language appropriate for a child aged ${age}, in ${languageGuide}.
+- You have complete literary autonomy. Choose prose, verse, rhyme, dialogue, repetition, mixed forms or any other form you believe makes the strongest story. Do not impose or avoid any particular plot structure, tone, genre, lesson, problem, climax or ending pattern.
+- Preserve exact supplied Cast names and facts. Never invent surnames or sensitive personal facts.
+- The plan establishes the intended book and the six attached images are authoritative about clearly visible physical reality. Reconcile harmless visible details naturally without allowing accidental image details to replace the story.
+- The pictures are selected moments, not captions. Write the story rather than merely describing the pictures.
+- Public-domain reproduction/adaptation is allowed when the underlying material is confidently public domain in the United Kingdom; do not import protected additions from later adaptations. Do not reproduce or closely imitate protected copyrighted expression.
+- Return exactly SIX reading spreads: opening, four middle spreads and closing.
+- There is no target or minimum word count. Pages do not need to be similar lengths. HARD CEILING: no individual spread may exceed 220 words. Keep deliberate line breaks only when they serve your chosen literary form; Moonbeam's fixed-layout KDP renderer must be able to fit every spread legibly.
+- No headings inside the story text.
+
+Return JSON ONLY in exactly this shape:
+{"title":"string","opening":"spread 1","pages":[{"text":"spread 2"},{"text":"spread 3"},{"text":"spread 4"},{"text":"spread 5"}],"closing":"spread 6"}`;
       const content=[{type:'input_text',text:finalPrompt},...images.map((image_url,i)=>({type:'input_image',image_url,detail:'low'}))];
-      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-5.6-luna',input:[{role:'user',content}],max_output_tokens:5000,text:{format:{type:'json_schema',name:'moonbeam_final_story',strict:true,schema:{type:'object',additionalProperties:false,required:['title','opening','pages','closing'],properties:{title:{type:'string'},opening:{type:'string'},pages:{type:'array',minItems:4,maxItems:4,items:{type:'object',additionalProperties:false,required:['text'],properties:{text:{type:'string'}}}},closing:{type:'string'}}}}}})});
+      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:[{role:'user',content}],max_output_tokens:5000,text:{format:{type:'json_schema',name:'moonbeam_final_story',strict:true,schema:{type:'object',additionalProperties:false,required:['title','opening','pages','closing'],properties:{title:{type:'string'},opening:{type:'string'},pages:{type:'array',minItems:4,maxItems:4,items:{type:'object',additionalProperties:false,required:['text'],properties:{text:{type:'string'}}}},closing:{type:'string'}}}}}})});
       const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};
       const usage=data?.usage||{};
-      const finalDiagnostic=developerDiagnostic?{stage:'final story reconciliation',model:'gpt-5.6-luna',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:5000,raw_response_chars:raw.length}:null;
+      const finalDiagnostic=developerDiagnostic?{stage:'final story reconciliation',model:'gpt-6-astra',http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:5000,raw_response_chars:raw.length}:null;
       if(!r.ok){const e=data?.error;const payload={error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)};if(finalDiagnostic)payload.developer_diagnostic=finalDiagnostic;return res.status(502).json(payload)}
       let output=typeof data.output_text==='string'?data.output_text:'';if(!output&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')output+=part.text;
       if(finalDiagnostic)finalDiagnostic.output_chars=output.length;
@@ -168,6 +187,8 @@ module.exports = async function handler(req, res) {
           parsed.pages.forEach((pg,i)=>{if(typeof pg?.text!=='string'||!pg.text.trim())reconciliationIssues.push(`page ${i+2} text is empty`)})
         }
         if(typeof parsed.closing!=='string'||!parsed.closing.trim())reconciliationIssues.push('missing closing');
+        const spreadTexts=[parsed.opening,...(Array.isArray(parsed.pages)?parsed.pages.map(p=>p?.text||''):[]),parsed.closing];
+        spreadTexts.forEach((txt,i)=>{const wc=String(txt||'').trim().split(/\s+/).filter(Boolean).length;if(wc>220)reconciliationIssues.push(`spread ${i+1} exceeds the 220-word KDP ceiling (${wc} words)`) });
       }
       if(reconciliationIssues.length){
         const payload={error:'Moonbeam could not reconcile the finished illustrations into the final story.'};
@@ -184,7 +205,7 @@ module.exports = async function handler(req, res) {
       }
       const story={title:String(parsed.title).trim(),opening:String(parsed.opening).trim(),character_bible:String(plan.character_bible||'').trim(),pages:parsed.pages.map((pg,i)=>({text:String(pg?.text||'').trim(),illustration_prompt:String(scenes[i+1]?.visual_moment||scenes[i+1]?.event||'').trim()})),closing:String(parsed.closing).trim()};
       if(story.pages.some(pg=>!pg.text))return res.status(502).json({error:'The finished story contained an empty page.'});
-      await logUsage({event_type:'story_finalize',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-5.6-luna',user_id:moonbeamUser.id,generation_run_id:String(body.generationRunId||'')}});
+      await logUsage({event_type:'story_finalize',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:moonbeamUser.id,generation_run_id:String(body.generationRunId||'')}});
       return res.status(200).json({story,...(finalDiagnostic?{developer_diagnostic:finalDiagnostic}:{})});
     }
 
@@ -231,166 +252,63 @@ module.exports = async function handler(req, res) {
       'pt-BR': 'Escreva em português brasileiro natural, usando ortografia, vocabulário e expressões comuns no Brasil.',
       'pl-PL': 'Pisz naturalnym, współczesnym językiem polskim odpowiednim dla dziecka. Używaj idiomatycznej polszczyzny, naturalnych dialogów i poprawnej gramatyki.'
     }[language] || 'Write in natural British English.';
-    // Standard Moonbeam format: opening + 4 story pages + closing = 6 reading spreads.
-    // V251.42: prose density and narrative sophistication now scale across the full 3–12 range.
+    // V251.66 — Astra creative-autonomy experiment. Moonbeam supplies only hard product,
+    // safety, Cast, copyright and technical constraints; Astra chooses the literary form.
     const ageBand = age <= 4 ? '3-4' : age <= 7 ? '5-7' : age <= 10 ? '8-10' : '11-12';
-    const ageProfiles = {
-      '3-4': {
-        label:'early-years',
-        writing:'Write for a child of three or four being read to aloud. Use very short, clear sentences, familiar concrete vocabulary, simple syntax and unmistakable cause-and-effect. Prefer action, natural dialogue, sound, repetition and anticipation over explanation or descriptive detail. Let the illustration carry much of what can be seen. Avoid abstract phrasing, long lists, subordinate-clause-heavy sentences and sophisticated scenic description. Keep the plot imaginative and eventful rather than making it babyish.',
-        stakes:'gentle but eventful; brief safe peril, urgency, near-misses, getting temporarily stuck or separated, racing to avoid a harmless consequence, and other clearly recoverable tension are allowed; no crime, horror, death-focused plots, abduction, weapons, war, serious injury or frightening villains',
-        forbidden:'murder, true crime, kidnapping, abduction, realistic weapons, war, horror, gore, serious injury, death-focused plots, predatory threat, terrifying monsters, adult criminal behaviour',
-        totalWords:'about 360-460 words', perScreen:'55-75 words', closingWords:'50-70 words'
-      },
-      '5-7': {
-        label:'younger-reader',
-        writing:'Use lively, accessible prose, clear motivations and strong cause-and-effect. Dialogue, humour, vivid action and manageable suspense are welcome. Keep explanations economical and vocabulary natural for a young child without flattening the imagination.',
-        stakes:'exciting but child-safe; no murder/true crime, graphic violence, realistic weapon use, horror, abduction plots or adult criminal menace',
-        forbidden:'murder, true crime, kidnapping, abduction, graphic injury, realistic weapon use, horror, gore, adult criminal menace',
-        totalWords:'about 560-680 words', perScreen:'90-115 words', closingWords:'80-105 words'
-      },
-      '8-10': {
-        label:'middle-childhood',
-        writing:'Use richer vocabulary and more varied sentence structure, with stronger twists, consequences, humour and character agency where natural. Trust the reader to infer straightforward things without repeatedly explaining them.',
-        stakes:'meaningful child-safe suspense and jeopardy without graphic violence, horror, abduction plots or adult criminal menace',
-        forbidden:'graphic violence, gore, torture, sexual content, true-crime treatment, sadistic threat, adult horror',
-        totalWords:'about 650-760 words', perScreen:'105-128 words', closingWords:'90-115 words'
-      },
-      '11-12': {
-        label:'older-child',
-        writing:'Write genuinely sophisticated fiction for an eleven- or twelve-year-old, not enlarged younger-child prose. Use natural richer vocabulary, varied sentence structure, subtler humour, layered motivation, stronger suspense and greater uncertainty. Allow mistakes, difficult choices, inference, clever improvisation and consequences without having the narrator explain every implication. Do not talk down to the reader or make the prose artificially ornate.',
-        stakes:'stronger meaningful jeopardy and uncertainty suitable for an older child, while avoiding graphic violence, sexual content, true-crime treatment, torture, gore or adult horror',
-        forbidden:'graphic violence, gore, torture, sexual content, true-crime treatment, sadistic threat, adult horror',
-        totalWords:'about 720-850 words', perScreen:'118-145 words', closingWords:'100-125 words'
-      }
-    };
-    const ageProfile = ageProfiles[ageBand];
-    const lengthConfig = { pages: 4, totalScreens: 6, totalWords: ageProfile.totalWords };
+    const ageProfile = {
+      '3-4': {label:'early-years', forbidden:'sexual content, graphic violence, dangerous instructions, self-harm encouragement, horror, abduction, realistic weapons, war, serious injury or death-focused plots'},
+      '5-7': {label:'younger-reader', forbidden:'sexual content, graphic violence, dangerous instructions, self-harm encouragement, horror, abduction, realistic weapons or adult criminal menace'},
+      '8-10': {label:'middle-childhood', forbidden:'sexual content, graphic violence, gore, torture, dangerous instructions, self-harm encouragement, true-crime treatment or adult horror'},
+      '11-12': {label:'older-child', forbidden:'sexual content, graphic violence, gore, torture, dangerous instructions, self-harm encouragement, true-crime treatment or adult horror'}
+    }[ageBand];
     const pageCount = 4;
-    const lengthGuide = lengthConfig.totalWords;
-    const targetPerScreen = ageProfile.perScreen;
-
-    // V250.13: creative cleanup. A blank Story Idea no longer receives a genre/reality/magic/
-    // companion/object/twist blueprint. The storyteller chooses the premise freely within the
-    // age-safety, Cast and technical output constraints below.
     const storyIdea = String(child.storyIdea || '').trim();
-
-    const excitementProfiles = {
-      '3-4': 'For ages 3-4, strong story appeal often comes from immediately understandable experiences, movement, anticipation, repetition-with-variation, playful surprise, animals, physical comedy, striking scale contrasts and emotionally clear situations. Let mishaps and suspense feel exciting but quickly recoverable. Keep the central fascination concrete and visually graspable.',
-      '5-7': 'For ages 5-7, strong story appeal often comes from exploration, secrets, surprising discoveries, unusual animals or machines, speed and scale, mild peril, mischievous humour, being trusted with something important and an ordinary day becoming extraordinary.',
-      '8-10': 'For ages 8-10, strong story appeal often comes from exploration, mysteries, competence, secrets, unusual knowledge, competition, stronger twists, independence, comic consequences and situations whose solution is not immediately obvious.',
-      '11-12': 'For ages 11-12, strong story appeal often comes from mysteries, ingenious plans, exploration, rivalry, competence, secrets, bigger worlds, stronger suspense, reversals, independence, difficult choices and layered relationships or motivations. Trust the reader with ambiguity and inference rather than explaining everything.'
-    };
-    const excitementProfile = excitementProfiles[ageBand];
-
     const ideaGuide = storyIdea
-      ? `PARENT STORY IDEA — AUTHORITATIVE\n${storyIdea}\nUse this idea as the creative brief. Develop it imaginatively without adding a competing premise. Age-safety rules still override any unsuitable detail.`
-      : `NO PARENT STORY IDEA\nInvent the story freely. There is no prescribed genre, reality level, magic level, setting, companion, object, quest, twist, moral or ending type.`;
+      ? `PARENT STORY IDEA — AUTHORITATIVE\n${storyIdea}\nUse this as the story brief. If it is unsafe/inappropriate for the child's age or requests protected copyrighted expression, flag it instead of silently replacing or reinterpreting it.`
+      : `NO PARENT STORY IDEA\nCreate the story freely.`;
 
     const castLines = cast.length ? cast.map(m=>{const detail=m.kind==='child'?`child, age ${m.age}${m.gender?`, ${m.gender}`:''}`:m.kind==='adult'?`adult${m.gender?`, ${m.gender}`:''}`:`${m.animal_type||'pet'}${m.breed?`, breed: ${m.breed}`:''}`;return `- ${m.name} — ${detail} — ${String(m.role).toUpperCase()}`}).join('\n') : `- ${child.name} — child, age ${age}${child.gender?`, ${child.gender}`:''} — HERO`;
-    const roleRules = `Roles describe narrative prominence only, not authority, competence or who is allowed to act.
+    const roleRules = `Roles describe narrative prominence only.
 HERO means the story is principally about that character. With two heroes, both are genuine co-heroes.
-SUPPORTING CAST means secondary narrative focus, not passive behaviour. Every selected Cast member may act, decide, help, fail, succeed, solve problems or change the course of events as the story naturally requires. Let behaviour arise from character and events rather than from age or role labels.
 Do not force every selected character into every scene.
-CAST IS AUTHORITATIVE: when a structured Story Cast is supplied, the selected Heroes and Supporting Cast are the complete principal cast for the story. Do not invent additional named, recurring, familial, companion, friend, helper, rival or other plot-significant characters. Unnamed incidental/background people may appear when naturally required by the setting, but they must remain incidental and must not acquire a subplot, family unit, recurring identity or central story function. Never invent a spouse, partner, child, parent, sibling, relative or friend for a selected Cast member unless the parent explicitly establishes that person in the Story Idea. Where a human Cast member has an optional Male/Female marker, preserve it consistently. If a Cast member is marked male, do not invent decorative hair accessories for him unless they are clearly visible in the uploaded reference photo or explicitly required by the Parent Story Idea.`
-    const prompt = `You are the lead children's author for Moonbeam Stories. Write a completely original children's story centred on the selected hero or co-heroes. The story may be read at bedtime, but bedtime is the reading occasion, NOT the fictional setting.
+CAST IS AUTHORITATIVE: the selected Heroes and Supporting Cast are the complete principal cast. Preserve supplied names, ages, sex markers, relationships, pet species/breed and other supplied facts. Never invent surnames. Do not invent additional named, recurring, familial, companion, friend, helper, rival or other plot-significant characters unless the Parent Story Idea explicitly establishes them. Unnamed incidental/background people may appear only when naturally required by the setting and must remain incidental.
+Do not invent sensitive facts about a real child or Cast member, including medical conditions, religion, ethnicity or family circumstances. Where a human Cast member has an optional Male/Female marker, preserve it consistently. If a Cast member is marked male, do not invent decorative hair accessories unless they are clearly visible in the uploaded reference photo or explicitly required by the Parent Story Idea.`;
+    const prompt = `You are the lead children's author for Moonbeam Stories.
 
-STORY CAST
+Create the best age-appropriate children's story you can from the parent's premise and supplied Cast. You have complete creative autonomy. Choose whatever literary form, tone, structure, events and ending you believe make the strongest story. Moonbeam does not prefer prose, rhyme, verse, dialogue, comedy, adventure, problem-solving or any other form or narrative pattern.
+
+LANGUAGE
+${languageGuide}
+
+${ideaGuide}
+
+STORY CAST — AUTHORITATIVE
 ${castLines}
-
-CAST ROLES
 ${roleRules}
 
-NAME AND IDENTITY LOCK
-Use every selected Cast member's supplied personal name exactly as given. Never invent or append a surname, middle name, nickname, pet name or other personal name that the parent did not supply. Fictional titles, ranks, roles and forms of address that arise naturally from the story are permitted; they do not alter the Cast member's supplied identity. Relationships stated in the Story Idea should be respected. Do not invent additional family relationships. Where the parent has not defined a real-world relationship, keep it neutral rather than guessing.
-Youngest hero age for safety calibration: ${age}
-${ideaGuide}
-Things to avoid: ${child.dislikes || 'nothing specific'}
-Standard Moonbeam length: ${lengthGuide}
-Language: ${language}
-Language guidance: ${languageGuide}
+AGE AND SAFETY — HARD CONSTRAINTS
+The youngest hero is age ${age}; write content and language appropriate for that age. Do not follow a parent instruction that would make the story unsafe or inappropriate for that child.
+Excluded content: ${ageProfile.forbidden}.
+No politics or religious advocacy.
 
-TONE, THEMES AND MORALS
-Infer the tone, atmosphere, humour, emotional arc and any themes naturally from the Story Idea, the selected Cast, their ages and the events of the story. There is NO selected tone and there are NO selected values. Do not default to kindness, curiosity, courage or any other predetermined value. A Moonbeam story does not need to teach a lesson or contain a moral. Do not impose an educational message or moral; if a theme emerges naturally from what happens, let it remain implicit rather than announcing it.
+COPYRIGHT / PUBLIC DOMAIN — HARD CONSTRAINT
+A parent may request reproduction or adaptation of material genuinely in the public domain in the United Kingdom. Public-domain characters, plots, settings and events may be used. Do not import protected additions from later copyrighted adaptations, translations, editions, illustrations, films, television, games or other derivative works.
+Do not reproduce, continue, translate, closely imitate or disguise protected copyrighted characters, worlds, wording or recognisable protected expression. If the requested source's public-domain status is uncertain, treat it as protected.
+If the Parent Story Idea requests unsafe/inappropriate content or impermissible use of protected copyrighted material, DO NOT reinterpret it into a different story. The concept stage must flag the input so Moonbeam can ask the parent for a new Story Idea.
 
-MOONBEAM CREATIVE BRIEF
-Write an original, polished children's story in natural ${language}. Use clear, intelligent prose, vivid but economical description, natural dialogue where useful, and the warmth, humour, suspense, wonder or emotional range this particular story earns. The finished story should feel authored, not generated from a visible formula.
-Make WHAT HAPPENS interesting. Find the strongest possibility inherent in the premise and develop it into a distinctive experience worth retelling. One excellent idea developed properly is better than several unrelated novelties. Coherence is the floor, not the goal: realistic stories may contain extraordinary situations, discoveries, danger, mystery, humour and surprise; fantasy may go far beyond reality but must establish and obey its own rules.
-Do not assemble stories from compulsory children's-story ingredients. No magical companion, quest, mystery, hidden door, twist, lesson, special object or problem-solution structure is required. Do not equate child agency with fixing, rescuing, repairing or restoring something: characters may explore, participate, choose, discover, compete, wonder, get caught up in remarkable events or act in any way natural to the premise.
-Do not confuse factual, technical or procedural detail with storytelling. Use such detail only when it enriches the experience; compress it when it merely documents a process. Avoid static repetition: later developments should matter because of what came before, and important moments should give the reader a genuine reason to wonder what happens next.
-Do not manufacture imagination through arbitrary whimsy, cute props or decorative prose. When the parent has not established fantasy, ordinary reality applies. Ordinary objects, buildings, landscapes and natural phenomena are not conscious and do not remember, listen, wait, whisper, sing, watch or act independently. Do not introduce lost rainbows, inexplicable ribbons, arbitrary magical objects or equivalent storybook decoration merely for atmosphere. Fantasy and sentient objects are welcome when deliberately established by the premise.
-Do not use stock plot-moving devices by default. Maps, treasure maps, plans, charts, diagrams, mysterious notes, keys and similar route/clue props belong only when the parent's premise genuinely calls for them or the story specifically requires them. Prefer developments caused by what characters observe, hear, attempt, decide or physically encounter.
-Respect the child's intelligence. The story may be exciting, mysterious, funny, frightening-within-age-limits, emotionally affecting, fantastical or strange without becoming nonsensical, saccharine or artificially cute. Before settling on the story, apply the retelling test: “It was the one where…” should identify a distinctive event, experience, discovery, relationship or situation—not merely a setting or minor problem that got fixed.
+FORMAT — HARD PRODUCT CONSTRAINT
+The finished book has exactly SIX reading spreads: opening, four middle spreads and closing. Each spread must correspond to one coherent illustratable moment. The six moments must form one coherent book, but no particular plot structure is required.
+There is no target or minimum word count and pages do not need to be similar lengths. KDP publishability is a hard ceiling: no individual finished reading spread may exceed 220 words. Use line breaks only when they are part of the chosen literary form; the final renderer will also enforce physical page fit.
+Do not put headings inside the story text.
 
-CHILD APPEAL — SOFT DEVELOPMENTAL GUIDANCE
-${excitementProfile}
-Treat age as a clue to the kinds of EXPERIENCES that may feel compelling, never as a list of compulsory subjects. Do not turn this guidance into recurring props or formulas. A child's explicit Story Idea, stated interests, dislikes and Cast context are stronger evidence than broad age tendencies.
-Gender, where supplied, is only a weak optional signal and must never restrict the premise, activity, role, emotion, setting or genre. Do not assume that boys require vehicles, dinosaurs, sport or action, or that girls require princesses, animals, domestic stories or gentler stakes. If gender suggests a possibility, use it only when it also fits the individual Story Idea and character context.
-Think especially in terms of child-centred fantasies of EXPERIENCE: discovering something nobody else has noticed; being the first to go somewhere; entering a place children normally cannot; encountering something enormous or astonishing; learning a secret; being unexpectedly capable; taking part in a huge event; meeting someone or something extraordinary; or having an ordinary day become remarkable. These are examples of the level of appeal to seek, NOT a checklist and NOT required plot ingredients. Invent freely beyond them.
-
-SETTING AND STORY SHAPE
-${storyIdea ? 'Let the parent’s Story Idea establish whatever it establishes, and freely invent the unstated details needed to turn it into a complete, imaginative, age-appropriate story.' : 'Choose the premise, setting, story world and shape freely. No period, type of world, social context or everyday setting is the default.'}
-Do not default to nighttime, moonlight, stars, sleep, bedrooms, pyjamas or bedtime imagery merely because the story may be read at bedtime.
-The story should develop, change and reach a satisfying ending, but do not force a fixed sequence of attempts, setbacks, choices, revelations or other predetermined beats. Let its structure arise from its central idea.
-
-NARRATIVE PROGRESSION
-Avoid static repetition. Across the six displayed reading spreads, the situation should genuinely develop so that the illustrations have meaningfully different moments to depict. A single location is perfectly acceptable; do not force location changes or camera-driven events into the prose merely for illustration variety.
-
-COPYRIGHT, PUBLIC DOMAIN AND ORIGINALITY — HARD CONSTRAINT
-First distinguish protected works from works whose ORIGINAL source material is confidently in the public domain in the United Kingdom. You do not need a fixed list: use reliable knowledge of the original author/creator, publication history and copyright term. Only treat a work as public domain when you are confident of that status; if status is uncertain, treat it as protected.
-For a work confidently in the UK public domain, a close adaptation, retelling or reuse of the ORIGINAL public-domain characters, plot, setting and events is permitted when the parent requests it. However, do not copy or imitate protected material added by later adaptations, translations, editions, illustrations, films, television versions, games or other derivative works. Recreate from the public-domain source, not from a later copyrighted adaptation.
-For a protected work, never reproduce, retell, rewrite, continue, adapt, translate or closely imitate its protected characters, fictional world or recognisable expression, even if the parent explicitly asks you to keep it close while changing names, wording, species, setting or superficial details. Do not preserve a protected work's distinctive sequence of events, character roles, encounters, scenes, reveals, resolution, dialogue or other recognisable expression under substituted names.
-A request may refer to a protected work as shorthand for an ABSTRACT storytelling technique or high-level idea. In that case extract only the general mechanism (for example cumulative escalation, repeated encounters, competing interpretations, delayed revelation or a misunderstanding that later clicks into place) and then create independently original characters, setting, premise, event sequence, complications, climax and resolution. The resulting story must stand on its own and must not function as a disguised retelling.
-If the parent's Story Idea asks for a close copy or retelling of a protected work, do not follow the copying elements. Preserve only any lawful high-level theme or storytelling mechanism that can be separated from the source, and transform the request into a genuinely original Moonbeam story. Do not mention the refusal, source work or copyright issue in the story itself.
-
-AGE-SUITABILITY — HARD CONSTRAINT
-Child age: ${age}; band: ${ageBand} (${ageProfile.label}).
-${ageProfile.writing}
-Permitted stakes: ${ageProfile.stakes}.
-Explicitly excluded for this age band: ${ageProfile.forbidden}.
-Age suitability overrides any unsuitable parent detail or invented premise. When adapting an unsafe detail, preserve the central premise, narrative interest and coherent cause-and-effect where possible; do not assume that realism is less imaginative than fantasy.
-
-REALITY, AGENCY AND PROSE DISCIPLINE
-Unless the premise explicitly establishes otherwise, ordinary reality applies. Inanimate objects, buildings, landscapes and natural phenomena have no consciousness, memory, emotions, intentions, sensory awareness or independent agency. Do not make an ordinary sea sing, a lighthouse listen, a house remember, the moon watch, a forest whisper, a rainbow become lost, or any equivalent construction merely for atmosphere, charm or literary effect. If an object, place or natural phenomenon is genuinely enchanted, alive or sentient, establish that as part of the fantasy premise rather than slipping personification into otherwise ordinary description.
-Do not introduce arbitrary impossibilities merely to manufacture a children's-story problem. Ordinary objects and natural phenomena should obey plausible physical scale, material behaviour and cause-and-effect unless an established fantastical mechanism explains otherwise.
-Write naturally, not "storybookishly". Never sacrifice sense for charm, rhythm, imagery or a clever-sounding line. Metaphors, similes, exaggerations and comparisons must communicate something intelligible about the actual scene. Reject strained faux-poetic comparisons, decorative whimsy and cute-sounding nonsense. Prefer a clear concrete sentence whenever an ornamental one says less.
-Do not repeatedly reach for stock children's-fiction motifs, cosy props, snacks, treats or whimsical filler. Details earn their place by serving character, setting, action, humour, atmosphere, clue, consequence or payoff in THIS story.
-
-GENERAL SAFETY
-No politics, religion, sexual content, graphic violence, dangerous instructions or adult themes. Keep the experience emotionally safe for the youngest hero age ${age}. Do not impose a moral or predetermined value theme. Avoid clichés, generic filler and repetitive phrasing.
+VISUAL CONTINUITY — HARD PRODUCTION CONSTRAINT
+Once a recurring character, creature, vehicle, machine, location, clothing item or plot-important object is concretely established, keep its visual facts consistent unless the story itself changes them. Illustration plans must describe a single drawable moment and the physical facts needed to render it coherently; do not prescribe an art style.
+For supplied Cast reference photos, the exact photo is authoritative for identity. Preserve recognisable identity and proportions. Story-world clothing may follow the story. Never invent glasses, jewellery, hats, hair accessories or other distinctive identity features that are absent from the reference unless the Story Idea requires them.
 
 OUTPUT
-Return JSON only, with exactly this shape:
-{"title":"string","opening":"string","character_bible":"string","pages":[...exactly ${pageCount} page objects...],"closing":"string"}
+Return JSON only in the exact schema requested by the current production stage.`;
 
-The opening, exactly ${pageCount} story pages and closing must together form one continuous story of the requested length. The page count is mandatory: exactly 4 story pages, plus the opening and closing, for 6 displayed reading spreads in total.
-
-REAL-BOOK PAGE BALANCE — MANDATORY
-The app displays ONE text page beside ONE equally sized illustration. Every displayed text page must therefore contain approximately the same amount of prose.
-- Write the opening at approximately ${targetPerScreen}.
-- Write EACH of the ${pageCount} page.text fields at approximately ${targetPerScreen}.
-- Write the closing at approximately ${ageProfile.closingWords}.
-- Never make one page a few sentences while another is several long paragraphs.
-- Keep each displayed page self-contained enough to turn naturally, but do not add headings inside the prose.
-- Use exactly ${lengthConfig.totalScreens} displayed text pages in total.
-- Aim for ${lengthGuide} overall.
-
-Each pages array item MUST have exactly this shape: {"text":"string","illustration_prompt":"string"}.
-
-VISUAL STORYBOARD
-Illustrate what is happening, not merely where the protagonist is. For each spread identify the principal action, discovery, interaction, emotional moment or consequence and make that the visual subject. If several details are present, prioritise the event that changes or advances the story rather than an easier incidental object or portrait.
-Preserve established characters, clothing, important objects, vehicles, architecture, environments and spatial relationships unless the story itself changes them. The depicted action must be physically coherent: establish where characters and important objects are, and do not ask the illustration to show an action that could not occur from those positions.
-Let successive illustration prompts feel like successive moments in one continuous adventure rather than a collection of attractive portraits.
-VISUAL VARIETY — MANDATORY: Design the six illustrations as a sequence, not six versions of the same composition. Across the book deliberately vary shot scale, viewpoint, character size in frame, foreground/background relationship and visual focus. Do not use substantially the same framing on consecutive spreads. Some scenes should show the character prominently; others may make the character small within a large environment, focus closely on an important object or action, use a high or low viewpoint, or establish the wider setting. Preserve character and world continuity exactly while varying composition. Continuity means the same world and characters, not the same camera position.
-Visual variety must come from changing events, not from arbitrarily redesigning established facts or bending the story around camera requirements. Illustration prompts must be concrete about what is happening and how the scene is staged, but must not specify or vary art style.
-
-RECURRING CHARACTER BIBLE — MANDATORY
-Create one concise but precise character_bible for every recurring character. This is a fixed visual model sheet for the illustration system, not prose for the reader. For EACH recurring non-photo character specify: name/role; exact age when human (never an age range); sex where relevant; apparent height/build relative to the child heroes; skin tone or fur/material colour; eye colour; face shape/distinctive facial features; exact hair/fur colour, length, texture and hairstyle; established clothing colours/items; and any permanent distinctive feature/accessory. For recurring animals, robots or fantastical beings give equally concrete fixed species/body/material/colour/size/features. For every dog, use the supplied breed when present to infer realistic adult/juvenile body proportions and RELATIVE SIZE beside the human characters; a Chihuahua must remain tiny, a Jack Russell small, a Labrador medium-large, an Irish Wolfhound very large/tall, etc. If breed is absent, infer approximate size from any supplied reference photo when possible; otherwise use a plausible medium size. Never arbitrarily rescale a dog between scenes. Do not leave recurring companions as vague phrases such as "a girl of similar age". Once defined, these details are immutable for the entire book unless the STORY itself explicitly requires a change.
-
-For ANY selected Cast member with a supplied reference photo — child, adult or pet — underlying physical identity comes authoritatively from that exact photo. Preserve the recognisable face, apparent age, hair, approximate skin tone, body proportions and other identifying physical characteristics shown by the reference; for pets preserve the recognisable species/breed appearance and proportions. Any optional Male/Female marker for a photographed human Cast member is authoritative and must be preserved consistently. Story-world clothing, costume, role, status, abilities and story-required fictional characteristics or transformations are free to follow the story and must not be mistaken for conflicting real-world identity. The bible should identify photographed Cast members by their supplied name, kind and narrative role and record only story-world appearance or continuity details needed for the book while keeping the underlying person or pet recognisable. Do not invent decorative hair accessories for a photographed Cast member marked male unless they are clearly visible in the reference photo or explicitly required by the Parent Story Idea. A photographed adult is just as identity-locked as a photographed child, and a photographed pet is just as identity-locked as a photographed human. Every illustration_prompt must use the SAME supplied Cast names and preserve established continuity unless the STORY itself explicitly requires a change. Illustration prompts describe scene action/content only; they must not specify or vary the rendering/art style. Do not include text or lettering in illustrations.`;
-
-    const developerTextDiagnostics=[];
-    // V251.64: use the strongest writer only for the initial creative story-design stages.
+    // V251.66: Astra handles all story text stages; creative constraints are intentionally minimal.
     // Final reconciliation, KDP copy and all image-generation machinery remain unchanged.
     const CREATIVE_STORY_MODEL = 'gpt-6-astra';
     async function callStoryModel(input, maxOutputTokens = 5000, diagnosticStage = 'story text') {
@@ -501,32 +419,15 @@ For ANY selected Cast member with a supplied reference photo — child, adult or
     const conceptBase = String(prompt).split('\nOUTPUT\n')[0].replace('Write a completely original children’s story centred on the selected hero or co-heroes.','Invent the strongest central concept for a completely original children’s story centred on the selected hero or co-heroes. Do not plan scenes or write story prose yet.').replace('Write an original, polished children’s story in natural ${language}.','Invent an original story concept suitable for later writing in natural ${language}.');
     const conceptPrompt=`${conceptBase}
 
-CONCEPT-BUILDER OVERRIDE — THIS REPLACES ALL STORY/OUTPUT INSTRUCTIONS ABOVE FOR THIS CALL
-Your ONLY job is to find a story worth telling. Do not write the story. Do not divide it into scenes. Do not write dialogue, narration, page text or illustration prompts.
+CONCEPT STAGE — CREATIVE AUTONOMY
+Do not write scenes or finished story text yet. Decide what story you believe makes the best book from the Parent Story Idea, Cast and child's age. You have complete creative autonomy over form, tone, structure, events and ending. Do not apply a preferred story formula or anti-formula.
 
-A location, outing, journey, activity or attractive setting is NOT by itself a sufficient story concept. Find the particular event or experience that makes THIS story memorable. Silently ask: “What would this child be excited to tell somebody happened?” If the answer is merely that they visited somewhere, saw scenery, learned something, followed instructions, solved a routine puzzle, helped with a minor inconvenience or restored things to normal, find a stronger conception.
+First assess the Parent Story Idea only for the hard safety/copyright constraints above. If it is inappropriate/unsafe for age ${age}, or requests impermissible protected copyrighted material, return a concise input_warning asking the parent to enter a different Story Idea. Do not silently reinterpret an inappropriate request. Public-domain reproduction/adaptation is allowed under the copyright rule above.
 
-Use the CHILD APPEAL guidance above as creative fuel, never as a checklist. Choose the version of the premise with the strongest child-level fascination—excitement, comedy, mystery, awe, extraordinary access, suspense, surprise, achievement, relationship or another compelling experience appropriate to this child and idea. Safe does not mean uneventful: when natural to the genre, allow urgency, uncertainty, a near-miss, a predicament that gets substantially out of control, or another genuine “Oh no!” / “Quick!” moment before a reassuring outcome. Never use horror, cruelty, graphic injury or traumatic threat.
-
-For comedy, prefer consequences, reactions, timing, misunderstandings, reversals and physical predicaments over inserted jokes or merely cute behaviour. For adventure and mystery, make consequences matter enough that the reader genuinely wants to know what happens next. Do not mistake movement for excitement.
-
-Make the middle capable of DEVELOPMENT, not repetition. A concept must contain enough possibility for later events to change the situation materially rather than repeating the same mechanism, chase, clue, activity or demonstration at greater intensity. Attempts and discoveries may complicate, transform, reveal or redirect what is happening; do not force a fixed attempt/setback formula. Avoid turning an adventure into a sequence of controls, instructions, coloured signals, clues or procedures that characters simply follow.
-
-Adults may accompany, help, advise and protect, but do not automatically use them to inspect away uncertainty, provide the answer or hand the central event to professionals. Safety should shape consequences, not erase the adventure.
-
-Do not default to “something is lost/stuck/tangled/broken/blown away -> child notices -> child fixes/rescues/returns it -> everything is restored.” Use that shape only when the parent's idea calls for it or when it is incidental to a substantially more original story.
-
-HARD ANTI-PATTERNS: Do not introduce maps, treasure maps, plans, charts, diagrams, mysterious notes, keys or similar route/clue devices as default plot machinery. Do not add mysterious boxes, snacks, picnics, badges, ribbons, rainbows, arbitrary magical objects or decorative personification merely to make the story feel child-friendly, adventurous or whimsical. These things remain available when the parent's premise genuinely calls for them.
-
-Silently consider several FUNDAMENTALLY DIFFERENT concepts before choosing one. Different means a different kind of experience and story, not several versions of the same mishap.
-
-ACCOUNT-LEVEL VARIETY — RECENT SAVED STORIES:
-${recentMemory}
-Treat these as creative memory for the whole Moonbeam account. Compare candidate ideas by ABSTRACT STORY DNA, not surface nouns. Silently reduce each recent story and each candidate to: central extraordinary mechanism or rule; kind/direction of journey or transformation; source of tension; escalation pattern; decisive climax; and way normality/resolution is reached. Reject a candidate when several of those are substantially the same as a recent story even if the setting, object, character or scenery differs. For example, “rain carries a child upward into an impossible high world and later returns them to normal” and “fountain water forms stairs carrying a child high above the world before melting and returning them” are too similar in story DNA. A train replacing a boat, or a kite replacing a ribbon, likewise does not make the underlying story different. Seek a genuinely different mechanism, experience and resolution. This is an anti-repetition rule, not a ban: if the parent's new Story Idea explicitly requires something used before, honour the parent's request.
-
+If acceptable, return the concept you actually want to make. Do not invent surnames or contradict supplied Cast facts.
 
 Return JSON ONLY:
-{"central_premise":"1-2 plain factual sentences stating what actually happens","why_a_child_would_care":"one plain sentence identifying the compelling experience","direction":"one plain sentence defining the intended kind of story and reality level","ending_destination":"one plain factual sentence stating where the story ultimately arrives"}`;
+{"input_warning":"empty string if acceptable; otherwise concise parent-facing warning","central_premise":"plain factual description of the chosen concept","direction":"brief description of the chosen literary/story direction","ending_destination":"plain factual description of where the story ultimately arrives"}`;
     function parseConceptOutput(text){
       for(const candidate of candidateJsonStrings(text)){
         for(const version of [candidate,candidate.replace(/,\s*([}\]])/g,'$1')]){
@@ -534,10 +435,11 @@ Return JSON ONLY:
             const parsed=JSON.parse(version);
             const x=parsed&&parsed.concept&&typeof parsed.concept==='object'?parsed.concept:parsed;
             if(!x||typeof x!=='object')continue;
+            const warning=String(x.input_warning||'').trim();
             const central=String(x.central_premise||x.premise||'').trim();
-            const appeal=String(x.why_a_child_would_care||x.why_it_is_compelling||x.child_appeal||'').trim();
             const ending=String(x.ending_destination||x.ending||x.destination||'').trim();
-            if(central&&appeal&&ending)return {central_premise:central,why_a_child_would_care:appeal,direction:String(x.direction||'').trim(),ending_destination:ending};
+            if(warning)return {input_warning:warning,central_premise:'',direction:'',ending_destination:''};
+            if(central&&ending)return {input_warning:'',central_premise:central,direction:String(x.direction||'').trim(),ending_destination:ending};
           }catch{}
         }
       }
@@ -548,42 +450,32 @@ Return JSON ONLY:
       conceptOutput=await callStoryModel(conceptPrompt,4000,'concept generation');
       concept=parseConceptOutput(conceptOutput);
       if(!concept){
-        const repairPrompt=`The previous concept-builder response could not be parsed. Return ONLY one valid JSON object with exactly these keys: central_premise, why_a_child_would_care, direction, ending_destination. Do not add markdown, commentary or story prose. Preserve the strongest concept you intended; this is a formatting repair, not a request to reject the user's idea.\n\nORIGINAL CONCEPT-BUILDER INSTRUCTIONS:\n${conceptPrompt}\n\nPREVIOUS RESPONSE:\n${conceptOutput}`;
+        const repairPrompt=`The previous concept-builder response could not be parsed. Return ONLY one valid JSON object with exactly these keys: input_warning, central_premise, direction, ending_destination. Do not add markdown, commentary or story prose. Preserve the strongest concept you intended; this is a formatting repair, not a request to reject the user's idea.\n\nORIGINAL CONCEPT-BUILDER INSTRUCTIONS:\n${conceptPrompt}\n\nPREVIOUS RESPONSE:\n${conceptOutput}`;
         const repaired=await callStoryModel(repairPrompt,4000,'concept JSON repair');
         concept=parseConceptOutput(repaired);
       }
     }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
     if(!concept){await refundReservedCredit();return res.status(502).json({error:'Moonbeam had trouble preparing this story idea. Please try again.'})}
+    if(concept.input_warning){await refundReservedCredit();return res.status(400).json({error:concept.input_warning,storyIdeaRejected:true})}
 
     // Plan the complete illustrated book only AFTER the concept has been selected.
     const planningBase = String(prompt).split('\nOUTPUT\n')[0].replace('Write a completely original children’s story centred on the selected hero or co-heroes.','Design a completely original children’s story centred on the selected hero or co-heroes, but do not write its finished prose yet.').replace('Write an original, polished children’s story in natural ${language}.','Design an original, polished children’s story suitable for later writing in natural ${language}.');
-    const planningPrompt = `${planningBase}\n\nSTORYBOARD-FIRST OVERRIDE — THIS REPLACES THE OUTPUT INSTRUCTIONS ABOVE FOR THIS CALL
-Do NOT write the finished story yet. Do NOT write narrative prose, dialogue, page text, literary description or polished storytelling. This stage is a production plan only.
+    const planningPrompt = `${planningBase}
 
-CHOSEN STORY CONCEPT — AUTHORITATIVE:
-CENTRAL PREMISE: ${concept.central_premise}
-WHY IT IS COMPELLING: ${concept.why_a_child_would_care}
-DIRECTION: ${concept.direction}
-ENDING DESTINATION: ${concept.ending_destination}
-Do not replace this with an easier, safer or more conventional story. The storyboard's job is to realise this concept visually and coherently.
+STORYBOARD STAGE — CREATIVE AUTONOMY
+Do not write finished story prose, dialogue or page text. Create the six-scene production plan for the concept below.
 
-Design the complete story from beginning to end, including the actual ending, so every illustration can know the entire arc before any picture is made. Fulfil the premise and make the six visual scenes a varied, intelligible sequence rather than six isolated portraits. Do not impose a problem-solution structure, a sequence of obstacles, attempts, setbacks or repairs, or any other predetermined plot pattern. Do not create visual variety by changing established facts.
+CHOSEN CONCEPT — AUTHORITATIVE
+${JSON.stringify(concept,null,2)}
 
-PRESERVE AND DEVELOP THE CHOSEN CONCEPT:
-The concept stage has already decided what makes this story worth telling. Do not replace it with an easier, safer or more conventional story, and do not invent a new creative brief. Turn it into six causally connected, visually distinct moments whose situation genuinely changes as the story progresses.
-Do not spend the middle repeatedly demonstrating the premise, touring the setting, following a procedure or repeating the same mechanism. Later scenes should build on, complicate, transform, reveal or redirect earlier events. If scenes 2-5 could be freely swapped or removed without substantially changing the story, redesign the sequence.
-Preserve the concept's comedy, excitement, suspense, wonder and safe peril rather than sanding them down. Comedy should develop through consequences and reactions; adventure/mystery should retain genuine age-appropriate uncertainty where the concept established it. Because these six beats will become children's-book illustrations, preserve the story's danger but do not choose a picture that unnecessarily places a child at the edge of a drop, on a narrow ledge over water, in the path of falling debris, immediately beside dangerous machinery or in another visibly precarious position when the same event can be shown from secure ground. In those cases move the CAMERA or choose a secure moment within the same event: show the hazard at a distance, beyond a barrier, behind the child, or from a viewpoint that makes the child's safety unambiguous. This is visual staging only: do not remove jeopardy from the story, change the concept, add adult reassurance or professional intervention merely to make a scene easier to illustrate.
-Do not introduce maps, plans, notes, keys, ribbons, rainbows, arbitrary magical objects, decorative personification or other stock machinery unless the chosen concept specifically requires them. Do not turn the story into a sequence of instructions, controls, clues or puzzle steps.
-Do not impose a compulsory obstacle-attempt-setback-solution pattern. The sequence may develop through discovery, comedy, escalation, changing circumstances, revelation, awe, relationship, suspense or another shape natural to this story. Do not end just when the premise becomes interesting; the final third should exploit it fully and earn the ending.
+You have complete creative autonomy over how the concept becomes a story. Do not impose or avoid any particular narrative structure. Do not add creative requirements beyond the Parent Story Idea, age appropriateness, Cast facts, copyright/public-domain rule and six-spread product format.
 
-Each scene must be brief and factual. EVENT says what actually happens in that part of the story. VISUAL_MOMENT identifies the single finished picture to draw. CONTINUITY records only concrete visual facts that later scenes must preserve. No field may contain finished story prose. The six events do not each need a problem, action, consequence, reversal or resolution; let the shape arise from the particular story.
+Create exactly six coherent, drawable moments covering the complete book, including the ending. EVENT states what actually happens in that part of the story. VISUAL_MOMENT identifies the single picture to draw. CONTINUITY records only concrete visual facts later scenes must preserve. No field may contain polished story prose.
 
-The character_bible is a production model sheet, not prose. For every recurring non-photo character give stable age/species, build, face, hair/fur/material, colours, clothing and distinctive features. For photographed Cast, preserve the supplied identity and use the bible only for story-world clothing and continuity. Establish recurring vehicles, rooms, buildings, machines and plot-important objects clearly enough that all six images can preserve the same design.
+Do not invent surnames. Preserve supplied Cast facts exactly. For photographed Cast, canonical references remain authoritative for identity; the character_bible records only story-world continuity needed by the image system. For recurring non-Cast characters/creatures/objects, define only the stable visual facts needed to keep them recognisable across images. Do not prescribe art style.
 
 Return JSON ONLY in exactly this shape:
-{"title_working":"string","premise":"one plain sentence","story_arc":"2-4 plain factual sentences covering the complete plot and ending","ending":"one plain factual sentence","character_bible":"fixed visual continuity description","scenes":[{"scene":1,"event":"one plain sentence","visual_moment":"one concrete visual scene","continuity":"brief concrete visual facts"},{"scene":2,"event":"...","visual_moment":"...","continuity":"..."},{"scene":3,"event":"...","visual_moment":"...","continuity":"..."},{"scene":4,"event":"...","visual_moment":"...","continuity":"..."},{"scene":5,"event":"...","visual_moment":"...","continuity":"..."},{"scene":6,"event":"...","visual_moment":"...","continuity":"..."}]}
-
-Before returning the plan, check silently that the six pictures together would make sense to someone who knows the premise, that later illustrations do not need to invent facts the plan failed to establish, and that the visual climax has not accidentally been spent on an earlier incidental moment.`;
+{"premise":"string","story_arc":"string","ending":"string","character_bible":"string","scenes":[{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"}]}`;
     let planOutput='';let plan=null;
     try{
       planOutput=await callStoryModel(planningPrompt,4200,'storyboard planning');

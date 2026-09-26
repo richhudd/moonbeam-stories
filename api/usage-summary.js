@@ -3,7 +3,7 @@ const { SUPABASE_URL, SECRET_KEY, adminHeaders } = require('../_usage');
 const PUBLISHABLE_KEY =
   String(process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q').trim();
 
-const DEFAULT_BASELINE_UTC = '2026-09-14T21:25:06Z';
+const DEFAULT_BASELINE_UTC = '2026-09-26T13:38:25Z';
 const MOONBEAM_ALL_TIME_START_UTC = '2026-09-07T23:00:00Z'; // 8 Sep 2026 00:00 BST
 
 function unixSeconds(v) {
@@ -59,10 +59,16 @@ async function fetchOpenAICostUSD(startTime,endTime){
 }
 
 function count(list,type){return list.filter(x=>x.event_type===type).length}
-function usageFor(events,startMs){
-  const list=startMs==null?events:events.filter(x=>Date.parse(String(x.created_at||''))>=startMs);
-  return {stories:count(list,'story'),images:count(list,'image'),narrations:count(list,'narration')};
+function usageFor(events,startMs,endMs=null){
+  const list=events.filter(x=>{const t=Date.parse(String(x.created_at||''));return (startMs==null||t>=startMs)&&(endMs==null||t<endMs)});
+  const trackedCostGBP=list.reduce((sum,x)=>sum+(Number(x.estimated_cost_gbp)||0),0);
+  return {stories:count(list,'story'),images:count(list,'image'),narrations:count(list,'narration'),trackedCostGBP};
 }
+function eventsForUser(events,userId,mode='only'){
+  const id=String(userId||'');
+  return events.filter(e=>{const eventUser=String(e?.metadata?.user_id||'');return mode==='other'?!!eventUser&&eventUser!==id:eventUser===id});
+}
+
 
 module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
@@ -75,7 +81,7 @@ module.exports=async function handler(req,res){
   if(!baselineSeconds)return res.status(500).json({error:'MOONBEAM_USAGE_BASELINE_UTC is invalid.'});
   const now=Math.floor(Date.now()/1000);
 
-  const er=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?select=event_type,created_at,metadata&order=created_at.asc`,{headers:adminHeaders()});
+  const er=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?select=event_type,estimated_cost_gbp,created_at,metadata&order=created_at.asc`,{headers:adminHeaders()});
   if(!er.ok){console.error('usage events failed',er.status,await er.text());return res.status(500).json({error:'Could not read Moonbeam usage events.'})}
   const events=await er.json();
 
@@ -88,35 +94,44 @@ module.exports=async function handler(req,res){
   const allTimeStart=unixSeconds(MOONBEAM_ALL_TIME_START_UTC);
   const today=startOfUtcDaySeconds();
   const thisMonth=startOfUtcMonthSeconds();
+  const yesterday=today-86400;
   const sevenDays=today-(6*86400);
 
   const periods={
     allTime:usageFor(events,allTimeStart*1000),
     sinceBaseline:usageFor(events,baselineSeconds*1000),
+    developerSinceBaseline:usageFor(eventsForUser(events,verified.user.id),baselineSeconds*1000),
+    otherUsersSinceBaseline:usageFor(eventsForUser(events,verified.user.id,'other'),baselineSeconds*1000),
     thisMonth:usageFor(events,thisMonth*1000),
     today:usageFor(events,today*1000),
+    yesterday:usageFor(events,yesterday*1000,today*1000),
     last7Days:usageFor(events,sevenDays*1000)
   };
   periods.allTime.registeredUsers=registeredUsers;
 
-  const [allCost,monthCost,baseCost,todayCost,sevenCost]=await Promise.all([
+  const [allCost,monthCost,baseCost,todayCost,yesterdayCost,sevenCost]=await Promise.all([
     fetchOpenAICostUSD(allTimeStart,now),
     fetchOpenAICostUSD(thisMonth,now),
     fetchOpenAICostUSD(baselineSeconds,now),
     fetchOpenAICostUSD(today,now),
+    fetchOpenAICostUSD(yesterday,today),
     fetchOpenAICostUSD(sevenDays,now)
   ]);
   const costs={
     allTime:allCost,
     sinceBaseline:baseCost,
+    developerSinceBaseline:{available:false,totalUSD:null},
+    otherUsersSinceBaseline:{available:false,totalUSD:null},
     thisMonth:monthCost,
     today:todayCost,
+    yesterday:yesterdayCost,
     last7Days:sevenCost
   };
   for(const key of Object.keys(periods)){
     const c=costs[key];
     periods[key].openAICostUSD=c.totalUSD;
     periods[key].averageStoryCostUSD=c.available&&periods[key].stories>0?c.totalUSD/periods[key].stories:null;
+    periods[key].trackedCostPerStoryGBP=periods[key].stories>0?periods[key].trackedCostGBP/periods[key].stories:null;
   }
 
 
