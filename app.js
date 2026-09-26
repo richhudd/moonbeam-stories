@@ -1025,14 +1025,11 @@ async function coverInteriorThumbnails(book){
  return Promise.all(pages.map(storyboardThumbnail));
 }
 async function requestCoverArtDirection(book){
- let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
- if(String(book.productionPlan?.cover_direction||'').trim())return String(book.productionPlan.cover_direction).trim();
- const images=await coverInteriorThumbnails(book);
- const story={title:book.title||'',opening:book.opening||'',pages:(book.pages||[]).map(p=>({text:p?.text||''})),closing:book.closing||'',character_bible:book.character_bible||''};
- const plan=book.productionPlan||{character_bible:book.character_bible||'',scenes:(book.pages||[]).map(p=>({visual_moment:p?.illustration_prompt||''}))};
- const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({action:'cover-art-direction',story,plan,images,generationRunId:book.generationRunId||''})});
- const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};if(!r.ok||!String(data?.cover_direction||'').trim())throw new Error(data?.error||'Moonbeam could not prepare the cover composition.');return String(data.cover_direction).trim();
+ const direction=String(book?.productionPlan?.cover_direction||'').trim();
+ if(!direction)throw new Error('The production plan does not contain Astra cover art direction.');
+ return direction;
 }
+
 async function loadCoverIllustration(force=false){
  const book=currentBook;if(!book)return;
  if(book.isSaved){try{const path=book.savedAssets?.cover;if(!path)throw new Error('No cloud-saved cover');const image=await savedAssetUrl(path);if(currentBook===book){await revealCoverImage($('coverImage'),image);if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=true}return image}catch(e){console.error(e);if($('coverLoading'))$('coverLoading').hidden=true;if($('coverError'))$('coverError').hidden=false;return null}}

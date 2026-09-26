@@ -130,23 +130,6 @@ module.exports = async function handler(req, res) {
       if (!description) throw new Error('The KDP description came back empty.');
       return res.status(200).json({ description });
     }
-    if (String(body.action || '').trim() === 'cover-art-direction') {
-      const moonbeamUser = await verifyMoonbeamUser(req);
-      const story = body.story || {};
-      const plan = body.plan || {};
-      const images = Array.isArray(body.images) ? body.images.filter(x=>/^data:image\/(?:jpeg|png|webp);base64,/i.test(String(x||''))).slice(0,6) : [];
-      const fullStory=[story.opening,...(Array.isArray(story.pages)?story.pages.map(p=>p?.text||''):[]),story.closing].filter(Boolean).join('\n\n');
-      if(!String(story.title||'').trim()||!fullStory)return res.status(400).json({error:'The finished story is incomplete.'});
-      const coverPrompt=`You are returning to your ART DIRECTOR role after the finished Moonbeam story has been written. Design the FRONT COVER ARTWORK for this completed book. Sunburst is only the painter and must not be left to decide the composition or reinterpret the story.\n\nTITLE:\n${String(story.title||'').trim()}\n\nFINISHED STORY — AUTHORITATIVE:\n${fullStory}\n\nORIGINAL PRODUCTION DESIGN / VISUAL BIBLE:\n${String(plan.character_bible||story.character_bible||'').trim()}\n\nORIGINAL SIX-SCENE ART DIRECTION:\n${JSON.stringify(Array.isArray(plan.scenes)?plan.scenes:[],null,2)}\n\nThe six attached images, when present, are the ACTUAL FINISHED INTERIOR PAINTINGS. Inspect them before directing the cover. They are authoritative evidence for how recurring Cast, wardrobe, creatures, machines, vehicles, objects and locations were actually realised. Preserve those established designs and proportions.\n\nChoose the strongest cover composition for the finished story; it need not reproduce an interior scene. Then give the painter one precise, physically coherent single-frame composition. You own every consequential visual decision: positions, foreground/background relationships, relative size and distance, orientation, wardrobe, important object state, facial expressions, gaze targets, body/head direction, gestures, pointing and physical interactions. If the cover includes a recurring story-created object, creature, vehicle, machine, building or location, use its established design rather than redesigning it. Canonical Cast identity remains authoritative and must not be altered. Leave calm usable space in the central/upper area for Moonbeam's separate title typography. Do not ask for or include any words, letters, captions, logos, signs or readable text inside the painting. Do not prescribe rendering style; Moonbeam controls that separately.\n\nReturn JSON ONLY: {"cover_direction":"one complete, precise art-director brief to the painter"}`;
-      const content=[{type:'input_text',text:coverPrompt},...images.map(image_url=>({type:'input_image',image_url,detail:'low'}))];
-      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:[{role:'user',content}],max_output_tokens:1800,text:{format:{type:'json_schema',name:'moonbeam_cover_direction',strict:true,schema:{type:'object',additionalProperties:false,required:['cover_direction'],properties:{cover_direction:{type:'string'}}}}}})});
-      const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{};
-      if(!r.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`OpenAI returned HTTP ${r.status}`)})}
-      let output=typeof data.output_text==='string'?data.output_text:'';if(!output&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')output+=part.text;
-      const parsed=parseStoryOutput(output);const direction=String(parsed?.cover_direction||'').trim();if(!direction)return res.status(502).json({error:'Moonbeam could not prepare the cover art direction.'});
-      await logUsage({event_type:'cover_art_direction',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:moonbeamUser.id,generation_run_id:String(body.generationRunId||'')}});
-      return res.status(200).json({cover_direction:direction});
-    }
 
     if (String(body.action || '').trim() === 'finalize-storyboard-story') {
       const moonbeamUser = await verifyMoonbeamUser(req);
@@ -362,6 +345,30 @@ Return JSON only in the exact schema requested by the current production stage.`
       return String(output || '').trim();
     }
 
+
+    async function callStoryModelStructured(input, schemaName, schema, maxOutputTokens = 6000, diagnosticStage = 'structured story output') {
+      const r = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: CREATIVE_STORY_MODEL, input, max_output_tokens: maxOutputTokens, text:{format:{type:'json_schema',name:schemaName,strict:true,schema}} })
+      });
+      const raw = await r.text();
+      let data;
+      try { data = JSON.parse(raw); } catch { data = {}; }
+      if (developerDemo) {
+        const usage=data?.usage||{};
+        developerTextDiagnostics.push({stage:diagnosticStage,model:CREATIVE_STORY_MODEL,http_status:r.status,response_status:data?.status||null,incomplete_reason:data?.incomplete_details?.reason||null,input_tokens:Number(usage.input_tokens||0)||null,output_tokens:Number(usage.output_tokens||0)||null,total_tokens:Number(usage.total_tokens||0)||null,max_output_tokens:maxOutputTokens,raw_response_chars:raw.length});
+      }
+      if (!r.ok) {
+        const e=data&&data.error;
+        const message=typeof e==='string'?e:(e&&(e.message||e.code||e.type))||`OpenAI returned HTTP ${r.status}`;
+        const error=new Error(String(message)); error.openaiStatus=r.status; throw error;
+      }
+      let output=typeof data.output_text==='string'?data.output_text:'';
+      if(!output&&Array.isArray(data.output))for(const item of data.output){if(!Array.isArray(item.content))continue;for(const part of item.content){if(typeof part.text==='string')output+=part.text;else if(typeof part.output_text==='string')output+=part.output_text}}
+      try{return JSON.parse(String(output||'').trim())}catch{throw new Error('Astra returned an invalid structured storyboard response.')}
+    }
+
     function candidateJsonStrings(text) {
       const clean = String(text || '').trim()
         .replace(/^```(?:json)?\s*/i, '')
@@ -509,11 +516,11 @@ Do not invent surnames. Preserve supplied Cast facts exactly. Do not prescribe a
 
 Return JSON ONLY in exactly this shape:
 {"premise":"string","story_arc":"string","ending":"string","character_bible":"string","cover_direction":"one complete precise front-cover art-director brief","scenes":[{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"},{"event":"string","visual_moment":"string","continuity":"string"}]}`;
-    let planOutput='';let plan=null;
+    let plan=null;
+    const storyboardSchema={type:'object',additionalProperties:false,required:['premise','story_arc','ending','character_bible','cover_direction','scenes'],properties:{premise:{type:'string'},story_arc:{type:'string'},ending:{type:'string'},character_bible:{type:'string'},cover_direction:{type:'string'},scenes:{type:'array',minItems:6,maxItems:6,items:{type:'object',additionalProperties:false,required:['event','visual_moment','continuity'],properties:{event:{type:'string'},visual_moment:{type:'string'},continuity:{type:'string'}}}}}};
     try{
-      planOutput=await callStoryModel(planningPrompt,4200,'storyboard planning');
-      for(const candidate of candidateJsonStrings(planOutput)){try{const x=JSON.parse(candidate);if(x&&Array.isArray(x.scenes)&&x.scenes.length===6){plan=x;break}}catch{}}
-    }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}throw e}
+      plan=await callStoryModelStructured(planningPrompt,'moonbeam_visual_storyboard',storyboardSchema,6500,'storyboard planning');
+    }catch(e){if(e.openaiStatus){await refundReservedCredit();return res.status(502).json({error:e.message,openai_status:e.openaiStatus})}await refundReservedCredit();return res.status(502).json({error:e.message||'Moonbeam could not create the visual storyboard correctly. Please try again.'})}
     if(!plan){await refundReservedCredit();return res.status(502).json({error:'Moonbeam could not create the visual storyboard correctly. Please try again.'})}
     plan.concept=concept;plan.title_working=String(plan.title_working||'').trim();plan.premise=String(plan.premise||'').trim();plan.story_arc=String(plan.story_arc||'').trim();plan.ending=String(plan.ending||'').trim();plan.character_bible=String(plan.character_bible||'').trim();plan.cover_direction=String(plan.cover_direction||'').trim();
     plan.scenes=plan.scenes.slice(0,6).map((x,i)=>({scene:i+1,event:String(x?.event||'').trim(),visual_moment:String(x?.visual_moment||'').trim(),continuity:String(x?.continuity||'').trim()}));

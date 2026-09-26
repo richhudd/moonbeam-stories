@@ -1,5 +1,5 @@
-# Moonbeam Stories V251.75 — single-pass Astra art direction + parallel cover
-## V251.75
+# Moonbeam Stories V251.76 — single-pass Astra art direction + parallel cover
+## V251.76
 - Astra now art-directs the front cover in the same planning pass as the six interior commissions.
 - The cover commission is stored on the production plan; normal new-story generation no longer makes a second Astra cover-art-direction call.
 - After all six interiors are finished, their compact continuity references are reused by two concurrent jobs: Astra writes the final story while Sunburst paints the already-planned cover.
@@ -1067,3 +1067,9 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Fixes the developer masked-illustration editor so the complete image is bounded inside the correction dialog and the overlay canvas remains exactly aligned with it.
 - Prevents the public homepage flashing during signed-in session restoration on refresh.
 - Locks cover character rendering to the same naturalistic realism standard as interior illustrations.
+
+
+## V251.76
+- Astra's combined six-interior + cover art-direction stage now uses strict structured output with an exact six-scene schema and a larger output allowance.
+- Removed the obsolete second Astra cover-art-direction API path; cover generation uses the commission already created with the interior storyboard.
+- Developer-only Abort generation control is now compact.
