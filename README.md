@@ -1,3 +1,10 @@
+# V251.80
+
+- Normal reference-based Moonbeam story illustrations and covers now use GPT-Image-2.5 Sunburst at **medium** quality instead of low.
+- Developer image correction remains medium.
+- No-reference GPT-Image-2.5 Flare generation remains low.
+- No changes to Astra, art direction, prompts, resolution, continuity references, checkpoint/recovery behaviour, or story generation architecture.
+
 
 ## V251.79 — startup regression fix
 

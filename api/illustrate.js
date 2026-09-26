@@ -208,7 +208,7 @@ IMPORTANT
         if(developerCorrection){for(let i=0;i<canonicalBookRefs.length;i++){const match=String(canonicalBookRefs[i].image||'').match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(!match)continue;const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`canonical-identity-reference-${i+1}.${extension}`);}}
         if(developerCorrection&&correctionMask){const mm=correctionMask.match(/^data:image\/png;base64,(.+)$/i);if(mm){const maskBytes=Buffer.from(mm[1],'base64');form.append('mask',new Blob([maskBytes],{type:'image/png'}),'edit-mask.png');}}
         if(continuityImage){const match=continuityImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);if(match){const mime=match[1].toLowerCase(),bytes=Buffer.from(match[2],'base64'),extension=mime.includes('png')?'png':mime.includes('webp')?'webp':'jpg';form.append('image[]',new Blob([bytes],{type:mime}),`previous-page-continuity.${extension}`);}}
-        form.append('size', '1024x1024');form.append('quality', developerCorrection?'medium':'low');form.append('output_format', 'webp');
+        form.append('size', '1024x1024');form.append('quality', 'medium');form.append('output_format', 'webp');
         response=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:form});
       } else {
         response=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-image-2.5-flare',prompt:requestPrompt,size:'1024x1024',quality:'low',output_format:'webp'})});
