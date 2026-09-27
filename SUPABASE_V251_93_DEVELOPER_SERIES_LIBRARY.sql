@@ -36,3 +36,9 @@ alter table public.developer_story_volume_items enable row level security;
 revoke all on public.developer_story_series from anon, authenticated;
 revoke all on public.developer_story_volumes from anon, authenticated;
 revoke all on public.developer_story_volume_items from anon, authenticated;
+
+-- V251.93.1 hotfix: these tables are intentionally server-only, so the
+-- service role used by the developer-gated API needs explicit table privileges.
+grant select, insert, update, delete on table public.developer_story_series to service_role;
+grant select, insert, update, delete on table public.developer_story_volumes to service_role;
+grant select, insert, update, delete on table public.developer_story_volume_items to service_role;

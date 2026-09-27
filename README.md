@@ -1233,3 +1233,9 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Series data is stored in dedicated Supabase tables and is accessible only through the existing server-side developer-account gate; ordinary authenticated Moonbeam accounts have no direct table privileges.
 - Ordinary users retain the existing flat Saved Stories interface unchanged.
 - No story-generation, Astra, illustration, credit, reader or KDP-generation behaviour was changed in this stage.
+
+## V251.93.1 — Series Library permissions hotfix
+- Fixed the developer-only Series Library `permission denied for table developer_story_series` error.
+- The Series UI continues to use the existing developer-gated server endpoint; ordinary authenticated browser accounts are still denied direct access to the Series tables.
+- Added the missing explicit `service_role` privileges for series, volumes and volume-story links.
+- Production Supabase migration: `v251_93_series_service_role_permissions`.
