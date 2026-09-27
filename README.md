@@ -1,3 +1,15 @@
+# Moonbeam Stories V251.92
+
+## V251.92 — consistent book-wide KDP text fitting
+- Kindle export now measures every story text page before rasterising the EPUB.
+- The longest page determines one shared font size for the whole book; every story text page uses that same size.
+- Adds 33 px and 31 px safe fallback sizes below the previous 35 px floor so longer pages can fit without clipping.
+- The existing 220-word hard ceiling and fixed 1080×1350 KDP page architecture remain unchanged.
+- Reader typography, Astra story generation and illustrations are unchanged.
+- No SQL or API endpoint changes.
+
+---
+
 # Moonbeam Stories V251.91
 
 ## V251.91
