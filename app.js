@@ -35,6 +35,7 @@ const SUPABASE_URL='https://quwjfjojeibaxnnpykaf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q';
 const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let currentUser=null, cloudProfiles=[], activeProfileId=null, cloudStories=[];
+let developerSeriesLibrary={series:[],volumes:[],links:[]};
 let instagramDeveloperAccess=false;
 let instagramDeveloperAccessState='unknown';
 let instagramDeveloperAccessPromise=null;
@@ -1398,7 +1399,7 @@ async function checkInstagramDeveloperAccess({force=false}={}){
  const userId=currentUser?.id||null;
  if(!userId||!supabaseClient){resetInstagramDeveloperAccess(null);return false}
  if(instagramDeveloperAccessUserId!==userId)resetInstagramDeveloperAccess(currentUser);
- if(instagramDeveloperAccessState==='granted'){mountInstagramEndButton();mountInstagramDemoChildButton();return true}
+ if(instagramDeveloperAccessState==='granted'){mountInstagramEndButton();mountInstagramDemoChildButton();loadDeveloperSeriesLibrary();return true}
  if(instagramDeveloperAccessState==='denied'&&!force)return false;
  if(instagramDeveloperAccessPromise)return instagramDeveloperAccessPromise;
  instagramDeveloperAccessState='checking';
@@ -1409,7 +1410,7 @@ async function checkInstagramDeveloperAccess({force=false}={}){
    if(currentUser?.id!==userId)return false;
    instagramDeveloperAccess=r.ok;
    instagramDeveloperAccessState=r.ok?'granted':((r.status===401||r.status===403)?'denied':'unknown');
-   if(r.ok){mountInstagramEndButton();mountInstagramDemoChildButton();refreshCoverSubtitle()}
+   if(r.ok){mountInstagramEndButton();mountInstagramDemoChildButton();refreshCoverSubtitle();await loadDeveloperSeriesLibrary()}
    return r.ok;
   }catch(error){
    if(currentUser?.id===userId){instagramDeveloperAccess=false;instagramDeveloperAccessState='unknown'}
@@ -2196,22 +2197,54 @@ window.addEventListener('resize',()=>{if(currentBook&&currentBook.currentPage>=0
 function savedLibraryCopy(){return {replay:t().replay,original:t().original||'Original',...(t().savedLibrary||{})}}
 const savedLibraryCoverUrls=new Map();
 function savedStoryDate(x){try{return new Intl.DateTimeFormat(language||'en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(x.at))}catch{return ''}}
+function developerSeriesVolumeOptions(selected=''){return developerSeriesLibrary.series.flatMap(series=>developerSeriesLibrary.volumes.filter(v=>v.series_id===series.id).sort((a,b)=>(a.position||0)-(b.position||0)).map(v=>`<option value="${escapeHtml(v.id)}" ${v.id===selected?'selected':''}>${escapeHtml(series.name)} / ${escapeHtml(v.name)}</option>`)).join('')}
+async function developerSeriesRequest(body=null){
+ if(!instagramDeveloperAccess||!currentUser)return null;let token=await currentAccessToken();if(!token)token=await refreshAccessToken();if(!token)throw new Error('Your developer session has expired.');
+ const opts={headers:{Authorization:`Bearer ${token}`,'Cache-Control':'no-cache'}};let url='/api/resend-inbound?action=series-library';if(body){opts.method='POST';opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body)}
+ const r=await fetch(url,opts),raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data.error||`Series library request failed (${r.status})`);return data;
+}
+async function loadDeveloperSeriesLibrary(){
+ if(!instagramDeveloperAccess||!currentUser){developerSeriesLibrary={series:[],volumes:[],links:[]};return}
+ try{const data=await developerSeriesRequest();developerSeriesLibrary={series:Array.isArray(data.series)?data.series:[],volumes:Array.isArray(data.volumes)?data.volumes:[],links:Array.isArray(data.links)?data.links:[]};renderLibrary()}catch(e){console.error('Developer series library',e)}
+}
+async function developerSeriesAction(op,payload={}){try{await developerSeriesRequest({op,...payload});await Promise.all([loadCloudStories(),loadDeveloperSeriesLibrary()])}catch(e){alert(e.message||e)}}
+window.developerCreateSeries=async()=>{const name=prompt('Series name');if(name?.trim())await developerSeriesAction('create-series',{name:name.trim()})};
+window.developerRenameSeries=async(id,current)=>{const name=prompt('Rename series',current);if(name?.trim()&&name.trim()!==current)await developerSeriesAction('rename-series',{id,name:name.trim()})};
+window.developerEditSeriesInstructions=async(id,current)=>{const instructions=prompt('Series Instructions / Bible — Astra will use this as the permanent creative brief for this series.',current||'');if(instructions!==null)await developerSeriesAction('update-series-instructions',{id,instructions})};
+window.developerDeleteSeries=async(id,name)=>{if(confirm(`Delete the series folder “${name}”?\n\nThe saved stories themselves will NOT be deleted; they will return to Loose stories.`))await developerSeriesAction('delete-series',{id})};
+window.developerCreateVolume=async(seriesId)=>{const name=prompt('Volume name');if(name?.trim())await developerSeriesAction('create-volume',{seriesId,name:name.trim()})};
+window.developerRenameVolume=async(id,current)=>{const name=prompt('Rename volume',current);if(name?.trim()&&name.trim()!==current)await developerSeriesAction('rename-volume',{id,name:name.trim()})};
+window.developerDeleteVolume=async(id,name)=>{if(confirm(`Delete the volume folder “${name}”?\n\nThe saved stories themselves will NOT be deleted; they will return to Loose stories.`))await developerSeriesAction('delete-volume',{id})};
+window.developerMoveStory=async(storyId,volumeId)=>{if(volumeId)await developerSeriesAction('move-story',{storyId,volumeId});else await developerSeriesAction('unfile-story',{storyId})};
+window.developerRenameStory=async(id,current)=>{const name=prompt('Rename story',current);if(name?.trim()&&name.trim()!==current)await developerSeriesAction('rename-story',{storyId:id,name:name.trim()})};
+window.developerReorderStory=async(storyId,direction)=>developerSeriesAction('reorder-story',{storyId,direction});
+function developerStoryCard(x,link=null){
+ const idx=cloudStories.findIndex(s=>s.id===x.id),selected=link?.volume_id||'';
+ return `<article class="saved-story-card developer-series-story"><button class="saved-story-cover no-cover" type="button" onclick="openSaved(${idx})" aria-label="Open ${escapeHtml(x.title)}"><span class="saved-cover-fallback">☾</span><img data-saved-cover-id="${escapeHtml(x.id)}" alt="" hidden></button><div class="saved-story-main"><div class="saved-story-title">${escapeHtml(x.title)}</div><small>${escapeHtml(x.child?.name||'')}${x.at?` · ${escapeHtml(savedStoryDate(x))}`:''}</small><div class="saved-story-actions"><button class="primary saved-replay" type="button" onclick="openSaved(${idx})">▶ Open</button><button class="secondary" type="button" onclick='developerRenameStory(${JSON.stringify(x.id)},${JSON.stringify(x.title)})'>Rename</button>${link?`<button class="secondary series-order" title="Move up" onclick="developerReorderStory('${escapeHtml(x.id)}','up')">↑</button><button class="secondary series-order" title="Move down" onclick="developerReorderStory('${escapeHtml(x.id)}','down')">↓</button>`:''}<label class="series-move-label">Move to <select onchange="developerMoveStory('${escapeHtml(x.id)}',this.value)"><option value="">Loose stories</option>${developerSeriesVolumeOptions(selected)}</select></label></div></div></article>`
+}
+function renderDeveloperSeriesLibrary(items){
+ const linked=new Map(developerSeriesLibrary.links.map(l=>[l.story_id,l]));
+ const seriesHtml=developerSeriesLibrary.series.map(series=>{
+  const volumes=developerSeriesLibrary.volumes.filter(v=>v.series_id===series.id).sort((a,b)=>(a.position||0)-(b.position||0));
+  const volumeHtml=volumes.map(v=>{const links=developerSeriesLibrary.links.filter(l=>l.volume_id===v.id).sort((a,b)=>(a.position||0)-(b.position||0)),stories=links.map(link=>({link,story:items.find(x=>x.id===link.story_id)})).filter(x=>x.story);return `<details class="series-volume" open><summary><span>▣ ${escapeHtml(v.name)}</span><span class="series-count">${stories.length} ${stories.length===1?'story':'stories'}</span></summary><div class="series-folder-actions"><button class="secondary" onclick='developerRenameVolume(${JSON.stringify(v.id)},${JSON.stringify(v.name)})'>Rename volume</button><button class="secondary series-delete-folder" onclick='developerDeleteVolume(${JSON.stringify(v.id)},${JSON.stringify(v.name)})'>Delete folder</button></div><div class="saved-story-list">${stories.length?stories.map(({story,link})=>developerStoryCard(story,link)).join(''):'<p class="muted series-empty">No stories in this volume yet.</p>'}</div></details>`}).join('');
+  const bible=String(series.instructions||'').trim();return `<details class="series-folder" open><summary><span>📚 ${escapeHtml(series.name)}</span><span class="series-count">${volumes.length} ${volumes.length===1?'volume':'volumes'}</span></summary><div class="series-bible"><strong>Series Instructions / Bible</strong><p>${bible?escapeHtml(bible):'No series instructions yet.'}</p></div><div class="series-folder-actions"><button class="primary" onclick="developerCreateVolume('${escapeHtml(series.id)}')">＋ New volume</button><button class="secondary" onclick='developerRenameSeries(${JSON.stringify(series.id)},${JSON.stringify(series.name)})'>Rename series</button><button class="secondary" onclick='developerEditSeriesInstructions(${JSON.stringify(series.id)},${JSON.stringify(series.instructions||'')})'>Edit instructions</button><button class="secondary series-delete-folder" onclick='developerDeleteSeries(${JSON.stringify(series.id)},${JSON.stringify(series.name)})'>Delete folder</button></div>${volumeHtml||'<p class="muted series-empty">Create the first volume for this series.</p>'}</details>`
+ }).join('');
+ const loose=items.filter(x=>!linked.has(x.id));
+ return `<section class="developer-series-library"><div class="developer-series-toolbar"><div><h3>Series Library</h3><p>Developer only · Series → Volume → Story</p></div><button class="primary" type="button" onclick="developerCreateSeries()">＋ New series</button></div>${seriesHtml||'<p class="muted series-empty">No series yet. Create one to start organising books.</p>'}<details class="series-loose" open><summary>Loose stories <span class="series-count">${loose.length}</span></summary><div class="saved-story-list">${loose.length?loose.map(x=>developerStoryCard(x)).join(''):'<p class="muted series-empty">All saved stories are filed into volumes.</p>'}</div></details></section>`;
+}
 async function loadSavedLibraryCovers(){
  const items=currentUser?cloudStories:saved;
  await Promise.all(items.map(async(x,i)=>{
-  const img=document.querySelector(`[data-saved-cover="${i}"]`);if(!img)return;
+  const img=document.querySelector(`[data-saved-cover-id="${CSS.escape(String(x.id||''))}"]`)||document.querySelector(`[data-saved-cover="${i}"]`);if(!img)return;
   if(!currentUser||!x?.savedAssets?.cover){img.closest('.saved-story-cover')?.classList.add('no-cover');return}
-  try{
-   const key=x.savedAssets.cover;let url=savedLibraryCoverUrls.get(key);
-   if(!url){const data=await savedArtBlob(key);url=URL.createObjectURL(data);savedLibraryCoverUrls.set(key,url)}
-   img.src=url;img.hidden=false;img.closest('.saved-story-cover')?.classList.remove('no-cover');
-  }catch(e){console.warn('Saved cover unavailable',e);img.closest('.saved-story-cover')?.classList.add('no-cover')}
+  try{const key=x.savedAssets.cover;let url=savedLibraryCoverUrls.get(key);if(!url){const data=await savedArtBlob(key);url=URL.createObjectURL(data);savedLibraryCoverUrls.set(key,url)}img.src=url;img.hidden=false;img.closest('.saved-story-cover')?.classList.remove('no-cover')}catch(e){console.warn('Saved cover unavailable',e);img.closest('.saved-story-cover')?.classList.add('no-cover')}
  }))
 }
 function renderLibrary(){
  const l=$('library');if(!l)return;const items=currentUser?cloudStories:saved,c=savedLibraryCopy();
- if(!items.length&&!partialGenerations.length){l.innerHTML=`<p class="muted saved-library-empty">${escapeHtml(t().noSaved)}</p>`;return}
- l.innerHTML=items.length?`<div class="saved-story-list">${items.map((x,i)=>`<article class="saved-story-card"><button class="saved-story-cover no-cover" type="button" onclick="openSaved(${i})" aria-label="${escapeHtml(c.replay)}: ${escapeHtml(x.title)}"><span class="saved-cover-fallback">☾</span><img data-saved-cover="${i}" alt="" hidden></button><div class="saved-story-main"><div class="saved-story-title">${escapeHtml(x.title)}</div><small>${escapeHtml(x.child?.name||'')}${x.at?` · ${escapeHtml(savedStoryDate(x))}`:''}${x.language?` · ${escapeHtml(languageNames[x.language]||x.language)}`:''}</small><div class="saved-story-actions"><button class="primary saved-replay" type="button" onclick="openSaved(${i})">▶ ${escapeHtml(c.replay)}</button>${currentUser?`<button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">🗑 ${escapeHtml(t().delete)}</button>`:''}</div></div></article>`).join('')}</div>`:'';
+ if(instagramDeveloperAccess&&currentUser){l.innerHTML=renderDeveloperSeriesLibrary(items)}
+ else if(!items.length&&!partialGenerations.length){l.innerHTML=`<p class="muted saved-library-empty">${escapeHtml(t().noSaved)}</p>`;return}
+ else l.innerHTML=items.length?`<div class="saved-story-list">${items.map((x,i)=>`<article class="saved-story-card"><button class="saved-story-cover no-cover" type="button" onclick="openSaved(${i})" aria-label="${escapeHtml(c.replay)}: ${escapeHtml(x.title)}"><span class="saved-cover-fallback">☾</span><img data-saved-cover="${i}" alt="" hidden></button><div class="saved-story-main"><div class="saved-story-title">${escapeHtml(x.title)}</div><small>${escapeHtml(x.child?.name||'')}${x.at?` · ${escapeHtml(savedStoryDate(x))}`:''}${x.language?` · ${escapeHtml(languageNames[x.language]||x.language)}`:''}</small><div class="saved-story-actions"><button class="primary saved-replay" type="button" onclick="openSaved(${i})">▶ ${escapeHtml(c.replay)}</button>${currentUser?`<button class="library-delete" type="button" onclick="deleteSavedStory('${escapeHtml(x.id)}')">🗑 ${escapeHtml(t().delete)}</button>`:''}</div></div></article>`).join('')}</div>`:'';
  if(currentUser&&partialGenerations.length){const partialHtml=`<section class="partial-library-section"><h3>Partially generated stories</h3><div class="saved-story-list">${partialGenerations.map(x=>`<article class="saved-story-card partial-story-card"><button class="saved-story-cover no-cover" type="button" onclick="openPartialGeneration('${escapeHtml(x.id)}')"><span class="saved-cover-fallback">◐</span></button><div class="saved-story-main"><div class="saved-story-title">${escapeHtml(partialStoryLabel(x))}</div><small>${escapeHtml(partialProgress(x))}</small><div class="saved-story-actions"><button class="primary saved-replay" type="button" onclick="openPartialGeneration('${escapeHtml(x.id)}')">Continue</button></div></div></article>`).join('')}</div></section>`;l.insertAdjacentHTML('beforeend',partialHtml)}
  loadSavedLibraryCovers();
 }

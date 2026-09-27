@@ -1221,3 +1221,15 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - One-click generation now uses the same fail-closed rule: if its post-Astra checkpoint cannot be saved, Moonbeam stops before Sunburst rather than spending image calls without recoverable state.
 - Workshop production failures now leave a persistent visible developer diagnostic instead of being cleared by the final cleanup block.
 - No database migration is required.
+
+# Moonbeam Stories V251.93
+
+## V251.93 — developer Series Library, stage 1
+- Developer account only: Saved Stories can now be organised as Series → Volume → Story.
+- Create, rename and delete Series and Volume folders without deleting the saved stories inside them.
+- Move saved stories between volumes or back to Loose stories; reorder stories within a volume.
+- Rename individual saved stories from the library.
+- Each Series now has editable persistent Series Instructions / Bible text, ready for Astra series-generation work in a later stage.
+- Series data is stored in dedicated Supabase tables and is accessible only through the existing server-side developer-account gate; ordinary authenticated Moonbeam accounts have no direct table privileges.
+- Ordinary users retain the existing flat Saved Stories interface unchanged.
+- No story-generation, Astra, illustration, credit, reader or KDP-generation behaviour was changed in this stage.

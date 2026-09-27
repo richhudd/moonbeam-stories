@@ -177,6 +177,50 @@ async function developerInstagramAccess(req,res){
   return res.status(200).json({ok:true});
 }
 
+
+async function seriesRest(path,options={}){
+  const r=await fetch(`${ADMIN_SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});
+  const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{data=raw}
+  if(!r.ok)throw new Error(data?.message||data?.error||raw||`Series database request failed (${r.status}).`);return data;
+}
+function cleanSeriesText(value,max=12000){return String(value??'').trim().slice(0,max)}
+async function developerSeriesLibrary(req,res,body=null){
+  const verified=await verifyDeveloper(req);if(verified.error)return res.status(verified.error[0]).json({error:verified.error[1]});
+  const uid=verified.user.id,enc=encodeURIComponent;
+  try{
+    if(req.method==='GET'){
+      const [series,volumes,links]=await Promise.all([
+        seriesRest(`developer_story_series?parent_id=eq.${enc(uid)}&select=id,name,instructions,created_at,updated_at&order=created_at.asc`),
+        seriesRest(`developer_story_volumes?parent_id=eq.${enc(uid)}&select=id,series_id,name,position,created_at&order=position.asc,created_at.asc`),
+        seriesRest(`developer_story_volume_items?parent_id=eq.${enc(uid)}&select=volume_id,story_id,position&order=position.asc,created_at.asc`)
+      ]);return res.status(200).json({ok:true,series:series||[],volumes:volumes||[],links:links||[]});
+    }
+    const op=String(body?.op||'');
+    if(op==='create-series'){const name=cleanSeriesText(body.name,160);if(!name)throw new Error('Series name is required.');await seriesRest('developer_story_series',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({parent_id:uid,name})});}
+    else if(op==='rename-series'){const name=cleanSeriesText(body.name,160);if(!name)throw new Error('Series name is required.');await seriesRest(`developer_story_series?id=eq.${enc(body.id)}&parent_id=eq.${enc(uid)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({name,updated_at:new Date().toISOString()})});}
+    else if(op==='update-series-instructions'){await seriesRest(`developer_story_series?id=eq.${enc(body.id)}&parent_id=eq.${enc(uid)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({instructions:cleanSeriesText(body.instructions,12000),updated_at:new Date().toISOString()})});}
+    else if(op==='delete-series'){await seriesRest(`developer_story_series?id=eq.${enc(body.id)}&parent_id=eq.${enc(uid)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});}
+    else if(op==='create-volume'){
+      const name=cleanSeriesText(body.name,160);if(!name)throw new Error('Volume name is required.');const owned=await seriesRest(`developer_story_series?id=eq.${enc(body.seriesId)}&parent_id=eq.${enc(uid)}&select=id`);if(!owned?.length)throw new Error('Series not found.');
+      const existing=await seriesRest(`developer_story_volumes?series_id=eq.${enc(body.seriesId)}&parent_id=eq.${enc(uid)}&select=position&order=position.desc&limit=1`),position=(Number(existing?.[0]?.position)||0)+100;await seriesRest('developer_story_volumes',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({parent_id:uid,series_id:body.seriesId,name,position})});
+    }
+    else if(op==='rename-volume'){const name=cleanSeriesText(body.name,160);if(!name)throw new Error('Volume name is required.');await seriesRest(`developer_story_volumes?id=eq.${enc(body.id)}&parent_id=eq.${enc(uid)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({name,updated_at:new Date().toISOString()})});}
+    else if(op==='delete-volume'){await seriesRest(`developer_story_volumes?id=eq.${enc(body.id)}&parent_id=eq.${enc(uid)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});}
+    else if(op==='move-story'){
+      const story=await seriesRest(`saved_stories?id=eq.${enc(body.storyId)}&parent_id=eq.${enc(uid)}&select=id`),volume=await seriesRest(`developer_story_volumes?id=eq.${enc(body.volumeId)}&parent_id=eq.${enc(uid)}&select=id`);if(!story?.length||!volume?.length)throw new Error('Story or volume not found.');
+      const existing=await seriesRest(`developer_story_volume_items?volume_id=eq.${enc(body.volumeId)}&parent_id=eq.${enc(uid)}&select=position&order=position.desc&limit=1`),position=(Number(existing?.[0]?.position)||0)+100;
+      await seriesRest('developer_story_volume_items',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({parent_id:uid,volume_id:body.volumeId,story_id:body.storyId,position})});
+    }
+    else if(op==='unfile-story'){await seriesRest(`developer_story_volume_items?story_id=eq.${enc(body.storyId)}&parent_id=eq.${enc(uid)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});}
+    else if(op==='rename-story'){const name=cleanSeriesText(body.name,240);if(!name)throw new Error('Story name is required.');await seriesRest(`saved_stories?id=eq.${enc(body.storyId)}&parent_id=eq.${enc(uid)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({title:name})});}
+    else if(op==='reorder-story'){
+      const rows=await seriesRest(`developer_story_volume_items?story_id=eq.${enc(body.storyId)}&parent_id=eq.${enc(uid)}&select=story_id,volume_id,position`);const row=rows?.[0];if(row){const all=await seriesRest(`developer_story_volume_items?volume_id=eq.${enc(row.volume_id)}&parent_id=eq.${enc(uid)}&select=story_id,position&order=position.asc,created_at.asc`),i=all.findIndex(x=>x.story_id===row.story_id),j=body.direction==='up'?i-1:i+1;if(i>=0&&j>=0&&j<all.length){const a=all[i],b=all[j];await seriesRest(`developer_story_volume_items?story_id=eq.${enc(a.story_id)}&parent_id=eq.${enc(uid)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({position:-1})});await seriesRest(`developer_story_volume_items?story_id=eq.${enc(b.story_id)}&parent_id=eq.${enc(uid)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({position:a.position})});await seriesRest(`developer_story_volume_items?story_id=eq.${enc(a.story_id)}&parent_id=eq.${enc(uid)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({position:b.position})});}}
+    }
+    else throw new Error('Unknown series-library operation.');
+    return res.status(200).json({ok:true});
+  }catch(error){console.error('developer series library',error);return res.status(400).json({error:error?.message||'Series library update failed.'});}
+}
+
 function extractJsonObject(text){
   const clean=String(text||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
   try{return JSON.parse(clean)}catch{}
@@ -547,7 +591,9 @@ module.exports = async function handler(req, res) {
   if(req.method==='GET' && (action==='list'||action==='message'))return developerGet(req,res,action);
   if(req.method==='GET' && action==='instagram-test')return developerInstagramTest(req,res);
   if(req.method==='GET' && action==='instagram-access')return developerInstagramAccess(req,res);
+  if(req.method==='GET' && action==='series-library')return developerSeriesLibrary(req,res);
   if(req.method==='POST' && action==='instagram-publish-test')return developerInstagramPublishTest(req,res);
+  if(req.method==='POST' && action==='series-library'){let body=req.body;if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}return developerSeriesLibrary(req,res,body);}
   if(req.method==='POST' && action==='instagram-demo-child'){
     let body=req.body;if(!body||typeof body!=='object'){try{body=JSON.parse(await rawBody(req)||'{}')}catch{return res.status(400).json({error:'Invalid JSON.'})}}
     return developerInstagramDemoChild(req,res,body);
