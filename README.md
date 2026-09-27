@@ -1,3 +1,16 @@
+# Moonbeam Stories V251.99
+
+## Usage & economics completed-story repair
+
+- Repairs the developer Usage & economics page after the generation pipeline moved from the historical `story` completion event to `story_finalize`.
+- Story totals, per-user Stories generated, Last generation, OpenAI cost/story and tracked attributable cost/story now recognise current successful finalisations while preserving historical `story` events.
+- Modern completion events are deduplicated by `generation_run_id`, so a resumed/retried finalisation does not count the same story twice.
+- Image, narration and raw attributable-cost event accounting is unchanged.
+- No story-generation, Series/Volume production, Astra, Sunburst, credit, reader or publishing behaviour is changed.
+- No Supabase migration is required.
+
+---
+
 ## V251.98 — Automatic sequential volume production
 
 Generate volume is now a single command: stories generate strictly in order, and each completed story is saved and filed before the next story starts automatically. If a story fails, the chain stops at that story; completed stories remain saved and Generate volume resumes from the first unfinished story.

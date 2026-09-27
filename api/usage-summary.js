@@ -58,11 +58,34 @@ async function fetchOpenAICostUSD(startTime,endTime){
 }
 
 function count(list,type){return list.filter(x=>x.event_type===type).length}
+// V251.99: completed stories used to be logged as `story`; the current pipeline logs
+// `story_finalize`. Treat both as completions, but deduplicate modern finalisation
+// retries by generation_run_id so a resumed/retried book is counted only once.
+function completedStoryEvents(list){
+  const modernByRun=new Map();
+  const legacy=[];
+  for(const e of list){
+    if(e.event_type==='story_finalize'){
+      const run=String(e?.metadata?.generation_run_id||'').trim();
+      if(run){
+        const prior=modernByRun.get(run);
+        if(!prior || Date.parse(e.created_at)>Date.parse(prior.created_at))modernByRun.set(run,e);
+      }else modernByRun.set(`no-run:${e.created_at}:${modernByRun.size}`,e);
+    }else if(e.event_type==='story') legacy.push(e);
+  }
+  const modernRuns=new Set([...modernByRun.keys()].filter(k=>!k.startsWith('no-run:')));
+  for(const e of legacy){
+    const run=String(e?.metadata?.generation_run_id||'').trim();
+    if(!run || !modernRuns.has(run))modernByRun.set(`legacy:${run||e.created_at}:${modernByRun.size}`,e);
+  }
+  return [...modernByRun.values()];
+}
 function usageFor(events,startMs,endMs=null){
   const list=events.filter(x=>{const t=Date.parse(String(x.created_at||''));return (startMs==null||t>=startMs)&&(endMs==null||t<endMs)});
   const trackedCostGBP=list.reduce((sum,x)=>sum+(Number(x.estimated_cost_gbp)||0),0);
-  return {stories:count(list,'story'),images:count(list,'image'),narrations:count(list,'narration'),trackedCostGBP};
+  return {stories:completedStoryEvents(list).length,images:count(list,'image'),narrations:count(list,'narration'),trackedCostGBP};
 }
+
 function eventsForUser(events,userId,mode='only'){
   const id=String(userId||'');
   return events.filter(e=>{const eventUser=String(e?.metadata?.user_id||'');return mode==='other'?!!eventUser&&eventUser!==id:eventUser===id});
@@ -147,7 +170,7 @@ module.exports=async function handler(req,res){
 
 
   const storyEventsByUser=new Map();
-  for(const e of events.filter(x=>x.event_type==='story')){
+  for(const e of completedStoryEvents(events)){
     const userId=String(e?.metadata?.user_id||'');
     if(!userId)continue;
     const list=storyEventsByUser.get(userId)||[];
