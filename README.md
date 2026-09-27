@@ -1234,8 +1234,13 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Ordinary users retain the existing flat Saved Stories interface unchanged.
 - No story-generation, Astra, illustration, credit, reader or KDP-generation behaviour was changed in this stage.
 
-## V251.93.1 — Series Library permissions hotfix
-- Fixed the developer-only Series Library `permission denied for table developer_story_series` error.
-- The Series UI continues to use the existing developer-gated server endpoint; ordinary authenticated browser accounts are still denied direct access to the Series tables.
-- Added the missing explicit `service_role` privileges for series, volumes and volume-story links.
-- Production Supabase migration: `v251_93_series_service_role_permissions`.
+
+## V251.94 — Develop Series with Astra (planning stage)
+- Developer-only Series workspace now links a Series to a lead child from Your Cast.
+- Develop Series with Astra separates the creative Series Bible from the audience/publishing brief and persists the approved plan.
+- Generate new volume asks for 8–16 planned stories and supports either Astra choosing the volume character or a developer character override.
+- Character proposal → accept/retry → world interpretation → accept/revise/different interpretation → whole-volume story-outline planning.
+- Each story concept can be accepted or individually replaced; at least 8 accepted concepts are required before the volume is considered ready for production. Rejected slots do not have to be replaced if at least 8 remain.
+- Planning is durable in Supabase and can be resumed from the Series Library.
+- Copyright/franchise collision avoidance is a hard planning guardrail, including manual character overrides.
+- V251.94 deliberately stops before paid story/image production. The approved plan will be connected to the unchanged existing Moonbeam story-production pipeline in the next stage.

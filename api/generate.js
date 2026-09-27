@@ -77,6 +77,37 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    if (String(body.action || '').trim() === 'developer-series-astra') {
+      const user=await verifyMoonbeamUser(req);
+      const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
+      if(!developerEmail||String(user.email||'').trim().toLowerCase()!==developerEmail)return res.status(403).json({error:'Developer access only.'});
+      const mode=String(body.mode||'').trim(),series=body.series||{},lead=body.lead||{},current=body.current||{},message=String(body.message||'').trim(),target=Math.max(8,Math.min(16,Number(body.storyTarget)||12));
+      const priorVolumes=Array.isArray(body.priorVolumes)?body.priorVolumes.slice(-40):[];
+      const base=`You are Astra, creative director helping a publisher develop a children's book series. This is a planning conversation, not finished story writing. The developer makes the final decisions.\n\nSERIES: ${String(series.name||'').slice(0,200)}\nLEAD CAST MEMBER: ${JSON.stringify(lead).slice(0,3000)}\nCURRENT SERIES PLAN: ${JSON.stringify(series.series_plan||{}).slice(0,12000)}\nCURRENT VOLUME PLAN: ${JSON.stringify(current).slice(0,18000)}\nPREVIOUS VOLUMES: ${JSON.stringify(priorVolumes).slice(0,12000)}\nDEVELOPER INPUT: ${message.slice(0,8000)}\n\nHard constraints: age appropriate; supplied Cast facts are authoritative; never invent a surname; avoid concepts/titles/branding that reproduce or are confusingly close to established children's characters, franchises or distinctive protected properties. Generic roles and public-domain material are not automatically forbidden. Do not impose a preferred genre, plot structure, moral, tone, obstacle, comedy style or ending. Do not turn audience observations into rigid story rules. Keep creative-series decisions separate from audience/publishing strategy so marketing considerations do not mechanically dictate every story.`;
+      let prompt='',schema,name='moonbeam_series_astra';
+      if(mode==='develop-series'){
+        prompt=base+`\n\nDiscuss and refine the overall series with the developer. Contribute useful creative and audience/publishing ideas where they genuinely improve the concept. Return a concise natural reply plus an updated series plan. The creative_brief is the authoritative creative identity inherited by future volumes. The audience_brief is separate guidance for positioning/packaging and must not become a formula for individual stories.`;
+        schema={type:'object',additionalProperties:false,required:['reply','series_plan'],properties:{reply:{type:'string'},series_plan:{type:'object',additionalProperties:false,required:['creative_brief','audience_brief','intended_readership','volume_format'],properties:{creative_brief:{type:'string'},audience_brief:{type:'string'},intended_readership:{type:'string'},volume_format:{type:'string'}}}}};
+      }else if(mode==='propose-character'){
+        prompt=base+`\n\nPropose ONE strong new incarnation/role/identity for the lead character for this volume. It must be materially distinct from previous volumes and rejected ideas supplied in CURRENT VOLUME PLAN. The developer may have supplied a character override in DEVELOPER INPUT; if so use that exact concept rather than replacing it. Return only the proposed character label and a very brief reason. Do not develop the world yet.`;
+        schema={type:'object',additionalProperties:false,required:['character','reason'],properties:{character:{type:'string'},reason:{type:'string'}}};
+      }else if(mode==='propose-world'){
+        prompt=base+`\n\nThe volume character has been accepted. Propose ONE clear interpretation of what that character means and the coherent world they inhabit for this volume. It may be historical, fantastical, contemporary or otherwise as you judge best. Respect any developer direction. Be brief but concrete enough to become the Volume Bible. Return a title and world description.`;
+        schema={type:'object',additionalProperties:false,required:['title','world'],properties:{title:{type:'string'},world:{type:'string'}}};
+      }else if(mode==='plan-stories'||mode==='replace-story'){
+        const replace=mode==='replace-story';
+        prompt=base+`\n\n${replace?'Replace the rejected story slot identified by the developer. Return exactly ONE replacement concept that is genuinely distinct from the other accepted/planned stories.':'Plan the complete collection together and return exactly '+target+' distinct story concepts for this accepted character and world.'} Each concept needs a short title and a very brief summary of what happens. Do not write finished prose. Avoid near-duplicate mechanisms, situations or endings within the collection. Preserve the accepted Volume Bible. ${replace?'Do not return the rejected idea again.':''}`;
+        const item={type:'object',additionalProperties:false,required:['title','summary'],properties:{title:{type:'string'},summary:{type:'string'}}};
+        schema={type:'object',additionalProperties:false,required:['stories'],properties:{stories:{type:'array',minItems:replace?1:target,maxItems:replace?1:target,items:item}}};
+      }else return res.status(400).json({error:'Unknown Astra series-planning mode.'});
+      const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:mode==='plan-stories'?7000:3500,text:{format:{type:'json_schema',name,strict:true,schema}}})});
+      const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Astra returned HTTP ${rr.status}`)})}
+      let out=typeof data.output_text==='string'?data.output_text:'';if(!out&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')out+=part.text;
+      let parsed;try{parsed=JSON.parse(out)}catch{return res.status(502).json({error:'Astra returned an invalid series-planning response.'})}
+      await logUsage({event_type:'developer_series_planning',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:user.id,mode}});
+      return res.status(200).json(parsed);
+    }
+
     if (String(body.action || '').trim() === 'developer-continuity-text') {
       const user = await verifyMoonbeamUser(req);
       const developerEmail = String(process.env.MOONBEAM_DEVELOPER_EMAIL || '').trim().toLowerCase();
