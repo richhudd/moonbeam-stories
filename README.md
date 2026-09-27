@@ -1,3 +1,14 @@
+# Moonbeam Stories V252.06
+
+- Volume replacement stories that stop part-way now remain visible in their exact Series → Volume slot as **Replacement incomplete**, with saved illustration progress and a **Resume** button.
+- Resume continues the existing `partial_story_generations` checkpoint rather than starting the replacement again.
+- When a resumed replacement finishes, Moonbeam saves it, files it back into the same Volume slot, updates `produced_story_ids`, and only then removes the partial checkpoint.
+- New replacement checkpoints also persist their intended Volume position/title so the slot survives interruption.
+- Existing V252.05 orphaned replacement checkpoints are recovered from their already-saved `seriesVolumeStory`, `volumeId`, and `volumeStoryIndex` metadata.
+- No Supabase migration and no new API endpoint.
+
+---
+
 # Moonbeam Stories V252.05
 
 - Adds permanent Delete to developer Series Library story cards.
