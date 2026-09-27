@@ -1,3 +1,7 @@
+## V251.98 — Automatic sequential volume production
+
+Generate volume is now a single command: stories generate strictly in order, and each completed story is saved and filed before the next story starts automatically. If a story fails, the chain stops at that story; completed stories remain saved and Generate volume resumes from the first unfinished story.
+
 # Moonbeam Stories V251.92
 
 ## V251.92 — consistent book-wide KDP text fitting
@@ -1266,7 +1270,7 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Planning persists in existing developer volume plan JSON and resumes at the current stage.
 - This build deliberately stops at Ready for production and does not invoke the existing illustrated story-production pipeline.
 
-## V251.97 — Series volume production
+## V251.98 — Series volume production
 - Fixed Volume World revision flow: Astra now explicitly acknowledges developer steering, shows the revised Volume Bible, and remains on the world step until **Accept world** is pressed.
 - Connected approved Series volume plans to the existing Moonbeam production pipeline without replacing the current Astra → art direction → Sunburst interiors → final prose → cover machinery.
 - Volume production is resumable story-by-story. Each completed story is saved and filed into its Volume immediately before the next story is offered.
