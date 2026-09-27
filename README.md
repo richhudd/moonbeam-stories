@@ -1,3 +1,38 @@
+# Moonbeam Stories — V252.04
+
+- Rejected illustrations are no longer retried with only an appended defect note. Astra now performs a dedicated corrective-art-direction pass and rewrites the complete painting commission before the single automatic repaint.
+- The corrective pass receives the rejected candidate, forensic diagnosis/checklist and accepted visual canon, then specifies the repaired anatomy/geometry/object relationships explicitly and selects the strongest canonical references.
+- Sunburst receives that rewritten commission plus the rejected candidate (non-canonical) and accepted references; the repaint must still pass both forensic QA gates before acceptance.
+- No database migration. Vercel API count unchanged.
+
+# Moonbeam Stories V252.03 — forensic two-pass illustration QA
+
+- Builds directly on V252.02/V252.01.
+- Replaces the single broad Astra art-director check with two mandatory independent forensic passes before an interior illustration can become canon.
+- Pass A checks internal physical integrity systematically: expected limbs and connections, anatomy, occlusion, hands/feet where conspicuous, body/object intersections, paired objects such as boots, and object construction.
+- Pass B separately checks cross-image continuity against earlier accepted paintings: characters, garments, objects, furniture, architecture, masonry, geography and topology. It explicitly checks individual visible stones/blocks, mortar joints and coping stones when the same surface reappears.
+- Each pass must return an explicit structured checklist. A material FAIL blocks acceptance even if the model's overall boolean says pass.
+- Candidate/reference review images are increased from 320px/72% JPEG to 512px/84% JPEG so fine masonry and object details remain inspectable while staying bounded for request size.
+- Only after both passes succeed can an image enter the cumulative visual canon. A failed candidate receives the concrete forensic findings for one corrective repaint and the replacement must pass both gates again.
+- Existing Needs assistance fail-closed behaviour remains after a failed correction.
+- Retains V252.01 Usage & economics pagination repair. No SQL migration and no additional Vercel endpoint.
+
+---
+
+# Moonbeam Stories V252.02 — cumulative illustrator canon + mandatory visual QA
+
+- Built directly on V252.01; retains the corrected paginated Usage & economics history reader.
+- Every accepted interior illustration now becomes cumulative visual canon for later pages. Later Sunburst commissions receive selected accepted artwork as actual image references in addition to Cast identity references and the immediately preceding page.
+- Continuity is defined at physical-object level, not merely style/category level: recurring masonry, mortar joints, walls, bridge geometry, waterways, doors, furniture, clothing, props, markings and other established construction must remain the same physical things when visible again.
+- Adds a mandatory Astra art-director review after every generated interior and before it is checkpointed or allowed to become canon.
+- The review compares the candidate with all earlier accepted illustrations (compact review copies) and separately checks internal physical integrity: missing/duplicated limbs, impossible anatomy/intersections, malformed paired objects and broken construction.
+- A failed candidate receives exactly one automatic corrective repaint using Astra's concrete diagnosis and the strongest earlier references Astra identifies. The replacement is reviewed again.
+- If the replacement still has a material continuity/anatomy defect, production stops in the existing Needs assistance recovery state rather than publishing the bad image or contaminating later pages with it.
+- Failed candidates never enter the checkpoint/cumulative canon.
+- No Supabase migration and no additional Vercel endpoint; the review multiplexes the existing generate endpoint. Existing image recovery limits continue to bound extra image spend.
+
+---
+
 # Moonbeam Stories V252.01
 
 ## Usage & economics pagination repair

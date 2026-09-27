@@ -77,6 +77,62 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    if (String(body.action || '').trim() === 'rewrite-illustration-commission') {
+      const user=await verifyMoonbeamUser(req);
+      const plan=body.plan||{},sceneIndex=Math.max(0,Number(body.sceneIndex)||0),accepted=Array.isArray(body.acceptedImages)?body.acceptedImages.slice(0,10):[],candidate=String(body.candidateImage||''),diagnosis=String(body.diagnosis||'').slice(0,7000),checklist=Array.isArray(body.checklist)?body.checklist.slice(0,24):[];
+      if(!/^data:image\/(?:jpeg|png|webp);base64,/i.test(candidate))return res.status(400).json({error:'Rejected candidate illustration is required.'});
+      const scene=Array.isArray(plan.scenes)?(plan.scenes[sceneIndex]||{}):{};
+      const content=[{type:'input_text',text:`You are Astra acting as the corrective art director, not as a critic. A Sunburst illustration has FAILED Moonbeam's forensic gate. Your job is to REWRITE THE COMPLETE PAINTING COMMISSION for one corrective repaint. Do not merely repeat the diagnosis or say "fix X". Resolve the failure into explicit drawable instructions while preserving everything that was already correct.
+
+LOCKED STORY EVENT: ${String(scene.event||'').slice(0,5000)}
+ORIGINAL VISUAL MOMENT: ${String(scene.visual_moment||'').slice(0,5000)}
+CONTINUITY NOTE: ${String(scene.continuity||'').slice(0,3000)}
+FORENSIC FAILURE: ${diagnosis}
+FORENSIC CHECKLIST: ${JSON.stringify(checklist).slice(0,10000)}
+
+Write a self-contained replacement commission. Explicitly account for the physical arrangement that caused the failure: for anatomy, state where every relevant limb/body part is and how it connects or is legitimately occluded; for paired objects, specify matching construction/proportions; for recurring architecture/objects/wardrobe/geography, tell the painter to reproduce the actual established appearance from the relevant accepted reference rather than reinterpret it. Preserve the locked narrative event, camera/composition and all successful aspects of the rejected candidate unless changing one is necessary to repair the defect. Never solve continuity by hiding an established feature merely to avoid drawing it. Do not add new story events.
+
+Choose up to four accepted reference images that most directly establish the facts needed for the correction. reference_indexes are 1-based. The REJECTED CANDIDATE will also be supplied to Sunburst, but it is not canon and its defects must not be copied.`}];
+      accepted.forEach((img,i)=>{if(/^data:image\/(?:jpeg|png|webp);base64,/i.test(img)){content.push({type:'input_text',text:`ACCEPTED CANON ${i+1}`});content.push({type:'input_image',image_url:img,detail:'high'})}});
+      content.push({type:'input_text',text:'REJECTED CANDIDATE — use only to preserve explicitly correct composition/details; repair every diagnosed defect.'});content.push({type:'input_image',image_url:candidate,detail:'high'});
+      const schema={type:'object',additionalProperties:false,required:['commission','reference_indexes'],properties:{commission:{type:'string'},reference_indexes:{type:'array',maxItems:4,items:{type:'integer',minimum:1,maximum:10}}}};
+      const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:[{role:'user',content}],max_output_tokens:2200,text:{format:{type:'json_schema',name:'moonbeam_corrective_art_direction',strict:true,schema}}})});
+      const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Corrective art direction returned HTTP ${rr.status}`)})}
+      let out=typeof data.output_text==='string'?data.output_text:'';if(!out&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')out+=part.text;
+      let parsed;try{parsed=JSON.parse(out)}catch{return res.status(502).json({error:'Astra returned invalid corrective art direction.'})}
+      await logUsage({event_type:'visual_correction_direction',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:user.id,generation_run_id:String(body.generationRunId||''),scene_index:sceneIndex}});
+      return res.status(200).json({commission:String(parsed.commission||'').slice(0,12000),reference_indexes:Array.isArray(parsed.reference_indexes)?parsed.reference_indexes.slice(0,4):[]});
+    }
+
+    if (String(body.action || '').trim() === 'visual-continuity-review') {
+      const user=await verifyMoonbeamUser(req);
+      const plan=body.plan||{},sceneIndex=Math.max(0,Number(body.sceneIndex)||0),accepted=Array.isArray(body.acceptedImages)?body.acceptedImages.slice(0,10):[],candidate=String(body.candidateImage||''),reviewMode=String(body.reviewMode||'continuity').trim();
+      if(!/^data:image\/(?:jpeg|png|webp);base64,/i.test(candidate))return res.status(400).json({error:'Candidate illustration is required.'});
+      const scene=Array.isArray(plan.scenes)?(plan.scenes[sceneIndex]||{}):{};
+      const physical=reviewMode==='physical';
+      const task=physical?`FORENSIC PASS A — INTERNAL PHYSICAL INTEGRITY ONLY.
+Inspect the candidate systematically, not impressionistically. Account for every visible or expected body part of every person/animal: head, torso, left/right arms, left/right hands where visible, left/right legs, left/right feet; trace each limb back to a plausible joint/body connection and distinguish genuine occlusion from a missing/disconnected limb. Check fingers/hands when conspicuous, impossible intersections, duplicated anatomy, malformed joints, impossible seating/standing poses and body/object penetrations. Then inventory paired or repeated objects inside THIS image (boots, shoes, gloves, wheels, chair legs, doors, etc.) and verify that matching pairs have compatible size, construction and proportions unless the scene explicitly explains a difference. Check object construction and basic physical geometry. Do not pass because the overall image looks attractive. A single conspicuous defect means FAIL.`:`FORENSIC PASS B — CROSS-IMAGE CONTINUITY ONLY.
+Compare the candidate feature-by-feature against the earlier accepted visual canon. First inventory every candidate element that appeared before: each character, garment, shoe/boot, animal, prop, furniture item, doorway/window, wall, room, building, vehicle, landscape structure and fixed geographic feature. For EACH repeated element compare shape, dimensions/proportions, count, construction, markings, trim, wear/damage and distinctive fine details. For masonry, compare individual visible blocks/stones, courses, mortar joints, coping stones and openings wherever the same surface is visible. For environments compare topology explicitly: number of walls, wall junctions, bridge geometry, road/path connections, river position/direction, doors/windows and fixed landmarks. Camera angle, pose, lighting and legitimate occlusion may change; established physical facts may not. The earliest clear accepted depiction is authoritative if references conflict. Do not merely judge whether the pictures have the same style or 'feel like' the same place. A conspicuous unexplained redesign means FAIL.`;
+      const content=[{type:'input_text',text:`You are Moonbeam's forensic illustration inspector. This is a mandatory gate before a children's-book image can become canon. ${task}
+
+CURRENT SCENE ${sceneIndex+1}: ${String(scene.visual_moment||scene.event||'').slice(0,5000)}
+CONTINUITY NOTE: ${String(scene.continuity||'').slice(0,3000)}
+
+You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or NOT_APPLICABLE. overall_pass may be true only when no material FAIL exists. findings must name concrete defects, not vague concerns. reference_indexes are 1-based indexes of up to four earlier accepted images that best prove a continuity defect; use [] for the physical pass or when no earlier proof is needed.`}];
+      if(!physical)accepted.forEach((img,i)=>{if(/^data:image\/(?:jpeg|png|webp);base64,/i.test(img)){content.push({type:'input_text',text:`EARLIER ACCEPTED ILLUSTRATION ${i+1} — authoritative visual canon. Inspect fine details, not just overall style.`});content.push({type:'input_image',image_url:img,detail:'high'})}});
+      content.push({type:'input_text',text:'CANDIDATE ILLUSTRATION — inspect forensicly; it is NOT canon unless this pass succeeds.'});content.push({type:'input_image',image_url:candidate,detail:'high'});
+      const item={type:'object',additionalProperties:false,required:['check','status','finding'],properties:{check:{type:'string'},status:{type:'string',enum:['PASS','FAIL','NOT_VISIBLE','NOT_APPLICABLE']},finding:{type:'string'}}};
+      const schema={type:'object',additionalProperties:false,required:['overall_pass','checklist','findings','reference_indexes'],properties:{overall_pass:{type:'boolean'},checklist:{type:'array',minItems:physical?8:6,maxItems:24,items:item},findings:{type:'array',maxItems:12,items:{type:'string'}},reference_indexes:{type:'array',maxItems:4,items:{type:'integer',minimum:1,maximum:10}}}};
+      const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:[{role:'user',content}],max_output_tokens:1800,text:{format:{type:'json_schema',name:`moonbeam_visual_${physical?'physical':'continuity'}_review`,strict:true,schema}}})});
+      const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Visual review returned HTTP ${rr.status}`)})}
+      let out=typeof data.output_text==='string'?data.output_text:'';if(!out&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')out+=part.text;
+      let parsed;try{parsed=JSON.parse(out)}catch{return res.status(502).json({error:'Astra returned an invalid forensic visual review.'})}
+      const failed=(Array.isArray(parsed.checklist)?parsed.checklist:[]).filter(x=>x?.status==='FAIL');const pass=parsed.overall_pass===true&&failed.length===0;
+      const findings=[...(Array.isArray(parsed.findings)?parsed.findings:[]),...failed.map(x=>`${x.check}: ${x.finding}`)].filter(Boolean).slice(0,12);
+      await logUsage({event_type:'visual_continuity_review',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:user.id,generation_run_id:String(body.generationRunId||''),scene_index:sceneIndex,review_mode:physical?'physical':'continuity',pass}});
+      return res.status(200).json({pass,diagnosis:findings.join(' | '),checklist:Array.isArray(parsed.checklist)?parsed.checklist:[],reference_indexes:physical?[]:(Array.isArray(parsed.reference_indexes)?parsed.reference_indexes.slice(0,4):[])});
+    }
+
     if (String(body.action || '').trim() === 'developer-series-astra') {
       const user=await verifyMoonbeamUser(req);
       const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();

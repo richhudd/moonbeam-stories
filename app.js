@@ -795,29 +795,69 @@ function storyboardIllustrationPrompt(plan,index){
  const total=Math.max(6,Math.min(10,scenes.length||Number(plan?.storyPageCount)||6));
  return `STORYBOARD-FIRST BOOK. Read the COMPLETE ${total}-scene production plan before drawing this image. You are drawing SCENE ${index+1} OF ${total}.\n\nWHOLE STORY PREMISE:\n${plan?.premise||''}\n\nWHOLE STORY ARC INCLUDING ENDING:\n${plan?.story_arc||''}\nENDING: ${plan?.ending||''}\n\nCOMPLETE VISUAL STORYBOARD:\n${all}\n\nCURRENT SCENE — DRAW THIS, NOT AN EARLIER OR LATER EVENT:\n${scene.visual_moment||scene.event||''}\n\nART DIRECTOR'S COMMISSION — AUTHORITATIVE. You are the PAINTER, not the art director. Render the specified moment and staging faithfully. Do not substitute a more generic, easier or more familiar composition; do not redesign recurring wardrobe, creatures, objects, vehicles, machines or locations; and do not change specified relative positions, scale, orientation, gaze, expression, gesture, pointing target or physical relationships. Preserve the production bible and continuity established by earlier scenes. Artistic judgement is limited to the mechanics of making the commissioned composition a beautiful, physically plausible Moonbeam painting. Do not invent a competing plot or staging.`
 }
-async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null,signal=null){
+async function requestStoryboardIllustration(plan,index,child,generationRunId,continuityImage=null,signal=null,visualRefs=[],repairInstruction='',rewrittenCommission='',failedCandidate=null){
  let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
- let response=null,raw='';try{response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt:storyboardIllustrationPrompt(plan,index),style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:child?.referenceImages||[],continuityImage:continuityImage||null,generationRunId,storyCreditBatchId:activeStoryCreditBatchId,requiredStoryImage:true,storyImageIndex:index}),signal});raw=await response.text()}catch(networkError){if(networkError?.name==='AbortError')throw networkError;throw new Error(developerGenerationDiagnostic(`illustration ${index+1} request`,networkError,response,raw))}
+ const continuityRefs=(Array.isArray(visualRefs)?visualRefs:[]).filter(Boolean).slice(0,4).map((image,i)=>({name:`Accepted earlier illustration ${i+1}`,kind:'art-direction-reference',role:'visual-canon',image}));
+ const castRefs=Array.isArray(child?.referenceImages)?child.referenceImages:[];
+ const failedRef=failedCandidate? [{name:'Rejected candidate — preserve only the parts explicitly retained by the rewritten commission',kind:'art-direction-reference',role:'rejected-candidate',image:failedCandidate}]:[];
+ const prompt=rewrittenCommission?`${storyboardIllustrationPrompt(plan,index)}\n\nASTRA REWRITTEN CORRECTIVE COMMISSION — THIS SUPERSEDES THE ORIGINAL STAGING DETAILS WHERE THEY CONFLICT:\n${rewrittenCommission}\n\nREJECTION FINDINGS TO CORRECT:\n${repairInstruction}\nThe rejected candidate is supplied only so you can preserve aspects Astra says were correct. Never copy a defect from it. The accepted references remain authoritative for established visual facts.`:storyboardIllustrationPrompt(plan,index);
+
+ let response=null,raw='';try{response=await fetch('/api/illustrate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({prompt,style:`Story visual continuity bible: ${plan?.character_bible||'Keep recurring characters, locations and objects visually consistent across the book.'}`,referenceImage:null,referenceImages:[...castRefs,...continuityRefs,...failedRef],continuityImage:continuityImage||null,generationRunId,storyCreditBatchId:activeStoryCreditBatchId,requiredStoryImage:true,storyImageIndex:index}),signal});raw=await response.text()}catch(networkError){if(networkError?.name==='AbortError')throw networkError;throw new Error(developerGenerationDiagnostic(`illustration ${index+1} request`,networkError,response,raw))}
  let data=null;try{data=JSON.parse(raw)}catch{};if(!response.ok||!data?.image){
   if(data?.code==='IMAGE_SAFETY_REJECTION'){const err=new Error('This illustration was rejected by the image safety system.');err.code='IMAGE_SAFETY_REJECTION';err.diagnostic={stage:`illustration_${index+1}`,failure_class:'image_safety',http_status:response.status,openai_status:data?.openai_status||null,detail:String(data?.error||'Image safety rejection').slice(0,1800),developer_image_diagnostic:data?.developer_image_diagnostic||null};throw err}
   const base=new Error(data?.error||`Illustration service failed (${response.status})`);const err=new Error(developerGenerationDiagnostic(`illustration ${index+1} response`,base,response,raw));err.code='ILLUSTRATION_FAILURE';err.diagnostic={stage:`illustration_${index+1}`,failure_class:'image_service',http_status:response.status,detail:String(data?.error||raw).slice(0,1800)};throw err
  }return data.image
 }
-function storyboardThumbnail(dataUrl){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const max=320,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.72))};img.onerror=()=>reject(new Error('A storyboard illustration could not be prepared for the writer.'));img.src=dataUrl})}
+function storyboardThumbnail(dataUrl){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{const max=512,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.84))};img.onerror=()=>reject(new Error('A storyboard illustration could not be prepared for the writer.'));img.src=dataUrl})}
+async function reviewStoryboardIllustration(plan,index,child,candidate,acceptedImages,signal=null){
+ let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+ const acceptedThumbs=await Promise.all((acceptedImages||[]).map(storyboardThumbnail));const candidateThumb=await storyboardThumbnail(candidate);
+ const run=async(reviewMode)=>{const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({action:'visual-continuity-review',reviewMode,plan,sceneIndex:index,acceptedImages:reviewMode==='continuity'?acceptedThumbs:[],candidateImage:candidateThumb,child:{name:child?.name||'',age:child?.age||null,gender:child?.gender||null}}),signal});const raw=await response.text();let data={};try{data=JSON.parse(raw)}catch{}if(!response.ok||typeof data?.pass!=='boolean')throw new Error(data?.error||`Forensic visual ${reviewMode} review failed (${response.status})`);return data};
+ const physical=await run('physical');if(!physical.pass)return {...physical,reviewMode:'physical'};
+ const continuity=await run('continuity');return {...continuity,reviewMode:'continuity'}
+}
+function automaticVisualRefs(images){if(!Array.isArray(images)||!images.length)return[];const indexes=[];const add=i=>{if(i>=0&&i<images.length&&!indexes.includes(i))indexes.push(i)};add(0);add(images.length-1);add(images.length-2);add(images.length-3);return indexes.slice(0,4).map(i=>images[i])}
+async function rewriteRejectedIllustrationCommission(plan,index,child,candidate,acceptedImages,review,signal=null){
+ let accessToken=await currentAccessToken();if(!accessToken)accessToken=await refreshAccessToken();if(!accessToken)throw new Error('Your Moonbeam session has expired. Please sign in again.');
+ const candidateThumb=await storyboardThumbnail(candidate);const acceptedThumbs=await Promise.all((acceptedImages||[]).map(storyboardThumbnail));
+ const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({action:'rewrite-illustration-commission',plan,sceneIndex:index,child:{name:child?.name||'',age:child?.age||null,gender:child?.gender||null},candidateImage:candidateThumb,acceptedImages:acceptedThumbs,diagnosis:String(review?.diagnosis||''),checklist:Array.isArray(review?.checklist)?review.checklist:[],referenceIndexes:Array.isArray(review?.reference_indexes)?review.reference_indexes:[]}),signal});
+ const raw=await response.text();let data={};try{data=JSON.parse(raw)}catch{}if(!response.ok||!String(data?.commission||'').trim())throw new Error(data?.error||`Astra could not rewrite the failed illustration commission (${response.status})`);return data;
+}
 async function createStoryboardArtwork(plan,child,generationRunId,signal=null,checkpointId=null,existingImages=[]){
  const total=Math.max(6,Math.min(10,Number(child?.storyPageCount)||Number(plan?.scenes?.length)||6));const images=Array.isArray(existingImages)?existingImages.slice(0,total):[];let previous=images.length?images[images.length-1]:null;let safetyRecoveryUsed=plan?._moonbeam_safety_recovery_used===true;
  for(let i=images.length;i<total;i++){
   if(storyGenerationAbortRequested||signal?.aborted)throw new DOMException('Story generation aborted.','AbortError');
   let image;
-  try{image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous,signal)}catch(e){
+  try{image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous,signal,automaticVisualRefs(images))}catch(e){
    if(e?.code==='IMAGE_SAFETY_REJECTION'&&!safetyRecoveryUsed){
     safetyRecoveryUsed=true;await checkpointFailure(checkpointId,{...(e.diagnostic||{}),stage:`illustration_${i+1}`,failure_class:'image_safety',recovery:'redesign_remaining_artwork'});plan._moonbeam_failure_diagnostics=[...(Array.isArray(plan._moonbeam_failure_diagnostics)?plan._moonbeam_failure_diagnostics:[]),{...(e.diagnostic||{}),stage:`illustration_${i+1}`,failure_class:'image_safety',recovery:'redesign_remaining_artwork',recorded_at:new Date().toISOString()}].slice(-10);
     const redesigned=await requestSafetyRedesign(plan,i,child,e.diagnostic||{},signal);redesigned._moonbeam_safety_recovery_used=true;Object.keys(plan).forEach(k=>delete plan[k]);Object.assign(plan,redesigned);await checkpointPlan(checkpointId,plan,'safety_recovery');
-    try{image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous,signal)}catch(retryError){
+    try{image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous,signal,automaticVisualRefs(images))}catch(retryError){
      if(retryError?.code==='IMAGE_SAFETY_REJECTION'){await checkpointFailure(checkpointId,{...(retryError.diagnostic||{}),stage:`illustration_${i+1}`,failure_class:'image_safety',recovery:'replacement_rejected',automatic_attempts:1},{needsAssistance:true,plan});const frozen=new Error('Moonbeam needs to help finish this story. Everything created so far has been saved.');frozen.code='NEEDS_ASSISTANCE';throw frozen}
      throw retryError
     }
    }else if(e?.code==='IMAGE_SAFETY_REJECTION'&&safetyRecoveryUsed){await checkpointFailure(checkpointId,{...(e.diagnostic||{}),stage:`illustration_${i+1}`,failure_class:'image_safety',recovery:'rejected_after_book_safety_redesign',automatic_attempts:0},{needsAssistance:true,plan});const frozen=new Error('Moonbeam needs to help finish this story. Everything created so far has been saved.');frozen.code='NEEDS_ASSISTANCE';throw frozen}else throw e
+  }
+  // V252.02: no candidate becomes canon until Astra has checked both its own
+  // physical integrity and its fidelity to every earlier accepted illustration.
+  let review=await reviewStoryboardIllustration(plan,i,child,image,images,signal);
+  if(!review.pass){
+   const selected=(Array.isArray(review.reference_indexes)?review.reference_indexes:[]).map(n=>images[Number(n)-1]).filter(Boolean).slice(0,4);
+   const repairRefs=selected.length?selected:automaticVisualRefs(images);
+   const diagnosis=String(review.diagnosis||'The candidate failed visual continuity or physical-integrity review.').slice(0,5000);
+   // V252.04: do not merely retry with a defect note. Astra must rewrite the entire
+   // painting commission around the failed candidate and authoritative visual evidence.
+   const failedCandidate=image;
+   const rewrite=await rewriteRejectedIllustrationCommission(plan,i,child,failedCandidate,images,review,signal);
+   const rewrittenCommission=String(rewrite.commission||'').slice(0,12000);
+   const rewriteSelected=(Array.isArray(rewrite.reference_indexes)?rewrite.reference_indexes:[]).map(n=>images[Number(n)-1]).filter(Boolean).slice(0,4);
+   const rewrittenRefs=rewriteSelected.length?rewriteSelected:repairRefs;
+   try{image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous,signal,rewrittenRefs,diagnosis,rewrittenCommission,failedCandidate)}catch(e){throw e}
+   const second=await reviewStoryboardIllustration(plan,i,child,image,images,signal);
+   if(!second.pass){
+    await checkpointFailure(checkpointId,{stage:`illustration_${i+1}`,failure_class:'visual_quality',detail:String(second.diagnosis||diagnosis).slice(0,1800),automatic_attempts:1},{needsAssistance:true,plan});
+    const frozen=new Error('Moonbeam needs to help finish this story. Everything created so far has been saved.');frozen.code='NEEDS_ASSISTANCE';throw frozen
+   }
   }
   images.push(image);if(checkpointId)await checkpointArtwork(checkpointId,i,image);previous=image
  }
