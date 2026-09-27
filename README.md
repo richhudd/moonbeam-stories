@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.07
+
+## V252.07 — lower illustration transfer + visible single-flight replacement resume
+- Compresses accepted illustration continuity references to 640 px JPEG quality 0.84 before sending them to `/api/illustrate`; canonical full-resolution saved artwork is unchanged.
+- Deduplicates the immediately previous illustration so it is not sent both as the dedicated continuity image and again in the automatic visual-reference set.
+- Compresses rejected correction candidates before retransmission; Cast references remain unchanged.
+- Replacement Resume now opens a visible progress overlay from the Series/Volume Saved Stories view, mirrors the real resume stages, and uses a per-checkpoint single-flight lock so repeated presses cannot launch duplicate resume jobs.
+- Existing checkpoint/resume generation logic and image model/output quality are unchanged. No Supabase migration.
+
 # Moonbeam Stories V252.06
 
 - Volume replacement stories that stop part-way now remain visible in their exact Series → Volume slot as **Replacement incomplete**, with saved illustration progress and a **Resume** button.
