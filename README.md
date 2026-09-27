@@ -1265,3 +1265,12 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - At least 8 accepted stories required; rejected/unaccepted slots may be omitted so the final volume can contain fewer stories than the original target.
 - Planning persists in existing developer volume plan JSON and resumes at the current stage.
 - This build deliberately stops at Ready for production and does not invoke the existing illustrated story-production pipeline.
+
+## V251.97 — Series volume production
+- Fixed Volume World revision flow: Astra now explicitly acknowledges developer steering, shows the revised Volume Bible, and remains on the world step until **Accept world** is pressed.
+- Connected approved Series volume plans to the existing Moonbeam production pipeline without replacing the current Astra → art direction → Sunburst interiors → final prose → cover machinery.
+- Volume production is resumable story-by-story. Each completed story is saved and filed into its Volume immediately before the next story is offered.
+- Series-world supporting Cast remain optional. Production only adds a supporting Cast member when that approved story concept actually names them, and never adds more than one supporting Series Cast member automatically.
+- Series-volume story covers suppress author credit and dedication.
+- Series-volume saved covers are flattened to a single finished cover asset containing the generated artwork and rendered story title before storage; raw cover artwork is not treated as the finished publishing cover.
+- Volume production progress is persisted in the existing Volume plan JSON; no new database migration is required.
