@@ -1,3 +1,14 @@
+# Moonbeam Stories V252.05
+
+- Adds permanent Delete to developer Series Library story cards.
+- Loose saved stories can be deleted with confirmation.
+- A saved story inside a Volume offers DELETE, REPLACE or CANCEL.
+- REPLACE asks Astra for a genuinely new concept before deleting anything, shows that concept for approval, then permanently removes the old story and generates the replacement through the current Moonbeam production pipeline.
+- Replacement preserves the same Volume slot/order and updates the Volume production record to the new saved-story ID.
+- If Astra cannot create a replacement concept, the existing story is left untouched.
+- If replacement generation later fails, the approved replacement concept remains in the Volume plan for recovery; completed unrelated stories are untouched.
+- No new API endpoint or Supabase migration.
+
 # Moonbeam Stories — V252.04
 
 - Rejected illustrations are no longer retried with only an appended defect note. Astra now performs a dedicated corrective-art-direction pass and rewrites the complete painting commission before the single automatic repaint.

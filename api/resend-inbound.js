@@ -211,7 +211,7 @@ async function developerSeriesLibrary(req,res,body=null){
     else if(op==='delete-volume'){await seriesRest(`developer_story_volumes?id=eq.${enc(body.id)}&parent_id=eq.${enc(uid)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});}
     else if(op==='move-story'){
       const story=await seriesRest(`saved_stories?id=eq.${enc(body.storyId)}&parent_id=eq.${enc(uid)}&select=id`),volume=await seriesRest(`developer_story_volumes?id=eq.${enc(body.volumeId)}&parent_id=eq.${enc(uid)}&select=id`);if(!story?.length||!volume?.length)throw new Error('Story or volume not found.');
-      const existing=await seriesRest(`developer_story_volume_items?volume_id=eq.${enc(body.volumeId)}&parent_id=eq.${enc(uid)}&select=position&order=position.desc&limit=1`),position=(Number(existing?.[0]?.position)||0)+100;
+      const existing=await seriesRest(`developer_story_volume_items?volume_id=eq.${enc(body.volumeId)}&parent_id=eq.${enc(uid)}&select=position&order=position.desc&limit=1`),requestedPosition=Number(body.position),position=Number.isFinite(requestedPosition)&&requestedPosition>0?requestedPosition:(Number(existing?.[0]?.position)||0)+100;
       await seriesRest('developer_story_volume_items',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({parent_id:uid,volume_id:body.volumeId,story_id:body.storyId,position})});
     }
     else if(op==='unfile-story'){await seriesRest(`developer_story_volume_items?story_id=eq.${enc(body.storyId)}&parent_id=eq.${enc(uid)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});}
