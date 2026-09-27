@@ -1258,3 +1258,10 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Series-world Cast are explicitly optional: Astra is told not to force them into stories, normally to use at most one additional Series Cast member per story, and to allow brief cameo appearances.
 - Astra receives the selected supporting Cast plus the standing Amazon/Moonbeam commercial purpose, while marketing remains separate from fiction.
 - Existing volume planning and the current story-production pipeline are otherwise unchanged.
+
+
+## V251.96 — guided volume planning
+- Developer-only volume wizard: story target (8–16), Astra/manual character route, character approval, world interpretation, whole-volume story slate, individual accept/edit/reject-and-replace, and final approval.
+- At least 8 accepted stories required; rejected/unaccepted slots may be omitted so the final volume can contain fewer stories than the original target.
+- Planning persists in existing developer volume plan JSON and resumes at the current stage.
+- This build deliberately stops at Ready for production and does not invoke the existing illustrated story-production pipeline.
