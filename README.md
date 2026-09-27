@@ -1244,3 +1244,17 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Planning is durable in Supabase and can be resumed from the Series Library.
 - Copyright/franchise collision avoidance is a hard planning guardrail, including manual character overrides.
 - V251.94 deliberately stops before paid story/image production. The approved plan will be connected to the unchanged existing Moonbeam story-production pipeline in the next stage.
+
+
+## V251.94.1 — Series Bible editing correction
+- The Series Bible panel in the developer Series Library is now a real editable textarea with an explicit Save Bible action, rather than a read-only display panel.
+- Manual Bible edits deliberately mark the Astra Series Plan unapproved so the developer reviews/approves the revised plan before starting a new volume.
+- Removed the redundant legacy Edit instructions button from the Series card.
+- Astra's series-development context now explicitly knows the commercial purpose: Amazon publishing is primarily intended to introduce parents to Moonbeam Stories and attract potential users, while promotion must remain outside the fiction itself.
+
+## V251.95 — guided Series setup
+- Developer-only New Series is now a mandatory step-by-step wizard: name → main Cast character → optional series-world Cast → audience → series concept → Astra development → review/approval.
+- Incomplete series reopen at the first unfinished step and do not expose volume generation until setup is approved.
+- Series-world Cast are explicitly optional: Astra is told not to force them into stories, normally to use at most one additional Series Cast member per story, and to allow brief cameo appearances.
+- Astra receives the selected supporting Cast plus the standing Amazon/Moonbeam commercial purpose, while marketing remains separate from fiction.
+- Existing volume planning and the current story-production pipeline are otherwise unchanged.
