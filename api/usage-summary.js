@@ -115,9 +115,25 @@ module.exports=async function handler(req,res){
   if(!baselineSeconds)return res.status(500).json({error:'Usage baseline is invalid.'});
   const now=Math.floor(Date.now()/1000);
 
-  const er=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?select=event_type,estimated_cost_gbp,created_at,metadata&order=created_at.asc`,{headers:adminHeaders()});
-  if(!er.ok){console.error('usage events failed',er.status,await er.text());return res.status(500).json({error:'Could not read Moonbeam usage events.'})}
-  const events=await er.json();
+  // V252.01: PostgREST applies the project's max-rows limit to a collection request.
+  // The old single request therefore stopped at the oldest 1,000 usage rows; once
+  // api_usage_events exceeded 1,000 rows the dashboard appeared to freeze in time.
+  // Page explicitly until the final short page so all historical and current events
+  // are available to every period, user summary and support-log calculation.
+  const events=[];
+  const usagePageSize=1000;
+  for(let offset=0,safety=0;safety<100;safety++,offset+=usagePageSize){
+    const end=offset+usagePageSize-1;
+    const er=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?select=event_type,estimated_cost_gbp,created_at,metadata&order=created_at.asc`,{
+      headers:adminHeaders({Range:`${offset}-${end}`})
+    });
+    if(!er.ok){console.error('usage events failed',er.status,await er.text());return res.status(500).json({error:'Could not read Moonbeam usage events.'})}
+    const page=await er.json();
+    if(!Array.isArray(page)){console.error('usage events returned a non-array page');return res.status(500).json({error:'Could not read Moonbeam usage events.'})}
+    events.push(...page);
+    if(page.length<usagePageSize)break;
+    if(safety===99){console.error('usage events pagination safety limit reached',events.length);return res.status(500).json({error:'Moonbeam usage history is too large to read safely.'})}
+  }
 
   const ar=await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`,{headers:adminHeaders()});
   let users=[],registeredUsers=null;

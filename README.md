@@ -1,3 +1,16 @@
+# Moonbeam Stories V252.01
+
+## Usage & economics pagination repair
+
+- Fixes the actual cause of the apparently frozen Usage & economics dashboard and Generation support log.
+- `api_usage_events` had grown beyond Supabase/PostgREST's 1,000-row response limit. The dashboard requested the table once in ascending date order, so it received only the oldest 1,000 events and silently omitted every newer event.
+- The usage-summary endpoint now pages through the complete event history in 1,000-row ranges before calculating All-time, Since baseline, Developer/Other, This month, Today, Yesterday, Last 7 days, per-user generation totals and the support log.
+- Retains V251.99's compatibility with both historical `story` completions and current `story_finalize` completions, including generation-run deduplication.
+- This build is based on V251.99 and deliberately does not include the experimental V252.00 illustration-continuity changes.
+- No Supabase migration and no new Vercel endpoint.
+
+---
+
 # Moonbeam Stories V251.99
 
 ## Usage & economics completed-story repair
