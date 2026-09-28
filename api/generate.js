@@ -156,6 +156,11 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
 Plan the complete collection together and return exactly ${target} distinct story concepts for this accepted character and world. Each concept needs a short title and a very brief summary of what happens. Do not write finished prose. Avoid near-duplicate mechanisms, situations or endings within the collection. Preserve the accepted Volume Bible.`;
         const item={type:'object',additionalProperties:false,required:['title','summary'],properties:{title:{type:'string'},summary:{type:'string'}}};
         schema={type:'object',additionalProperties:false,required:['stories'],properties:{stories:{type:'array',minItems:target,maxItems:target,items:item}}};
+      }else if(mode==='volume-cover-direction'){
+        prompt=base+`
+
+The stories in this volume have now been completed. Design the overall VOLUME COVER artwork for the collection as a whole, not a cover for one individual story. Use the accepted Series Bible, Volume Bible and completed story slate in CURRENT VOLUME PLAN. The supplied finished-story visual references will separately establish the canonical appearance of the lead and world, so write a strong self-contained painting commission that represents the volume as a collection without making a collage of story scenes. Do not put any title, author name, lettering, logo, Moonbeam branding or other typography inside the generated artwork; Moonbeam renders volume-cover typography separately. Return only the painting commission.`;
+        schema={type:'object',additionalProperties:false,required:['commission'],properties:{commission:{type:'string'}}};
       }else return res.status(400).json({error:'Unknown Astra series-planning mode.'});
       const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:mode==='plan-stories'?7000:3500,text:{format:{type:'json_schema',name,strict:true,schema}}})});
       const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Astra returned HTTP ${rr.status}`)})}

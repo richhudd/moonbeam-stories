@@ -1,3 +1,17 @@
+# Moonbeam Stories V252.11
+
+## V252.11 — Series Volume covers
+- Adds a distinct developer-only Volume cover as the final production step after the last approved story in a Series Volume is generated and saved.
+- Astra designs the cover for the collection as a whole from the Series Bible, Volume Bible and completed story slate; Sunburst receives the lead Cast reference plus selected finished story illustrations as visual canon.
+- Volume-cover artwork contains no generated typography. Moonbeam renders the Series name and Volume title separately so publishing can flatten them later without contaminating the source artwork.
+- The finished Volume cover is stored in the existing private `saved-story-art` bucket and its path is persisted in the Volume plan; no new table or bucket is required.
+- Completed legacy Volumes with no cover (including King Sam) show **Generate Volume Cover** in Saved Stories. This creates only the missing Volume cover; existing stories and illustrations are untouched.
+- Once present, the Volume cover is displayed as the visual identity for that Volume in the developer Saved Stories / Series Library.
+- Future Volume production automatically creates the Volume cover immediately after the last story completes. If cover creation fails, all stories remain saved and the manual Generate Volume Cover action remains available.
+- Reuses the existing `generate` and `illustrate` endpoints; callable API count remains 12. No Supabase migration.
+
+---
+
 # Moonbeam Stories V252.09
 
 ## V252.09 — simpler Volume curation; replacement production removed
