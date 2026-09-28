@@ -1,4 +1,13 @@
-# Moonbeam Stories V252.19
+# Moonbeam Stories V252.20
+
+## V252.20 — Series setup wizard ordering fix
+
+- Fixes a later Publishing Library override that bypassed the mandatory New Series wizard and created a bare Series folder instead.
+- `＋ Series folder` now always starts the ordered setup flow: series name → main character → Series-world Cast → audience → series idea → Astra development → review/approval.
+- This guarantees supporting Cast are selected and persisted before Astra first develops the series premise, so canonical supporting Cast records such as Biscuit are available to Astra automatically.
+- Incomplete Series folders now show only **Continue series setup** (plus rename/delete), preventing Volume generation or the legacy Develop Series route from bypassing required Cast setup.
+- No database migration required.
+
 
 - Astra now chooses the ideal published Volume size (8–16 stories) and automatically plans two additional full-quality editorial candidates (10–18 generated candidates total).
 - Astra independently chooses 6, 7 or 8 story pages for every automatic Volume story; the former hard-coded six-page Volume override has been removed.
