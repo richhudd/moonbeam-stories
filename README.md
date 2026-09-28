@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.28
+
+- Fixed developer **Download review ZIP** image resolution.
+- V252.27 incorrectly routed review-export images through `savedAssetUrl()`, which only resolves assets for the currently open saved book. A Volume export runs from the Publishing Library, so that guard returned no image even though every image was present in saved-story storage.
+- Review export now reads the exact saved cover/page asset paths directly through Moonbeam's existing `savedArtBlob()` storage/cache path, the same underlying saved artwork used by the reader.
+- The exporter remains strict: it does not silently omit an image that Moonbeam says is present.
+- Works for both complete Volume review ZIPs and individual/Loose Story review ZIPs.
+- No Supabase migration required.
+
 # Moonbeam Stories V252.27
 
 - Added developer-only **Download review ZIP** for every saved story, including Loose Stories.
