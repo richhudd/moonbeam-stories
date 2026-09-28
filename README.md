@@ -1,4 +1,8 @@
-# Moonbeam Stories V252.24
+# Moonbeam Stories V252.25
+
+- Fixed Edit Series Bible save/close crash caused by stale `closeSeriesPlanner25194` reference.
+- Save now persists the Bible, refreshes the Publishing Library, and closes the editor using the live Series planner modal.
+- Fixed the same stale close reference in Edit Series Cast.
 
 - After a Series Bible is approved, the Publishing Library now shows **Edit Series Bible** instead of reopening **Develop with Astra**.
 - Edit Series Bible opens Astra's current approved Bible directly in an editable text area; **Save Series Bible** replaces the canonical creative brief used for future Volume/story planning while preserving approved/setup state and all existing stories.
@@ -1550,5 +1554,5 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Story production now labels the inherited context as the Volume creative brief rather than a Volume character.
 - No Supabase migration required.
 
-## V252.24 — Direct approved Series Bible editing
+## V252.25 — Direct approved Series Bible editing
 - Approved Series folders now expose Edit Series Bible and Save Series Bible directly; Astra redevelopment is not required for manual editorial corrections.
