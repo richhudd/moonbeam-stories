@@ -1,3 +1,10 @@
+# Moonbeam Stories V252.24
+
+- After a Series Bible is approved, the Publishing Library now shows **Edit Series Bible** instead of reopening **Develop with Astra**.
+- Edit Series Bible opens Astra's current approved Bible directly in an editable text area; **Save Series Bible** replaces the canonical creative brief used for future Volume/story planning while preserving approved/setup state and all existing stories.
+- Series setup wording no longer suggests an artificial one-extra-character limit; Series Cast are available when naturally required, including several established family members in the same story.
+- No Supabase migration required.
+
 # Moonbeam Stories V252.23
 
 ## V252.23 — editable Series-world Cast relationships
@@ -1542,3 +1549,6 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Astra's Volume-development prompt explicitly forbids inventing a new incarnation/role/identity for the recurring lead and treats the Series Bible and canonical Cast as inherited authority.
 - Story production now labels the inherited context as the Volume creative brief rather than a Volume character.
 - No Supabase migration required.
+
+## V252.24 — Direct approved Series Bible editing
+- Approved Series folders now expose Edit Series Bible and Save Series Bible directly; Astra redevelopment is not required for manual editorial corrections.
