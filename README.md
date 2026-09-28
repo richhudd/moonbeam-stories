@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.19
+
+- Astra now chooses the ideal published Volume size (8–16 stories) and automatically plans two additional full-quality editorial candidates (10–18 generated candidates total).
+- Astra independently chooses 6, 7 or 8 story pages for every automatic Volume story; the former hard-coded six-page Volume override has been removed.
+- The existing variable-length Moonbeam story engine is reused; loose developer stories remain independently configurable at 6–10 pages.
+- Series-development architecture now explains these freedoms to Astra and tells later publishing work to treat the current surviving Volume contents as authoritative rather than stale planning counts or deleted concepts.
+- No application-level character truncation has been reintroduced into Astra Series Development.
+- No Supabase migration is required.
+
 # Moonbeam Stories V252.18
 
 
