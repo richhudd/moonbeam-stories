@@ -1,3 +1,14 @@
+# Moonbeam Stories V252.29
+
+- Added the first-stage developer-only **Fiction Studio / Back Room** for experimenting with full-length adult commercial fiction.
+- Back Room entry is mounted only after Moonbeam's existing server-verified developer access check succeeds. Every Fiction Studio API operation independently verifies the authenticated user against `MOONBEAM_DEVELOPER_EMAIL`; hiding the UI is not the security boundary.
+- Fiction Studio data uses a new `developer_fiction_series` table. The migration enables RLS and explicitly revokes `anon` and `authenticated` table access; browser clients receive no policy. Reads/writes occur only through the server-side developer-gated API.
+- Fiction Studio Astra has a separate full-length commercial-fiction series-development prompt and structured Series Bible. It does not call the children's story planner, final story writer, illustration pipeline, Sunburst, Cast, Saved Stories, or Publishing Library.
+- Stage 1 supports: pen name, series name, genre/subgenre, target novel length, heat level, optional starting idea, Astra series development/refinement, direct Bible review/editing, and explicit Bible save.
+- Stage 1 deliberately stops before novel outlining, chapter generation, cover generation, KDP export, or publication.
+- No new Vercel function was added: the isolated Back Room action branches at the top of the existing authenticated `/api/generate` function, preserving Moonbeam's 12-function deployment limit while keeping the generation logic and prompts separate.
+- Supabase migration required: `SUPABASE_V252_29_FICTION_STUDIO.sql`.
+
 # Moonbeam Stories V252.28
 
 - Fixed developer **Download review ZIP** image resolution.

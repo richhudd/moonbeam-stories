@@ -133,6 +133,50 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
       return res.status(200).json({pass,diagnosis:findings.join(' | '),checklist:Array.isArray(parsed.checklist)?parsed.checklist:[],reference_indexes:physical?[]:(Array.isArray(parsed.reference_indexes)?parsed.reference_indexes.slice(0,4):[])});
     }
 
+    // V252.29 — Fiction Studio (“Back Room”). This branch is intentionally isolated
+    // from Moonbeam story generation. It has its own developer gate, persistence and Astra prompt.
+    if (String(body.action || '').trim() === 'developer-fiction-studio') {
+      const user=await verifyMoonbeamUser(req);
+      const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
+      if(!developerEmail||String(user.email||'').trim().toLowerCase()!==developerEmail)return res.status(403).json({error:'Developer access only.'});
+      if(!SECRET_KEY)return res.status(500).json({error:'Fiction Studio storage is unavailable.'});
+      const mode=String(body.mode||'').trim();
+      const rest=async(path,options={})=>{const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Fiction Studio storage returned HTTP ${r.status}`),{status:r.status});return data};
+      if(mode==='list'){
+        const rows=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&order=updated_at.desc`);
+        return res.status(200).json({series:Array.isArray(rows)?rows:[]});
+      }
+      if(mode==='create'){
+        const penName=String(body.pen_name||'').trim(),seriesName=String(body.series_name||'').trim(),genre=String(body.genre||'').trim(),idea=String(body.idea||'').trim(),heatLevel=String(body.heat_level||'').trim(),targetLength=Math.max(30000,Math.min(150000,Number(body.target_length)||80000));
+        if(!penName||!seriesName||!genre)return res.status(400).json({error:'Pen name, series name and genre are required.'});
+        const rows=await rest('developer_fiction_series',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,pen_name:penName,series_name:seriesName,genre,idea,heat_level:heatLevel||'Astra to recommend',target_length:targetLength,status:'development'})});
+        return res.status(200).json({series:rows?.[0]||null});
+      }
+      const id=String(body.id||'').trim();if(!id)return res.status(400).json({error:'Fiction series id is required.'});
+      const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`),series=found?.[0];
+      if(!series)return res.status(404).json({error:'Fiction series not found.'});
+      if(mode==='save-bible'){
+        const bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
+        const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:bible,status:'bible_approved',updated_at:new Date().toISOString()})});
+        return res.status(200).json({series:rows?.[0]||null});
+      }
+      if(mode==='develop'){
+        const message=String(body.message||'').trim();
+        const current=series.series_bible&&typeof series.series_bible==='object'?series.series_bible:{};
+        const prompt=`You are Astra, principal novelist and series editor for a private commercial-fiction studio. You develop full-length adult fiction for publication. Your job here is SERIES DEVELOPMENT, not manuscript drafting. The developer makes the final decisions.\n\nPEN NAME: ${series.pen_name}\nSERIES: ${series.series_name}\nGENRE / SUBGENRE: ${series.genre}\nINITIAL IDEA: ${series.idea||'(open)'}\nTARGET NOVEL LENGTH: approximately ${series.target_length||80000} words per novel\nINTENDED HEAT LEVEL: ${series.heat_level||'Astra to recommend'}\nCURRENT SERIES BIBLE: ${JSON.stringify(current)}\nDEVELOPER INPUT: ${message||'Develop the strongest commercially coherent version of this series.'}\n\nDevelop this as full-length adult commercial fiction. Concentrate on character, conflict, emotional stakes, voice, pacing, reader expectations, series read-through and distinct book premises. Do not produce page-count structures, illustration directions, art prompts, picture-book layouts or finished chapters. Do not pad a weak concept merely to create a series. All romantic or sexual characters must be adults. Keep any intimacy appropriate to the stated heat level while prioritising character and story. Preserve good approved decisions unless the developer asks to change them. Return a concise conversational reply and a complete updated Series Bible. The Bible must be useful as authoritative continuity for later novel planning.`;
+        const character={type:'object',additionalProperties:false,required:['name','role','description'],properties:{name:{type:'string'},role:{type:'string'},description:{type:'string'}}};
+        const book={type:'object',additionalProperties:false,required:['working_title','premise'],properties:{working_title:{type:'string'},premise:{type:'string'}}};
+        const bibleSchema={type:'object',additionalProperties:false,required:['premise','setting','tone','intended_readership','series_engine','recurring_world','characters','proposed_books'],properties:{premise:{type:'string'},setting:{type:'string'},tone:{type:'string'},intended_readership:{type:'string'},series_engine:{type:'string'},recurring_world:{type:'string'},characters:{type:'array',items:character},proposed_books:{type:'array',minItems:1,maxItems:10,items:book}}};
+        const schema={type:'object',additionalProperties:false,required:['reply','series_bible'],properties:{reply:{type:'string'},series_bible:bibleSchema}};
+        const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:6500,text:{format:{type:'json_schema',name:'fiction_studio_series_development',strict:true,schema}}})});
+        const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Astra returned HTTP ${rr.status}`)})}let out=typeof data.output_text==='string'?data.output_text:'';if(!out&&Array.isArray(data.output))for(const item of data.output)for(const part of(item.content||[]))if(typeof part.text==='string')out+=part.text;let parsed;try{parsed=JSON.parse(out)}catch{return res.status(502).json({error:'Astra returned an invalid Fiction Studio response.'})}
+        const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:parsed.series_bible,status:'development',updated_at:new Date().toISOString()})});
+        await logUsage({event_type:'developer_fiction_series_planning',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:user.id}});
+        return res.status(200).json({reply:parsed.reply,series_bible:parsed.series_bible,series:rows?.[0]||series});
+      }
+      return res.status(400).json({error:'Unknown Fiction Studio mode.'});
+    }
+
     if (String(body.action || '').trim() === 'developer-series-astra') {
       const user=await verifyMoonbeamUser(req);
       const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
