@@ -1,4 +1,9 @@
-# Moonbeam Stories V252.29
+# Moonbeam Stories V252.30
+
+- Fixed Fiction Studio opening with `permission denied for table developer_fiction_series`.
+- The V252.29 table correctly revoked browser access, but the new table had not explicitly granted PostgreSQL table privileges to `service_role`. V252.30 grants only the server-side service role SELECT/INSERT/UPDATE/DELETE.
+- Browser roles (`anon` and `authenticated`) remain revoked; Fiction Studio still reads/writes exclusively through the developer-authenticated server API. No children's story-generation code or prompts were changed.
+- Live Supabase migration `v252_30_fiction_studio_server_permissions` applied successfully.
 
 - Added the first-stage developer-only **Fiction Studio / Back Room** for experimenting with full-length adult commercial fiction.
 - Back Room entry is mounted only after Moonbeam's existing server-verified developer access check succeeds. Every Fiction Studio API operation independently verifies the authenticated user against `MOONBEAM_DEVELOPER_EMAIL`; hiding the UI is not the security boundary.
