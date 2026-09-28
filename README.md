@@ -1,4 +1,14 @@
-# Moonbeam Stories V252.20
+# Moonbeam Stories V252.23
+
+## V252.23 — editable Series-world Cast relationships
+
+- Adds **Edit Series Cast** to every completed Series folder, so recurring Cast can be added or removed after initial Series setup without recreating the Series.
+- Every selected Series-world Cast member now has required Series-specific relationship/role metadata (for example, “Sam’s older sister” or “Sam’s dog and sidekick”).
+- Relationship metadata is stored inside the existing Series Plan JSON, so no Supabase migration is required.
+- Astra receives the current Series-world Cast dynamically with `series_relationship` on all later Series/Volume planning calls.
+- Automatic Volume story production carries the selected supporting character’s Series relationship into the normal Moonbeam story engine.
+- Canonical Cast identity/visual references remain separate and authoritative; Series roles describe narrative relationships only.
+- Existing approved Series Bibles and generated stories are not altered when Series Cast is edited.
 
 ## V252.20 — Series setup wizard ordering fix
 
@@ -1462,7 +1472,7 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 ## V251.94 — Develop Series with Astra (planning stage)
 - Developer-only Series workspace now links a Series to a lead child from Your Cast.
 - Develop Series with Astra separates the creative Series Bible from the audience/publishing brief and persists the approved plan.
-- Generate new volume asks for 8–16 planned stories and supports either Astra choosing the volume character or a developer character override.
+- Generate new volume inherits the approved Series identity and Cast, lets Astra choose an 8–16 story ideal size plus two editorial candidates, and accepts optional developer direction without redefining the recurring lead.
 - Character proposal → accept/retry → world interpretation → accept/revise/different interpretation → whole-volume story-outline planning.
 - Each story concept can be accepted or individually replaced; at least 8 accepted concepts are required before the volume is considered ready for production. Rejected slots do not have to be replaced if at least 8 remain.
 - Planning is durable in Supabase and can be resumed from the Series Library.
@@ -1511,3 +1521,24 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Standalone saved stories and standalone publishing remain on the normal cover path and are unchanged.
 - No image regeneration, resaving, OpenAI call or Supabase migration is required for existing King Sam stories.
 - V252.07 transfer optimisation and V252.09 simplified no-replacement Series workflow are retained.
+
+
+## V252.21
+- Added a developer-only final Volume publication package after curation.
+- Publication reads live Volume membership as authoritative, so deleted candidate stories cannot leak into cover/copy/export.
+- Volume cover typography is composed at publication from Series name + Volume name + author; a folder named `Volume 1` therefore publishes as the Series title plus `Volume 1`.
+- Added Astra-created collection cover direction, canonical Cast reference use, final cover persistence, KDP description, seven keyword phrases and reader age range.
+- Added fixed-layout Volume EPUB export containing Volume cover, title page, contents, every surviving story (story cover + text + illustrations), navigation and About the Author page.
+- No Supabase migration required; publication metadata is stored inside the existing Volume plan JSON.
+
+
+## V252.22
+
+- Removed the legacy per-Volume “Volume character / incarnation” stage from the generic Astra Volume workflow.
+- Series identity, recurring lead and Series-world Cast now inherit automatically into every Volume.
+- New Volume setup is four stages: Volume direction → Volume brief → Story slate → Review/generate.
+- The first screen now offers “Let Astra decide” or an optional developer idea/direction for the Volume; this can steer themes, situations or settings but cannot redefine the established Series characters.
+- Planned Series Volumes receive neutral sequential names (`Volume 1`, `Volume 2`, etc.) rather than being named after a temporary character concept.
+- Astra's Volume-development prompt explicitly forbids inventing a new incarnation/role/identity for the recurring lead and treats the Series Bible and canonical Cast as inherited authority.
+- Story production now labels the inherited context as the Volume creative brief rather than a Volume character.
+- No Supabase migration required.

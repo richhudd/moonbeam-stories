@@ -4263,3 +4263,5 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 @media(max-width:700px){.series-volume-cover-missing{align-items:stretch;flex-direction:column}.series-volume-cover-art{width:min(190px,62vw)}}
 /* V252.14 — flexible publishing library */
 .series-toolbar-actions{display:flex;gap:10px;flex-wrap:wrap}.series-direct-stories{margin:12px 0 18px;border-top:1px dashed #ddd6ea;padding-top:10px}.series-direct-stories>summary{font-weight:700;cursor:pointer}.series-loose>.series-volume{margin:12px 0}
+/* V252.23 — editable Series-world Cast relationships */
+.series-cast-role-choice{display:grid;gap:8px}.series-cast-role-choice>label{display:flex;gap:10px;align-items:center}.series-cast-role-input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d9d1e8;border-radius:10px;background:#fff;color:inherit}.series-cast-role-input:disabled{opacity:.5;background:#f5f3f8}
