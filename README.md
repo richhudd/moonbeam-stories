@@ -1395,3 +1395,16 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Series-volume story covers suppress author credit and dedication.
 - Series-volume saved covers are flattened to a single finished cover asset containing the generated artwork and rendered story title before storage; raw cover artwork is not treated as the finished publishing cover.
 - Volume production progress is persisted in the existing Volume plan JSON; no new database migration is required.
+
+---
+
+# Moonbeam Stories V252.10
+
+## V252.10 — contextual Series/Volume chapter covers
+- Saved-story cover treatment is now derived from current developer Series/Volume membership, not from the protagonist, developer account, publishing status, or permanent mutation of standalone story metadata.
+- Existing saved stories inside a Volume immediately render as chapter covers without the normal Moonbeam kicker/author/dedication overlay.
+- Existing Series covers that were already saved as flattened artwork + title do not receive a second title overlay, so their saved title remains visible exactly once.
+- A loose standalone story manually moved into a Volume receives a title-only cover overlay while viewed in that Volume; moving it back out restores the ordinary standalone cover treatment.
+- Standalone saved stories and standalone publishing remain on the normal cover path and are unchanged.
+- No image regeneration, resaving, OpenAI call or Supabase migration is required for existing King Sam stories.
+- V252.07 transfer optimisation and V252.09 simplified no-replacement Series workflow are retained.
