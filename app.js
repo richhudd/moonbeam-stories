@@ -852,27 +852,9 @@ async function createStoryboardArtwork(plan,child,generationRunId,signal=null,ch
     }
    }else if(e?.code==='IMAGE_SAFETY_REJECTION'&&safetyRecoveryUsed){await checkpointFailure(checkpointId,{...(e.diagnostic||{}),stage:`illustration_${i+1}`,failure_class:'image_safety',recovery:'rejected_after_book_safety_redesign',automatic_attempts:0},{needsAssistance:true,plan});const frozen=new Error('Moonbeam needs to help finish this story. Everything created so far has been saved.');frozen.code='NEEDS_ASSISTANCE';throw frozen}else throw e
   }
-  // V252.02: no candidate becomes canon until Astra has checked both its own
-  // physical integrity and its fidelity to every earlier accepted illustration.
-  let review=await reviewStoryboardIllustration(plan,i,child,image,images,signal);
-  if(!review.pass){
-   const selected=(Array.isArray(review.reference_indexes)?review.reference_indexes:[]).map(n=>images[Number(n)-1]).filter(Boolean).slice(0,4);
-   const repairRefs=selected.length?selected:automaticVisualRefs(images);
-   const diagnosis=String(review.diagnosis||'The candidate failed visual continuity or physical-integrity review.').slice(0,5000);
-   // V252.04: do not merely retry with a defect note. Astra must rewrite the entire
-   // painting commission around the failed candidate and authoritative visual evidence.
-   const failedCandidate=image;
-   const rewrite=await rewriteRejectedIllustrationCommission(plan,i,child,failedCandidate,images,review,signal);
-   const rewrittenCommission=String(rewrite.commission||'').slice(0,12000);
-   const rewriteSelected=(Array.isArray(rewrite.reference_indexes)?rewrite.reference_indexes:[]).map(n=>images[Number(n)-1]).filter(Boolean).slice(0,4);
-   const rewrittenRefs=rewriteSelected.length?rewriteSelected:repairRefs;
-   try{image=await requestStoryboardIllustration(plan,i,child,generationRunId,previous,signal,rewrittenRefs,diagnosis,rewrittenCommission,failedCandidate)}catch(e){throw e}
-   const second=await reviewStoryboardIllustration(plan,i,child,image,images,signal);
-   if(!second.pass){
-    await checkpointFailure(checkpointId,{stage:`illustration_${i+1}`,failure_class:'visual_quality',detail:String(second.diagnosis||diagnosis).slice(0,1800),automatic_attempts:1},{needsAssistance:true,plan});
-    const frozen=new Error('Moonbeam needs to help finish this story. Everything created so far has been saved.');frozen.code='NEEDS_ASSISTANCE';throw frozen
-   }
-  }
+  // V252.17: Astra's production-plan art direction is authoritative before painting.
+  // Do not run an automatic post-paint QA/replacement loop: one successful Sunburst
+  // render becomes the illustration by default. Manual developer correction remains available.
   images.push(image);if(checkpointId)await checkpointArtwork(checkpointId,i,image);previous=image
  }
  return images

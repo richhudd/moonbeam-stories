@@ -1,3 +1,14 @@
+# Moonbeam Stories V252.17
+
+## V252.17 — remove automatic post-paint Astra replacement loop
+- Builds directly on V252.16.
+- Removes the mandatory Astra post-generation forensic review/repaint loop for interior illustrations.
+- A successful Sunburst render is accepted by default instead of triggering an automatic paid replacement because a subsequent Astra review dislikes it.
+- Astra remains the authoritative art director before painting: the complete production plan, scene commission, canonical Cast references and accumulated visual continuity still drive Sunburst's first render.
+- Image-safety rejection recovery remains separate and unchanged; it only runs when the image service actually rejects a request.
+- Manual developer illustration correction/editing remains available.
+- V252.16 collapsible Series/Volume folders and V252.15 saved-story editing fix are retained.
+
 # Moonbeam Stories V252.16
 
 ## V252.16 — collapsible Publishing Library folders
