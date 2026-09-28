@@ -4257,11 +4257,3 @@ body.product-active.moonbeam-signed-in:not(.story-mode) [data-step="Story"] > #v
 .series-setup-progress{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 42px 18px 0;padding:10px 12px;border-radius:12px;background:#f3edf8;color:#4c3d68}.series-setup-progress span{font-size:12px;color:#776d80}.series-cast-rule,.series-setup-callout{padding:13px 14px;border:1px solid #e2d8eb;border-radius:14px;background:#f8f5fb;line-height:1.45}.series-cast-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:16px 0}.series-cast-choice{display:flex;gap:10px;align-items:center;border:1px solid #e1d9e9;border-radius:12px;padding:11px 12px;background:#fff;cursor:pointer}.series-cast-choice input{width:auto}.series-cast-choice span{display:grid}.series-cast-choice small{color:#786d82}.series-setup-callout{margin:0 14px 12px}.series-setup-callout p{margin:5px 0 0}.series-setup-incomplete{background:#fbf8fe}@media(max-width:650px){.series-setup-progress{align-items:flex-start;flex-direction:column}.series-cast-grid{grid-template-columns:1fr}}
 
 
-/* V252.08 — visible, self-contained Series replacement resume progress. */
-.volume-resume-overlay{z-index:100005!important;color:#302447!important}
-.volume-resume-dialog{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;min-height:220px!important;color:#302447!important;background:#fff!important;opacity:1!important;visibility:visible!important}
-.volume-resume-dialog h3{display:block!important;color:#302447!important;font-size:22px!important;line-height:1.25!important;margin:8px 0 12px!important}
-.volume-resume-dialog p{display:block!important;color:#51475f!important;font-size:14px!important;line-height:1.45!important;margin:6px 0!important}
-.volume-resume-hourglass{display:block!important;color:#7047cf!important;font-size:42px!important;line-height:1!important;animation:volumeResumeSpin 1.2s linear infinite}
-.volume-resume-note{font-size:12px!important;color:#756c80!important}
-@keyframes volumeResumeSpin{to{transform:rotate(360deg)}}

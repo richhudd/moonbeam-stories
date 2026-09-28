@@ -1,3 +1,16 @@
+# Moonbeam Stories V252.09
+
+## V252.09 — simpler Volume curation; replacement production removed
+- Removes the post-generation **Delete and replace** workflow and its automatic replacement-story production/resume UI.
+- Deleting a finished story from a Volume now simply deletes it and removes the matching slot from the Volume production plan; the Volume count falls by one.
+- Legacy interrupted replacement checkpoints already present in a Volume are shown as **Incomplete** with **Delete incomplete story**. Deleting one removes its partial artwork/checkpoint and removes that slot from the Volume plan. Nothing is regenerated.
+- The intended workflow is now deliberately simple: generate more stories than the final book needs, keep the best, delete weaker stories, and optionally move a Loose story into a Volume manually.
+- Removes the pre-production **Reject & replace** action too; Volume planning creates the requested 8–16 concepts once, after which you can accept/edit the slate and curate the finished books by deletion.
+- V252.07 illustration-transfer optimisation is retained unchanged.
+- No Supabase migration and no new API endpoint.
+
+---
+
 # Moonbeam Stories V252.08
 
 ## V252.08 — Series replacement resume UI repair

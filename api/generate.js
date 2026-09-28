@@ -150,11 +150,12 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
       }else if(mode==='propose-world'){
         prompt=base+`\n\nThe volume character has been accepted. Propose ONE clear interpretation of what that character means and the coherent world they inhabit for this volume. It may be historical, fantastical, contemporary or otherwise as you judge best. Respect any developer direction. Be brief but concrete enough to become the Volume Bible. When the developer has supplied a revision or steering instruction, explicitly acknowledge what you understood and what you changed. Return a concise conversational reply as well as the revised title and world description. Do not advance beyond this world-development decision. `;
         schema={type:'object',additionalProperties:false,required:['reply','title','world'],properties:{reply:{type:'string'},title:{type:'string'},world:{type:'string'}}};
-      }else if(mode==='plan-stories'||mode==='replace-story'){
-        const replace=mode==='replace-story';
-        prompt=base+`\n\n${replace?'Replace the rejected story slot identified by the developer. Return exactly ONE replacement concept that is genuinely distinct from the other accepted/planned stories.':'Plan the complete collection together and return exactly '+target+' distinct story concepts for this accepted character and world.'} Each concept needs a short title and a very brief summary of what happens. Do not write finished prose. Avoid near-duplicate mechanisms, situations or endings within the collection. Preserve the accepted Volume Bible. ${replace?'Do not return the rejected idea again.':''}`;
+      }else if(mode==='plan-stories'){
+        prompt=base+`
+
+Plan the complete collection together and return exactly ${target} distinct story concepts for this accepted character and world. Each concept needs a short title and a very brief summary of what happens. Do not write finished prose. Avoid near-duplicate mechanisms, situations or endings within the collection. Preserve the accepted Volume Bible.`;
         const item={type:'object',additionalProperties:false,required:['title','summary'],properties:{title:{type:'string'},summary:{type:'string'}}};
-        schema={type:'object',additionalProperties:false,required:['stories'],properties:{stories:{type:'array',minItems:replace?1:target,maxItems:replace?1:target,items:item}}};
+        schema={type:'object',additionalProperties:false,required:['stories'],properties:{stories:{type:'array',minItems:target,maxItems:target,items:item}}};
       }else return res.status(400).json({error:'Unknown Astra series-planning mode.'});
       const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:mode==='plan-stories'?7000:3500,text:{format:{type:'json_schema',name,strict:true,schema}}})});
       const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Astra returned HTTP ${rr.status}`)})}
