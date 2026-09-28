@@ -1,3 +1,14 @@
+# Moonbeam Stories V252.32
+
+## V252.32 — Fiction Studio manuscript test
+- Adds sequential adult-fiction chapter drafting after an approved Book Plan.
+- Adds a persistent live continuity ledger updated after every generated chapter.
+- Each new chapter receives the Series Bible, authoritative Book Plan, live ledger, and two most recent chapters for immediate prose/voice continuity.
+- Actual manuscript/ledger facts explicitly outrank stale outline details.
+- Developer-only server gate remains mandatory; no children's story or Sunburst route is shared.
+- Adds dedicated `developer_fiction_chapters` and `developer_fiction_continuity` storage; browser roles remain revoked and service-role access only.
+- This stage is intentionally a prose-quality experiment, not an automatic publication pipeline.
+
 # Moonbeam Stories V252.31
 
 - Fixed Fiction Studio opening with `permission denied for table developer_fiction_series`.
