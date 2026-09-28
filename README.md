@@ -1,3 +1,15 @@
+# Moonbeam Stories V252.08
+
+## V252.08 — Series replacement resume UI repair
+- Volume replacement partials are no longer surfaced through the generic unfinished-story modal; they stay in their Series/Volume slot with the compact Resume button.
+- Pressing Resume now closes any stale generic modal and opens a self-contained visible progress overlay with explicit colours, hourglass and live status text.
+- Resume no longer depends on the hidden Create Story screen for visible feedback.
+- The hidden Generate button is now guarded so a missing setup control cannot abort a Saved Stories resume before the checkpoint is opened.
+- Existing single-flight checkpoint lock and V252.07 transfer optimisation are retained.
+- No database migration or new API endpoint.
+
+---
+
 # Moonbeam Stories V252.07
 
 ## V252.07 — lower illustration transfer + visible single-flight replacement resume
