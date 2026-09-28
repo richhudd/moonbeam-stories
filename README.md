@@ -1,3 +1,20 @@
+# Moonbeam Stories V252.14
+
+## V252.14 — flexible Series / Volume / Story library
+- Series folders and Volume folders can now be created independently and may remain empty.
+- Volumes may be Loose Volumes or moved into/out of any Series. Moving a Volume out of a Series returns it intact to Loose Volumes.
+- Stories may be Loose Stories, filed into a Volume, or filed directly into a Series. Series are always top-level and cannot be placed inside Volumes.
+- Deleting a Series folder detaches its Volumes to Loose Volumes and its direct Stories to Loose Stories; deleting a Volume folder returns its Stories to Loose Stories.
+- Volume production automatically saves each completed story into its Volume. There is no post-generation accept/reject/replace workflow and no Replace Story action.
+- Story-slate planning is now batch-oriented: edit planned concepts if desired, then generate; review/delete later in Saved Stories.
+- Removes Volume-cover creation from Volume generation and Saved Stories. Volume-specific Kindle/print cover assets are deferred to the publishing stage.
+- Existing story and illustration generation pipelines are otherwise unchanged.
+
+### Required Supabase migration
+Run `SUPABASE_V252_14_FLEXIBLE_LIBRARY.sql` once before using the new library controls.
+
+---
+
 # Moonbeam Stories V252.12
 
 ## V252.12 — legacy Volume-cover detection repair
