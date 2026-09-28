@@ -1,3 +1,14 @@
+# Moonbeam Stories V252.12
+
+## V252.12 — legacy Volume-cover detection repair
+- Fixes the retrospective Volume-cover control for already-generated Volumes such as **King Sam**.
+- Saved Stories no longer relies only on the newer `plan.stage === "complete"` flag to decide whether a Volume is complete. It also recognises the persisted Volume status and, for older records, a fully produced story slate / complete Volume membership.
+- A completed legacy Volume with no `volume_cover_path` now shows **Generate Volume Cover** without regenerating or modifying any story.
+- Future automatic Volume-cover generation from V252.11 is unchanged.
+- No Supabase migration and no new API endpoint.
+
+---
+
 # Moonbeam Stories V252.11
 
 ## V252.11 — Series Volume covers
