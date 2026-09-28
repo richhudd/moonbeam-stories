@@ -1,4 +1,4 @@
-# Moonbeam Stories V252.30
+# Moonbeam Stories V252.31
 
 - Fixed Fiction Studio opening with `permission denied for table developer_fiction_series`.
 - The V252.29 table correctly revoked browser access, but the new table had not explicitly granted PostgreSQL table privileges to `service_role`. V252.30 grants only the server-side service role SELECT/INSERT/UPDATE/DELETE.
@@ -1595,3 +1595,11 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 
 ## V252.25 — Direct approved Series Bible editing
 - Approved Series folders now expose Edit Series Bible and Save Series Bible directly; Astra redevelopment is not required for manual editorial corrections.
+
+
+## V252.31 — Fiction Studio Stage 2
+- Adds developer-only Book Development inside the isolated Back Room.
+- Proposed Series Bible books can be expanded by Astra into a full-length 20–50 chapter novel blueprint with POV, character/relationship arcs, external plot, heat progression, turning points, continuity watchlist and ending.
+- Book Plans persist separately in `developer_fiction_books`; browser roles remain revoked and only the server service role can access them.
+- No manuscript chapters, children's-story generation or Sunburst illustration generation are called from this flow.
+- Uses the existing `/api/generate` endpoint, preserving the 12-function Vercel limit.
