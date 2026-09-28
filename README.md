@@ -1,3 +1,15 @@
+# Moonbeam Stories V252.15
+
+## V252.15 — saved-story illustration edit + Publishing Library diagnostics
+- Fixed saved-story illustration editing crash: `requestIllustration()` now prepares `continuityThumb` before sending the correction request, including after a story has been saved and reopened.
+- Preserves V252.14 flexible Publishing Library behaviour: Series and Volumes may be created independently, including Loose Volumes.
+- Publishing Library now replaces the raw `series_id` / missing-table database error with a clear instruction when the required V252.14 Supabase migration has not yet been applied.
+- New Series setup errors are surfaced instead of failing silently.
+- Cache-busted browser assets to V252.15.
+- The V252.14 database migration is still required once: `SUPABASE_V252_14_FLEXIBLE_LIBRARY.sql`.
+
+---
+
 # Moonbeam Stories V252.14
 
 ## V252.14 — flexible Series / Volume / Story library
