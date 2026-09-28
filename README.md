@@ -1,3 +1,10 @@
+# Moonbeam Stories V252.27
+
+- Added developer-only **Download review ZIP** for every saved story, including Loose Stories.
+- Added developer-only **Download review ZIP** for Volumes. Volume exports use the current live Volume membership and story order.
+- Review ZIPs contain plain-text story content, JSON manifests, the saved cover, and all saved interior illustrations, organised into one folder per story.
+- Review export is deliberately separate from KDP/EPUB publication packaging and requires no Supabase migration.
+
 # Moonbeam Stories V252.26
 
 - Fixed Edit Series Bible save/close crash caused by stale `closeSeriesPlanner25194` reference.
