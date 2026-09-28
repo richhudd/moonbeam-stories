@@ -1,4 +1,13 @@
-# Moonbeam Stories V252.17
+# Moonbeam Stories V252.18
+
+
+## V252.18 — full Astra series context + explicit book/volume architecture
+
+- Removed Moonbeam's silent application-level truncation from the Astra Series Development context. Developer input, Series Plan, Volume Plan, Series-world Cast and prior-volume context are now passed in full rather than sliced to arbitrary character limits.
+- Removed the 20-character Series-world Cast cap and 40-prior-volume cap in the Astra planning request.
+- Added permanent Astra publishing architecture: a Series contains Volumes; a Volume contains multiple separate Moonbeam stories/books; each individual Moonbeam book is a complete short illustrated read-aloud story of 6–8 story pages.
+- The existing new-Series setup continues to support optional Series-world Cast, so characters such as Biscuit can be supplied canonically from the start.
+- No Supabase migration required.
 
 ## V252.17 — remove automatic post-paint Astra replacement loop
 - Builds directly on V252.16.
