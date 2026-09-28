@@ -1,4 +1,15 @@
-# Moonbeam Stories V252.15
+# Moonbeam Stories V252.16
+
+## V252.16 — collapsible Publishing Library folders
+
+- Series folders can now be collapsed and expanded independently.
+- Volume folders can now be collapsed and expanded independently, including Loose Volumes.
+- Each Series/Volume open/closed state is remembered in this browser across library rerenders, navigation and refreshes.
+- Folder action buttons remain inside the expanded content and do not interfere with the folder toggle.
+- Built directly from V252.15; the saved-story illustration-edit fix and V252.14 flexible Publishing Library support are preserved.
+- No additional Supabase migration is required for V252.16.
+- Cache-busted browser assets to V252.16.
+
 
 ## V252.15 — saved-story illustration edit + Publishing Library diagnostics
 - Fixed saved-story illustration editing crash: `requestIllustration()` now prepares `continuityThumb` before sending the correction request, including after a story has been saved and reopened.
