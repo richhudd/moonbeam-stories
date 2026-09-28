@@ -2125,12 +2125,24 @@ function showDeveloperCandidate(candidate){
  }
  const retry=$('developerCandidateRetry');if(retry){retry.style.display='';retry.textContent=candidate.kind==='illustration'?'Try again':'Suggest another'};
 }
+async function persistCorrectedCover(book,image){
+ book.artwork=book.artwork||{};book.artwork.cover=image;
+ if(book.isSaved&&book.savedStoryId){
+  const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');
+  const replacementBlob=dataUrlToBlob(image);const up=await supabaseClient.storage.from('saved-story-art').upload(path,replacementBlob,{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;
+  await savedArtPut(path,replacementBlob);const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};delete book.savedAssetUrls[path];
+  const assets={...(book.savedAssets||{})};delete assets.kdp_description;const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets;
+ }
+ persistCurrentDraft();
+}
 async function acceptDeveloperCandidate(){
  const c=developerCorrectionCandidate,book=currentBook,st=$('developerCorrectionStatus');if(!c||!book)return;
  try{
-  if(c.kind==='illustration')await persistCorrectedIllustration(book,c.index,c.image);
+  if(c.kind==='illustration'&&c.target==='cover')await persistCorrectedCover(book,c.image);
+  else if(c.kind==='illustration')await persistCorrectedIllustration(book,c.index,c.image);
   else await persistCorrectedText(book,c.index,c.text);
-  developerCorrectionCandidate=null;if(st)st.textContent='Accepted and saved.';closeDeveloperCorrection();renderBookPage(c.index)
+  developerCorrectionCandidate=null;if(st)st.textContent='Accepted and saved.';closeDeveloperCorrection();
+  if(c.target==='cover'){const ci=$('coverImage');if(ci)await revealCoverImage(ci,c.image);showCover()}else renderBookPage(c.index)
  }catch(e){console.error(e);if(st)st.textContent=e?.message||String(e)}
 }
 function rejectDeveloperCandidate(){
@@ -2155,9 +2167,7 @@ async function runDeveloperCorrection(kind,maskReady=false){
    const prompt=`Front cover ARTWORK ONLY for the finished children's story “${book.title||''}”.\n\nFINISHED STORY — AUTHORITATIVE:\n${fullStory}\n\nDEVELOPER CORRECTION — AUTHORITATIVE:\n${instruction}\n\nThe existing cover artwork was rejected because of the inconsistency described above. Correct that inconsistency. Story facts and the developer instruction override artistic inference. Keep recurring characters faithful to their Moonbeam Cast references. Do not add title, author, dedication, logos or any text; Moonbeam overlays those separately.`;
    const key=`${coverKey(book)}:developer-correction:${Date.now()}`;
    const image=await requestIllustration(key,prompt,`Cover visual continuity bible: ${book.character_bible||'Keep recurring characters, locations and important objects consistent.'}`,true,refs.length?refs:null,false,null,null,true);
-   book.artwork=book.artwork||{};book.artwork.cover=image;
-   if(book.isSaved&&book.savedStoryId){const path=book.savedAssets?.cover;if(!path)throw new Error('This saved book has no cover artwork slot to replace.');const replacementBlob=dataUrlToBlob(image);const up=await supabaseClient.storage.from('saved-story-art').upload(path,replacementBlob,{contentType:'image/webp',upsert:true,cacheControl:'0'});if(up.error)throw up.error;await savedArtPut(path,replacementBlob);const old=book.savedAssetUrls?.[path];if(old&&String(old).startsWith('blob:'))try{URL.revokeObjectURL(old)}catch{};delete book.savedAssetUrls[path];const assets={...(book.savedAssets||{})};delete assets.kdp_description;const u=await supabaseClient.from('saved_stories').update({saved_assets:assets}).eq('id',book.savedStoryId).eq('parent_id',currentUser.id).select('saved_assets').single();if(u.error)throw u.error;book.savedAssets=u.data?.saved_assets||assets}
-   persistCurrentDraft();closeDeveloperCorrection();const ci=$('coverImage');if(ci)await revealCoverImage(ci,image);return;
+   showDeveloperCandidate({kind:'illustration',target:'cover',index,image,instruction});if(st)st.textContent='Review the replacement cover. The original has not been changed.';return;
   }
   if(kind==='text'){
    const token=await currentAccessToken();if(!token)throw new Error('Please sign in again.');
@@ -2973,6 +2983,7 @@ window.editStoryConcept25196=async(seriesId,volumeId,index)=>{const v=volume2519
 async function approveVolumePlan25196(seriesId,volumeId){const v=volume25194(volumeId),p={...(v.plan||{})},stories=(p.stories||[]);if(stories.length<8){alert('Plan at least 8 stories before generating this volume.');return}const finalPlan={...p,stories:stories.map(x=>({...x,status:'planned'})),stage:'ready',approved:true,approved_at:new Date().toISOString(),final_story_count:stories.length};await developerSeriesRequest({op:'save-volume-plan',id:volumeId,plan:finalPlan,status:'ready'});await loadDeveloperSeriesLibrary();renderVolumeProduction25197(seriesId,volumeId)}
 
 
+// V252.26 — cover illustration corrections are non-destructive candidates until explicitly accepted.
 // V252.25 — approved Series Bible can be edited directly and saved without reopening Astra development.
 // V252.23 — editable Series-world Cast with Series-specific relationships/roles.
 // V252.22 — generic Series-inherited Volume planning; recurring identities now belong to the Series.

@@ -1,4 +1,4 @@
-# Moonbeam Stories V252.25
+# Moonbeam Stories V252.26
 
 - Fixed Edit Series Bible save/close crash caused by stale `closeSeriesPlanner25194` reference.
 - Save now persists the Bible, refreshes the Publishing Library, and closes the editor using the live Series planner modal.
@@ -1553,6 +1553,13 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Astra's Volume-development prompt explicitly forbids inventing a new incarnation/role/identity for the recurring lead and treats the Series Bible and canonical Cast as inherited authority.
 - Story production now labels the inherited context as the Volume creative brief rather than a Volume character.
 - No Supabase migration required.
+
+
+## V252.26 — Non-destructive story-cover illustration corrections
+- Developer story-cover illustration corrections now use the same candidate-review workflow as ordinary page illustration corrections.
+- Generating a corrected cover no longer overwrites the current cover immediately. The replacement is previewed while the original remains saved.
+- **Accept replacement** persists the candidate cover; **Try again** can generate another candidate; **Keep original** discards the candidate without changing the book.
+- Saved-story cover storage/cache persistence occurs only after explicit acceptance. No database migration or new API endpoint is required.
 
 ## V252.25 — Direct approved Series Bible editing
 - Approved Series folders now expose Edit Series Bible and Save Series Bible directly; Astra redevelopment is not required for manual editorial corrections.
