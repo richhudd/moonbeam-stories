@@ -1,3 +1,10 @@
+# Moonbeam Stories V252.36
+
+## V252.36 — Astra structured-response fix
+- Fixes false `Astra returned an invalid Fiction Studio response` errors caused by assuming structured Responses API output always appears in one text field.
+- Adds one robust server-side extractor for top-level output text, message content text/output_text, and parsed/json structured payloads.
+- Keeps the existing strict Fiction Studio schemas; no Series Bible validation has been weakened.
+
 # Moonbeam Stories V252.35
 
 ## V252.35 — Fiction chapter-plan validation
