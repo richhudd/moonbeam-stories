@@ -1780,3 +1780,21 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - The server rejects missing/invalid editorial model values instead of silently falling back to Luna.
 - Client and server both stop before chapter editing if the created run does not match the chosen model.
 - Active editorial passes now have a visible reject control; saved chapters remain preserved in history.
+
+
+## V252.50 — Fiction Studio novel reader
+
+- Adds a developer-only **Read novel** control to saved Fiction Studio books.
+- Desktop reader uses a clean two-page text spread with no illustrations, previous/next controls and arrow-key navigation.
+- Mobile reader becomes a single-page horizontal swipe sequence with scroll snapping.
+- Reader can switch between the first draft and preserved Revision, Line/style and Proof versions; in-progress editorial versions are assembled from the last completed source plus their saved edited chapters.
+- Chapter headings and page counters are retained while prose is paginated into comfortable reading chunks.
+- No Supabase migration and no additional Vercel endpoint are required; the reader reuses the developer Fiction Studio generate endpoint.
+
+
+## V252.51 — repeatable revisions + editorial direction
+- Every editorial pass now has an optional **Editorial direction for this pass** field. The instruction is persisted with that exact run and reused on resume.
+- Revision is repeatable before Line/style. After a completed Revision, the workspace offers **Run another revision** from the latest completed Revision or **Run Line/style**.
+- Each editorial run stores its exact `source_run_id`, so repeated revisions, continuity initialization, reader assembly and later stages use the intended source version rather than merely the latest run with the same stage name.
+- Model, source version and direction lock when a pass starts. Rejecting a pass preserves its saved chapters/history without making it the active source.
+- Requires `supabase/v252_51_multi_revision_direction.sql`. No new Vercel endpoint; API count remains 12.

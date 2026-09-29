@@ -4271,3 +4271,35 @@ body.fiction-studio-open{overflow:hidden}.fiction-studio-25229{position:fixed;in
 /* V252.41 — isolated per-book Fiction Studio economics */
 .fiction-usage-card{margin-top:24px;padding:18px;border:1px solid rgba(216,185,130,.28);border-radius:14px;background:#18161c}.fiction-usage-card h3{margin:0 0 14px}.fiction-usage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fiction-usage-grid>div{padding:13px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#211e26}.fiction-usage-grid span,.fiction-usage-grid strong,.fiction-usage-grid small{display:block}.fiction-usage-grid span{color:#bdb5c5;font-size:.78rem}.fiction-usage-grid strong{font-size:1.3rem;margin:3px 0}.fiction-usage-grid small{color:#bdb5c5;line-height:1.35}@media(max-width:700px){.fiction-usage-grid{grid-template-columns:1fr}}
 .fiction-metering-state{margin:0 0 12px;color:#d8b982;font-size:.82rem;font-weight:700}
+
+
+/* V252.50 — developer Fiction Studio novel reader */
+body.fiction-reader-open-25250{overflow:hidden}
+.fiction-reader-25250{position:fixed;inset:0;z-index:100100;background:#151319;color:#211d1a;display:flex;flex-direction:column;overflow:hidden;outline:none}
+.fiction-reader-head-25250{flex:0 0 auto;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:18px;padding:12px 18px;background:#1d1a20;color:#f6f0e8;border-bottom:1px solid rgba(255,255,255,.14)}
+.fiction-reader-head-25250 button{background:transparent;border:1px solid rgba(255,255,255,.25);color:#f6f0e8;border-radius:9px;padding:9px 12px;font:inherit;cursor:pointer}
+.fiction-reader-head-25250>div{min-width:0;text-align:center}.fiction-reader-head-25250 strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fiction-reader-head-25250 span{display:block;color:#bdb5c5;font-size:.82rem;margin-top:2px}
+.fiction-reader-head-25250 select{max-width:260px;background:#29252d;color:#f6f0e8;border:1px solid rgba(255,255,255,.24);border-radius:9px;padding:9px 34px 9px 10px;font:inherit}
+.fiction-reader-stage-25250{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:58px minmax(0,1fr) 58px;align-items:stretch;gap:10px;padding:18px 14px 12px;background:#151319}
+.fiction-reader-spread-25250{min-width:0;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:2px;max-width:1180px;width:100%;margin:0 auto;align-self:stretch}
+.fiction-reader-page-25250{min-width:0;min-height:0;background:#f7f1e6;display:flex;flex-direction:column;box-sizing:border-box;padding:clamp(24px,3vw,46px) clamp(24px,4vw,56px) 20px;overflow:hidden;border:1px solid #d7cdbd}
+.fiction-reader-spread-25250 .fiction-reader-page-25250:first-child{border-radius:12px 2px 2px 12px;box-shadow:inset -16px 0 24px -28px #000}.fiction-reader-spread-25250 .fiction-reader-page-25250:nth-child(2){border-radius:2px 12px 12px 2px;box-shadow:inset 16px 0 24px -28px #000}
+.fiction-reader-page-inner-25250{flex:1 1 auto;overflow:hidden;font-family:Georgia,'Times New Roman',serif;font-size:clamp(16px,1.35vw,20px);line-height:1.62;color:#241f1b}.fiction-reader-page-inner-25250 p{margin:0 0 1em;text-indent:1.35em}.fiction-reader-page-inner-25250 .fiction-reader-chapter-25250+p{text-indent:0}
+.fiction-reader-chapter-25250{text-align:center;margin:0 0 2.2em}.fiction-reader-chapter-25250 span{font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.16em;font-size:.68em;color:#756d64}.fiction-reader-chapter-25250 h2{font-family:Georgia,'Times New Roman',serif;font-weight:500;font-size:1.45em;margin:.5em 0 0;color:#241f1b}
+.fiction-reader-page-25250 footer{text-align:center;color:#8b8177;font:12px system-ui,sans-serif;padding-top:6px}.fiction-reader-page-blank-25250{background:#ece4d6}
+.fiction-reader-nav-25250{align-self:center;width:48px;height:64px;border-radius:24px;border:1px solid rgba(255,255,255,.2);background:#211e26;color:#f6f0e8;font-size:38px;line-height:1;cursor:pointer}.fiction-reader-nav-25250:disabled{opacity:.2;cursor:default}
+.fiction-reader-progress-25250{flex:0 0 auto;text-align:center;color:#bdb5c5;background:#151319;font-size:.82rem;padding:0 0 10px}
+.fiction-reader-mobile-track-25250{display:none}.fiction-reader-loading-25250,.fiction-reader-error-25250{margin:auto;color:#f6f0e8;padding:30px;text-align:center}.fiction-reader-error-25250 button{display:block;margin:0 auto 20px}
+@media(max-width:700px){
+ .fiction-reader-head-25250{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:9px 10px}.fiction-reader-head-25250>div{text-align:left}.fiction-reader-head-25250>label{grid-column:1/-1}.fiction-reader-head-25250 select{width:100%;max-width:none;font-size:16px}
+ .fiction-reader-stage-25250{display:none}.fiction-reader-mobile-track-25250{display:flex;flex:1 1 auto;min-height:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;background:#151319;overscroll-behavior-x:contain}
+ .fiction-reader-mobile-track-25250 .fiction-reader-page-25250{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always;border:0;border-radius:0;padding:26px 24px 18px}
+ .fiction-reader-page-inner-25250{font-size:18px;line-height:1.58;overflow:hidden}.fiction-reader-progress-25250{padding:8px 0 10px}
+}
+
+/* V252.51 Fiction Studio repeatable editorial passes */
+.fiction-editorial-pass-25251{margin-top:16px;padding-top:14px;border-top:1px solid var(--border,#d8d8d8)}
+.fiction-editorial-pass-25251 h4{margin:0 0 10px}
+.fiction-editorial-choice-grid-25251{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.fiction-editorial-pass-25251 textarea{width:100%;box-sizing:border-box;resize:vertical}
+@media(max-width:700px){.fiction-editorial-choice-grid-25251{grid-template-columns:1fr}}
