@@ -194,7 +194,7 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
       if(mode==='create'){
         const penName=String(body.pen_name||'').trim(),seriesName=String(body.series_name||'').trim(),idea=String(body.idea||'').trim();
         if(!penName||!seriesName||!idea)return res.status(400).json({error:'Pen name, series name and Series Brief are required.'});
-        const rows=await rest('developer_fiction_series',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,pen_name:penName,series_name:seriesName,genre:'',idea,heat_level:'',target_length:null,status:'development',development_model:fictionModel25243(body.model).id})});
+        const rows=await rest('developer_fiction_series',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,pen_name:penName,series_name:seriesName,idea,status:'development',development_model:fictionModel25243(body.model).id})});
         return res.status(200).json({series:rows?.[0]||null});
       }
       const id=String(body.id||'').trim();if(!id)return res.status(400).json({error:'Fiction series id is required.'});

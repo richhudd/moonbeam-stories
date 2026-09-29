@@ -88,7 +88,7 @@ Fiction Studio progress is now derived from one authoritative calculation: plann
 - Back Room entry is mounted only after Moonbeam's existing server-verified developer access check succeeds. Every Fiction Studio API operation independently verifies the authenticated user against `MOONBEAM_DEVELOPER_EMAIL`; hiding the UI is not the security boundary.
 - Fiction Studio data uses a new `developer_fiction_series` table. The migration enables RLS and explicitly revokes `anon` and `authenticated` table access; browser clients receive no policy. Reads/writes occur only through the server-side developer-gated API.
 - Fiction Studio Astra has a separate full-length commercial-fiction series-development prompt and structured Series Bible. It does not call the children's story planner, final story writer, illustration pipeline, Sunburst, Cast, Saved Stories, or Publishing Library.
-- Stage 1 supports: pen name, series name, genre/subgenre, target novel length, heat level, optional starting idea, Astra series development/refinement, direct Bible review/editing, and explicit Bible save.
+- Stage 1 supports: pen name, series name, Series Brief, selectable Series Development model, series development/refinement, direct Bible review/editing, and explicit Bible save.
 - Stage 1 deliberately stops before novel outlining, chapter generation, cover generation, KDP export, or publication.
 - No new Vercel function was added: the isolated Back Room action branches at the top of the existing authenticated `/api/generate` function, preserving Moonbeam's 12-function deployment limit while keeping the generation logic and prompts separate.
 - Supabase migration required: `SUPABASE_V252_29_FICTION_STUDIO.sql`.
@@ -1718,3 +1718,6 @@ V252.44 — Fiction Studio seed-first Series Development. New series creation no
 
 
 V252.45 — Fiction Studio Series Development instruction simplified: the Series Brief is the brief. Removed the enumerated list of model “discretions” and special-case examples. The development model is instructed simply to deliver the best creative and commercial outcome that fully fulfils the supplied brief. Updated creation-page helper text to match.
+
+
+V252.46 — Fiction Studio legacy-field cleanup. Completely removed the retired Series Creation genre/subgenre, heat and target-length plumbing: new-series API writes no longer send those fields, and the accompanying Supabase migration drops the obsolete developer_fiction_series columns. Book-level planning fields such as target_words and heat_progression remain model-authored Book Plan outputs.
