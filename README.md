@@ -1721,3 +1721,11 @@ V252.45 — Fiction Studio Series Development instruction simplified: the Series
 
 
 V252.46 — Fiction Studio legacy-field cleanup. Completely removed the retired Series Creation genre/subgenre, heat and target-length plumbing: new-series API writes no longer send those fields, and the accompanying Supabase migration drops the obsolete developer_fiction_series columns. Book-level planning fields such as target_words and heat_progression remain model-authored Book Plan outputs.
+
+## V252.46.1 — Fiction Studio book-path restoration
+- Keeps each Series Bible Book 1/2/3/... card as the permanent entry point for that immutable book position.
+- Reconciles those cards with existing `developer_fiction_books` records by `position`; no manuscript, plan or editorial data is moved or regenerated.
+- Existing books open their saved Book workspace; undeveloped slots open Book Development.
+- Card status is derived from authoritative saved plan/chapter/editorial state (including FIRST DRAFT COMPLETE and editorial-stage completion), not stale display status.
+- Removes the duplicate Saved Novels presentation. The original manual Book Development → manuscript → editorial pathways remain unchanged.
+- No Autopilot or automation added. No Supabase migration required.
