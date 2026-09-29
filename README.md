@@ -1764,3 +1764,12 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Makes an interrupted developmental-edit request safely resumable instead of leaving a running editorial row that cannot continue.
 - No Autopilot and no database migration.
 - Persistence remains server-side at every durable checkpoint: Series Bible save; work architecture; each validated Book Plan batch; each manuscript chapter; continuity ledger (with rebuild from saved chapter deltas after interruption); editorial run; and each edited chapter. Original draft chapters are never overwritten by editorial stages.
+
+
+## V252.48 — resilient editorial resume and patching
+- Line/style and Proof no longer abort an entire chapter because one model-supplied `find` excerpt differs only by harmless quote/whitespace transcription. Exact matching remains first choice; a tightly controlled normalized match is used only when it resolves to one unique source span.
+- Any patch that still cannot be located uniquely, or overlaps another accepted patch, is skipped individually instead of throwing away the whole chapter. Successfully verified patches are applied and the chapter checkpoint is saved.
+- Editorial prompts now ask for longer, distinctive verbatim source excerpts to reduce ambiguous patch matches.
+- Resume progress no longer resets its visible chapter counter to 1. It reports the actual chapter saved/next chapter returned by the server.
+- An already-running editorial stage now shows its locked model and disables the selector; the button says Resume instead of Run. This prevents the UI from implying that changing the dropdown can change a model already locked to the run.
+- No Supabase migration required beyond the V252.47 editorial-continuity migration.
