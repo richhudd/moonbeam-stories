@@ -204,10 +204,23 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
             const hasArchitecture=book.book_plan&&typeof book.book_plan==='object'&&Object.keys(book.book_plan).length>0;
             const hasChapters=Array.isArray(book.book_plan?.chapters)&&book.book_plan.chapters.length>0;
             const chapterCount=Math.max(0,Number(book.book_plan?.chapter_count)||0);
-            const inferredPhase=(hasChapters&&chapterCount&&book.book_plan.chapters.length>=chapterCount)?'complete':hasArchitecture?'chapters':'architecture';
-            const nextBatch=hasChapters?Math.max(...book.book_plan.chapters.map(c=>Number(c.number)||0))+1:1;
-            const adoptedState={phase:priorState.phase||inferredPhase,next_batch_start:Number(priorState.next_batch_start)||nextBatch,direction:String(priorState.direction||body.message||'')};
-            const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:adoptedState,updated_at:new Date().toISOString()})});
+            // Repair legacy malformed batches deterministically: retain the first valid occurrence
+            // of each numbered chapter, discard duplicates/out-of-range planning commentary.
+            let repairedPlan=book.book_plan||{};
+            if(hasChapters&&chapterCount){
+              const seen=new Set(),clean=[];
+              for(const c of book.book_plan.chapters){
+                const n=Number(c?.number);
+                if(Number.isInteger(n)&&n>=1&&n<=chapterCount&&!seen.has(n)){seen.add(n);clean.push({...c,number:n})}
+              }
+              clean.sort((a,b)=>a.number-b.number);repairedPlan={...book.book_plan,chapters:clean};
+            }
+            const validNumbers=new Set((repairedPlan.chapters||[]).map(c=>Number(c.number)));
+            const complete=chapterCount>0&&validNumbers.size===chapterCount&&Array.from({length:chapterCount},(_,i)=>i+1).every(n=>validNumbers.has(n));
+            let firstMissing=1;while(firstMissing<=chapterCount&&validNumbers.has(firstMissing))firstMissing++;
+            const inferredPhase=complete?'complete':hasArchitecture?'chapters':'architecture';
+            const adoptedState={phase:complete?'complete':(priorState.phase==='architecture'?'architecture':inferredPhase),next_batch_start:complete?chapterCount+1:firstMissing,direction:String(priorState.direction||body.message||'')};
+            const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({book_plan:repairedPlan,development_state:adoptedState,status:complete?'planned':book.status,updated_at:new Date().toISOString()})});
             book=rows?.[0]||{...book,development_state:adoptedState};
           }else{
             const workingTitle=String(body.working_title||source.working_title||`Book ${position}`).trim(),premise=String(body.premise||source.premise||'').trim();if(!premise)return res.status(400).json({error:'A proposed book premise is required.'});
@@ -226,7 +239,26 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
         const prompt=`You are Astra building the chapter architecture for an adult commercial novel. Current database values are authoritative.\nSERIES: ${series.series_name}\nSERIES BIBLE: ${JSON.stringify(series.series_bible||{})}\nNOVEL: ${book.working_title}\nNOVEL ARCHITECTURE: ${JSON.stringify({...plan,chapters:undefined})}\nEXISTING CHAPTER PLAN: ${JSON.stringify(plan.chapters||[])}\nNow plan chapters ${start} through ${end} of ${count}. Preserve causality and pacing across the whole novel. Each chapter must materially change situation, relationship, knowledge, stakes or decision. Do not draft manuscript.`;
         const chapter={type:'object',additionalProperties:false,required:['number','title','pov','purpose','events','relationship_shift','continuity'],properties:{number:{type:'integer'},title:{type:'string'},pov:{type:'string'},purpose:{type:'string'},events:{type:'string'},relationship_shift:{type:'string'},continuity:{type:'string'}}};const schema={type:'object',additionalProperties:false,required:['chapters'],properties:{chapters:{type:'array',minItems:1,maxItems:8,items:chapter}}};
         const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:5000,text:{format:{type:'json_schema',name:'fiction_chapter_plan_batch',strict:true,schema}}})});const raw=await rr.text();let d={};try{d=JSON.parse(raw)}catch{}if(!rr.ok)return res.status(502).json({error:d?.error?.message||`Astra returned HTTP ${rr.status}`});let out=d.output_text||'';if(!out&&Array.isArray(d.output))for(const it of d.output)for(const p of(it.content||[]))if(typeof p.text==='string')out+=p.text;let parsed;try{parsed=JSON.parse(out)}catch{return res.status(502).json({error:'Astra returned invalid chapter-plan batch.'})}
-        const merged=[...(plan.chapters||[]).filter(c=>Number(c.number)<start),...(parsed.chapters||[])].sort((a,b)=>a.number-b.number),done=end>=count,nextState={...state,phase:done?'complete':'chapters',next_batch_start:end+1,direction};const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({book_plan:{...plan,chapters:merged},status:done?'planned':'planning',development_state:nextState,updated_at:new Date().toISOString()})});return res.status(200).json({book:rows?.[0],complete:done,progress:done?`Book Plan complete (${count} chapters).`:`Chapters ${start}–${end} saved.`});
+        // V252.35: never trust batch numbering blindly. Accept exactly one chapter for every
+        // requested number and nothing outside the requested range. Invalid Astra output is
+        // rejected without advancing the persisted checkpoint, so Resume safely retries it.
+        const batch=Array.isArray(parsed.chapters)?parsed.chapters:[];
+        const byNumber=new Map();
+        for(const c of batch){
+          const n=Number(c?.number);
+          if(Number.isInteger(n)&&n>=start&&n<=end&&!byNumber.has(n))byNumber.set(n,{...c,number:n});
+        }
+        const missing=[];for(let n=start;n<=end;n++)if(!byNumber.has(n))missing.push(n);
+        if(missing.length)return res.status(502).json({error:`Astra returned an invalid chapter-plan batch. Expected chapters ${start}–${end}; missing ${missing.join(', ')}. Nothing from this batch was saved. Resume Book Development to retry.`});
+        const accepted=[];for(let n=start;n<=end;n++)accepted.push(byNumber.get(n));
+        const before=(plan.chapters||[]).filter(c=>Number(c.number)<start);
+        const after=(plan.chapters||[]).filter(c=>Number(c.number)>end&&Number(c.number)<=count);
+        const merged=[...before,...accepted,...after].sort((a,b)=>Number(a.number)-Number(b.number));
+        const unique=new Set(merged.map(c=>Number(c.number)));
+        const done=end>=count&&unique.size===count&&Array.from({length:count},(_,i)=>i+1).every(n=>unique.has(n));
+        const nextState={...state,phase:done?'complete':'chapters',next_batch_start:end+1,direction};
+        const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({book_plan:{...plan,chapters:merged},status:done?'planned':'planning',development_state:nextState,updated_at:new Date().toISOString()})});
+        return res.status(200).json({book:rows?.[0],complete:done,progress:done?`Book Plan complete (${count} validated chapters).`:`Chapters ${start}–${end} validated and saved.`});
       }
       if(mode==='develop-book'){
         const proposed=Array.isArray(series.series_bible?.proposed_books)?series.series_bible.proposed_books:[];

@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.35
+
+## V252.35 — Fiction chapter-plan validation
+- Rejects malformed Astra planning batches unless every requested chapter number is present exactly once.
+- Discards out-of-range chapter commentary rather than appending it to the Book Plan.
+- A failed batch does not advance the checkpoint; Resume Book Development retries safely.
+- Existing malformed plans are repaired on adoption by retaining one valid chapter per number and dropping duplicate/out-of-range entries.
+- Completion now requires a contiguous validated 1..N chapter set.
+
 # Moonbeam Stories V252.34
 
 ## V252.34 — Existing-novel adoption fix
