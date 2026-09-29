@@ -1,4 +1,4 @@
-# V252.53
+# V252.54
 
 - Fixes Fiction Studio Rename Character preview/apply for first-draft continuity records. `developer_fiction_continuity` is keyed by `book_id` and has no `id` column, so the deterministic rename tool now updates that record using `book_id + parent_id`.
 - No database migration required.
@@ -1803,6 +1803,17 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Each editorial run stores its exact `source_run_id`, so repeated revisions, continuity initialization, reader assembly and later stages use the intended source version rather than merely the latest run with the same stage name.
 - Model, source version and direction lock when a pass starts. Rejecting a pass preserves its saved chapters/history without making it the active source.
 - Requires `supabase/v252_51_multi_revision_direction.sql`. No new Vercel endpoint; API count remains 12.
+
+
+## V252.54 — manual Fiction Studio Book Plan editor
+
+- Adds **Edit Book Plan** after Book Development completes and before Chapter 1 is generated.
+- The editor exposes the novel title, target length, architecture fields and every chapter's title, POV, events, purpose, relationship shift and continuity.
+- Chapters can be added, removed and reordered; chapter numbers and `chapter_count` are recalculated deterministically on save.
+- Saving makes the edited structured plan authoritative for manuscript generation and synchronises the saved novel title.
+- Server-side validation prevents malformed/incomplete chapter plans and locks plan editing once manuscript generation has started, so an edited plan cannot silently conflict with already-written chapters.
+- Fixes the Book Development batcher so it now honours the architecture model's chosen `chapter_count` (1–500) instead of silently forcing every plan to at least 20 chapters. This was the cause of plans whose metadata said 13 chapters while the chapter array contained 20.
+- No AI call is used for manual editing and no Supabase migration is required.
 
 ## V252.53 — deterministic Fiction Studio character rename
 
