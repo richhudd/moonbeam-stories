@@ -1,3 +1,13 @@
+# Moonbeam Stories V252.37
+
+## V252.37 — Fiction Studio Book Development response fix
+- Traced the novel-architecture failure to two resumable Book Development calls that still used the old local `d.output_text` parser and therefore bypassed the V252.36 structured-response extractor.
+- Novel architecture and chapter-plan batches now use the same robust structured-output extractor as the Series Bible path.
+- Detects incomplete Responses API results explicitly and preserves the resumable checkpoint instead of misreporting malformed JSON.
+- Raises architecture output allowance from 5,000 to 8,000 tokens and chapter-plan batch allowance from 5,000 to 7,000 to reduce truncation risk.
+- Strict schemas and V252.35 chapter-number validation remain unchanged.
+- No database migration required.
+
 # Moonbeam Stories V252.36
 
 ## V252.36 — Astra structured-response fix
