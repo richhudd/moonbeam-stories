@@ -1715,3 +1715,6 @@ V252.44 — Fiction Studio seed-first Series Development: removed Genre/Subgenre
 
 
 V252.44 — Fiction Studio seed-first Series Development. New series creation now asks only for pen name, series name, Series Brief and Series Development model. Genre/subgenre, heat and target length controls no longer influence Series Development. The selected model has explicit discretion over form, genre, readership, explicitness, work count, work length and architecture, including single-work and open-ended outcomes. Work Development derives scale from the approved Bible instead of legacy series form fields. Saved novel badges are derived from authoritative manuscript progress so completed drafts no longer remain labelled PLAN_APPROVED.
+
+
+V252.45 — Fiction Studio Series Development instruction simplified: the Series Brief is the brief. Removed the enumerated list of model “discretions” and special-case examples. The development model is instructed simply to deliver the best creative and commercial outcome that fully fulfils the supplied brief. Updated creation-page helper text to match.
