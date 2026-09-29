@@ -1,3 +1,14 @@
+# Moonbeam Stories V252.33
+
+## V252.33 — Persistent Fiction Studio
+- Resumable staged Book Development fixes the monolithic 20–50 chapter planning request that could 504.
+- Generate Novel automatically writes sequential chapters, checkpointing every chapter and continuity update; Resume Novel continues from stored state.
+- Persistent saved-novel library plus Series/Novel rename and cascading delete controls.
+- Current database identity/state is authoritative for subsequent Astra requests.
+- Novel and Series review ZIP exports, including partial manuscripts.
+- Server-side export/context reconstruction avoids shuttling the accumulating manuscript through the browser.
+- Developer-only Back Room isolation retained; 12 API-file ceiling unchanged.
+
 # Moonbeam Stories V252.32
 
 ## V252.32 — Fiction Studio manuscript test

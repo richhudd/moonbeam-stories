@@ -165,6 +165,52 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
         const rows=await rest(`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=position.asc`);
         return res.status(200).json({books:Array.isArray(rows)?rows:[]});
       }
+      // V252.33 — persistent Fiction Studio library management and resumable jobs.
+      if(mode==='update-series'){
+        const patch={updated_at:new Date().toISOString()};
+        if(body.series_name!==undefined){const v=String(body.series_name||'').trim();if(!v)return res.status(400).json({error:'Series name cannot be empty.'});patch.series_name=v}
+        if(body.pen_name!==undefined){const v=String(body.pen_name||'').trim();if(!v)return res.status(400).json({error:'Pen name cannot be empty.'});patch.pen_name=v}
+        if(body.genre!==undefined){const v=String(body.genre||'').trim();if(!v)return res.status(400).json({error:'Genre cannot be empty.'});patch.genre=v}
+        if(body.heat_level!==undefined)patch.heat_level=String(body.heat_level||'').trim();
+        if(body.target_length!==undefined)patch.target_length=Math.max(30000,Math.min(150000,Number(body.target_length)||80000));
+        const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patch)});
+        return res.status(200).json({series:rows?.[0]||null});
+      }
+      if(mode==='delete-series'){
+        await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'DELETE'});
+        return res.status(200).json({ok:true});
+      }
+      if(mode==='update-book'||mode==='delete-book'){
+        const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
+        const books=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);if(!books?.[0])return res.status(404).json({error:'Fiction book not found.'});
+        if(mode==='delete-book'){await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'DELETE'});return res.status(200).json({ok:true})}
+        const title=String(body.working_title||'').trim();if(!title)return res.status(400).json({error:'Novel title cannot be empty.'});
+        const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({working_title:title,updated_at:new Date().toISOString()})});
+        return res.status(200).json({book:rows?.[0]||null});
+      }
+      if(mode==='start-book-development'||mode==='continue-book-development'){
+        const proposed=Array.isArray(series.series_bible?.proposed_books)?series.series_bible.proposed_books:[];
+        const sourceIndex=Math.max(0,Number(body.source_index)||0),source=proposed[sourceIndex]||{};
+        let book=null;
+        if(body.book_id){const br=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(String(body.book_id))}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);book=br?.[0]||null}
+        if(!book){
+          const workingTitle=String(body.working_title||source.working_title||`Book ${sourceIndex+1}`).trim(),premise=String(body.premise||source.premise||'').trim();if(!premise)return res.status(400).json({error:'A proposed book premise is required.'});
+          const rows=await rest('developer_fiction_books',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,position:sourceIndex+1,working_title:workingTitle,premise,book_plan:{},status:'planning',development_state:{phase:'architecture',next_batch_start:1,direction:String(body.message||'')}})});book=rows?.[0]
+        }
+        const state=book.development_state||{},phase=state.phase||'architecture',direction=String(state.direction||body.message||'');
+        if(phase==='complete')return res.status(200).json({book,complete:true});
+        if(phase==='architecture'){
+          const prompt=`You are Astra, principal novelist and book editor in a private adult commercial-fiction studio. Build the NOVEL-LEVEL ARCHITECTURE only; do not write chapter plans or manuscript. Current database values are authoritative.\nPEN NAME: ${series.pen_name}\nSERIES: ${series.series_name}\nGENRE: ${series.genre}\nHEAT: ${series.heat_level}\nSERIES BIBLE: ${JSON.stringify(series.series_bible||{})}\nNOVEL TITLE: ${book.working_title}\nPREMISE: ${book.premise}\nTARGET WORDS: ${series.target_length||80000}\nDEVELOPER DIRECTION: ${direction||'Develop the strongest publishable architecture.'}\nReturn rigorous full-length architecture including positioning, core promise, POV strategy, character arcs, relationship arc, external plot, heat progression, major turning points, continuity watchlist, ending, and the ideal chapter_count from 20–50. All romantic/sexual characters are adults.`;
+          const schema={type:'object',additionalProperties:false,required:['positioning','core_promise','pov_strategy','character_arcs','relationship_arc','external_plot','heat_progression','major_turning_points','continuity_watchlist','ending','chapter_count'],properties:{positioning:{type:'string'},core_promise:{type:'string'},pov_strategy:{type:'string'},character_arcs:{type:'string'},relationship_arc:{type:'string'},external_plot:{type:'string'},heat_progression:{type:'string'},major_turning_points:{type:'string'},continuity_watchlist:{type:'string'},ending:{type:'string'},chapter_count:{type:'integer',minimum:20,maximum:50}}};
+          const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:5000,text:{format:{type:'json_schema',name:'fiction_book_architecture',strict:true,schema}}})});const raw=await rr.text();let d={};try{d=JSON.parse(raw)}catch{}if(!rr.ok)return res.status(502).json({error:d?.error?.message||`Astra returned HTTP ${rr.status}`});let out=d.output_text||'';if(!out&&Array.isArray(d.output))for(const it of d.output)for(const p of(it.content||[]))if(typeof p.text==='string')out+=p.text;let arch;try{arch=JSON.parse(out)}catch{return res.status(502).json({error:'Astra returned invalid novel architecture.'})}
+          const plan={title:book.working_title,target_words:series.target_length||80000,...arch,chapters:[]};const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({book_plan:plan,status:'planning',development_state:{...state,phase:'chapters',next_batch_start:1,direction},updated_at:new Date().toISOString()})});return res.status(200).json({book:rows?.[0],complete:false,progress:`Novel architecture saved. Building chapter plan…`});
+        }
+        const plan=book.book_plan||{},count=Math.max(20,Math.min(50,Number(plan.chapter_count)||30)),start=Math.max(1,Number(state.next_batch_start)||1),end=Math.min(count,start+7);
+        const prompt=`You are Astra building the chapter architecture for an adult commercial novel. Current database values are authoritative.\nSERIES: ${series.series_name}\nSERIES BIBLE: ${JSON.stringify(series.series_bible||{})}\nNOVEL: ${book.working_title}\nNOVEL ARCHITECTURE: ${JSON.stringify({...plan,chapters:undefined})}\nEXISTING CHAPTER PLAN: ${JSON.stringify(plan.chapters||[])}\nNow plan chapters ${start} through ${end} of ${count}. Preserve causality and pacing across the whole novel. Each chapter must materially change situation, relationship, knowledge, stakes or decision. Do not draft manuscript.`;
+        const chapter={type:'object',additionalProperties:false,required:['number','title','pov','purpose','events','relationship_shift','continuity'],properties:{number:{type:'integer'},title:{type:'string'},pov:{type:'string'},purpose:{type:'string'},events:{type:'string'},relationship_shift:{type:'string'},continuity:{type:'string'}}};const schema={type:'object',additionalProperties:false,required:['chapters'],properties:{chapters:{type:'array',minItems:1,maxItems:8,items:chapter}}};
+        const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:5000,text:{format:{type:'json_schema',name:'fiction_chapter_plan_batch',strict:true,schema}}})});const raw=await rr.text();let d={};try{d=JSON.parse(raw)}catch{}if(!rr.ok)return res.status(502).json({error:d?.error?.message||`Astra returned HTTP ${rr.status}`});let out=d.output_text||'';if(!out&&Array.isArray(d.output))for(const it of d.output)for(const p of(it.content||[]))if(typeof p.text==='string')out+=p.text;let parsed;try{parsed=JSON.parse(out)}catch{return res.status(502).json({error:'Astra returned invalid chapter-plan batch.'})}
+        const merged=[...(plan.chapters||[]).filter(c=>Number(c.number)<start),...(parsed.chapters||[])].sort((a,b)=>a.number-b.number),done=end>=count,nextState={...state,phase:done?'complete':'chapters',next_batch_start:end+1,direction};const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({book_plan:{...plan,chapters:merged},status:done?'planned':'planning',development_state:nextState,updated_at:new Date().toISOString()})});return res.status(200).json({book:rows?.[0],complete:done,progress:done?`Book Plan complete (${count} chapters).`:`Chapters ${start}–${end} saved.`});
+      }
       if(mode==='develop-book'){
         const proposed=Array.isArray(series.series_bible?.proposed_books)?series.series_bible.proposed_books:[];
         const sourceIndex=Math.max(0,Number(body.source_index)||0),source=proposed[sourceIndex]||{};
@@ -197,6 +243,13 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
         const chapters=await rest(`developer_fiction_chapters?select=*&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`);
         const ledgers=await rest(`developer_fiction_continuity?select=*&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
         return res.status(200).json({chapters:Array.isArray(chapters)?chapters:[],continuity:ledgers?.[0]||{ledger:{},through_chapter:0},total_chapters:Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters.length:0});
+      }
+      if(mode==='novel-status'||mode==='export-novel'){
+        const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
+        const books=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`),book=books?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});
+        const chapters=await rest(`developer_fiction_chapters?select=*&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`);
+        const ledgers=await rest(`developer_fiction_continuity?select=*&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
+        return res.status(200).json({series,book,chapters:Array.isArray(chapters)?chapters:[],continuity:ledgers?.[0]||{ledger:{},through_chapter:0}});
       }
       if(mode==='generate-chapter'){
         const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
