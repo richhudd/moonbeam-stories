@@ -1729,3 +1729,17 @@ V252.46 — Fiction Studio legacy-field cleanup. Completely removed the retired 
 - Card status is derived from authoritative saved plan/chapter/editorial state (including FIRST DRAFT COMPLETE and editorial-stage completion), not stale display status.
 - Removes the duplicate Saved Novels presentation. The original manual Book Development → manuscript → editorial pathways remain unchanged.
 - No Autopilot or automation added. No Supabase migration required.
+
+
+## V252.46.2
+Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible book cards are permanent entry points for both legacy and newly created series. Each click re-reads authoritative developer_fiction_books state by immutable series position before opening an existing book or starting development for an undeveloped slot. Cards no longer depend on a background reconciliation request to become clickable. No automation or database migration.
+
+## V252.46.3 — Fiction Studio manual-pathway repair
+- Restores missing Series rename/delete handlers that were throwing during Series rendering and preventing later Book-card handlers from being attached.
+- Keeps each numbered proposed-book card as the permanent entry point: existing position-matched books reopen; undeveloped slots enter Book Development.
+- Re-renders immediately after Series Bible approval so newly created series expose their Book cards without requiring a reopen.
+- Makes saved-book opening depend on the authoritative `novel-status` checkpoint; accounting/editorial display failures no longer erase manuscript progress state.
+- Restores live accounting-card refresh during manuscript/editorial work.
+- Makes an interrupted developmental-edit request safely resumable instead of leaving a running editorial row that cannot continue.
+- No Autopilot and no database migration.
+- Persistence remains server-side at every durable checkpoint: Series Bible save; work architecture; each validated Book Plan batch; each manuscript chapter; continuity ledger (with rebuild from saved chapter deltas after interruption); editorial run; and each edited chapter. Original draft chapters are never overwritten by editorial stages.
