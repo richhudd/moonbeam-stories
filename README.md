@@ -1,3 +1,8 @@
+# V252.53
+
+- Fixes Fiction Studio Rename Character preview/apply for first-draft continuity records. `developer_fiction_continuity` is keyed by `book_id` and has no `id` column, so the deterministic rename tool now updates that record using `book_id + parent_id`.
+- No database migration required.
+
 # Moonbeam Stories V252.47
 
 - Rebuilt directly from the verified 62-file V252.46.4 safe base; no application files were stripped.
@@ -1799,7 +1804,7 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Model, source version and direction lock when a pass starts. Rejecting a pass preserves its saved chapters/history without making it the active source.
 - Requires `supabase/v252_51_multi_revision_direction.sql`. No new Vercel endpoint; API count remains 12.
 
-## V252.52 — deterministic Fiction Studio character rename
+## V252.53 — deterministic Fiction Studio character rename
 
 - Adds **Rename character** to every saved Fiction Studio novel.
 - This is a deterministic text/JSON operation, not an AI rewrite: it changes only whole-name matches and does not alter surrounding prose.
@@ -1809,4 +1814,4 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - A rename is blocked while any editorial pass is running, preventing an in-flight model from reintroducing the old name.
 - Apply performs the replacements and then re-reads the selected scope; success is reported only when **zero whole-name occurrences of the old name remain**.
 - Matching is Unicode-aware and case-insensitive while preserving common case forms (`Iker` → `Mateo`, `IKER` → `MATEO`, `iker` → `mateo`). Possessives such as `Iker's` are handled automatically without touching longer words such as `Ikerish`.
-- No Supabase migration is required for V252.52.
+- No Supabase migration is required for V252.53.
