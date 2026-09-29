@@ -1,3 +1,7 @@
+# V252.42
+
+Fiction Studio progress is now derived from one authoritative calculation: planned chapter numbers in the approved Book Plan versus distinct chapter numbers durably saved in Supabase. Saved count, next chapter, Resume/Generate state and Novel Complete all use that calculation. Generation resumes at the first missing planned chapter and Novel Complete is impossible until every planned chapter number exists. V252.41 per-book API cost/time metering is retained unchanged. No new Supabase migration.
+
 # Moonbeam Stories V252.39
 
 ## V252.39 — Series Bible propagation
@@ -1687,3 +1691,13 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Genuine transient chapter transport failures receive bounded retries.
 - Continuity is self-repairing: before drafting the next chapter, a lagging ledger is rebuilt from saved chapter continuity deltas.
 - Novel status polling transfers chapter numbers only instead of retransmitting the growing manuscript on every loop.
+
+
+## V252.41 — exact isolated Fiction Studio book economics
+- Each Fiction Studio book now persists its own Astra request ledger in `developer_fiction_books.usage`.
+- Book Development architecture and chapter-plan batches are metered separately from manuscript chapter generation.
+- Every metered response stores input, cached-input, cache-write (when reported), output and total tokens, API request duration, HTTP status, model and a frozen GPT-6 Astra USD price snapshot.
+- Saved Novel shows Planning cost/time, Manuscript cost/time, total OpenAI cost/token counts and cumulative actual Astra API time. Idle pauses between Resume actions are excluded from actual API time.
+- Review ZIP includes `generation-usage.json`.
+- Historical pre-V252.41 activity is never backfilled with invented estimates; older books are explicitly marked as unmetered until new V252.41 calls occur.
+- No new API function and no Supabase schema migration are required because the existing per-book `usage jsonb` column is used.
