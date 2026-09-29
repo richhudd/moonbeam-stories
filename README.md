@@ -1701,3 +1701,11 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Review ZIP includes `generation-usage.json`.
 - Historical pre-V252.41 activity is never backfilled with invented estimates; older books are explicitly marked as unmetered until new V252.41 calls occur.
 - No new API function and no Supabase schema migration are required because the existing per-book `usage jsonb` column is used.
+
+## V252.43 — Fiction Studio model laboratory + editorial pipeline
+- Series Development, Book Development and Manuscript model selection: GPT-6 Astra / Sol / Luna. Each selection locks when its stage starts.
+- Four versioned editorial sub-stages: developmental diagnosis, revision, line/style, proof. Each stage independently selects Astra / Sol / Luna and preserves the preceding manuscript.
+- Exact request-level USD accounting in `developer_fiction_usage_events`, including model, stage/substage, response id, duration, input/cached/cache-write/output/reasoning tokens and historical price snapshot.
+- Live book-generation accounting refreshes after each chapter response. Book totals show direct cost plus allocated Series Development share; series totals never double-count allocation.
+- Saved novels show model provenance. Editorial versions are stored separately from the original manuscript.
+- Requires `supabase/v252_43_fiction_models_editorial_usage.sql` before deploying this build.
