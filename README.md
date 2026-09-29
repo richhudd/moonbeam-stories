@@ -1678,3 +1678,12 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Book Plans persist separately in `developer_fiction_books`; browser roles remain revoked and only the server service role can access them.
 - No manuscript chapters, children's-story generation or Sunburst illustration generation are called from this flow.
 - Uses the existing `/api/generate` endpoint, preserving the 12-function Vercel limit.
+
+
+## V252.40
+- Fiction Studio now routes an approved Book Plan into the saved-novel workflow instead of the obsolete V252.32 manual chapter test.
+- Generate Novel / Resume Novel writes sequential chapters automatically until completion.
+- After a failed chapter request, the browser re-checks the authoritative database checkpoint before retrying, so a lost response does not blindly duplicate a saved chapter.
+- Genuine transient chapter transport failures receive bounded retries.
+- Continuity is self-repairing: before drafting the next chapter, a lagging ledger is rebuilt from saved chapter continuity deltas.
+- Novel status polling transfers chapter numbers only instead of retransmitting the growing manuscript on every loop.
