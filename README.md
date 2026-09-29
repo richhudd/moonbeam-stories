@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.38
+
+## V252.38 — Fiction Studio structured-response audit hardening
+- Centralises Fiction Studio structured Astra parsing in one fail-closed handler.
+- Applies it to Series Bible development/refinement, novel architecture, chapter-plan batches, the legacy one-shot Book Development path, and manuscript chapter generation.
+- Explicitly distinguishes incomplete, refused, empty, and malformed structured responses before any stage is persisted or any resumable checkpoint advances.
+- Keeps the existing strict JSON schemas, V252.35 chapter-number validation, and V252.37 output-token allowances unchanged.
+- No database migration required.
+
 # Moonbeam Stories V252.37
 
 ## V252.37 — Fiction Studio Book Development response fix
