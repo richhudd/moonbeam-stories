@@ -1721,26 +1721,3 @@ V252.45 — Fiction Studio Series Development instruction simplified: the Series
 
 
 V252.46 — Fiction Studio legacy-field cleanup. Completely removed the retired Series Creation genre/subgenre, heat and target-length plumbing: new-series API writes no longer send those fields, and the accompanying Supabase migration drops the obsolete developer_fiction_series columns. Book-level planning fields such as target_words and heat_progression remain model-authored Book Plan outputs.
-
-
-## V252.47 — Fiction Studio workflow + Autopilot
-- Repairs the Series Bible → Book Development handoff and gives successful Bible saves a visible saved state before advancing.
-- Adds durable Autopilot: choose current book or full series, stop after approved plan/draft/final edited version, and choose a model independently for Book Development, manuscript, developmental edit, revision, line/style and proof.
-- Autopilot still executes and checkpoints every normal stage; later-stage selection is advance approval, never stage skipping.
-- Autopilot state is persisted on the fiction series and can resume after interruption.
-- Fiction Studio user-facing wording and errors are model-neutral; model choices are generated from one UI registry.
-- Removes the obsolete one-shot Astra-only Book Development route and stale V252.31 capability copy.
-
-Verification V252.47: 19 JavaScript files syntax-checked; 12 API files; Autopilot migration included; model-neutral Fiction Studio audit passed.
-
-
-## V252.48 — Autopilot live control and accounting
-- Adds a persistent Autopilot HUD showing current stage/model/progress, live direct book cost/API time/request count, and whole-series cost/API time/request count.
-- Refreshes accounting after every completed paid Autopilot request, including each generated chapter and each editorial request.
-- Makes STOP AUTOPILOT a prominent persistent kill switch. It safely stops after the in-flight API request is checkpointed; paused jobs expose Resume Autopilot.
-- Persists live stage/model/progress/book checkpoint with the existing durable Autopilot state.
-- No database migration required beyond V252.47.
-
-
-## V252.49
-Hardened the Fiction Studio Series → Book transition. Proposed-book cards, post-Bible-save advance, and manual Book Development now share one guarded launcher; transition failures are surfaced visibly instead of appearing as dead controls. Autopilot continues to use the same durable Book Development server modes.
