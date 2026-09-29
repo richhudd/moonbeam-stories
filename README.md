@@ -1798,3 +1798,15 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Each editorial run stores its exact `source_run_id`, so repeated revisions, continuity initialization, reader assembly and later stages use the intended source version rather than merely the latest run with the same stage name.
 - Model, source version and direction lock when a pass starts. Rejecting a pass preserves its saved chapters/history without making it the active source.
 - Requires `supabase/v252_51_multi_revision_direction.sql`. No new Vercel endpoint; API count remains 12.
+
+## V252.52 — deterministic Fiction Studio character rename
+
+- Adds **Rename character** to every saved Fiction Studio novel.
+- This is a deterministic text/JSON operation, not an AI rewrite: it changes only whole-name matches and does not alter surrounding prose.
+- Preview shows the exact number of matches and which saved records contain them before anything is changed.
+- Default scope updates the current readable manuscript, its continuity, the Book Plan / book record, the latest Developmental report used by future editing, and optionally the Series Bible / future-book plans.
+- An **Every saved draft/editorial version** scope is available when the author deliberately wants historical versions renamed too.
+- A rename is blocked while any editorial pass is running, preventing an in-flight model from reintroducing the old name.
+- Apply performs the replacements and then re-reads the selected scope; success is reported only when **zero whole-name occurrences of the old name remain**.
+- Matching is Unicode-aware and case-insensitive while preserving common case forms (`Iker` → `Mateo`, `IKER` → `MATEO`, `iker` → `mateo`). Possessives such as `Iker's` are handled automatically without touching longer words such as `Ikerish`.
+- No Supabase migration is required for V252.52.
