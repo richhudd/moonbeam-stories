@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.39
+
+## V252.39 — Series Bible propagation
+- Revised Series Bible proposed-book concepts now automatically update matching undeveloped saved-book placeholders.
+- Starting an undeveloped book refreshes its title and premise from the current authoritative Series Bible before Astra plans it.
+- Existing books with real planning work are preserved rather than silently overwritten.
+- Updated stale Fiction Studio boundary copy.
+- No database migration required.
+
 # Moonbeam Stories V252.38
 
 ## V252.38 — Fiction Studio structured-response audit hardening

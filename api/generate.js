@@ -187,9 +187,25 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
       const id=String(body.id||'').trim();if(!id)return res.status(400).json({error:'Fiction series id is required.'});
       const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`),series=found?.[0];
       if(!series)return res.status(404).json({error:'Fiction series not found.'});
+      const syncUndevelopedBooks25239=async(bible)=>{
+        const proposed=Array.isArray(bible?.proposed_books)?bible.proposed_books:[];
+        const existing=await rest(`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=position.asc`);
+        for(const b of(Array.isArray(existing)?existing:[])){
+          const src=proposed[Math.max(0,Number(b.position||1)-1)];if(!src)continue;
+          const plan=b.book_plan&&typeof b.book_plan==='object'?b.book_plan:{};
+          const state=b.development_state&&typeof b.development_state==='object'?b.development_state:{};
+          const chapters=Array.isArray(plan.chapters)?plan.chapters:[];
+          const hasPlanning=Object.keys(plan).length>0||chapters.length>0||(state.phase&&state.phase!=='architecture');
+          if(hasPlanning)continue;
+          const working_title=String(src.working_title||b.working_title||`Book ${b.position}`).trim();
+          const premise=String(src.premise||b.premise||'').trim();
+          await rest(`developer_fiction_books?id=eq.${encodeURIComponent(b.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',body:JSON.stringify({working_title,premise,development_state:{phase:'architecture',next_batch_start:1,direction:''},status:'planning',updated_at:new Date().toISOString()})});
+        }
+      };
       if(mode==='save-bible'){
         const bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
         const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:bible,status:'bible_approved',updated_at:new Date().toISOString()})});
+        await syncUndevelopedBooks25239(bible);
         return res.status(200).json({series:rows?.[0]||null});
       }
       // V252.31 — full-length Book Development remains inside the isolated Back Room branch.
@@ -232,6 +248,17 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
           const existing=await rest(`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&position=eq.${position}&limit=1`);
           book=existing?.[0]||null;
           if(book){
+            // V252.39: an undeveloped placeholder follows the current Series Bible automatically.
+            // Once real Book Plan work exists, preserve it and require an explicit redevelopment decision.
+            const existingPlan=(book.book_plan&&typeof book.book_plan==='object')?book.book_plan:{};
+            const existingState=(book.development_state&&typeof book.development_state==='object')?book.development_state:{};
+            const existingHasPlanning=Object.keys(existingPlan).length>0||(existingState.phase&&existingState.phase!=='architecture');
+            if(!existingHasPlanning&&source&&typeof source==='object'){
+              const freshTitle=String(source.working_title||book.working_title||`Book ${position}`).trim();
+              const freshPremise=String(source.premise||book.premise||'').trim();
+              const refreshed=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({working_title:freshTitle,premise:freshPremise,development_state:{phase:'architecture',next_batch_start:1,direction:String(body.message||'')},status:'planning',updated_at:new Date().toISOString()})});
+              book=refreshed?.[0]||{...book,working_title:freshTitle,premise:freshPremise};
+            }
             const priorState=(book.development_state&&typeof book.development_state==='object')?book.development_state:{};
             const hasArchitecture=book.book_plan&&typeof book.book_plan==='object'&&Object.keys(book.book_plan).length>0;
             const hasChapters=Array.isArray(book.book_plan?.chapters)&&book.book_plan.chapters.length>0;
@@ -364,6 +391,7 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
         const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-6-astra',input:prompt,max_output_tokens:6500,text:{format:{type:'json_schema',name:'fiction_studio_series_development',strict:true,schema}}})});
         const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Astra returned HTTP ${rr.status}`)})}let parsed;try{parsed=parseFictionStructured25238(data,'Series Bible')}catch(e){return res.status(502).json({error:e.message})}
         const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:parsed.series_bible,status:'development',updated_at:new Date().toISOString()})});
+        await syncUndevelopedBooks25239(parsed.series_bible);
         await logUsage({event_type:'developer_fiction_series_planning',estimated_cost_gbp:estimateGBP('story'),metadata:{model:'gpt-6-astra',user_id:user.id}});
         return res.status(200).json({reply:parsed.reply,series_bible:parsed.series_bible,series:rows?.[0]||series});
       }
