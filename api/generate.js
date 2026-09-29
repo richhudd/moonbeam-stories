@@ -194,8 +194,25 @@ You MUST complete the checklist explicitly. status is PASS, FAIL, NOT_VISIBLE or
         let book=null;
         if(body.book_id){const br=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(String(body.book_id))}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);book=br?.[0]||null}
         if(!book){
-          const workingTitle=String(body.working_title||source.working_title||`Book ${sourceIndex+1}`).trim(),premise=String(body.premise||source.premise||'').trim();if(!premise)return res.status(400).json({error:'A proposed book premise is required.'});
-          const rows=await rest('developer_fiction_books',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,position:sourceIndex+1,working_title:workingTitle,premise,book_plan:{},status:'planning',development_state:{phase:'architecture',next_batch_start:1,direction:String(body.message||'')}})});book=rows?.[0]
+          // V252.34: adopt an existing book at this immutable series position before inserting.
+          // This makes Start Book Development idempotent across upgrades, retries and lost responses.
+          const position=sourceIndex+1;
+          const existing=await rest(`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&position=eq.${position}&limit=1`);
+          book=existing?.[0]||null;
+          if(book){
+            const priorState=(book.development_state&&typeof book.development_state==='object')?book.development_state:{};
+            const hasArchitecture=book.book_plan&&typeof book.book_plan==='object'&&Object.keys(book.book_plan).length>0;
+            const hasChapters=Array.isArray(book.book_plan?.chapters)&&book.book_plan.chapters.length>0;
+            const chapterCount=Math.max(0,Number(book.book_plan?.chapter_count)||0);
+            const inferredPhase=(hasChapters&&chapterCount&&book.book_plan.chapters.length>=chapterCount)?'complete':hasArchitecture?'chapters':'architecture';
+            const nextBatch=hasChapters?Math.max(...book.book_plan.chapters.map(c=>Number(c.number)||0))+1:1;
+            const adoptedState={phase:priorState.phase||inferredPhase,next_batch_start:Number(priorState.next_batch_start)||nextBatch,direction:String(priorState.direction||body.message||'')};
+            const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:adoptedState,updated_at:new Date().toISOString()})});
+            book=rows?.[0]||{...book,development_state:adoptedState};
+          }else{
+            const workingTitle=String(body.working_title||source.working_title||`Book ${position}`).trim(),premise=String(body.premise||source.premise||'').trim();if(!premise)return res.status(400).json({error:'A proposed book premise is required.'});
+            const rows=await rest('developer_fiction_books',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,position,working_title:workingTitle,premise,book_plan:{},status:'planning',development_state:{phase:'architecture',next_batch_start:1,direction:String(body.message||'')}})});book=rows?.[0]
+          }
         }
         const state=book.development_state||{},phase=state.phase||'architecture',direction=String(state.direction||body.message||'');
         if(phase==='complete')return res.status(200).json({book,complete:true});

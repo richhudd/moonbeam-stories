@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.34
+
+## V252.34 — Existing-novel adoption fix
+- Fixes duplicate `developer_fiction_books_series_id_position_key` when an earlier Fiction Studio novel already occupies the Series position.
+- Start Book Development now loads/adopts the existing immutable novel record before considering INSERT.
+- Missing resumable `development_state` is inferred from the existing Book Plan and preserved content.
+- Repeated clicks/retries/lost responses are idempotent at the Series+position boundary.
+- No existing novel content is deleted or regenerated merely to migrate it.
+
 # Moonbeam Stories V252.33
 
 ## V252.33 — Persistent Fiction Studio
