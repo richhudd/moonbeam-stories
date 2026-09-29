@@ -1,3 +1,24 @@
+# Moonbeam Stories V252.47
+
+- Rebuilt directly from the verified 62-file V252.46.4 safe base; no application files were stripped.
+- Fiction Studio model selectors now default to **Luna**, with the dropdown ordered **Luna → Sol → Astra** at every selectable stage. Existing saved stages keep their locked model provenance.
+- Fiction Studio progress copy now names the model actually performing Series Development, Book Development, manuscript drafting and each editorial stage.
+- Revision, Line/style and Proof now each own a separately persisted continuity ledger. Revision updates that ledger chapter-by-chapter so intentional manuscript changes supersede stale first-draft/plan facts instead of being silently pulled back toward the original plan.
+- Every saved editorial chapter also stores its continuity snapshot, allowing a resumed pass to recover its ledger if a request saved the chapter but the following ledger update was interrupted.
+- Line/style and Proof are now **targeted patch passes**: the model returns exact replacements and Moonbeam applies them to the source chapter, leaving unaffected prose untouched rather than asking the model to rewrite the whole chapter. Revision remains a full chapter rewrite because structural developmental changes may require it.
+- Complete review ZIPs retain the Series Bible, Book Plan, first draft, Developmental Report, all editorial manuscript versions, all request-level usage/accounting data, and now the real continuity ledger for every manuscript-changing editorial run.
+- Corrected manuscript usage metadata so chapter-generation events record the selected model rather than a hard-coded Astra label.
+- Requires Supabase migration `supabase/v252_47_editorial_continuity.sql`.
+
+## Safe-base provenance
+
+V252.47 is based on `Moonbeam_Stories_V252.46.4_VERIFIED.zip`. The V252.46.4 review-export behaviour is retained and extended; the failed/reduced V252.46.5/V252.46.6 packages are not used as a source.
+
+# V252.46.4
+
+- Fiction Studio review ZIP now exports all persisted series/book/manuscript/editorial/accounting material, including developmental reports and every preserved editorial manuscript version.
+- Export explicitly records that V252.46 has no editorial-version continuity ledgers rather than inventing them.
+
 # V252.42
 
 Fiction Studio progress is now derived from one authoritative calculation: planned chapter numbers in the approved Book Plan versus distinct chapter numbers durably saved in Supabase. Saved count, next chapter, Resume/Generate state and Novel Complete all use that calculation. Generation resumes at the first missing planned chapter and Novel Complete is impossible until every planned chapter number exists. V252.41 per-book API cost/time metering is retained unchanged. No new Supabase migration.
