@@ -1702,10 +1702,16 @@ Strengthens the story concept architecture so adventure/mystery concepts require
 - Historical pre-V252.41 activity is never backfilled with invented estimates; older books are explicitly marked as unmetered until new V252.41 calls occur.
 - No new API function and no Supabase schema migration are required because the existing per-book `usage jsonb` column is used.
 
-## V252.43 — Fiction Studio model laboratory + editorial pipeline
+## V252.44 — Fiction Studio model laboratory + editorial pipeline
 - Series Development, Book Development and Manuscript model selection: GPT-6 Astra / Sol / Luna. Each selection locks when its stage starts.
 - Four versioned editorial sub-stages: developmental diagnosis, revision, line/style, proof. Each stage independently selects Astra / Sol / Luna and preserves the preceding manuscript.
 - Exact request-level USD accounting in `developer_fiction_usage_events`, including model, stage/substage, response id, duration, input/cached/cache-write/output/reasoning tokens and historical price snapshot.
 - Live book-generation accounting refreshes after each chapter response. Book totals show direct cost plus allocated Series Development share; series totals never double-count allocation.
 - Saved novels show model provenance. Editorial versions are stored separately from the original manuscript.
 - Requires `supabase/v252_43_fiction_models_editorial_usage.sql` before deploying this build.
+
+
+V252.44 — Fiction Studio seed-first Series Development: removed Genre/Subgenre, Heat and Target Words creation controls and prompt influence; Series Development model now has creative discretion over form, genre, readership, explicitness, work count and work length. Saved novel status is derived from authoritative manuscript progress rather than stale plan_approved metadata.
+
+
+V252.44 — Fiction Studio seed-first Series Development. New series creation now asks only for pen name, series name, Series Brief and Series Development model. Genre/subgenre, heat and target length controls no longer influence Series Development. The selected model has explicit discretion over form, genre, readership, explicitness, work count, work length and architecture, including single-work and open-ended outcomes. Work Development derives scale from the approved Bible instead of legacy series form fields. Saved novel badges are derived from authoritative manuscript progress so completed drafts no longer remain labelled PLAN_APPROVED.
