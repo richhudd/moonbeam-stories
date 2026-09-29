@@ -1740,3 +1740,7 @@ Verification V252.47: 19 JavaScript files syntax-checked; 12 API files; Autopilo
 - Makes STOP AUTOPILOT a prominent persistent kill switch. It safely stops after the in-flight API request is checkpointed; paused jobs expose Resume Autopilot.
 - Persists live stage/model/progress/book checkpoint with the existing durable Autopilot state.
 - No database migration required beyond V252.47.
+
+
+## V252.49
+Hardened the Fiction Studio Series → Book transition. Proposed-book cards, post-Bible-save advance, and manual Book Development now share one guarded launcher; transition failures are surfaced visibly instead of appearing as dead controls. Autopilot continues to use the same durable Book Development server modes.
