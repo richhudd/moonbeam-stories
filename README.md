@@ -1,4 +1,12 @@
-# V252.54
+## V252.56 — Fiction Studio reader overflow repair
+- Replaces fixed word-count-only novel pagination with a measured fit pass using the actual rendered page dimensions.
+- Mobile pages are split again whenever their real text height would exceed the visible page; chapter headings and unusually long paragraphs are included in that measurement.
+- The same fit check now protects the desktop two-page reader as well.
+- Reader pagination is recalculated after viewport resizing/orientation changes, so a page that fitted at one size cannot silently overflow after the geometry changes.
+- No manuscript, editorial, pipeline, Series Bible, Book Plan, usage or Supabase behaviour is changed.
+- No Supabase migration required.
+
+# V252.55
 
 - Fixes Fiction Studio Rename Character preview/apply for first-draft continuity records. `developer_fiction_continuity` is keyed by `book_id` and has no `id` column, so the deterministic rename tool now updates that record using `book_id + parent_id`.
 - No database migration required.
@@ -1826,3 +1834,16 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Apply performs the replacements and then re-reads the selected scope; success is reported only when **zero whole-name occurrences of the old name remain**.
 - Matching is Unicode-aware and case-insensitive while preserving common case forms (`Iker` → `Mateo`, `IKER` → `MATEO`, `iker` → `mateo`). Possessives such as `Iker's` are handled automatically without touching longer words such as `Ikerish`.
 - No Supabase migration is required for V252.53.
+
+## V252.55 — automatic per-book Fiction Studio pipeline
+
+- Keeps Series Development, Series Bible review/editing, individual Book creation, Book Development and Book Plan review/editing manual.
+- Pressing **Generate story** on an approved Book Plan starts automation for that book only: First draft → Developmental → one Revision → Line/style → Proof → Complete.
+- Adds separate Luna/Sol/Astra selectors for First draft, Developmental, Revision, Line/style and Proof before generation starts; Luna remains the initial default.
+- Locks each selected model when that stage starts and preserves the existing run/source provenance.
+- Adds safe transient-connection recovery: after a failed draft/editorial request, Supabase checkpoints are checked before any retry so already-saved work is not deliberately regenerated.
+- Retries an unsaved request at most three times, then pauses safely with all durable work preserved.
+- Adds **Pause automatic pipeline** and resumable local pipeline state. A pause takes effect after any in-flight request has finished/saved.
+- Automation never creates the next novel, never creates a new Book Plan, and never advances to another series book. Every book must still be deliberately started by the developer.
+- Existing manual editorial controls remain available for books that were not started in automatic mode and for optional additional Revision passes after the automatic pipeline.
+- No Supabase migration required.
