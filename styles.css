@@ -4326,3 +4326,14 @@ body.fiction-reader-open-25250{overflow:hidden}
 .fiction-auto-model-grid-25255 label{margin:0}
 @media (max-width:900px){.fiction-auto-model-grid-25255{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){.fiction-auto-model-grid-25255{grid-template-columns:1fr}}
+
+/* V252.57 — Fiction Studio novel reader only: mobile is one continuous vertical manuscript.
+   The normal Moonbeam children's story reader is intentionally untouched. */
+@media (max-width:700px){
+ .fiction-reader-mobile-track-25250{display:block;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scroll-snap-type:none;scroll-behavior:auto;-webkit-overflow-scrolling:touch;background:#f7f1e6;overscroll-behavior-y:contain}
+ .fiction-reader-long-25257{box-sizing:border-box;width:100%;max-width:44rem;margin:0 auto;padding:30px 24px 70px;background:#f7f1e6;color:#241f1b;font-family:Georgia,'Times New Roman',serif;font-size:18px;line-height:1.68;overflow-wrap:anywhere}
+ .fiction-reader-long-25257 p{margin:0 0 1em;text-indent:1.35em}
+ .fiction-reader-long-chapter-25257{margin:0 0 3.5em}
+ .fiction-reader-long-chapter-25257 .fiction-reader-chapter-25250+p{ text-indent:0 }
+ .fiction-reader-progress-25250{display:none}
+}

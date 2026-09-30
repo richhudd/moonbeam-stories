@@ -1,27 +1,10 @@
-## V252.56 — Fiction Studio reader overflow repair
-- Replaces fixed word-count-only novel pagination with a measured fit pass using the actual rendered page dimensions.
-- Mobile pages are split again whenever their real text height would exceed the visible page; chapter headings and unusually long paragraphs are included in that measurement.
-- The same fit check now protects the desktop two-page reader as well.
-- Reader pagination is recalculated after viewport resizing/orientation changes, so a page that fitted at one size cannot silently overflow after the geometry changes.
-- No manuscript, editorial, pipeline, Series Bible, Book Plan, usage or Supabase behaviour is changed.
+## V252.57 — resilient Book Development batches + continuous mobile novel reader
+
+- Fiction Studio Book Development now expands detailed chapter plans in **4-chapter batches** rather than 8, substantially reducing `max_output_tokens` failures on detailed Astra plans. Each successful batch is still checkpointed; Resume starts at the first missing chapter.
+- The **Fiction Studio novel reader on mobile only** is now one continuous vertically scrollable manuscript, with chapter headings inline. Horizontal page-swiping and artificial mobile pagination are removed.
+- Desktop Fiction Studio novel reading remains the measured two-page spread.
+- The normal Moonbeam children's-story reader is unchanged.
 - No Supabase migration required.
-
-# V252.55
-
-- Fixes Fiction Studio Rename Character preview/apply for first-draft continuity records. `developer_fiction_continuity` is keyed by `book_id` and has no `id` column, so the deterministic rename tool now updates that record using `book_id + parent_id`.
-- No database migration required.
-
-# Moonbeam Stories V252.47
-
-- Rebuilt directly from the verified 62-file V252.46.4 safe base; no application files were stripped.
-- Fiction Studio model selectors now default to **Luna**, with the dropdown ordered **Luna → Sol → Astra** at every selectable stage. Existing saved stages keep their locked model provenance.
-- Fiction Studio progress copy now names the model actually performing Series Development, Book Development, manuscript drafting and each editorial stage.
-- Revision, Line/style and Proof now each own a separately persisted continuity ledger. Revision updates that ledger chapter-by-chapter so intentional manuscript changes supersede stale first-draft/plan facts instead of being silently pulled back toward the original plan.
-- Every saved editorial chapter also stores its continuity snapshot, allowing a resumed pass to recover its ledger if a request saved the chapter but the following ledger update was interrupted.
-- Line/style and Proof are now **targeted patch passes**: the model returns exact replacements and Moonbeam applies them to the source chapter, leaving unaffected prose untouched rather than asking the model to rewrite the whole chapter. Revision remains a full chapter rewrite because structural developmental changes may require it.
-- Complete review ZIPs retain the Series Bible, Book Plan, first draft, Developmental Report, all editorial manuscript versions, all request-level usage/accounting data, and now the real continuity ledger for every manuscript-changing editorial run.
-- Corrected manuscript usage metadata so chapter-generation events record the selected model rather than a hard-coded Astra label.
-- Requires Supabase migration `supabase/v252_47_editorial_continuity.sql`.
 
 ## Safe-base provenance
 
