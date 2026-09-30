@@ -4339,7 +4339,7 @@ body.fiction-reader-open-25250{overflow:hidden}
 }
 
 
-/* V252.65 — tidy re-edit branch controls */
+/* V252.66 — tidy re-edit branch controls */
 .fiction-reedit-card-25264{display:block}
 .fiction-reedit-model-grid-25264{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:12px;margin:14px 0 16px}
 .fiction-reedit-model-grid-25264 label{margin:0;min-width:0}
@@ -4351,7 +4351,7 @@ body.fiction-reader-open-25250{overflow:hidden}
 @media(max-width:900px){.fiction-reedit-model-grid-25264{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.fiction-reedit-model-grid-25264{grid-template-columns:1fr}}
 
-/* V252.65 — Fiction Studio independent background jobs */
+/* V252.66 — Fiction Studio independent background jobs */
 .fiction-active-jobs-25265{margin:0 0 18px}
 .fiction-active-jobs-list-25265{display:grid;gap:10px;margin-top:10px}
 .fiction-active-job-25265{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;text-align:left;align-items:center;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.035);color:inherit;cursor:pointer}

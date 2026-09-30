@@ -1,4 +1,4 @@
-# Moonbeam Stories V252.65
+# Moonbeam Stories V252.66
 
 - Fixes Re-edit from First Draft so a fresh branch automatically continues Developmental → Revision → Line/style → Proof, using exact source-run lineage and preserving all earlier versions.
 - Detects an already-completed orphan Developmental re-edit and resumes from Revision instead of starting Developmental again.
@@ -1893,7 +1893,7 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Existing proofed books can still be backfilled; older V252.58 memory is normalized into the V252.59 structure when used.
 - Requires `supabase/v252_59_series_intelligence.sql` to update the JSON default for newly created series. The migration has been applied to the current Moonbeam Supabase project.
 
-## V252.65 — independent Fiction Studio background jobs
+## V252.66 — independent Fiction Studio background jobs
 - Fiction Studio automatic book generation and Re-edit-from-First-Draft jobs now lock their own `series_id` and `book_id` when they start. Navigating to another series no longer redirects later chapter/editorial requests to whichever series happens to be visible.
 - Different books can run automatic generation/editing jobs simultaneously in the same open Moonbeam tab. Starting work on another series, editing a Bible, or developing another Book Plan no longer stops an already-running job.
 - A book is protected from starting a second generation/editorial background job while one is already active for that book.
@@ -1901,3 +1901,13 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Background jobs continue when navigating around Fiction Studio, but—as before—closing/reloading the browser tab stops browser-side orchestration after the current in-flight request; durable Supabase checkpoints remain resumable.
 - Completion no longer forcibly navigates the UI back to a book if the developer is working in another series.
 - No Supabase migration or additional Vercel endpoint is required.
+
+
+## V252.66 — literary-depth refinement
+- Adds a compact positive literary-depth directive to Fiction Studio drafting and editorial development: character-specific perception, subtext, contradiction, concrete social/physical observation, varied rhythm, and meaning carried by implication rather than explanation.
+- Explicitly tells the model to write with confidence and freedom; these are creative opportunities rather than quotas, and the goal is richer, more human writing rather than cautious writing.
+- Interiority should arise from the immediate scene rather than compulsory backstory or reminiscence.
+- Revision should avoid restating emotions/themes once dramatized and should consider the layer beneath a scene's obvious plot function without forcing it into every scene.
+- Line/style remains targeted: it favours natural human texture only where a local edit is genuinely needed, and must not polish unaffected prose merely for neatness.
+- Existing global anti-banter/anti-pithiness, genre preservation, word-count protection, immutable chapter titles, re-edit branching, Series Intelligence and background-job concurrency remain intact.
+- No Supabase migration required.
