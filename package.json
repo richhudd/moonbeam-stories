@@ -6,7 +6,8 @@
     "node": "24.x"
   },
   "scripts": {
-    "start": "vercel dev"
+    "start": "vercel dev",
+    "verify:separation": "node scripts/verify-separation.js"
   },
   "dependencies": {
     "resend": "6.27.0",

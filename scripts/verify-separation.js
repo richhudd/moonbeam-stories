@@ -1,0 +1,15 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const fail=m=>{console.error('SEPARATION CHECK FAILED:',m);process.exitCode=1};
+const generate=read('api/generate.js');
+const fiction=read('api/fiction-studio.js');
+const app=read('app.js');
+const forbiddenAdultTables=['cast_members','saved_stories','child_profiles','partial_story_generations','saved-story-art','partial-story-art'];
+if(/developer_fiction_/.test(generate))fail('Children\'s generate endpoint references developer_fiction_* storage.');
+for(const token of forbiddenAdultTables)if(fiction.includes(token))fail(`Fiction Studio endpoint references Moonbeam child-domain storage: ${token}`);
+if(!fiction.includes("FICTION_TABLES_25269=new Set(['developer_fiction_series'"))fail('Fiction Studio database allowlist is missing.');
+if(!app.includes("fetch('/api/fiction-studio'"))fail('Fiction Studio client is not using the dedicated endpoint.');
+const apiFiles=fs.readdirSync(path.join(root,'api')).filter(x=>x.endsWith('.js'));
+if(apiFiles.length>12)fail(`API function count is ${apiFiles.length}; deployment limit is 12.`);
+if(!process.exitCode)console.log(`Separation checks passed (${apiFiles.length} API functions).`);

@@ -339,7 +339,7 @@ async function applyAuthSession(session){
  const nextUser=session?.user||null;
  const sameSignedInUser=!!previousUserId&&!!nextUser&&previousUserId===nextUser.id;
  currentUser=nextUser;
- if(!sameSignedInUser)resetInstagramDeveloperAccess(currentUser);
+ if(!sameSignedInUser){resetInstagramDeveloperAccess(currentUser);resetFictionStudioClientState25269();}
  document.body.classList.toggle('moonbeam-signed-in',!!currentUser);
  if(currentUser)setTimeout(()=>checkInstagramDeveloperAccess(),0);else resetInstagramDeveloperAccess(null);
  $('authSignedOut')?.classList.toggle('hidden',!!currentUser);$('profileTools')?.classList.toggle('hidden',!currentUser);$('basicsProfileActions')?.classList.toggle('hidden',!currentUser);
@@ -3020,6 +3020,11 @@ window.openVolumePublication25221=async(seriesId,volumeId)=>{const series=series
 let fictionStudioSeries25229=[];
 let fictionStudioActive25229=null;
 let fictionStudioBooks25231=[];
+// V252.69 — Fiction Studio browser state is account-scoped and purged from active memory on account changes.
+function fictionStorageScope25269(){return currentUser?.id||'signed-out'}
+function fictionScopedKey25269(base,bookId){return `${base}:${fictionStorageScope25269()}:${bookId}`}
+function purgeLegacyFictionStorage25269(){try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i)||'';if(/^moonbeam-fiction-(?:auto-pipeline-v25255|reedit-v25264):/.test(k)&&!k.includes(`:${fictionStorageScope25269()}:`))localStorage.removeItem(k)}}catch{}}
+function resetFictionStudioClientState25269(){fictionStudioSeries25229=[];fictionStudioActive25229=null;fictionStudioBooks25231=[];fictionStudioOpenBookId25265=null;try{fictionBackgroundJobs25265.clear()}catch{};purgeLegacyFictionStorage25269()}
 let fictionStudioChapters25232=[];
 const fictionEditorialModelChoice25249=new Map();
 const fictionAutoPipeline25255Paused=new Set();
@@ -3039,7 +3044,7 @@ function fictionFinishJob25265(job,status='completed',progress=''){if(!job)retur
 function fictionActiveJobsHtml25265(){const jobs=[...fictionBackgroundJobs25265.values()].sort((a,b)=>String(b.started_at).localeCompare(String(a.started_at)));if(!jobs.length)return '<div id="fictionActiveJobs25265"></div>';return `<div id="fictionActiveJobs25265" class="fiction-usage-card fiction-active-jobs-25265"><h3>Background jobs</h3><p class="muted">Different books can generate or edit simultaneously. Opening another series does not redirect a running job.</p><div class="fiction-active-jobs-list-25265">${jobs.map(j=>`<button type="button" class="fiction-active-job-25265" data-fiction-job-series="${escapeHtml(j.series_id)}" data-fiction-job-book="${escapeHtml(j.book_id)}"><strong>${escapeHtml(j.series_name)} · ${escapeHtml(j.book_title)}</strong><span>${escapeHtml(j.kind==='reedit'?'Re-edit':'Automatic book pipeline')} · ${escapeHtml(j.stage||'Working')}</span><small>${escapeHtml(j.progress||j.status)}</small></button>`).join('')}</div></div>`}
 function fictionRefreshJobsPanel25265(){const el=$('fictionActiveJobs25265');if(!el)return;const tmp=document.createElement('div');tmp.innerHTML=fictionActiveJobsHtml25265();el.replaceWith(tmp.firstElementChild);fictionBindJobsPanel25265()}
 function fictionBindJobsPanel25265(){document.querySelectorAll('[data-fiction-job-series][data-fiction-job-book]').forEach(el=>el.onclick=async()=>{const sid=el.dataset.fictionJobSeries,bid=el.dataset.fictionJobBook;if(!fictionStudioSeries25229.some(x=>x.id===sid)){await loadFictionStudio25229();return}renderFictionSeries25229(sid);try{await refreshFictionBooks252462();if(fictionStudioBooks25231.some(x=>x.id===bid))await openSavedFictionBook25233(bid)}catch{}})}
-function fictionAutoPipelineKey25255(bookId){return `moonbeam-fiction-auto-pipeline-v25255:${bookId}`}
+function fictionAutoPipelineKey25255(bookId){return fictionScopedKey25269('moonbeam-fiction-auto-pipeline-v25255',bookId)}
 function fictionAutoPipelineState25255(bookId){try{return JSON.parse(localStorage.getItem(fictionAutoPipelineKey25255(bookId))||'null')}catch{return null}}
 function saveFictionAutoPipelineState25255(bookId,state){try{localStorage.setItem(fictionAutoPipelineKey25255(bookId),JSON.stringify(state||{}))}catch{}return state}
 function fictionAutoPipelineDefaults25255(){return {active:false,paused:false,models:{manuscript:'gpt-6-luna',developmental:'gpt-6-luna',revision:'gpt-6-luna',line:'gpt-6-luna',proof:'gpt-6-luna'}}}
@@ -3057,7 +3062,7 @@ function mountFictionStudioEntry25229(){
 }
 async function fictionStudioRequest25229(payload){
  if(!instagramDeveloperAccess||!currentUser)throw new Error('Developer access only.');let token=await currentAccessToken();if(!token)token=await refreshAccessToken();if(!token)throw new Error('Your developer session has expired.');
- const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({action:'developer-fiction-studio',...payload})});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data?.error||`Fiction Studio returned HTTP ${r.status}`);return data
+ const r=await fetch('/api/fiction-studio',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify(payload)});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(data?.error||`Fiction Studio returned HTTP ${r.status}`);return data
 }
 function ensureFictionStudio25229(){
  let el=$('fictionStudio25229');if(el)return el;el=document.createElement('section');el.id='fictionStudio25229';el.className='fiction-studio-25229 hidden';el.innerHTML=`<div class="fiction-studio-shell"><header class="fiction-studio-head"><div><span class="fiction-studio-kicker">PRIVATE DEVELOPER WORKSPACE</span><h1>Fiction Studio</h1><p>Full-length commercial fiction development · isolated from Moonbeam story generation</p></div><button class="secondary" id="fictionStudioClose25229" type="button">Return to Moonbeam</button></header><div id="fictionStudioBody25229"></div></div>`;document.body.appendChild(el);$('fictionStudioClose25229').onclick=closeFictionStudio25229;return el
@@ -3151,7 +3156,7 @@ function fictionReeditCard25264(b,runs=[]){
  const sources=fictionReeditSourceOptions25268(runs),saved=loadFictionReeditState25264(b.id)||{},preferred=(branch?.dev?.source_run_id||saved.source_run_id||null),sourceOptions=[`<option value="draft" ${!preferred?'selected':''}>First Draft · untouched original manuscript</option>`,...sources.map(r=>`<option value="${escapeHtml(r.id)}" ${preferred===r.id?'selected':''}>${escapeHtml(fictionReeditSourceLabel25268(r))}</option>`)].join('');
  return `<div class="fiction-usage-card fiction-reedit-card-25264"><h3>Re-edit</h3>${status}<label class="fiction-reedit-direction-25264"><span>Source manuscript</span><select id="fictionReeditSource25268" ${branch&&!branch.proof?'disabled':''}>${sourceOptions}</select></label><div class="fiction-reedit-model-grid-25264"><label><span>Developmental</span>${fictionModelSelect25243('fictionReeditDevelopmentalModel25264',branch?.dev?.model||'gpt-6-luna')}</label><label><span>Revision</span>${fictionModelSelect25243('fictionReeditRevisionModel25264',branch?.revision?.model||'gpt-6-luna',branch?.revision?.status==='running')}</label><label><span>Line/style</span>${fictionModelSelect25243('fictionReeditLineModel25264',branch?.line?.model||'gpt-6-luna',branch?.line?.status==='running')}</label><label><span>Proof</span>${fictionModelSelect25243('fictionReeditProofModel25264',branch?.proof?.model||'gpt-6-luna',branch?.proof?.status==='running')}</label></div><label class="fiction-reedit-direction-25264"><span>Additional editorial direction <small>(optional)</small></span><textarea id="fictionReeditDirection25264" rows="5" placeholder="Add any instructions specific to this re-edit…">${escapeHtml(saved.direction||'')}</textarea></label><div class="fiction-actions fiction-reedit-actions-25264"><button class="secondary" id="fictionReeditFromDraft25264" type="button" ${backgroundJob?'disabled':''}>${backgroundJob?'Job already running':button}</button><span class="status" id="fictionReeditStatus25264"></span></div></div>`;
 }
-function fictionReeditStateKey25264(bookId){return `moonbeam-fiction-reedit-v25264:${bookId}`}
+function fictionReeditStateKey25264(bookId){return fictionScopedKey25269('moonbeam-fiction-reedit-v25264',bookId)}
 function saveFictionReeditState25264(bookId,state){try{localStorage.setItem(fictionReeditStateKey25264(bookId),JSON.stringify(state||{}))}catch{}return state}
 function loadFictionReeditState25264(bookId){try{return JSON.parse(localStorage.getItem(fictionReeditStateKey25264(bookId))||'null')}catch{return null}}
 function clearFictionReeditState25267(bookId){try{localStorage.removeItem(fictionReeditStateKey25264(bookId))}catch{}}

@@ -1,4 +1,4 @@
-# V252.68
+# V252.69
 - Adds **Re-edit from this version**. A completed Revision, Line/style or Proof manuscript can now be selected as the source for a fresh Developmental → Revision → Line/style → Proof branch; First Draft remains available as a source.
 - The Fiction Studio reader now has a **Re-edit from this version** action that returns to the book with that exact manuscript version preselected.
 - Re-edit Developmental analysis now reads the selected source manuscript and its matching continuity rather than always reading the untouched first draft.
@@ -1927,3 +1927,12 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Line/style remains targeted: it favours natural human texture only where a local edit is genuinely needed, and must not polish unaffected prose merely for neatness.
 - Existing global anti-banter/anti-pithiness, genre preservation, word-count protection, immutable chapter titles, re-edit branching, Series Intelligence and background-job concurrency remain intact.
 - No Supabase migration required.
+
+
+## V252.69 — Adult/children separation hardening
+- Adult Fiction Studio moved out of `api/generate.js` into dedicated `api/fiction-studio.js`.
+- Fiction Studio REST storage helper is allowlisted to the eight `developer_fiction_*` tables only.
+- Normal Moonbeam generation rejects the legacy Fiction Studio action.
+- Fiction Studio browser resume state is scoped to the authenticated developer user and active Fiction Studio state is cleared on account changes/sign-out.
+- `/api/health` remains available via a rewrite to the lightweight GET health response in `api/generate.js`, keeping the deployment at 12 API functions.
+- Existing `developer_fiction_*` data is unchanged and automatically uses the hardened access path; no migration required.
