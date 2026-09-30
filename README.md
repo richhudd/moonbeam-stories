@@ -1,4 +1,14 @@
-# V252.62 — explicit anti-banter dialogue safeguard
+# V252.63 — global anti-banter fiction rule
+
+- Makes anti-banter a standing rule for **all adult-fiction genres**, not merely an editorial diagnosis or an erotica-specific safeguard.
+- First-draft chapter generation now receives the same anti-banter / anti-pithiness rule used by Revision and Line/style. Luna must not use teasing, quips, witty repartee, playful one-upmanship, smug back-and-forth, verbal sparring or characters continually trying to land the last line as a generic way of creating chemistry or keeping scenes lively.
+- Book/chapter architecture is also told not to plan habitual banter as a default source of scene energy.
+- Banter is not prohibited outright: it may appear occasionally when genuinely demanded by the characters, relationship, genre and moment.
+- The existing stronger erotica safeguard remains: during sexual scenes, banter should be especially rare unless specifically established and natural to the moment.
+- Keeps V252.63 anti-pithiness, dialogue-naturalism, genre-preservation, immutable chapter-title, word-count protection, re-edit, publication-integrity and Series Intelligence safeguards intact.
+- No Supabase migration required.
+
+# V252.63 — explicit anti-banter dialogue safeguard
 
 - Adds a genre-preservation overlay for fiction explicitly identified as erotica. Revision and Line/style must preserve the intended erotic intensity, explicitness, vocabulary, frequency and centrality rather than sanitising, romanticising or fading out sexual material in the name of sophistication.
 - Erotica receives an additional sex-scene safeguard: sexual dialogue must not default to banter, jokes, clever one-liners or performative repartee. The editor should prefer whatever speech pattern is natural to the moment, including immediacy, desire, hesitation, interruption, incomplete speech and silence, while preserving established character voice.
