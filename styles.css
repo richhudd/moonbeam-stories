@@ -4337,3 +4337,16 @@ body.fiction-reader-open-25250{overflow:hidden}
  .fiction-reader-long-chapter-25257 .fiction-reader-chapter-25250+p{ text-indent:0 }
  .fiction-reader-progress-25250{display:none}
 }
+
+
+/* V252.64 — tidy re-edit branch controls */
+.fiction-reedit-card-25264{display:block}
+.fiction-reedit-model-grid-25264{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:12px;margin:14px 0 16px}
+.fiction-reedit-model-grid-25264 label{margin:0;min-width:0}
+.fiction-reedit-model-grid-25264 select{width:100%}
+.fiction-reedit-direction-25264{display:block;margin-top:4px}
+.fiction-reedit-direction-25264 textarea{display:block;width:100%;min-height:112px;resize:vertical;margin-top:6px;box-sizing:border-box}
+.fiction-reedit-actions-25264{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.fiction-reedit-progress-25264{margin:10px 0 4px;padding:10px 12px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#211e26}
+@media(max-width:900px){.fiction-reedit-model-grid-25264{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.fiction-reedit-model-grid-25264{grid-template-columns:1fr}}

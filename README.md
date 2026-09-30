@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.64
+
+- Fixes Re-edit from First Draft so a fresh branch automatically continues Developmental → Revision → Line/style → Proof, using exact source-run lineage and preserving all earlier versions.
+- Detects an already-completed orphan Developmental re-edit and resumes from Revision instead of starting Developmental again.
+- Re-edit controls now expose Luna/Sol/Astra separately for all four editorial stages.
+- Adds a clean full-width optional Additional editorial direction box; the global editorial brief still applies automatically.
+- Tidies the re-edit panel layout and shows visible branch progress / next stage.
+- Keeps all V252.63 anti-banter, anti-pithiness, title-protection, word-count, Series Intelligence and publication safeguards.
+
 # V252.63 — global anti-banter fiction rule
 
 - Makes anti-banter a standing rule for **all adult-fiction genres**, not merely an editorial diagnosis or an erotica-specific safeguard.
