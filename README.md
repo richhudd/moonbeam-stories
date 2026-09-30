@@ -1,3 +1,26 @@
+# V252.62 — explicit anti-banter dialogue safeguard
+
+- Adds a genre-preservation overlay for fiction explicitly identified as erotica. Revision and Line/style must preserve the intended erotic intensity, explicitness, vocabulary, frequency and centrality rather than sanitising, romanticising or fading out sexual material in the name of sophistication.
+- Erotica receives an additional sex-scene safeguard: sexual dialogue must not default to banter, jokes, clever one-liners or performative repartee. The editor should prefer whatever speech pattern is natural to the moment, including immediacy, desire, hesitation, interruption, incomplete speech and silence, while preserving established character voice.
+- Improves erotic variety through motive, power, anticipation, physical detail, emotional texture, dialogue and scene dynamics instead of simply deleting erotic material as repetition.
+- Strengthens the dialogue-naturalism rule into an explicit anti-banter safeguard across Developmental, Revision and Line/style. Banter means habitual teasing, quips, witty repartee, playful one-upmanship, smug or clipped back-and-forth, and characters constantly trying to land the last line. It may still appear when genuinely character- and situation-specific, but must not become the default conversational texture or a generic signal of chemistry.
+- Encourages natural variation in dialogue length, interruption, hesitation, overlap, evasion, misunderstanding, incomplete thoughts and ordinary speech while preserving genuinely sharp dialogue where it belongs.
+- Keeps V252.60 chapter-title protection, target-aware revision, restorative under-length recovery, re-edit-from-first-draft branching and publication checks unchanged.
+- No Supabase migration required.
+
+# V252.60 — Fiction Studio editorial-quality safeguards
+
+- Protects Fiction Studio chapter titles as immutable publishing metadata after the first draft. Revision, Line/style and Proof no longer ask the model to return chapter titles; the canonical source title is copied forward deterministically. Accidental model-returned chapter headings are stripped from the manuscript body.
+- Adds publication-readiness checks for missing/suspicious chapter titles, duplicate chapter numbers, suspiciously short chapters and severe final under-length. Review exports include the check result.
+- Makes Revision target-aware. The approved Book Plan `target_words` and source manuscript length are supplied to the editor, with a normal ±8% whole-book target band and proportional chapter guidance.
+- If a completed Revision is below 92% of the approved target, Moonbeam automatically performs bounded restorative passes on the most under-length chapters. The purpose is to recover character depth, scene dynamics, atmosphere, causality, emotional consequence and world specificity without padding or changing plot facts. Each chapter is attempted at most once, preventing an uncontrolled cost loop.
+- Line/style and Proof are explicitly constrained against material compression.
+- Generalises the Revision brief across genres: preserve the book's genre, pace, tone and narrative engine while deepening psychological specificity, subtext, contradiction, emotional complexity, social observation and sentence-level texture where appropriate. Literary ornamentation, introspection and slowness are not forced.
+- Adds per-stage manuscript word counts against the approved target in the Fiction Studio book screen.
+- Adds **Re-edit from First Draft** for already-completed books. It creates a fresh Developmental branch from the untouched first draft while preserving every earlier Developmental, Revision, Line/style and Proof run for comparison. Subsequent stages follow the new branch by exact `source_run_id` lineage.
+- Revision now resolves the Developmental report from its own editorial ancestry rather than silently using the latest unrelated Developmental run.
+- Keeps V252.59 Series Intelligence unchanged. No new Supabase migration is required.
+
 ## V252.57 — resilient Book Development batches + continuous mobile novel reader
 
 - Fiction Studio Book Development now expands detailed chapter plans in **4-chapter batches** rather than 8, substantially reducing `max_output_tokens` failures on detailed Astra plans. Each successful batch is still checkpointed; Resume starts at the first missing chapter.
