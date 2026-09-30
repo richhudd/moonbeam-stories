@@ -1830,3 +1830,23 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Automation never creates the next novel, never creates a new Book Plan, and never advances to another series book. Every book must still be deliberately started by the developer.
 - Existing manual editorial controls remain available for books that were not started in automatic mode and for optional additional Revision passes after the automatic pipeline.
 - No Supabase migration required.
+
+
+## V252.58 — evolving series memory
+- Added persistent Series Memory separate from the foundational Series Bible.
+- Completed proofed books automatically update hard canon, character states, unresolved threads, planted details, world changes, open questions, non-binding future possibilities, and a compact voice reference.
+- Later book development automatically reads Series Memory and may introduce new book-specific or future-recurring characters organically; the original Bible cast is no longer treated as exhaustive or compulsory.
+- Future possibilities are explicitly non-binding so continuity becomes richer without imposing a formula.
+- Prior proofed books are backfilled into Series Memory when a later book begins development, allowing older series to adopt the system.
+- Requires supabase/v252_58_series_memory.sql.
+
+## V252.59 — Series Intelligence
+- Expands persistent Series Memory into a richer Series Intelligence archive while keeping the Series Bible as the stable creative foundation.
+- Meaningful characters now carry lifecycle/relevance, life status, book appearances, last known location, current state, significant events, relationship history and continuity constraints. Dormant/transient characters remain remembered without being treated as active cast.
+- Adds compact timeline, relationship-state, knowledge-state, secrets/reveal, institution-state and open-consequence records, alongside existing hard canon, unresolved threads, planted details, world changes, open questions and non-binding future possibilities.
+- Adds a selective per-book context pass: later Book Development receives only core/active and genuinely relevant archived material instead of the full accumulated cast/history.
+- Adds an explicit archive rule: prior existence is not a reason for present appearance. Dormant characters, memories, flashbacks, callbacks and reunions must not be manufactured merely because they exist in history; new characters are preferred when more natural to the current story and setting.
+- Stores the selected cross-book context with the Book Development state so chapter planning and manuscript generation use the same bounded continuity context throughout that book.
+- Adds an inspectable/editable **Series Intelligence** panel beside the Series Bible for developer correction of canon housekeeping when necessary.
+- Existing proofed books can still be backfilled; older V252.58 memory is normalized into the V252.59 structure when used.
+- Requires `supabase/v252_59_series_intelligence.sql` to update the JSON default for newly created series. The migration has been applied to the current Moonbeam Supabase project.

@@ -1,0 +1,2 @@
+alter table public.developer_fiction_series
+  alter column series_memory set default '{"version":2,"last_updated_book":0,"established_canon":[],"characters":[],"timeline":[],"relationships":[],"knowledge_states":[],"secrets":[],"institutions":[],"unresolved_threads":[],"open_consequences":[],"planted_details":[],"world_changes":[],"open_questions":[],"future_possibilities":[],"book_voice_refs":[]}'::jsonb;
