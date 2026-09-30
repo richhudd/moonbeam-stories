@@ -1,3 +1,13 @@
+# V252.68
+- Adds **Re-edit from this version**. A completed Revision, Line/style or Proof manuscript can now be selected as the source for a fresh Developmental → Revision → Line/style → Proof branch; First Draft remains available as a source.
+- The Fiction Studio reader now has a **Re-edit from this version** action that returns to the book with that exact manuscript version preselected.
+- Re-edit Developmental analysis now reads the selected source manuscript and its matching continuity rather than always reading the untouched first draft.
+- Revision correctly unwraps the Developmental planning pass and edits the exact manuscript version that Developmental analysed; branch ancestry remains preserved through `source_run_id`.
+- Reader composition also follows Developmental source ancestry, so in-progress and completed branches based on an already edited version display the correct underlying manuscript.
+- Existing versions are never overwritten. Every new branch remains independently selectable in history.
+- Keeps V252.67 repeatable re-edit safeguards, V252.66 human-depth direction, global anti-banter/anti-pithiness rules, immutable chapter titles, word-count protection, Series Intelligence and background-job concurrency intact.
+- No Supabase migration required.
+
 # V252.67
 
 - Fixes repeat **Re-edit from First Draft** runs. Completed re-edit browser state is now retired/cleared after Proof, so every later click creates a genuinely fresh Developmental → Revision → Line/style → Proof branch instead of reusing the previous branch IDs and jumping to Proof.
