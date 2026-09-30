@@ -1,4 +1,4 @@
-# Moonbeam Stories V252.64
+# Moonbeam Stories V252.65
 
 - Fixes Re-edit from First Draft so a fresh branch automatically continues Developmental → Revision → Line/style → Proof, using exact source-run lineage and preserving all earlier versions.
 - Detects an already-completed orphan Developmental re-edit and resumes from Revision instead of starting Developmental again.
@@ -1892,3 +1892,12 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Adds an inspectable/editable **Series Intelligence** panel beside the Series Bible for developer correction of canon housekeeping when necessary.
 - Existing proofed books can still be backfilled; older V252.58 memory is normalized into the V252.59 structure when used.
 - Requires `supabase/v252_59_series_intelligence.sql` to update the JSON default for newly created series. The migration has been applied to the current Moonbeam Supabase project.
+
+## V252.65 — independent Fiction Studio background jobs
+- Fiction Studio automatic book generation and Re-edit-from-First-Draft jobs now lock their own `series_id` and `book_id` when they start. Navigating to another series no longer redirects later chapter/editorial requests to whichever series happens to be visible.
+- Different books can run automatic generation/editing jobs simultaneously in the same open Moonbeam tab. Starting work on another series, editing a Bible, or developing another Book Plan no longer stops an already-running job.
+- A book is protected from starting a second generation/editorial background job while one is already active for that book.
+- Adds a **Background jobs** panel on the Fiction Studio library and series pages showing each active/session job, its locked series/book, current stage and saved progress. Clicking a job opens its book.
+- Background jobs continue when navigating around Fiction Studio, but—as before—closing/reloading the browser tab stops browser-side orchestration after the current in-flight request; durable Supabase checkpoints remain resumable.
+- Completion no longer forcibly navigates the UI back to a book if the developer is working in another series.
+- No Supabase migration or additional Vercel endpoint is required.

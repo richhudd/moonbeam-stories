@@ -4339,7 +4339,7 @@ body.fiction-reader-open-25250{overflow:hidden}
 }
 
 
-/* V252.64 — tidy re-edit branch controls */
+/* V252.65 — tidy re-edit branch controls */
 .fiction-reedit-card-25264{display:block}
 .fiction-reedit-model-grid-25264{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:12px;margin:14px 0 16px}
 .fiction-reedit-model-grid-25264 label{margin:0;min-width:0}
@@ -4350,3 +4350,13 @@ body.fiction-reader-open-25250{overflow:hidden}
 .fiction-reedit-progress-25264{margin:10px 0 4px;padding:10px 12px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#211e26}
 @media(max-width:900px){.fiction-reedit-model-grid-25264{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.fiction-reedit-model-grid-25264{grid-template-columns:1fr}}
+
+/* V252.65 — Fiction Studio independent background jobs */
+.fiction-active-jobs-25265{margin:0 0 18px}
+.fiction-active-jobs-list-25265{display:grid;gap:10px;margin-top:10px}
+.fiction-active-job-25265{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;text-align:left;align-items:center;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.035);color:inherit;cursor:pointer}
+.fiction-active-job-25265 strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fiction-active-job-25265 span{grid-column:1;color:inherit;opacity:.88}
+.fiction-active-job-25265 small{grid-column:2;grid-row:1 / span 2;opacity:.7;text-align:right;max-width:260px}
+.fiction-active-job-25265:hover{background:rgba(255,255,255,.065)}
+@media(max-width:700px){.fiction-active-job-25265{grid-template-columns:1fr}.fiction-active-job-25265 small{grid-column:1;grid-row:auto;text-align:left;max-width:none}}
