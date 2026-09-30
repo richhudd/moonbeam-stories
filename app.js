@@ -3151,6 +3151,7 @@ function fictionReeditCard25264(b,runs=[]){
 function fictionReeditStateKey25264(bookId){return `moonbeam-fiction-reedit-v25264:${bookId}`}
 function saveFictionReeditState25264(bookId,state){try{localStorage.setItem(fictionReeditStateKey25264(bookId),JSON.stringify(state||{}))}catch{}return state}
 function loadFictionReeditState25264(bookId){try{return JSON.parse(localStorage.getItem(fictionReeditStateKey25264(bookId))||'null')}catch{return null}}
+function clearFictionReeditState25267(bookId){try{localStorage.removeItem(fictionReeditStateKey25264(bookId))}catch{}}
 async function fictionRunExactEditorialStage25264(b,stage,model,sourceRunId,direction,existingRunId=null,seriesId=fictionStudioActive25229?.id,job=null){
  const visible=fictionStudioActive25229?.id===seriesId&&fictionStudioOpenBookId25265===b.id,st=visible?($('fictionReeditStatus25264')||$('fictionEditorialStatus25243')):null,label=fictionEditorialStageLabel25247(stage),modelLabel=fictionModelLabel25243(model);
  let status=await fictionAutoEditorialStatus25255(b,seriesId),runs=status.runs||[],run=existingRunId?runs.find(r=>r.id===existingRunId):null;
@@ -3175,10 +3176,12 @@ async function fictionRunExactEditorialStage25264(b,stage,model,sourceRunId,dire
  throw new Error(`${label} paused safely before exceeding the automatic guard limit.`)
 }
 async function startOrResumeFictionReedit25264(b,runsAtOpen=[]){
- const st=$('fictionReeditStatus25264'),btn=$('fictionReeditFromDraft25264'),pending=fictionPendingReedit25264(runsAtOpen),saved=loadFictionReeditState25264(b.id)||{},seriesId=saved.series_id||fictionStudioActive25229?.id;
+ const st=$('fictionReeditStatus25264'),btn=$('fictionReeditFromDraft25264'),pending=fictionPendingReedit25264(runsAtOpen),savedRaw=loadFictionReeditState25264(b.id)||{},resumeSaved=!!pending||(savedRaw.active===true&&!savedRaw.completed_at),saved=resumeSaved?savedRaw:{},seriesId=saved.series_id||fictionStudioActive25229?.id;
  if(!seriesId){if(st)st.innerHTML='<span class="error">Could not lock this re-edit to its series.</span>';return}
  const already=fictionRunningJobForBook25265(b.id);if(already){if(st)st.textContent=`This book already has a running ${already.kind==='reedit'?'re-edit':'generation'} job.`;return}
- const state={active:true,series_id:seriesId,direction:$('fictionReeditDirection25264')?.value?.trim()||saved.direction||'',models:{developmental:$('fictionReeditDevelopmentalModel25264')?.value||saved.models?.developmental||'gpt-6-luna',revision:$('fictionReeditRevisionModel25264')?.value||saved.models?.revision||'gpt-6-luna',line:$('fictionReeditLineModel25264')?.value||saved.models?.line||'gpt-6-luna',proof:$('fictionReeditProofModel25264')?.value||saved.models?.proof||'gpt-6-luna'},dev_run_id:pending?.dev?.id||saved.dev_run_id||null,revision_run_id:pending?.revision?.id||saved.revision_run_id||null,line_run_id:pending?.line?.id||saved.line_run_id||null,proof_run_id:pending?.proof?.id||saved.proof_run_id||null};
+ // V252.67: a completed historical branch must never seed a new re-edit. Only an unfinished branch may resume saved run IDs.
+ if(!resumeSaved)clearFictionReeditState25267(b.id);
+ const state={active:true,series_id:seriesId,direction:$('fictionReeditDirection25264')?.value?.trim()||(resumeSaved?saved.direction:'')||'',models:{developmental:$('fictionReeditDevelopmentalModel25264')?.value||(resumeSaved?saved.models?.developmental:null)||'gpt-6-luna',revision:$('fictionReeditRevisionModel25264')?.value||(resumeSaved?saved.models?.revision:null)||'gpt-6-luna',line:$('fictionReeditLineModel25264')?.value||(resumeSaved?saved.models?.line:null)||'gpt-6-luna',proof:$('fictionReeditProofModel25264')?.value||(resumeSaved?saved.models?.proof:null)||'gpt-6-luna'},dev_run_id:pending?.dev?.id||(resumeSaved?saved.dev_run_id:null)||null,revision_run_id:pending?.revision?.id||(resumeSaved?saved.revision_run_id:null)||null,line_run_id:pending?.line?.id||(resumeSaved?saved.line_run_id:null)||null,proof_run_id:pending?.proof?.id||(resumeSaved?saved.proof_run_id:null)||null};
  saveFictionReeditState25264(b.id,state);if(btn){btn.disabled=true;btn.textContent='Re-edit running…'};
  const series=fictionStudioSeries25229.find(x=>x.id===seriesId),job=fictionStartJob25265('reedit',{seriesId,bookId:b.id,seriesName:series?.series_name||'',bookTitle:b.working_title||''});
  if(!job){if(st)st.textContent='This book already has an active job.';if(btn){btn.disabled=false;btn.textContent='Resume re-edit'}return}
@@ -3191,7 +3194,9 @@ async function startOrResumeFictionReedit25264(b,runsAtOpen=[]){
   if(st)st.textContent='Revision complete · starting Line/style…';fictionUpdateJob25265(job,{stage:'Line/style',progress:'starting'});
   const line=await fictionRunExactEditorialStage25264(b,'line',state.models.line,revision.id,state.direction,state.line_run_id,seriesId,job);state.line_run_id=line.id;saveFictionReeditState25264(b.id,state);
   if(st)st.textContent='Line/style complete · starting Proof…';fictionUpdateJob25265(job,{stage:'Proof',progress:'starting'});
-  const proof=await fictionRunExactEditorialStage25264(b,'proof',state.models.proof,line.id,state.direction,state.proof_run_id,seriesId,job);state.proof_run_id=proof.id;state.active=false;state.completed_at=new Date().toISOString();saveFictionReeditState25264(b.id,state);
+  const proof=await fictionRunExactEditorialStage25264(b,'proof',state.models.proof,line.id,state.direction,state.proof_run_id,seriesId,job);state.proof_run_id=proof.id;state.active=false;state.completed_at=new Date().toISOString();
+  // Completed re-edit state is historical in Supabase; remove browser resume IDs so the next click always creates a genuinely fresh branch.
+  clearFictionReeditState25267(b.id);
   if(st)st.textContent='Re-edit complete — new Developmental, Revision, Line/style and Proof branch saved.';fictionFinishJob25265(job,'completed','All editorial stages saved');
   if(fictionStudioActive25229?.id===seriesId&&fictionStudioBooks25231.some(x=>x.id===b.id))await openSavedFictionBook25233(b.id)
  }catch(e){state.active=true;saveFictionReeditState25264(b.id,state);fictionFinishJob25265(job,'paused',String(e.message||e));if(st)st.innerHTML=`<span class="error">${escapeHtml(e.message||String(e))}</span><br>Every completed re-edit checkpoint remains saved. Press Resume re-edit to continue.`;if(btn){btn.disabled=false;btn.textContent='Resume re-edit'}}

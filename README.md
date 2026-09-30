@@ -1,3 +1,9 @@
+# V252.67
+
+- Fixes repeat **Re-edit from First Draft** runs. Completed re-edit browser state is now retired/cleared after Proof, so every later click creates a genuinely fresh Developmental → Revision → Line/style → Proof branch instead of reusing the previous branch IDs and jumping to Proof.
+- Only unfinished re-edit branches are resumable. All completed historical branches remain preserved in Supabase and the version history.
+- No Supabase migration required.
+
 # Moonbeam Stories V252.66
 
 - Fixes Re-edit from First Draft so a fresh branch automatically continues Developmental → Revision → Line/style → Proof, using exact source-run lineage and preserving all earlier versions.
