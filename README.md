@@ -1,3 +1,12 @@
+
+## V252.71 — Background Book Development
+
+- Book Development/planning now runs as a locked Fiction Studio background job with its own series ID and book ID.
+- Navigating to another series no longer redirects or pauses chapter-plan batching.
+- Different books in different series can be in Book Development, manuscript generation, or editorial re-edit simultaneously.
+- One active paid generation/edit job per book is still enforced.
+- Completion only refreshes the book UI when that same book is still open; otherwise progress remains visible in Background jobs.
+- No Supabase migration required.
 # V252.69
 - Adds **Re-edit from this version**. A completed Revision, Line/style or Proof manuscript can now be selected as the source for a fresh Developmental → Revision → Line/style → Proof branch; First Draft remains available as a source.
 - The Fiction Studio reader now has a **Re-edit from this version** action that returns to the book with that exact manuscript version preselected.
@@ -1936,3 +1945,12 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Fiction Studio browser resume state is scoped to the authenticated developer user and active Fiction Studio state is cleared on account changes/sign-out.
 - `/api/health` remains available via a rewrite to the lightweight GET health response in `api/generate.js`, keeping the deployment at 12 API functions.
 - Existing `developer_fiction_*` data is unchanged and automatically uses the hardened access path; no migration required.
+
+
+## V252.71 — Fiction Studio progress clarity
+- Replaces the vague Background jobs presentation with a clear Generation status panel.
+- Every in-tab job now shows a prominent RUNNING / PAUSED / COMPLETE badge, current stage, and latest saved checkpoint.
+- Series book cards now prioritise an active re-edit/generation over an older completed Proof, so a book being re-edited no longer misleadingly looks simply FINAL.
+- Editorial runs show the live stage and saved chapter count where available.
+- First-draft and Book Development cards show saved progress even after navigation.
+- No database migration required.
