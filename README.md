@@ -2292,3 +2292,14 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Revision cannot complete below 92% of the approved target. Existing restorative revision passes still run first; if they cannot recover the protected length, the pipeline pauses before Line/style rather than silently approving an under-length manuscript.
 - These guards preserve the senior editor's ability to request substantive Revision changes while preventing later copy/style stages from stripping thousands of words from an approved manuscript.
 - No Supabase migration or new API route is required.
+
+## V252.109 — quality-led editorial completion
+
+- Revision is no longer blocked, expanded, or repeated merely because it misses a numerical word-count floor. The planned target remains visible as diagnostic context only.
+- Sol's senior-editor quality gate now explicitly judges substantive completeness, pacing, genre delivery, plot/character development and commercial readability rather than treating target length as a pass/fail criterion. Expansion is requested only when a concrete quality defect actually needs more narrative substance.
+- Luna's Revision prompt now treats proportional chapter length as a planning reference, never a quota: no padding, recap or invented scenes simply to reach a number.
+- Final publication checks no longer fail solely because a manuscript is more than 20% below its planned target; that condition is exported as a warning while structural publication faults remain blocking issues.
+- Line/style and Proof retain mechanical anti-compression protection, with tighter per-chapter limits. Any destructive local patch is discarded and the exact source chapter is preserved.
+- Whole-stage Line/style/Proof length bands are now advisory rather than blocking. Because destructive chapter edits are rejected before saving, aggregate drift can be recorded without stranding the book at an unfinished quality gate.
+- Result: word count cannot trap the automated pipeline. Quality governs Revision; Line/style and Proof cannot quietly eat the manuscript; ordinary editorial completion continues without indefinite repair loops.
+- No Supabase migration and no new Vercel API route.
