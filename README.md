@@ -1,3 +1,14 @@
+# V252.103 — de-biased validation + compact profession research
+
+- Removes the experiment-derived title-template rejection list (including Fenland/probate/house-clearance/category terms). Title screening now uses only the hidden high-confidence anti-default/collision checks rather than our previous test concepts.
+- Geography and profession research remain fully backstage. Creative models no longer receive complete fact packs: they receive only concise `must_respect` / `cannot_do` / workflow / correction constraints required to prevent factual errors. Supporting research notes, local colour and occupational trivia stay hidden so they cannot seed ideas.
+- Rebuilds profession/practice research as one tiny role-discovery call followed by one tightly bounded live lookup per material role (maximum three), with a smaller per-role retry. This prevents one multi-role response from exhausting `max_output_tokens` and keeps unrelated occupational detail out of context.
+- Makes the deterministic prose audit locale-aware. English lexical detectors (English stock phrases, `not X ... but Y`, English triplet conjunctions and English formulaic ending cues) run only for English-language books. Other languages still receive language-neutral rhythm, repetition, punctuation, chapter-shape and cross-book exact-phrase checks, while Sol's senior review remains in the selected language.
+- Makes the cross-book structural regex audit locale-aware: English lexical beat/arc labels are no longer applied to non-English plans. Language-neutral structural information remains available without pretending English keywords are universal.
+- Aligns Fiction Studio fallback locale to English (UK) in server and UI. Adds `SUPABASE_V252_103_FICTION_LANGUAGE_DEFAULT.sql` so the database default for future rows also becomes `en-GB`; existing series keep their stored locale.
+- Keeps the explicit user-requested hard AI-name blacklist and backstage collision checks unchanged.
+- Still 12 Vercel API routes. One Supabase default-only migration is included.
+
 # V252.102 — zero-exemplar creative pipeline / backstage-only validation
 
 - Removes the embedded place-exemplar/world-data module entirely. Astra/Luna are no longer shown lists of real towns, regional settlement samples, business-name templates, common surnames, baby-name cohorts or other example pools at any creative stage.
