@@ -1981,3 +1981,16 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Editorial runs show the live stage and saved chapter count where available.
 - First-draft and Book Development cards show saved progress even after navigation.
 - No database migration required.
+
+
+## V252.75
+- Fixed stale status on the individual Fiction Studio book page. The header now uses the freshly fetched manuscript/editorial state before rendering, so completed or in-progress editorial stages override old Book Plan status.
+
+
+## V252.76 — series-wide character rename
+- Adds **Rename character across series** on the Fiction Studio series page.
+- Deterministically updates the Series Bible, Series Intelligence, original series brief/future plans, every saved Book Plan, first draft, continuity record, and every saved Developmental/Revision/Line/Proof history for every book in the series.
+- Preview shows the total occurrences plus per-book counts before anything changes.
+- Blocks the rename while the series has active generation/edit work, preventing an in-flight request from reintroducing the old name.
+- Applies whole-name replacement only, preserves normal casing behaviour, and verifies that zero old-name occurrences remain across the saved series before reporting success.
+- No Supabase migration required.

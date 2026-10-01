@@ -505,6 +505,49 @@ if(mode==='save-book-plan'){
   const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({working_title:title,book_plan:plan,development_state:state,status:'plan_approved',updated_at:new Date().toISOString()})});
   return res.status(200).json({book:rows[0]});
 }
+if(mode==='rename-character-series-preview'||mode==='rename-character-series-apply'){
+  let tools;try{tools=fictionRenameTools25252(body.old_name,body.new_name)}catch(e){return res.status(e.status||400).json({error:e.message})}
+  const u=encodeURIComponent(user.id);
+  const collect=async()=>{
+    const [books,runs,draftChapters,draftContinuity,editorialChapters,editorialContinuity]=await Promise.all([
+      rest(`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}&order=position.asc`),
+      rest(`developer_fiction_editorial_runs?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}&order=created_at.asc`),
+      rest(`developer_fiction_chapters?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}&order=book_id.asc,chapter_number.asc`),
+      rest(`developer_fiction_continuity?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}`),
+      rest(`developer_fiction_editorial_chapters?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}&order=book_id.asc,chapter_number.asc`),
+      rest(`developer_fiction_editorial_continuity?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}`)
+    ]);
+    const active=(Array.isArray(runs)?runs:[]).find(r=>r.status==='running');
+    if(active)throw Object.assign(new Error(`Finish or pause the active ${active.stage} pass before renaming a character across the series. This prevents an in-flight edit from reintroducing the old name.`),{status:409});
+    const bookMap=new Map((Array.isArray(books)?books:[]).map(b=>[String(b.id),b]));
+    const records=[];
+    const addRecord=(label,row,fields,table,filter,bookId=null)=>{if(!row)return;let count=0;for(const f of fields)count+=tools.countValue(row[f]);if(count)records.push({label,row,fields,table,filter,count,book_id:bookId});};
+    addRecord('Series Bible, Series Intelligence and original brief',series,['idea','series_bible','series_memory'],'developer_fiction_series',`id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}`);
+    for(const b of(Array.isArray(books)?books:[]))addRecord(`Book ${b.position||'?'} · ${b.working_title||'Book'} · plan/state`,b,['working_title','premise','book_plan','development_state','generation_state','editorial_state'],'developer_fiction_books',`id=eq.${encodeURIComponent(b.id)}&parent_id=eq.${u}`,b.id);
+    for(const c of(Array.isArray(draftChapters)?draftChapters:[])){const b=bookMap.get(String(c.book_id));addRecord(`Book ${b?.position||'?'} · First draft · Chapter ${c.chapter_number}`,c,['chapter_title','manuscript','continuity_delta'],'developer_fiction_chapters',`id=eq.${encodeURIComponent(c.id)}&parent_id=eq.${u}`,c.book_id)}
+    for(const c of(Array.isArray(draftContinuity)?draftContinuity:[])){const b=bookMap.get(String(c.book_id));addRecord(`Book ${b?.position||'?'} · First-draft continuity`,c,['ledger'],'developer_fiction_continuity',`book_id=eq.${encodeURIComponent(c.book_id)}&parent_id=eq.${u}`,c.book_id)}
+    for(const r of(Array.isArray(runs)?runs:[])){const b=bookMap.get(String(r.book_id));addRecord(`Book ${b?.position||'?'} · ${r.stage} run metadata`,r,['editorial_plan','direction'],'developer_fiction_editorial_runs',`id=eq.${encodeURIComponent(r.id)}&parent_id=eq.${u}`,r.book_id)}
+    for(const c of(Array.isArray(editorialChapters)?editorialChapters:[])){const b=bookMap.get(String(c.book_id));addRecord(`Book ${b?.position||'?'} · Editorial chapter ${c.chapter_number}`,c,['chapter_title','manuscript','continuity_state','continuity_snapshot'],'developer_fiction_editorial_chapters',`id=eq.${encodeURIComponent(c.id)}&parent_id=eq.${u}`,c.book_id)}
+    for(const c of(Array.isArray(editorialContinuity)?editorialContinuity:[])){const b=bookMap.get(String(c.book_id));addRecord(`Book ${b?.position||'?'} · Editorial continuity`,c,['ledger'],'developer_fiction_editorial_continuity',`id=eq.${encodeURIComponent(c.id)}&parent_id=eq.${u}`,c.book_id)}
+    const perBook=new Map();for(const r of records){if(!r.book_id)continue;perBook.set(String(r.book_id),(perBook.get(String(r.book_id))||0)+r.count)}
+    const booksSummary=(Array.isArray(books)?books:[]).map(b=>({id:b.id,position:b.position,title:b.working_title,count:perBook.get(String(b.id))||0}));
+    return {records,books:Array.isArray(books)?books:[],booksSummary};
+  };
+  let snapshot;try{snapshot=await collect()}catch(e){return res.status(e.status||500).json({error:e.message})}
+  const total=snapshot.records.reduce((n,x)=>n+x.count,0),seriesCount=snapshot.records.filter(x=>!x.book_id).reduce((n,x)=>n+x.count,0);
+  if(mode==='rename-character-series-preview')return res.status(200).json({old_name:tools.oldName,new_name:tools.newName,total,series_count:seriesCount,books:snapshot.booksSummary,locations:snapshot.records.map(x=>({label:x.label,count:x.count}))});
+  if(!body.confirmed)return res.status(400).json({error:'Preview and confirmation are required before applying a series-wide rename.'});
+  let changedRecords=0,replacements=0;
+  const changed=[];
+  for(const r of snapshot.records){const patch={};let rowCount=0;for(const f of r.fields){const z=tools.transform(r.row[f]);if(z.count){patch[f]=z.value;rowCount+=z.count}}if(rowCount){if(r.table==='developer_fiction_books'||r.table==='developer_fiction_series')patch.updated_at=new Date().toISOString();changed.push({r,patch,rowCount})}}
+  for(let i=0;i<changed.length;i+=8){await Promise.all(changed.slice(i,i+8).map(async x=>{await rest(`${x.r.table}?${x.r.filter}`,{method:'PATCH',body:JSON.stringify(x.patch)});changedRecords++;replacements+=x.rowCount}))}
+  let verify;try{verify=await collect()}catch(e){return res.status(e.status||500).json({error:e.message,replacements,changed_records:changedRecords})}
+  const remaining=verify.records.reduce((n,x)=>n+x.count,0);
+  if(remaining)return res.status(500).json({error:`Series-wide rename was applied, but verification still found ${remaining} whole-name occurrence${remaining===1?'':'s'} of “${tools.oldName}”. Do not continue generation until this is checked.`,replacements,changed_records:changedRecords,remaining});
+  const freshSeries=(await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}&limit=1`))?.[0]||series;
+  const freshBooks=await rest(`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}&order=position.asc`);
+  return res.status(200).json({ok:true,replacements,changed_records:changedRecords,remaining:0,series:freshSeries,books:Array.isArray(freshBooks)?freshBooks:[]});
+}
 if(mode==='rename-character-preview'||mode==='rename-character-apply'){
   const bookId=String(body.book_id||'').trim(),scope=body.scope==='history'?'history':'current',includeSeries=body.include_series!==false;
   if(!bookId)return res.status(400).json({error:'Book id is required.'});
