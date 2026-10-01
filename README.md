@@ -1,3 +1,11 @@
+# V252.107 — bomb-proof backstage research retries
+
+- Raises the output allowance for backstage demographic-name, real-location and profession research so model reasoning/web-search overhead cannot starve the small structured payload.
+- Profession research still checkpoints one role per request. A normal role lookup gets one saved compact retry if needed.
+- If even the compact role lookup still returns incomplete because of `max_output_tokens`, the pipeline no longer deadlocks: it saves an explicit research warning for that role, applies a conservative “do not invent professional powers/procedures” constraint, and continues. No fabricated professional facts are inserted.
+- The warning remains in the stored profession pack so later review can see that grounding was unavailable rather than silently pretending research succeeded.
+- No new endpoint or database migration.
+
 # V252.104 — de-biased validation + compact profession research
 
 - Removes the experiment-derived title-template rejection list (including Fenland/probate/house-clearance/category terms). Title screening now uses only the hidden high-confidence anti-default/collision checks rather than our previous test concepts.
@@ -2275,3 +2283,12 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Book Development architecture now uses the same staged pattern in `developer_fiction_books.development_state`: creative architecture, granular naming, location research, profession discovery/roles, collision validation, then chapter planning.
 - Final Book Plan collision validation is now a separate checkpoint after all chapter-plan batches are saved.
 - No new database columns or API routes are required; existing JSONB checkpoint fields are used.
+
+
+## V252.108 — hard editorial length protection
+- Line/style and Proof no longer rely on prompt wording to preserve manuscript length. The backend now measures every proposed edited chapter before saving it.
+- Line/style rejects any chapter patch set whose net change exceeds the protected band; Proof uses a much tighter near-length-neutral band. Rejected patch sets are not saved: the exact source chapter is preserved instead, and the rejection is logged in the editorial run metadata.
+- Whole-manuscript completion is mechanically guarded: Line/style must remain within ±3% of its source manuscript and Proof within ±1%. A stage outside that band cannot be marked complete.
+- Revision cannot complete below 92% of the approved target. Existing restorative revision passes still run first; if they cannot recover the protected length, the pipeline pauses before Line/style rather than silently approving an under-length manuscript.
+- These guards preserve the senior editor's ability to request substantive Revision changes while preventing later copy/style stages from stripping thousands of words from an approved manuscript.
+- No Supabase migration or new API route is required.
