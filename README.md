@@ -1,4 +1,4 @@
-# Moonbeam Stories V252.84
+# Moonbeam Stories V252.86
 
 ## V252.82 — Series-register preservation
 - Series Development now infers the appropriate prose style, pacing, accessibility and narrative texture from the genre/readership/positioning already established by the developer or by Astra, without numeric style sliders or a universal literary target.
@@ -2053,6 +2053,18 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 
 
 
+
+
+## V252.85 — anti-AI places, institutions and titles
+- Adds a shared anti-AI worldbuilding guard across Series Development, Book Development, chapter planning, Series Extension and manuscript generation.
+- Contemporary realistic fiction now defaults to real geography when the scale makes that sensible. Major cities, metropolitan districts and substantial towns may be real; tiny communities involved in repeated serious fictional crime should normally be fictionalised inside a real county/region.
+- Fictional settlements may no longer be invented by freely combining atmospheric English-looking fragments. When a small fictional place is needed, the model must derive it from the actual regional toponymic ecology and keep the result unshowy.
+- Adds a fail-closed blacklist of recurring synthetic place constructions such as Greyhaven/Dunhaven/Bellwick/Ravenmere/Ashvale-style names and close stock constructions. Existing/user-supplied canon remains allowed.
+- Institutions and local businesses must follow mundane real-world naming patterns for the setting; the model is told to reject a whole-world palette that becomes suspiciously coordinated, quaint, gothic or alliterative.
+- Adds title anti-default rules. Series and book titles must emerge from the concept and market rather than stock AI constructions such as region+occupation+Mysteries/Cases or generic thriller phrases. A newly generated explicit SERIES TITLE matching a high-risk metadata-style template fails closed and must be regenerated.
+- The guard is locale-aware: manuscript language does not override the naming logic of the actual country/culture.
+- No Supabase migration or additional Vercel endpoint is required.
+
 ## V252.84 — Demographic/cultural fiction naming engine
 - Adds a hard ban on recurring AI-fiction default names and close neighbours (including Mara/Maren/Mira, Elara/Elora, Voss/Vale/Vance, Mercer/Thorne/Hale and a much broader protected list). New Series Development, Book Development, chapter planning, Series Extension and manuscript generation are instructed never to create them.
 - Adds server-side fail-closed validation at the stages that can create new fictional people. If a model nevertheless returns a newly introduced banned name, nothing from that stage is saved. Existing canonical names already present in supplied context remain readable so old series do not break.
@@ -2068,3 +2080,31 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Extension uses the series' already locked Series Development model and receives the authoritative Series Bible, persistent Series Intelligence, existing book records/plans, and the current proposed slate.
 - It appends a fresh model-chosen batch (normally 3–6) without rewriting the existing Bible or previous books, and explicitly avoids mechanical repetition of earlier premises, twists, relationship arcs, settings, structures, or forced callbacks.
 - No Supabase migration required.
+
+## V252.86 — data-driven anti-AI world naming
+- Replaces the V252.85 prompt-only place/institution guidance with an embedded evidence pack used automatically by Fiction Studio generation stages.
+- UK regional detection injects real settlement exemplars from the relevant naming ecology (with OS Open Names / ONS geography as the source basis) before Astra/Luna names new places.
+- Supported international locales inject real country-specific place exemplars and require the relevant national gazetteer/statistical authority as the naming reference model; language is not treated as nationality.
+- Real geography remains the default where settlement scale makes it appropriate. Small communities can be fictionalised where serious crime/scandal would attach unfairly to a tiny real community, but the fictional name must be derived from real regional naming evidence rather than atmospheric free-combination.
+- Businesses/institutions now use deterministic evidence-based methods: founder/family surnames, real locality/street names, functional descriptors, legal forms and historically attested institution types. Decorative adjective+noun naming is explicitly disallowed as a default.
+- Existing AI-default place/institution/title rejection remains fail-closed and existing canon remains protected.
+- No Supabase migration.
+
+
+## V252.87
+- Expanded Fiction Studio anti-AI world naming into an international data-driven geography and business/institution naming layer.
+- All supported writing locales now have real settlement anchors rather than generic fallback geography.
+- Added locale-specific organisation naming profiles, ordinary structural patterns and common legal/company forms, with culture/region constraints.
+- No new Vercel API route and no database migration.
+
+## V252.88 — live real-world collision safety
+- Added a live web collision-checking layer to the existing developer-only Fiction Studio route; no additional Vercel API function is created.
+- Series Development, Series Bible saves/approval, Extend Series, Book Development architecture, completed Book Plans and manually saved Book Plans are checked before canon is persisted.
+- The checker uses OpenAI Responses web search with Luna to minimise cost and blocks only high-confidence harmful collisions. Ordinary shared names such as common UK first-name/surname combinations are explicitly not treated as collisions by themselves.
+- Fictional people portrayed as serious wrongdoers are checked more strictly when a distinctive name plus location/profession/biographical details could identify a real person; famous/prominent real people may not be repurposed as fictional wrongdoers.
+- Real companies/institutions may appear neutrally, but invented murder, fraud, corruption, abuse, dangerous negligence or other damaging conduct may not be attached to a real identifiable organisation. Fictional wrongdoing organisations are checked for exact/confusingly-close real-world trading-name collisions, especially in the same place/sector.
+- Real major cities/districts remain usable as settings. Tiny real communities receive extra care where repeated fictional serious wrongdoing could attach to an identifiable community.
+- Manuscript generation receives the same collision-safety rules and is told not to invent high-risk new entities outside the approved plan; live web checking remains concentrated at canon/planning boundaries rather than adding a web-search charge to every chapter.
+- Live-check failures fail closed: the unsafe/unverified stage is not saved and can be retried.
+- No Supabase migration.
+
