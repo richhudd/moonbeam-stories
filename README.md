@@ -1,3 +1,7 @@
+V252.74
+
+Series/book production dashboard cleanup: series cards now list every planned book with Finished/In progress/Ready/Not started status derived from live Fiction Studio records; book pages show the current production/editing stage rather than only first-draft completion.
+
 ## V252.73 — Retrospective deleted-fiction cleanup
 
 - Adds a developer-only legacy orphan audit when Fiction Studio opens.

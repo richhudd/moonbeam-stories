@@ -168,6 +168,51 @@ if(mode==='legacy-orphan-purge'){
   const result=await purgeLegacyOrphans25273();
   return res.status(200).json({ok:true,purged:true,total_removed:result.before.total,counts:result.before.counts,impacted_series_reset:result.before.impactedSeriesIds.length,purged_book_ids:result.before.orphanBookIds,verified_remaining:result.after.total});
 }
+if(mode==='series-dashboard'){
+  const u=encodeURIComponent(user.id);
+  const [seriesRows,bookRows,runRows,chapterRows]=await Promise.all([
+    rest(`developer_fiction_series?select=*&parent_id=eq.${u}&order=updated_at.desc`),
+    rest(`developer_fiction_books?select=*&parent_id=eq.${u}&order=position.asc`),
+    rest(`developer_fiction_editorial_runs?select=id,series_id,book_id,stage,status,created_at,completed_at&parent_id=eq.${u}&order=created_at.asc`),
+    rest(`developer_fiction_chapters?select=book_id,chapter_number&parent_id=eq.${u}`)
+  ]);
+  const books=Array.isArray(bookRows)?bookRows:[],runs=Array.isArray(runRows)?runRows:[],chapters=Array.isArray(chapterRows)?chapterRows:[];
+  const countByBook=new Map();for(const c of chapters)countByBook.set(c.book_id,(countByBook.get(c.book_id)||0)+1);
+  const runsByBook=new Map();for(const r of runs){if(!runsByBook.has(r.book_id))runsByBook.set(r.book_id,[]);runsByBook.get(r.book_id).push(r)}
+  const derive=(book)=>{
+    const planned=Array.isArray(book?.book_plan?.chapters)?book.book_plan.chapters.length:0,saved=countByBook.get(book.id)||0,br=runsByBook.get(book.id)||[];
+    const latest=br.slice().sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')))[0]||null;
+    if(latest){
+      const label=latest.stage==='line'?'Line/style':latest.stage?latest.stage[0].toUpperCase()+latest.stage.slice(1):'Editorial';
+      if(latest.status==='running')return {state:'running',label:`${label} running`,detail:`${saved}/${planned||saved||'?'} draft chapters saved`};
+      if(latest.status==='completed'){
+        if(latest.stage==='proof')return {state:'finished',label:'Finished',detail:'Proof complete'};
+        if(latest.stage==='line')return {state:'editing',label:'Editing',detail:'Line/style complete · awaiting Proof'};
+        if(latest.stage==='revision')return {state:'editing',label:'Editing',detail:'Revision complete · awaiting Line/style'};
+        if(latest.stage==='developmental')return {state:'editing',label:'Editing',detail:'Developmental complete · awaiting Revision'};
+      }
+    }
+    const phase=book?.development_state?.phase;
+    if(phase&&phase!=='complete')return {state:'planning',label:'In progress',detail:'Book Development'};
+    if(planned&&!saved)return {state:'ready',label:'Ready',detail:`Book Plan complete · ${planned} chapters`};
+    if(saved&&planned&&saved<planned)return {state:'drafting',label:'In progress',detail:`First draft · ${saved}/${planned} chapters saved`};
+    if(saved&&(book?.status==='complete'||saved>=planned))return {state:'editing',label:'Editing',detail:'First draft complete · awaiting Developmental'};
+    return {state:'ready',label:'Ready',detail:'Book Development not started'};
+  };
+  const out=(Array.isArray(seriesRows)?seriesRows:[]).map(sr=>{
+    const actual=books.filter(b=>b.series_id===sr.id),byPos=new Map(actual.map(b=>[Number(b.position||0),b]));
+    const proposed=Array.isArray(sr?.series_bible?.proposed_books)?sr.series_bible.proposed_books:[];
+    const max=Math.max(proposed.length,...actual.map(b=>Number(b.position||0)),0),items=[];
+    for(let pos=1;pos<=max;pos++){
+      const book=byPos.get(pos),proposal=proposed[pos-1]||{};
+      if(book){const st=derive(book);items.push({position:pos,book_id:book.id,title:book.working_title||proposal.working_title||`Book ${pos}`,...st})}
+      else items.push({position:pos,book_id:null,title:proposal.working_title||`Book ${pos}`,state:'not_started',label:'Not started',detail:'No Book Development yet'});
+    }
+    const counts={finished:items.filter(x=>x.state==='finished').length,in_progress:items.filter(x=>['running','editing','planning','drafting'].includes(x.state)).length,ready:items.filter(x=>x.state==='ready').length,not_started:items.filter(x=>x.state==='not_started').length,total:items.length};
+    return {id:sr.id,series_name:sr.series_name,pen_name:sr.pen_name,development_model:sr.development_model,books:items,counts};
+  });
+  return res.status(200).json({series:out});
+}
 if(mode==='list'){
   const rows=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&order=updated_at.desc`);
   return res.status(200).json({series:Array.isArray(rows)?rows:[]});

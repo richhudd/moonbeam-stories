@@ -4376,3 +4376,25 @@ body.fiction-reader-open-25250{overflow:hidden}
 .fiction-job-paused{border-color:rgba(255,209,102,.38)}
 .fiction-job-complete{opacity:.88}
 [data-fiction-book-status]{display:block;margin-top:5px;line-height:1.35;font-weight:650}
+
+/* V252.74 — clear series/book production dashboard */
+.fiction-series-dashboard-grid-25274{align-items:start}
+.fiction-series-dashboard-card-25274{height:auto!important;min-height:0!important;text-align:left!important;display:block!important}
+.fiction-series-summary-25274{margin-top:12px;border-top:1px solid rgba(255,255,255,.09);padding-top:10px}
+.fiction-series-counts-25274{font-size:12px;font-weight:800;opacity:.78;margin-bottom:8px}
+.fiction-series-book-list-25274{display:grid;gap:7px}
+.fiction-series-book-row-25274{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid rgba(255,255,255,.055)}
+.fiction-series-book-row-25274:first-child{border-top:0}
+.fiction-book-number-25274{font-size:11px;font-weight:900;opacity:.55;text-align:center}
+.fiction-series-book-copy-25274{min-width:0;display:grid;gap:2px}
+.fiction-series-book-copy-25274 strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fiction-series-book-copy-25274 small{font-size:10px;opacity:.66;white-space:normal}
+.fiction-book-stage-badge-25274{font-size:9px;line-height:1;padding:6px 7px;border-radius:999px;font-weight:900;letter-spacing:.04em;white-space:nowrap;border:1px solid rgba(255,255,255,.14)}
+.fiction-book-stage-badge-25274.finished{background:rgba(95,180,115,.14)}
+.fiction-book-stage-badge-25274.running{background:rgba(230,184,104,.18)}
+.fiction-book-stage-badge-25274.editing,.fiction-book-stage-badge-25274.planning,.fiction-book-stage-badge-25274.drafting{background:rgba(105,150,220,.15)}
+.fiction-book-stage-badge-25274.not_started{opacity:.58}
+.fiction-book-current-status-25274{display:grid;gap:4px;margin:10px 0 16px;padding:12px 14px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.025)}
+.fiction-book-current-status-25274 strong{font-size:15px}
+.fiction-book-current-status-25274 small{opacity:.65}
+@media(max-width:700px){.fiction-series-book-row-25274{grid-template-columns:18px minmax(0,1fr)}.fiction-book-stage-badge-25274{grid-column:2;justify-self:start}}
