@@ -4415,3 +4415,6 @@ body.fiction-reader-open-25250{overflow:hidden}
 .fiction-series-text-review-row-25278 label{display:flex;flex-direction:column;gap:6px;font-size:.78rem;font-weight:700}
 .fiction-series-text-review-row-25278 select{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.18);border-radius:9px;background:#151319;color:#f6f0e8;padding:10px;font:inherit}
 @media(max-width:700px){.fiction-series-text-review-row-25278{grid-template-columns:1fr}.fiction-series-text-review-row-25278 label{max-width:none}}
+
+/* V252.79 — unobtrusive legacy cleanup status */
+.fiction-legacy-clean-25279{display:flex;align-items:center;gap:10px;margin:4px 2px 14px;color:var(--muted,#8f8a96);font-size:.86rem}.fiction-legacy-clean-25279 .link-button{appearance:none;border:0;background:transparent;padding:2px 4px;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}.fiction-legacy-clean-25279 .status{margin-left:4px}

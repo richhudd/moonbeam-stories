@@ -1,3 +1,24 @@
+# Moonbeam Stories V252.80
+
+## Fiction Studio series writing language / locale
+
+- Added a persistent series-level **Writing language** selector with 65 text-only language/locale options.
+- Fiction Studio controls remain in UK English regardless of the selected writing language.
+- New series default to **English (UK)**. Existing series retain the previous **English (US)** behaviour.
+- The chosen language is stored on `developer_fiction_series.language_locale` and inherited by Series Development, Book Development, chapter planning, first-draft generation, Developmental, Revision, Line/style, Proof, Series Intelligence and selective context retrieval.
+- Language/locale is distinct from geographic setting: it supplies the default linguistic/cultural frame, while explicit settings keep authentic local dialogue, institutions and place-specific terminology.
+- The language is fixed at series creation in the current UI, so different series may use different languages without affecting one another.
+- Supabase migration: `SUPABASE_V252_80_FICTION_LANGUAGE_LOCALE.sql`.
+
+# Moonbeam Stories V252.79
+
+## V252.79 — Quiet deleted-fiction cleanup status
+
+- When the retrospective deleted-fiction audit is clear, the large cleanup card is replaced by a small muted `Deleted-fiction cleanup: clear` line with a compact **Check again** control.
+- If orphaned traces are detected, the full cleanup panel automatically returns with the purge action.
+- After a successful purge the UI collapses back to the quiet clear state.
+- No Supabase migration required.
+
 V252.74
 
 Series/book production dashboard cleanup: series cards now list every planned book with Finished/In progress/Ready/Not started status derived from live Fiction Studio records; book pages show the current production/editing stage rather than only first-draft completion.
