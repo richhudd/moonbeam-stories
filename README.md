@@ -1,4 +1,32 @@
-# Moonbeam Stories V252.89
+# Moonbeam Stories V252.92
+
+
+## V252.92 — structural anti-template audit + anti-overcoherence
+- Adds a deterministic cross-book structural-variation diagnostic to Book Development. It compares high-level architecture rather than prose style: chapter-count band, turning-point sequence, chapter-plan beat positions where available, ending openness/closure and whether the character/relationship arc resolves as a neat lesson or remains messier.
+- The diagnostic is advisory, not a beat-sheet enforcer. It only surfaces when a candidate repeats several structural features of earlier books, and explicitly says not to distort a strong premise or replace one stock template with another.
+- Earlier-book structure is only shown to the planning model when repetition is already visible across prior books; ordinary one-off structures are not presented as a menu to imitate.
+- Completed and manually edited Book Plans persist the structural diagnostic in development state so later planning/resume keeps the same warning without a new model call.
+- Adds one compact anti-overcoherence principle to planning and manuscript editing: not every object, scene, subplot or side character must reinforce the central theme or main plot. Incidental humour, atmosphere, social detail and ordinary human mess may remain when they add credibility or pleasure rather than padding.
+- No new API route, web call, paid audit call or Supabase migration.
+
+
+## V252.91 — prompt consolidation / creative-priority hierarchy
+- Consolidates the overlapping series-register, human-depth, Luna-tic, anti-banter and anti-pithiness prose instructions into one compact creative hierarchy used by Draft, Developmental, Revision, Line/style and Proof.
+- Establishes explicit priorities: Series Bible/register first; current canon/continuity next; stage-specific task next; anti-AI corrections last and only as selective interventions.
+- Removes the old standalone prose/style helper layers from active prompts, so Luna is no longer told the same idea several different ways or given partially competing instructions about literary depth versus commercial pace.
+- Planning stages now receive one compact planning priority rather than manuscript-editing constraints. Chapter planning still avoids mechanical rhythms and fixed formulas without being asked to imitate an editorial style guide.
+- Thresholded V252.90 audit findings are folded into the same creative hierarchy. Normal-range categories remain invisible; only genuine outliers are surfaced, and absent categories are explicitly not suggestions.
+- Keeps genre-preservation, naming/worldbuilding, collision-safety, continuity and publication safeguards separate because they govern different failure modes rather than prose taste.
+- No new API route, model call, web call or Supabase migration.
+
+
+## V252.90 — thresholded anti-AI interventions
+- Keeps the complete deterministic V252.89 manuscript audit for the developer and review ZIP, but no longer exposes normal-range counts or a full stylistic inventory to Luna/Astra.
+- Editing models now receive only patterns that cross explicit editorial thresholds, phrased as concrete reduction/diversification interventions rather than as a menu of devices.
+- A clear audit explicitly tells the model not to invent an anti-AI problem and not to introduce devices merely because an audit exists.
+- Chapter-level Revision and Line/style receive only globally significant interventions relevant to that chapter.
+- Adds thresholded checks for repetitive chapter-ending questions, habitual short punch endings and repeated formula lead-ins, while preserving deliberate stylistic choices.
+- No new API route, web call, model call or Supabase migration.
 
 ## Deterministic whole-manuscript anti-AI pattern audit
 - Adds a deterministic full-manuscript audit before every Developmental pass. It is explicitly an editorial diagnostic, not an AI detector.
