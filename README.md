@@ -1,4 +1,4 @@
-# V252.103 — de-biased validation + compact profession research
+# V252.104 — de-biased validation + compact profession research
 
 - Removes the experiment-derived title-template rejection list (including Fenland/probate/house-clearance/category terms). Title screening now uses only the hidden high-confidence anti-default/collision checks rather than our previous test concepts.
 - Geography and profession research remain fully backstage. Creative models no longer receive complete fact packs: they receive only concise `must_respect` / `cannot_do` / workflow / correction constraints required to prevent factual errors. Supporting research notes, local colour and occupational trivia stay hidden so they cannot seed ideas.
@@ -2244,3 +2244,15 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Automatic pipelines update the open Book page as soon as each senior review completes; no page exit/re-entry is required to see the report.
 - Series Book cards show a compact latest senior-review summary (approved/revision required plus critical, material and synthetic-writing counts).
 - `list-books` now returns that compact latest senior-review summary from existing editorial-run data; no database migration or new API route is required.
+
+## V252.104 — backstage first-name + surname selection
+- New fictional character names are no longer chosen by Astra/Luna at the stages that establish canon.
+- Series Development and Book Development now define a structured naming profile (birth cohort, country/region, explicit family/cultural context, family group and naming system) and use a temporary character marker instead of inventing a name.
+- The backend researches real demographic naming data via live web search, builds hidden candidate pools, filters the AI-default blacklist/near-neighbours, and randomly selects the final name. Candidate pools are never shown to the creative model.
+- Shared family surnames are selected once per surname group and reused for relatives. The selected surname is then supplied to the hidden given-name step so first name + surname are culturally coherent as a whole.
+- Mixed families, marriage/divorce/adoption, patronymics and non-Western naming systems are supported through explicit naming-system metadata rather than forcing an English `first name + surname` pattern.
+- The selector is expressly forbidden from inferring religion, ethnicity or migration history that the fiction has not established. If background is unspecified, it must use broadly ordinary local/cohort-plausible names rather than strongly community-specific combinations.
+- This prevents demographic popularity from producing incoherent combinations such as assigning a strongly Muslim given name to a fictional family explicitly established as white English Christian merely because that given name is nationally common.
+- Book architecture now has a `new_characters` list so important book-specific characters are named by the same hidden mechanism before chapter planning begins. Chapter planning is told not to invent extra canonical names outside that mechanism.
+- Existing canonical names are preserved unless the developer explicitly changes them.
+- No Supabase migration and no new Vercel API route.
