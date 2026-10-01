@@ -2262,3 +2262,16 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - `naming_profile` is now required-but-nullable for Series Development, allowing established characters to return `null` while new `[[CHAR:...]]` characters return a complete profile.
 - Added a recursive local strict-schema preflight. Any future schema with missing/extra `required` keys or missing `additionalProperties:false` fails locally before a model request is sent.
 - Routed the remaining direct Responses API structured-output calls through the common preflight/retry wrapper so the check covers Series Development, Book architecture, chapter planning, series memory/context, naming research, geography/profession research, editorial stages and series extension.
+
+
+## V252.106 — resumable Series Development backstage pipeline
+Series Development now checkpoints Astra's creative Series Bible before any naming/geography/profession/collision work. Backstage enrichment runs as one persisted step per HTTP request in `developer_fiction_series.autopilot_state`, so refreshes, 504s and lost responses resume from the last completed step instead of rerunning or discarding Astra's work. Naming is one surname/given-name call at a time; geography is one call; profession discovery and each profession are separate calls; collision validation and finalization are separate checkpoints. No schema migration is required.
+
+## V252.106 — bomb-proof resumable backstage research
+- Series Development now saves Astra's creative core before any demographic naming, location research, profession research or collision validation begins.
+- Every backstage unit runs as a separate HTTP request and checkpoints to `developer_fiction_series.autopilot_state`; refreshes, 504s, lost responses and redeploys resume from the last saved stage.
+- Naming is granular: at most one surname-pool or one given-name call per request.
+- Geography is one request; profession discovery is one request; each profession is one request; compact profession retry is its own request; collision validation and finalisation are separate checkpoints.
+- Book Development architecture now uses the same staged pattern in `developer_fiction_books.development_state`: creative architecture, granular naming, location research, profession discovery/roles, collision validation, then chapter planning.
+- Final Book Plan collision validation is now a separate checkpoint after all chapter-plan batches are saved.
+- No new database columns or API routes are required; existing JSONB checkpoint fields are used.
