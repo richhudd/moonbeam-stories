@@ -1,3 +1,16 @@
+# Moonbeam Stories V252.89
+
+## Deterministic whole-manuscript anti-AI pattern audit
+- Adds a deterministic full-manuscript audit before every Developmental pass. It is explicitly an editorial diagnostic, not an AI detector.
+- Measures sentence/paragraph/chapter-length variation, em-dash density, rhetorical-question density, contrastive “not X … but Y” framing, possible triplet/three-part constructions, one-sentence paragraphs, short punch sentences, recurring stock gestures/phrases, chapter-ending shapes and exact six-word phrases repeated across chapters.
+- Compares long exact phrases with up to the three preceding books in the same series to flag possible recycled prose.
+- Stores the complete audit inside the Developmental editorial plan and supplies a compact evidence brief to the Developmental editor.
+- Revision receives the relevant chapter-specific findings and is told to fix only genuinely intrusive recurrence, never to chase numerical quotas or erase intentional voice.
+- Line/style receives the same selective diagnostic; Proof remains copy-focused.
+- Re-runs the deterministic audit on completed Revision, Line/style and Proof manuscripts so the book page can show before/after pattern metrics.
+- Adds a visible Whole-manuscript pattern audit card to Fiction Studio and exports the complete audit JSON with review ZIPs.
+- No new API route, no web call, no paid model call for the audit itself, and no Supabase migration.
+
 # Moonbeam Stories V252.86
 
 ## V252.82 — Series-register preservation
