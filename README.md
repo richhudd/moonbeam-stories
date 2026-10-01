@@ -1,3 +1,10 @@
+# V252.101 — bounded profession/practice research
+
+- Profession/practice fact packs are now deliberately compact: fewer roles, fewer facts per section, and hard string/array bounds.
+- If the first research response still reaches `max_output_tokens`, the existing Fiction Studio route automatically retries once with an ultra-compact schema before failing closed.
+- Research quality rules remain intact: jurisdiction/era specificity, role boundaries, realistic access/workflow, authoritative sources, silent-use guidance, and non-actionable treatment of criminal roles.
+- No Supabase migration and no additional Vercel API route.
+
 ## V252.99 — live profession/practice fact grounding
 
 - Adds a live profession/practice fact pack after Series Development for central, recurring, technically specialised or legally constrained roles.
