@@ -1,3 +1,11 @@
+# V252.110
+
+- Hardened backstage character naming after a Book Development surname-pool `max_output_tokens` failure.
+- Name research now returns only the candidate list (no verbose source/notes payload), uses a 5,000-token ceiling for live web-backed selection, and requests a much smaller pool.
+- Both Series Development and Book Development naming are now checkpointed through bounded fallbacks: normal live lookup → compact live lookup → conservative offline demographic fallback → single-candidate emergency fallback. Each fallback is a separate resumable request, so retries cannot recreate the old monolithic timeout problem.
+- A `max_output_tokens` response no longer throws away the naming stage or leaves the book stuck on the same request. The next fallback mode is persisted in `autopilot_state` / `development_state`, and any live-research fallback is recorded as a warning.
+- The hidden AI-default blacklist still applies to every candidate, including fallback candidates. No exemplar name lists were reintroduced.
+
 # V252.107 — bomb-proof backstage research retries
 
 - Raises the output allowance for backstage demographic-name, real-location and profession research so model reasoning/web-search overhead cannot starve the small structured payload.
