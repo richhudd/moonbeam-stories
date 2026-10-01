@@ -1,3 +1,14 @@
+## V252.73 — Retrospective deleted-fiction cleanup
+
+- Adds a developer-only legacy orphan audit when Fiction Studio opens.
+- Detects traces left by books/series deleted before V252.72: orphaned books, chapters, continuity, editorial runs/chapters/continuity and usage events.
+- Adds **Purge legacy deleted traces** on the Fiction Studio library when leftovers are found.
+- Purge is scoped to the authenticated developer account and the existing Fiction Studio table allowlist.
+- Child/detail records are removed before parent rows, then the server rescans and fails closed if any orphan remains.
+- Surviving series whose Series Intelligence may contain facts derived from a legacy-deleted book have Series Intelligence reset and cached selective context cleared; surviving manuscripts are not altered and memory can rebuild retrospectively from completed proofs.
+- Browser resume/background state for orphaned book IDs is cleared after cleanup.
+- No Supabase migration required.
+
 ## V252.72 — Thorough Fiction Studio purge
 
 - Fiction Studio **Delete novel** now explicitly purges that novel's Book Plan, first-draft chapters, first-draft continuity, every editorial run, editorial chapters, editorial continuity, Proof history, and Fiction Studio usage events before deleting the book row.

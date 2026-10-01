@@ -103,6 +103,71 @@ const fictionUsage25243=(data)=>{const u=data?.usage||{},id=u.input_tokens_detai
 const fictionCost25243=(tokens,m)=>{const long=tokens.input_tokens>272000,mul=long?{input:2,cached_input:2,cache_write:2,output:1.5}:{input:1,cached_input:1,cache_write:1,output:1},r=m.rates,uncached=Math.max(0,tokens.input_tokens-tokens.cached_input_tokens-tokens.cache_write_tokens);return {usd:Number(((uncached*r.input*mul.input+tokens.cached_input_tokens*r.cached_input*mul.cached_input+tokens.cache_write_tokens*r.cache_write*mul.cache_write+tokens.output_tokens*r.output*mul.output)/1e6).toFixed(8)),long}};
 const meterFiction25243=async({seriesId=id,bookId=null,stage,substage=null,model,data,startedAt,httpStatus,ok,attempt=1})=>{const m=fictionModel25243(model),t=fictionUsage25243(data),c=fictionCost25243(t,m),now=new Date().toISOString(),snapshot={currency:'USD',per_million:m.rates,long_context_threshold:272000,long_context_multiplier:{input:2,cached_input:2,cache_write:2,output:1.5},source:'OpenAI standard pricing verified 2026-09-29'};try{await rest('developer_fiction_usage_events',{method:'POST',body:JSON.stringify({parent_id:user.id,series_id:seriesId,book_id:bookId,stage,substage,model:m.id,response_id:data?.id||null,attempt,ok:!!ok,http_status:+httpStatus||null,started_at:new Date(startedAt).toISOString(),completed_at:now,duration_ms:Math.max(0,Date.now()-startedAt),...t,cost_usd:c.usd,pricing_snapshot:snapshot})})}catch(e){if(!String(e.message||'').toLowerCase().includes('duplicate'))throw e}return {tokens:t,cost:c}};
 const fictionUsageSummary25243=async(seriesId,bookId=null)=>{let path=`developer_fiction_usage_events?select=*&series_id=eq.${encodeURIComponent(seriesId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=created_at.asc`;if(bookId)path+=`&book_id=eq.${encodeURIComponent(bookId)}`;const rows=await rest(path),a=Array.isArray(rows)?rows:[],sum=(xs,k)=>xs.reduce((n,x)=>n+(+x[k]||0),0),pack=xs=>({requests:xs.length,cost_usd:Number(sum(xs,'cost_usd').toFixed(8)),api_duration_ms:sum(xs,'duration_ms'),input_tokens:sum(xs,'input_tokens'),cached_input_tokens:sum(xs,'cached_input_tokens'),output_tokens:sum(xs,'output_tokens')});const byStage={};for(const x of a)(byStage[x.stage]??=[]).push(x);const byModel={};for(const x of a)(byModel[x.model]??=[]).push(x);return {total:pack(a),stages:Object.fromEntries(Object.entries(byStage).map(([k,v])=>[k,pack(v)])),models:Object.fromEntries(Object.entries(byModel).map(([k,v])=>[k,pack(v)])),events:a}};
+// V252.73 — retrospective cleanup for orphaned Fiction Studio traces left by pre-V252.72 deletes.
+// This runs before a series id is required because it audits the developer's whole private Fiction Studio footprint.
+const emptySeriesMemoryForLegacyPurge25273=()=>({version:2,last_updated_book:0,established_canon:[],characters:[],timeline:[],relationships:[],knowledge_states:[],secrets:[],institutions:[],unresolved_threads:[],open_consequences:[],planted_details:[],world_changes:[],open_questions:[],future_possibilities:[],book_voice_refs:[]});
+const legacyOrphanSnapshot25273=async()=>{
+  const u=encodeURIComponent(user.id),lim='&limit=10000';
+  const [seriesRows,bookRows,chapterRows,continuityRows,runRows,editorialChapterRows,editorialContinuityRows,usageRows]=await Promise.all([
+    rest(`developer_fiction_series?select=id&parent_id=eq.${u}${lim}`),
+    rest(`developer_fiction_books?select=id,series_id,development_state&parent_id=eq.${u}${lim}`),
+    rest(`developer_fiction_chapters?select=id,series_id,book_id&parent_id=eq.${u}${lim}`),
+    rest(`developer_fiction_continuity?select=series_id,book_id&parent_id=eq.${u}${lim}`),
+    rest(`developer_fiction_editorial_runs?select=id,series_id,book_id,source_run_id&parent_id=eq.${u}${lim}`),
+    rest(`developer_fiction_editorial_chapters?select=id,series_id,book_id,run_id&parent_id=eq.${u}${lim}`),
+    rest(`developer_fiction_editorial_continuity?select=id,series_id,book_id,run_id&parent_id=eq.${u}${lim}`),
+    rest(`developer_fiction_usage_events?select=id,series_id,book_id&parent_id=eq.${u}${lim}`)
+  ]);
+  const arr=x=>Array.isArray(x)?x:[],series=arr(seriesRows),books=arr(bookRows),runs=arr(runRows);
+  const seriesIds=new Set(series.map(x=>String(x.id))),validBooks=books.filter(x=>seriesIds.has(String(x.series_id))),validBookIds=new Set(validBooks.map(x=>String(x.id)));
+  const orphanBooks=books.filter(x=>!seriesIds.has(String(x.series_id)));
+  const orphanRuns=runs.filter(x=>!seriesIds.has(String(x.series_id))||!validBookIds.has(String(x.book_id)));
+  const validRunIds=new Set(runs.filter(x=>!orphanRuns.includes(x)).map(x=>String(x.id)));
+  const badBase=x=>!seriesIds.has(String(x.series_id))||!validBookIds.has(String(x.book_id));
+  const orphanChapters=arr(chapterRows).filter(badBase),orphanContinuity=arr(continuityRows).filter(badBase);
+  const orphanEditorialChapters=arr(editorialChapterRows).filter(x=>badBase(x)||!validRunIds.has(String(x.run_id)));
+  const orphanEditorialContinuity=arr(editorialContinuityRows).filter(x=>badBase(x)||!validRunIds.has(String(x.run_id)));
+  const orphanUsage=arr(usageRows).filter(x=>!seriesIds.has(String(x.series_id))||(x.book_id&& !validBookIds.has(String(x.book_id))));
+  const impactedSeriesIds=new Set();
+  const noteSeries=x=>{const sid=String(x?.series_id||'');if(seriesIds.has(sid))impactedSeriesIds.add(sid)};
+  [...orphanBooks,...orphanRuns,...orphanChapters,...orphanContinuity,...orphanEditorialChapters,...orphanEditorialContinuity,...orphanUsage].forEach(noteSeries);
+  const orphanBookIds=new Set();
+  [...orphanBooks,...orphanRuns,...orphanChapters,...orphanContinuity,...orphanEditorialChapters,...orphanEditorialContinuity,...orphanUsage].forEach(x=>{if(x?.book_id)orphanBookIds.add(String(x.book_id));if(x?.id&&orphanBooks.includes(x))orphanBookIds.add(String(x.id))});
+  const counts={books:orphanBooks.length,chapters:orphanChapters.length,continuity:orphanContinuity.length,editorial_runs:orphanRuns.length,editorial_chapters:orphanEditorialChapters.length,editorial_continuity:orphanEditorialContinuity.length,usage_events:orphanUsage.length};
+  return {series,validBooks,orphanBooks,orphanRuns,orphanChapters,orphanContinuity,orphanEditorialChapters,orphanEditorialContinuity,orphanUsage,impactedSeriesIds:[...impactedSeriesIds],orphanBookIds:[...orphanBookIds],counts,total:Object.values(counts).reduce((a,b)=>a+b,0)};
+};
+const purgeLegacyOrphans25273=async()=>{
+  const before=await legacyOrphanSnapshot25273(),u=encodeURIComponent(user.id),delId=async(table,id)=>rest(`${table}?id=eq.${encodeURIComponent(id)}&parent_id=eq.${u}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  // Child/detail rows first. Every request is still account-scoped and passes the Fiction Studio table allowlist.
+  for(const x of before.orphanEditorialChapters)await delId('developer_fiction_editorial_chapters',x.id);
+  for(const x of before.orphanEditorialContinuity)await delId('developer_fiction_editorial_continuity',x.id);
+  for(const x of before.orphanRuns)await delId('developer_fiction_editorial_runs',x.id);
+  for(const x of before.orphanChapters)await delId('developer_fiction_chapters',x.id);
+  for(const x of before.orphanContinuity)await rest(`developer_fiction_continuity?book_id=eq.${encodeURIComponent(x.book_id)}&series_id=eq.${encodeURIComponent(x.series_id)}&parent_id=eq.${u}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  for(const x of before.orphanUsage)await delId('developer_fiction_usage_events',x.id);
+  for(const x of before.orphanBooks)await delId('developer_fiction_books',x.id);
+  // A surviving series may have Series Intelligence or cached selective context derived from a now-deleted legacy book.
+  // Reset those derived stores; surviving final books remain untouched and can rebuild intelligence retrospectively.
+  for(const sid of before.impactedSeriesIds){
+    const survivors=await rest(`developer_fiction_books?select=id,development_state&series_id=eq.${encodeURIComponent(sid)}&parent_id=eq.${u}&limit=10000`);
+    for(const b of(Array.isArray(survivors)?survivors:[])){
+      const state=(b.development_state&&typeof b.development_state==='object')?{...b.development_state}:{};
+      if(Object.prototype.hasOwnProperty.call(state,'series_context')){delete state.series_context;await rest(`developer_fiction_books?id=eq.${encodeURIComponent(b.id)}&parent_id=eq.${u}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({development_state:state,updated_at:new Date().toISOString()})})}
+    }
+    await rest(`developer_fiction_series?id=eq.${encodeURIComponent(sid)}&parent_id=eq.${u}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({series_memory:emptySeriesMemoryForLegacyPurge25273(),updated_at:new Date().toISOString()})});
+  }
+  const after=await legacyOrphanSnapshot25273();
+  if(after.total)throw new Error(`Legacy purge verification failed: ${after.total} orphaned Fiction Studio record${after.total===1?'':'s'} remain.`);
+  return {before,after};
+};
+if(mode==='legacy-orphan-audit'){
+  const scan=await legacyOrphanSnapshot25273();
+  return res.status(200).json({ok:true,total:scan.total,counts:scan.counts,impacted_series:scan.impactedSeriesIds.length,orphan_book_ids:scan.orphanBookIds});
+}
+if(mode==='legacy-orphan-purge'){
+  const result=await purgeLegacyOrphans25273();
+  return res.status(200).json({ok:true,purged:true,total_removed:result.before.total,counts:result.before.counts,impacted_series_reset:result.before.impactedSeriesIds.length,purged_book_ids:result.before.orphanBookIds,verified_remaining:result.after.total});
+}
 if(mode==='list'){
   const rows=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&order=updated_at.desc`);
   return res.status(200).json({series:Array.isArray(rows)?rows:[]});
