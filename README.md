@@ -2256,3 +2256,9 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Book architecture now has a `new_characters` list so important book-specific characters are named by the same hidden mechanism before chapter planning begins. Chapter planning is told not to invent extra canonical names outside that mechanism.
 - Existing canonical names are preserved unless the developer explicitly changes them.
 - No Supabase migration and no new Vercel API route.
+
+### V252.105 — Structured-output schema hardening
+- Fixed Series Development's strict JSON schema after V252.104 added `naming_profile`: strict Structured Outputs require every declared property to be listed in `required`.
+- `naming_profile` is now required-but-nullable for Series Development, allowing established characters to return `null` while new `[[CHAR:...]]` characters return a complete profile.
+- Added a recursive local strict-schema preflight. Any future schema with missing/extra `required` keys or missing `additionalProperties:false` fails locally before a model request is sent.
+- Routed the remaining direct Responses API structured-output calls through the common preflight/retry wrapper so the check covers Series Development, Book architecture, chapter planning, series memory/context, naming research, geography/profession research, editorial stages and series extension.
