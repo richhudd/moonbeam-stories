@@ -191,14 +191,89 @@ if(mode==='update-series'){
   const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patch)});
   return res.status(200).json({series:rows?.[0]||null});
 }
+// V252.72 — thorough Fiction Studio purge. Delete means remove the complete server-side project history,
+// not merely hide the library row. All deletes are scoped to the authenticated developer account.
+// Series Intelligence is reset after a single-book purge because it may contain derived facts from that book;
+// remaining proofed books can rebuild it retrospectively on the next development run.
+const purgeVerifyEmpty25272=async(checks)=>{
+  for(const [table,filter] of checks){
+    const rows=await rest(`${table}?select=*&${filter}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
+    if(Array.isArray(rows)&&rows.length)throw new Error(`Purge verification failed: ${table} still contains matching Fiction Studio data.`);
+  }
+};
+const purgeBook25272=async(bookId,{resetSeriesMemory=true}={})=>{
+  const encBook=encodeURIComponent(bookId),encSeries=encodeURIComponent(id),encUser=encodeURIComponent(user.id);
+  const del=async(table,filter)=>rest(`${table}?${filter}&parent_id=eq.${encUser}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  // Child/detail records first, then run/manuscript parents, usage ledger, finally the book row.
+  await del('developer_fiction_editorial_chapters',`book_id=eq.${encBook}`);
+  await del('developer_fiction_editorial_continuity',`book_id=eq.${encBook}`);
+  await del('developer_fiction_editorial_runs',`book_id=eq.${encBook}`);
+  await del('developer_fiction_chapters',`book_id=eq.${encBook}`);
+  await del('developer_fiction_continuity',`book_id=eq.${encBook}`);
+  await del('developer_fiction_usage_events',`book_id=eq.${encBook}`);
+  await del('developer_fiction_books',`id=eq.${encBook}&series_id=eq.${encSeries}`);
+  await purgeVerifyEmpty25272([
+    ['developer_fiction_editorial_chapters',`book_id=eq.${encBook}`],
+    ['developer_fiction_editorial_continuity',`book_id=eq.${encBook}`],
+    ['developer_fiction_editorial_runs',`book_id=eq.${encBook}`],
+    ['developer_fiction_chapters',`book_id=eq.${encBook}`],
+    ['developer_fiction_continuity',`book_id=eq.${encBook}`],
+    ['developer_fiction_usage_events',`book_id=eq.${encBook}`],
+    ['developer_fiction_books',`id=eq.${encBook}`]
+  ]);
+  if(resetSeriesMemory){
+    const remaining=await rest(`developer_fiction_books?select=id,development_state&series_id=eq.${encSeries}&parent_id=eq.${encUser}`);
+    for(const b of(Array.isArray(remaining)?remaining:[])){
+      const state=(b.development_state&&typeof b.development_state==='object')?{...b.development_state}:{};
+      if(Object.prototype.hasOwnProperty.call(state,'series_context')){delete state.series_context;await rest(`developer_fiction_books?id=eq.${encodeURIComponent(b.id)}&parent_id=eq.${encUser}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({development_state:state,updated_at:new Date().toISOString()})})}
+    }
+    await rest(`developer_fiction_series?id=eq.${encSeries}&parent_id=eq.${encUser}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({series_memory:emptySeriesMemory25259(),updated_at:new Date().toISOString()})});
+  }
+};
+const purgeSeries25272=async()=>{
+  const encSeries=encodeURIComponent(id),encUser=encodeURIComponent(user.id);
+  const books=await rest(`developer_fiction_books?select=id&series_id=eq.${encSeries}&parent_id=eq.${encUser}`),bookIds=(Array.isArray(books)?books:[]).map(b=>b.id);
+  const del=async(table)=>rest(`${table}?series_id=eq.${encSeries}&parent_id=eq.${encUser}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  await del('developer_fiction_editorial_chapters');
+  await del('developer_fiction_editorial_continuity');
+  await del('developer_fiction_editorial_runs');
+  await del('developer_fiction_chapters');
+  await del('developer_fiction_continuity');
+  await del('developer_fiction_usage_events');
+  await del('developer_fiction_books');
+  await rest(`developer_fiction_series?id=eq.${encSeries}&parent_id=eq.${encUser}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  await purgeVerifyEmpty25272([
+    ['developer_fiction_editorial_chapters',`series_id=eq.${encSeries}`],
+    ['developer_fiction_editorial_continuity',`series_id=eq.${encSeries}`],
+    ['developer_fiction_editorial_runs',`series_id=eq.${encSeries}`],
+    ['developer_fiction_chapters',`series_id=eq.${encSeries}`],
+    ['developer_fiction_continuity',`series_id=eq.${encSeries}`],
+    ['developer_fiction_usage_events',`series_id=eq.${encSeries}`],
+    ['developer_fiction_books',`series_id=eq.${encSeries}`],
+    ['developer_fiction_series',`id=eq.${encSeries}`]
+  ]);
+  return bookIds;
+};
 if(mode==='delete-series'){
-  await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'DELETE'});
-  return res.status(200).json({ok:true});
+  const purgedBookIds=await purgeSeries25272();
+  return res.status(200).json({ok:true,purged:true,purged_book_ids:purgedBookIds});
 }
 if(mode==='update-book'||mode==='delete-book'){
   const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
   const books=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);if(!books?.[0])return res.status(404).json({error:'Fiction book not found.'});
-  if(mode==='delete-book'){await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'DELETE'});return res.status(200).json({ok:true})}
+  if(mode==='delete-book'){
+    const targetPosition=Number(books[0].position||0);
+    const later=await rest(`developer_fiction_books?select=id,position,working_title&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&position=gt.${targetPosition}&order=position.asc`);
+    const cascadeLater=body.cascade_later===true;
+    if(Array.isArray(later)&&later.length&&!cascadeLater)return res.status(409).json({error:'Later books exist and may contain derived continuity from this novel. For a complete purge, confirm purge of this novel and all later books.',requires_cascade_later:true,later_books:later.map(x=>({id:x.id,position:x.position,working_title:x.working_title}))});
+    const ids=[bookId,...((Array.isArray(later)&&cascadeLater)?later.map(x=>x.id):[])];
+    for(const bid of ids)await purgeBook25272(bid,{resetSeriesMemory:false});
+    const encSeries=encodeURIComponent(id),encUser=encodeURIComponent(user.id);
+    const remaining=await rest(`developer_fiction_books?select=id,development_state&series_id=eq.${encSeries}&parent_id=eq.${encUser}`);
+    for(const b of(Array.isArray(remaining)?remaining:[])){const state=(b.development_state&&typeof b.development_state==='object')?{...b.development_state}:{};if(Object.prototype.hasOwnProperty.call(state,'series_context')){delete state.series_context;await rest(`developer_fiction_books?id=eq.${encodeURIComponent(b.id)}&parent_id=eq.${encUser}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({development_state:state,updated_at:new Date().toISOString()})})}}
+    await rest(`developer_fiction_series?id=eq.${encSeries}&parent_id=eq.${encUser}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({series_memory:emptySeriesMemory25259(),updated_at:new Date().toISOString()})});
+    return res.status(200).json({ok:true,purged:true,purged_book_ids:ids,series_intelligence_reset:true});
+  }
   const title=String(body.working_title||'').trim();if(!title)return res.status(400).json({error:'Novel title cannot be empty.'});
   const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({working_title:title,updated_at:new Date().toISOString()})});
   return res.status(200).json({book:rows?.[0]||null});

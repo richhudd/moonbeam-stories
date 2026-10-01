@@ -1,3 +1,15 @@
+## V252.72 — Thorough Fiction Studio purge
+
+- Fiction Studio **Delete novel** now explicitly purges that novel's Book Plan, first-draft chapters, first-draft continuity, every editorial run, editorial chapters, editorial continuity, Proof history, and Fiction Studio usage events before deleting the book row.
+- The server verifies that no matching records remain in any approved `developer_fiction_*` table before reporting success.
+- Deleting a novel resets Series Intelligence and clears cached selective series context from surviving books, preventing derived archive/context from retaining facts extracted from the purged novel. Remaining proofed books can rebuild Series Intelligence retrospectively on the next development run.
+- If later books exist, a complete novel purge requires purging that novel **and all later books**, because downstream manuscripts may already contain continuity derived from it. The UI names those later books before confirmation.
+- Fiction Studio **Delete series** now explicitly purges all books, drafts, continuity, editorial branches, proofs, usage history, Series Intelligence and the Series Bible for that series, then verifies every series-scoped Fiction Studio table is empty.
+- Browser-side Fiction Studio resume state, model-choice state, pause state, and in-tab background-job records are purged for every deleted book.
+- Active in-tab generation/edit jobs block purge until they finish or are paused, reducing the risk of an in-flight request trying to write after deletion.
+- Downloaded review ZIPs or other copies already saved outside Moonbeam are not affected.
+- No Supabase migration required.
+
 
 ## V252.71 — Background Book Development
 
