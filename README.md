@@ -1,4 +1,38 @@
-# Moonbeam Stories V252.92
+## V252.99 — live profession/practice fact grounding
+
+- Adds a live profession/practice fact pack after Series Development for central, recurring, technically specialised or legally constrained roles.
+- Research is jurisdiction- and era-specific and covers day-to-day practice, role limits, hierarchy/collaboration, systems and lawful access, workflow/timescales, terminology/documents, regulation/ethics, mundane realities and common fiction errors.
+- Book Development adds a book-specific profession addendum when a particular case introduces specialist work beyond the series-level pack.
+- Series and book profession packs are authoritative throughout chapter planning, drafting, Sol senior review, Luna Revision, Line/style and Proof.
+- Professional research is explicitly silent-use: it exists to prevent mistakes, not to provoke explanatory dialogue, technical showmanship or occupational info-dumps.
+- Criminal/illicit roles are restricted to high-level realism, consequences and investigative context; the research layer must not provide actionable methods, optimisation, evasion tactics or exploitable security weaknesses.
+- Uses the existing Fiction Studio endpoint and hosted web search; no new Vercel API route and no Supabase migration.
+
+## V252.98 — silent-use location grounding
+
+- Real-location fact packs remain authoritative for geography, transport, institutions and local context.
+- Added an explicit silent-use rule: location research exists to prevent mistakes, not to generate exposition.
+- Astra/Luna must not mention roads, travel times, landmarks, industries, institutions or local facts merely to demonstrate knowledge.
+- Researched detail should appear only when it naturally matters to scene, plot, character experience or atmosphere; otherwise prefer omission.
+- Live location research now also treats its output as a constraint/reference layer rather than a checklist for prose.
+- No new API route and no Supabase migration.
+
+# Moonbeam Stories V252.94
+
+## V252.97 — stronger Sol anti-AI review + live pipeline reporting
+
+- Sol's automated senior-editor quality gate now has an explicit synthetic-writing remit beyond the deterministic audit: overly orderly plotting, symmetrical arcs, excessive thematic neatness, over-efficient dialogue, over-articulate psychology, generic emotional language, repetitive reasoning, purpose-built scene detail, synthetic rhetorical polish and other material machine-like patterns.
+- Senior reviews now return a dedicated `synthetic_writing_findings` list. Luna receives those findings directly during Revision, alongside the quality gate, strengths to preserve and chapter-specific actions. Empty findings are valid when no material problem exists.
+- Every open Book page now has a live pipeline-status card that updates in place at each saved checkpoint and stage transition: draft chapter progress, senior-review round, Luna revision, Line/style, Proof, pause and completion.
+- Book cards on the Series screen update live from the same running job, so current progress is visible without leaving and re-entering the screen.
+- A completed background automatic pipeline no longer forces navigation away from the Series screen; its status changes to COMPLETE in place.
+- No new Vercel API route or Supabase migration.
+
+## V252.94 — disable Resume while an editorial pass is actively running
+- The Developmental/Revision/Line/style/Proof action button now distinguishes a durable paused/interrupted run from a live in-browser background job.
+- While the matching editorial job is actively running, the primary action is disabled and labelled “<stage> in progress” instead of offering an actionable Resume button.
+- If the page is refreshed or the live job disappears while Supabase still records the pass as running, Resume becomes available again so interrupted work can continue from its saved checkpoint.
+- No generation, editorial, database or API behaviour changed; this is a UI/state-guard fix only.
 
 
 ## V252.92 — structural anti-template audit + anti-overcoherence
@@ -2149,3 +2183,34 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Live-check failures fail closed: the unsafe/unverified stage is not saved and can be retried.
 - No Supabase migration.
 
+## V252.93 — Book-page first-draft counter follows editorial state
+- Fixes the top-of-book counter so a book already in Developmental/Revision/Line/Proof can no longer display `0 first-draft chapters saved` because of a stale `novel-status.saved_count`.
+- Once durable editorial history or a live editorial job proves drafting has finished, the header treats the planned chapter count as the completed first-draft count.
+- Keeps the change presentation-only: no manuscript, editorial history, Supabase schema or generation pipeline is altered.
+
+
+## V252.95 — automated senior-editor quality gate
+
+- Automatic adult-fiction pipeline now separates diagnosis from execution: Sol defaults to senior editor/quality gate; Luna defaults to manuscript drafting and revision.
+- After the first draft, the senior editor reads the complete manuscript and returns a structured quality gate with critical/material/optional findings plus explicit strengths to preserve.
+- Luna revises only from that concrete brief. The complete revision is then re-read by the senior editor. The review/revision loop repeats automatically while material defects remain, up to three Luna revisions by default.
+- If the senior editor still requires revision at the safety cap, the pipeline pauses for human review instead of spending indefinitely or falsely declaring completion.
+- Line/style and Proof start only after an explicit senior-editor approval.
+- Re-reviews receive the previous senior report so resolved issues are checked rather than casually reopened.
+- No new Vercel API route and no Supabase migration. Existing editorial run JSON stores the quality gate and preserved-strengths brief.
+
+## V252.97 — real-location fact grounding
+- Added a live researched location fact pack at Series Development using the existing `api/fiction-studio.js` route and OpenAI web search; no additional Vercel API route.
+- Real settings are now researched for physical geography, waterways/coast/topography, transport and access, civic/public institutions, land use/local economy, relative geography and concrete local character.
+- The fact pack explicitly records unsupported assumptions the novelist must not invent and flags contradictions between proposed fiction geography and researched reality.
+- The researched Series location pack is saved inside the Series Bible so Book Development, drafting, Revision, Line/style and Proof all receive the same geographic canon.
+- Each Book Development architecture also receives a live book-specific location addendum for new real locations introduced by that book.
+- When a real-world detail is not supported, Astra/Luna are instructed to stay non-specific or clearly fictionalise it rather than guess.
+- This is place-description grounding, separate from the existing place-name/business-name plausibility and collision checks.
+- API route count remains unchanged; no Supabase migration required.
+
+## V252.100 — visible senior-editor reports
+- Book pages now show every completed senior-editor quality-gate report in collapsible round-by-round panels, including verdict, rationale, critical/material findings, synthetic-writing findings, strengths to preserve, priorities and chapter actions.
+- Automatic pipelines update the open Book page as soon as each senior review completes; no page exit/re-entry is required to see the report.
+- Series Book cards show a compact latest senior-review summary (approved/revision required plus critical, material and synthetic-writing counts).
+- `list-books` now returns that compact latest senior-review summary from existing editorial-run data; no database migration or new API route is required.

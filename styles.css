@@ -4423,3 +4423,11 @@ body.fiction-reader-open-25250{overflow:hidden}
 .fiction-bible-review-gate-25281 h3{margin:.25rem 0 .35rem}.fiction-bible-review-gate-25281 p{margin:0;color:#bcb3c2;line-height:1.45}.fiction-bible-review-gate-25281 .primary{flex:0 0 auto}
 .fiction-book-locked-25281{opacity:.7;cursor:default}.fiction-bible-review-grid-25281{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px}.fiction-bible-review-grid-25281 h4{margin:0 0 10px}.fiction-bible-review-row-25281{display:block;margin:0 0 14px!important;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.025)}.fiction-bible-review-row-25281>span{font-size:.8rem;color:#d4c2a0}.fiction-bible-review-row-25281 small{display:block;margin-top:7px;color:#9f96a7;line-height:1.35}.fiction-bible-review-row-25281 input{width:100%;box-sizing:border-box;margin-top:5px}
 @media(max-width:760px){.fiction-bible-review-gate-25281{display:block}.fiction-bible-review-gate-25281 .primary{width:100%;margin-top:14px}.fiction-bible-review-grid-25281{grid-template-columns:1fr}}
+/* V252.100 — visible senior-editor quality-gate reports. */
+.fiction-senior-summary-252100{display:block;margin-top:.35rem;line-height:1.35;opacity:.82}
+.fiction-senior-review-252100{margin:.75rem 0;border:1px solid rgba(127,127,127,.28);border-radius:12px;padding:.75rem .9rem;background:rgba(127,127,127,.035)}
+.fiction-senior-review-252100 summary{cursor:pointer;display:flex;gap:.55rem;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+.fiction-senior-review-252100 summary small{font-weight:400;opacity:.72}
+.fiction-senior-review-body-252100{padding-top:.65rem}
+.fiction-senior-review-body-252100 h5{margin:.85rem 0 .3rem}
+.fiction-senior-review-body-252100 ul{margin:.3rem 0 .7rem 1.15rem}
