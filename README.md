@@ -1,4 +1,4 @@
-# Moonbeam Stories V252.82
+# Moonbeam Stories V252.84
 
 ## V252.82 — Series-register preservation
 - Series Development now infers the appropriate prose style, pacing, accessibility and narrative texture from the genre/readership/positioning already established by the developer or by Astra, without numeric style sliders or a universal literary target.
@@ -2051,6 +2051,17 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Series detail headers also use the simplified model / title / pen-name hierarchy rather than stale “Series Development” wording.
 - No Supabase migration required.
 
+
+
+## V252.84 — Demographic/cultural fiction naming engine
+- Adds a hard ban on recurring AI-fiction default names and close neighbours (including Mara/Maren/Mira, Elara/Elora, Voss/Vale/Vance, Mercer/Thorne/Hale and a much broader protected list). New Series Development, Book Development, chapter planning, Series Extension and manuscript generation are instructed never to create them.
+- Adds server-side fail-closed validation at the stages that can create new fictional people. If a model nevertheless returns a newly introduced banned name, nothing from that stage is saved. Existing canonical names already present in supplied context remain readable so old series do not break.
+- Names are now treated as demographic/cultural facts. The model estimates approximate birth year, uses the nearest reliable cohort evidence, and prefers ordinary names actually plausible for that character's country/region and generation rather than 'fictional-sounding' names.
+- Family coherence is mandatory: siblings/parents/surnames and religious/ethnic/cultural naming traditions must make sense together unless mixed heritage, migration, adoption, remarriage, conversion or another explanation is actually established in the story. National popularity alone is not enough.
+- Setting outranks writing language for names. A Hebrew-language novel set in Israel uses culturally plausible Israeli naming; a Hebrew-language novel about an English family in Manchester still uses plausible British names. Equivalent distinctions apply to Spain/Latin America, Portugal/Brazil, France/Quebec, etc.
+- England/Wales receives embedded historical cohort anchors drawn from ONS/GRO-derived rankings (1954, 1964, 1974, 1984, 1994, 2004 and 2014) plus a broad ordinary UK surname pool. The rules use these as weighted realism anchors rather than forcing the same handful of names repeatedly.
+- Locale source profiles tell the model to favour official/civil-registration evidence where available: ONS/NRS/NISRA/CSO (UK/Ireland), SSA (US), Statistics Canada, NSW BDM (Australia), INSEE (France), INE (Spain), ISTAT (Italy), Statistics Denmark, Statistics Norway, Statistics Sweden/official Swedish sources, Finnish official population/name data, Israel CBS, and equivalent national statistical/civil-registration sources for other settings. Where exact annual data is unavailable, the model must use the nearest reliable cohort and must not pretend to statistical precision.
+- No Supabase migration required.
 
 ## V252.83 — Extend series
 - Added the series-level **Extend series** button to the developer-only Fiction Studio after the initial Series Bible review is approved.
