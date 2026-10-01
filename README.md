@@ -2050,3 +2050,10 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Fiction Studio library cards now use a clear vertical hierarchy: model, series title, pen name, then book-progress summary. Titles and author names no longer compete on one crowded line.
 - Series detail headers also use the simplified model / title / pen-name hierarchy rather than stale “Series Development” wording.
 - No Supabase migration required.
+
+
+## V252.83 — Extend series
+- Added the series-level **Extend series** button to the developer-only Fiction Studio after the initial Series Bible review is approved.
+- Extension uses the series' already locked Series Development model and receives the authoritative Series Bible, persistent Series Intelligence, existing book records/plans, and the current proposed slate.
+- It appends a fresh model-chosen batch (normally 3–6) without rewriting the existing Bible or previous books, and explicitly avoids mechanical repetition of earlier premises, twists, relationship arcs, settings, structures, or forced callbacks.
+- No Supabase migration required.
