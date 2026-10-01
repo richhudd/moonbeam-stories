@@ -1,3 +1,12 @@
+# Moonbeam Stories V252.81
+
+- Fiction Studio now inserts a mandatory human **cast & proposed-book-title review checkpoint** after Series Development and before the first Book Development.
+- Core character names and initial working book titles are presented in a clean review panel. The developer can approve them unchanged or edit them before downstream plans exist.
+- Exact full-name/title references in the Series Bible are updated automatically; every short first-name/surname occurrence requires an explicit Change / Leave decision so unrelated uses are never silently altered.
+- Book Development is locked server-side until the current Series Bible has completed this review. Existing established series are backfilled as already reviewed, so they are not disrupted.
+- Refining a series before any Book Development resets the checkpoint; once books exist, later series edits keep the established review state and series-wide text tools remain the safe way to propagate identity changes.
+- Supabase migration: `SUPABASE_V252_81_FICTION_BIBLE_NAME_REVIEW.sql`.
+
 # Moonbeam Stories V252.80
 
 ## Fiction Studio series writing language / locale

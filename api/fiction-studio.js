@@ -327,9 +327,20 @@ if(mode==='save-series-memory'){
 }
 if(mode==='save-bible'){
   const bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
-  const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:bible,status:'bible_approved',updated_at:new Date().toISOString()})});
-  await syncUndevelopedBooks25239(bible);
+  const existingBooksForReview25281=await rest(`developer_fiction_books?select=id&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
+  const patch25281={series_bible:bible,status:'development',updated_at:new Date().toISOString()};if(!(existingBooksForReview25281||[]).length)patch25281.bible_reviewed_at=null;
+  const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patch25281)});
   return res.status(200).json({series:rows?.[0]||null});
+}
+if(mode==='approve-bible-review'){
+  const bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
+  const characters=Array.isArray(bible.characters)?bible.characters:[],books=Array.isArray(bible.proposed_books)?bible.proposed_books:[];
+  for(const c of characters){if(!String(c?.name||'').trim())return res.status(400).json({error:'Every core character must have a name before approval.'})}
+  for(const b of books){if(!String(b?.working_title||'').trim())return res.status(400).json({error:'Every proposed book must have a working title before approval.'})}
+  const reviewedAt=new Date().toISOString();
+  const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:bible,status:'bible_approved',bible_reviewed_at:reviewedAt,updated_at:reviewedAt})});
+  await syncUndevelopedBooks25239(bible);
+  return res.status(200).json({series:rows?.[0]||null,bible_reviewed_at:reviewedAt});
 }
 // V252.31 — full-length Book Development remains inside the isolated Back Room branch.
 if(mode==='list-books'){
@@ -432,6 +443,7 @@ if(mode==='update-book'||mode==='delete-book'){
   return res.status(200).json({book:rows?.[0]||null});
 }
 if(mode==='start-book-development'||mode==='continue-book-development'){
+  if(!series.bible_reviewed_at)return res.status(409).json({error:'Review and approve the Series Bible cast and proposed book titles before Book Development.'});
   const proposed=Array.isArray(series.series_bible?.proposed_books)?series.series_bible.proposed_books:[];
   const sourceIndex=Math.max(0,Number(body.source_index)||0),source=proposed[sourceIndex]||{};
   let book=null;
@@ -796,7 +808,10 @@ if(mode==='develop'){
   const schema={type:'object',additionalProperties:false,required:['reply','series_bible'],properties:{reply:{type:'string'},series_bible:bibleSchema}};
   const callStarted25243=Date.now();const rr=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:seriesModel,input:prompt,max_output_tokens:6500,text:{format:{type:'json_schema',name:'fiction_studio_series_development',strict:true,schema}}})});
   const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}await meterFiction25243({stage:'series_development',model:seriesModel,data,startedAt:callStarted25243,httpStatus:rr.status,ok:rr.ok});if(!rr.ok){const e=data?.error;return res.status(502).json({error:typeof e==='string'?e:(e?.message||`Model returned HTTP ${rr.status}`)})}let parsed;try{parsed=parseFictionStructured25238(data,'Series Bible')}catch(e){return res.status(502).json({error:e.message})}
-  const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:parsed.series_bible,status:'development',updated_at:new Date().toISOString()})});
+  const existingBooksForReview25281=await rest(`developer_fiction_books?select=id&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
+  const reviewPatch25281={series_bible:parsed.series_bible,status:'development',updated_at:new Date().toISOString()};
+  if(!(existingBooksForReview25281||[]).length)reviewPatch25281.bible_reviewed_at=null;
+  const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(reviewPatch25281)});
   await syncUndevelopedBooks25239(parsed.series_bible);
   await logUsage({event_type:'developer_fiction_series_planning',estimated_cost_gbp:estimateGBP('story'),metadata:{model:seriesModel,user_id:user.id}});
   return res.status(200).json({reply:parsed.reply,series_bible:parsed.series_bible,series:rows?.[0]||series});
