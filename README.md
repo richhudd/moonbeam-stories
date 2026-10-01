@@ -1,4 +1,10 @@
-# Moonbeam Stories V252.81
+# Moonbeam Stories V252.82
+
+## V252.82 — Series-register preservation
+- Series Development now infers the appropriate prose style, pacing, accessibility and narrative texture from the genre/readership/positioning already established by the developer or by Astra, without numeric style sliders or a universal literary target.
+- Book Development, chapter planning, drafting, Developmental, Revision and Line/style now explicitly preserve the established series register.
+- Luna's human-depth and anti-banter/anti-pithiness guidance is now corrective only: it removes known AI/Luna tics without automatically making every book more introspective, slower or more literary.
+- No Supabase migration is required for this build.
 
 - Fiction Studio now inserts a mandatory human **cast & proposed-book-title review checkpoint** after Series Development and before the first Book Development.
 - Core character names and initial working book titles are presented in a clean review panel. The developer can approve them unchanged or edit them before downstream plans exist.
