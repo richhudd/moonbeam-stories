@@ -1,3 +1,15 @@
+# V252.102 — zero-exemplar creative pipeline / backstage-only validation
+
+- Removes the embedded place-exemplar/world-data module entirely. Astra/Luna are no longer shown lists of real towns, regional settlement samples, business-name templates, common surnames, baby-name cohorts or other example pools at any creative stage.
+- Writing language is now explicitly language-only: it must not bias country, region, nationality, culture, profession, character names or setting. When the brief leaves setting open, Astra chooses anywhere freely on creative/commercial grounds.
+- Character-name blacklists and demographic/cultural checks are now backstage. Creative prompts receive only abstract plausibility rules; the existing live web validator checks proposed names afterwards against authoritative cohort/cultural evidence where the material supplies enough context. It never returns alternative names or popularity lists.
+- Place/business/institution/title anti-default blacklists remain server-side only. The creative models are told the principles but are not shown the banned examples, preventing the blacklist itself from becoming a source of priming.
+- Live real-world validation is reactive only: it validates the people, organisations, fictional places and titles already proposed, and is forbidden to suggest alternatives, comparable businesses, nearby places or other creative ideas.
+- Real-location research now researches only real places already named in the generated material. It may not list neighbouring towns/districts/attractions or alternative settings. Its fact pack is a hidden constraint layer for accuracy, not a place buffet.
+- Profession/practice research remains reactive to roles already present in the fiction and is now explicitly forbidden to introduce or exemplify additional professions.
+- Removes `_fiction_world_data.js`; the old V252.84/V252.86/V252.87 exemplar-seeding behaviour is superseded.
+- No Supabase migration and no additional Vercel API route.
+
 # V252.101 — bounded profession/practice research
 
 - Profession/practice fact packs are now deliberately compact: fewer roles, fewer facts per section, and hard string/array bounds.
