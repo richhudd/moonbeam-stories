@@ -4398,3 +4398,20 @@ body.fiction-reader-open-25250{overflow:hidden}
 .fiction-book-current-status-25274 strong{font-size:15px}
 .fiction-book-current-status-25274 small{opacity:.65}
 @media(max-width:700px){.fiction-series-book-row-25274{grid-template-columns:18px minmax(0,1fr)}.fiction-book-stage-badge-25274{grid-column:2;justify-self:start}}
+
+/* V252.78 — cleaner Fiction Studio series cards + context-aware series text review */
+.fiction-series-dashboard-card-25274 .fiction-series-model-25278{display:block;margin:0 0 8px;font-size:.72rem;letter-spacing:.14em;line-height:1.2}
+.fiction-series-dashboard-card-25274 .fiction-series-title-25278{display:block;margin:0;font-size:1.45rem;line-height:1.14;overflow-wrap:anywhere}
+.fiction-series-dashboard-card-25274 .fiction-series-author-25278{display:block;margin-top:7px;font-size:.82rem;line-height:1.3;color:#bdb5c5}
+.fiction-series-dashboard-card-25274 .fiction-series-summary-25274{display:block;margin-top:14px}
+.fiction-series-text-dialog-25278{width:min(900px,calc(100vw - 32px));max-height:min(88vh,940px);overflow:auto}
+.fiction-series-text-review-list-25278{margin-top:18px;border-top:1px solid rgba(255,255,255,.12);padding-top:16px}
+.fiction-series-text-review-list-25278 h4{margin:0 0 4px}
+.fiction-series-text-review-row-25278{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:16px;align-items:start;padding:14px 0;border-top:1px solid rgba(255,255,255,.08)}
+.fiction-series-text-review-row-25278:first-of-type{border-top:0}
+.fiction-series-text-review-row-25278 strong{display:block;font-size:.84rem;margin-bottom:6px;color:#f6f0e8}
+.fiction-series-text-review-row-25278 p{margin:0;line-height:1.45;color:#ddd5e2;white-space:normal}
+.fiction-series-text-review-row-25278 small{display:block;margin-top:6px;color:#a9a0b1;line-height:1.35}
+.fiction-series-text-review-row-25278 label{display:flex;flex-direction:column;gap:6px;font-size:.78rem;font-weight:700}
+.fiction-series-text-review-row-25278 select{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.18);border-radius:9px;background:#151319;color:#f6f0e8;padding:10px;font:inherit}
+@media(max-width:700px){.fiction-series-text-review-row-25278{grid-template-columns:1fr}.fiction-series-text-review-row-25278 label{max-width:none}}

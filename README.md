@@ -1994,3 +1994,23 @@ Fiction Studio book-slot navigation compatibility repair. Numbered Series Bible 
 - Blocks the rename while the series has active generation/edit work, preventing an in-flight request from reintroducing the old name.
 - Applies whole-name replacement only, preserves normal casing behaviour, and verifies that zero old-name occurrences remain across the saved series before reporting success.
 - No Supabase migration required.
+
+## V252.77 — model-aware fiction style guidance
+
+- Keeps the shared fiction-quality goals for Luna, Sol and Astra: preserve genre/voice, deepen character where useful, protect pacing and length, and avoid unnecessary flattening.
+- Applies the strong anti-banter / anti-pithiness / anti-rhetorical-symmetry correction layer specifically to Luna, whose recurring style tendencies motivated those rules.
+- Sol and Astra now receive a freedom-first version: they use their own best literary judgement and only correct banter, clipped repartee, slogan-like phrasing, symmetrical contrasts or “not X but Y” constructions when those tendencies are actually repetitive or intrusive in the manuscript.
+- Developmental, Revision and Line/style passes are model-aware; first-draft generation and chapter planning are model-aware too.
+- Genre-preservation overlays, chapter-title protection, word-count safeguards, branching/re-edit history, Series Intelligence, concurrency, purge and adult/children separation remain unchanged.
+- No Supabase migration required.
+
+## V252.78 — context-aware series text editing + cleaner series cards
+- Replaces the series-level character-only rename control with a general **Find & replace across series** tool for names, vocabulary, spelling choices and exact recurring words/phrases.
+- Scans the Series Bible, Series Intelligence, original brief/future plans, every Book Plan, first draft, continuity record and every saved Developmental/Revision/Line/Proof branch.
+- Luna is used only as a conservative context classifier during preview; it never rewrites the prose. High-confidence intended substitutions are queued for automatic deterministic replacement.
+- Every occurrence that is not auto-changed requires an explicit developer **Change** or **Leave unchanged** decision. Nothing uncertain or apparently unrelated is silently skipped.
+- This allows changes such as `Mara` → `Jane` while preserving unrelated uses, or `ass` → `arse` while sending different senses/homonyms to review.
+- Apply verifies that every preview occurrence received a final decision; if the series changed after preview, the operation fails closed and requires a new scan.
+- Fiction Studio library cards now use a clear vertical hierarchy: model, series title, pen name, then book-progress summary. Titles and author names no longer compete on one crowded line.
+- Series detail headers also use the simplified model / title / pen-name hierarchy rather than stale “Series Development” wording.
+- No Supabase migration required.
