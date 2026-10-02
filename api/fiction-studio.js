@@ -433,7 +433,7 @@ const meterFiction25243=async({seriesId=id,bookId=null,stage,substage=null,model
 // V252.102 — live backstage validation. Raw statistical/business/geographic exemplars are never
 // shown to creative models. The live checker validates candidates AFTER they are generated, so
 // plausibility data constrains canon without seeding ideas upstream.
-const fictionLiveCollisionCheck25288=async({candidate,label='Fiction development',context=null,bookId=null})=>{
+const fictionLiveCollisionCheck25288=async({candidate,label='Fiction development',context=null,bookId=null,advisoryCharacterIdentity=false})=>{
   const payload={candidate,context};
   const schema={type:'object',additionalProperties:false,required:['blocking_collisions','blocking_plausibility_issues','warnings'],properties:{
     blocking_collisions:{type:'array',maxItems:12,items:{type:'object',additionalProperties:false,required:['candidate','category','reason','source_url'],properties:{candidate:{type:'string'},category:{type:'string',enum:['person','business','institution','place','title_or_brand']},reason:{type:'string'},source_url:{type:'string'}}}},
@@ -450,8 +450,11 @@ const fictionLiveCollisionCheck25288=async({candidate,label='Fiction development
   const collisions=Array.isArray(checked?.blocking_collisions)?checked.blocking_collisions:[];
   const plausibility=Array.isArray(checked?.blocking_plausibility_issues)?checked.blocking_plausibility_issues:[];
   const blocks=[...collisions,...plausibility];
-  if(blocks.length){const summary=blocks.slice(0,5).map(x=>`${x.candidate}: ${x.reason}`).join(' | ');throw Object.assign(new Error(`${label} failed backstage real-world validation. Nothing from this stage was saved. ${summary}`),{status:502,collision_check:checked})}
-  return checked;
+  const advisoryIdentity=advisoryCharacterIdentity?blocks.filter(x=>['person','person_name','family_naming'].includes(String(x?.category||''))):[];
+  const advisorySet=new Set(advisoryIdentity);
+  const fatalBlocks=advisoryCharacterIdentity?blocks.filter(x=>!advisorySet.has(x)):blocks;
+  if(fatalBlocks.length){const summary=fatalBlocks.slice(0,5).map(x=>`${x.candidate}: ${x.reason}`).join(' | ');throw Object.assign(new Error(`${label} failed backstage real-world validation. Nothing from this stage was saved. ${summary}`),{status:502,collision_check:checked})}
+  return {...checked,advisory_identity_warnings:advisoryIdentity.map(x=>({...x,advice:'Consider changing this fictional character name before Book Development. The warning is advisory and does not block production.'}))};
 };
 
 
@@ -534,7 +537,7 @@ const fictionSeriesPipelineState252106=(seriesRecord)=>{
 };
 const fictionSeriesPipelinePublic252106=(job)=>{
   if(!job)return null;
-  return {version:job.version||107,status:job.status||'idle',stage:job.stage||'idle',progress:job.progress||'',started_at:job.started_at||null,updated_at:job.updated_at||null,last_error:job.last_error||null,reply:job.reply||''};
+  return {version:job.version||107,status:job.status||'idle',stage:job.stage||'idle',progress:job.progress||'',started_at:job.started_at||null,updated_at:job.updated_at||null,last_error:job.last_error||null,reply:job.reply||'',validation_warnings:Array.isArray(job.validation_warnings)?job.validation_warnings:[]};
 };
 const fictionProfessionDiscovery252106=async({material,existing=null,bookId=null,label='profession discovery'})=>{
   const model='gpt-6-luna';
@@ -795,7 +798,7 @@ if(mode==='save-series-memory'){
 }
 if(mode==='save-bible'){
   const bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
-  try{fictionRejectForbiddenNames25284(bible,{idea:series.idea,current:series.series_bible},'Series Bible');fictionRejectAIDefaultWorld25285(bible,{idea:series.idea,current:series.series_bible},'Series Bible');await fictionLiveCollisionCheck25288({candidate:bible,label:'Series Bible',context:{series_name:series.series_name,idea:series.idea},bookId:null})}catch(e){return res.status(Number(e?.status)||502).json({error:e.message})}
+  try{fictionRejectForbiddenNames25284(bible,{idea:series.idea,current:series.series_bible},'Series Bible');fictionRejectAIDefaultWorld25285(bible,{idea:series.idea,current:series.series_bible},'Series Bible');await fictionLiveCollisionCheck25288({candidate:bible,label:'Series Bible',context:{series_name:series.series_name,idea:series.idea},bookId:null,advisoryCharacterIdentity:true})}catch(e){return res.status(Number(e?.status)||502).json({error:e.message})}
   const existingBooksForReview25281=await rest(`developer_fiction_books?select=id&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
   const patch25281={series_bible:bible,status:'development',updated_at:new Date().toISOString()};if(!(existingBooksForReview25281||[]).length)patch25281.bible_reviewed_at=null;
   const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patch25281)});
@@ -828,12 +831,12 @@ if(mode==='seed-first-book-direction'){
 }
 if(mode==='approve-bible-review'){
   const bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
-  try{fictionRejectForbiddenNames25284(bible,{idea:series.idea,current:series.series_bible},'Series Bible approval');fictionRejectAIDefaultWorld25285(bible,{idea:series.idea,current:series.series_bible},'Series Bible approval');await fictionLiveCollisionCheck25288({candidate:bible,label:'Series Bible approval',context:{series_name:series.series_name,idea:series.idea},bookId:null})}catch(e){return res.status(Number(e?.status)||502).json({error:e.message})}
+  let approvalValidation=null;try{fictionRejectForbiddenNames25284(bible,{idea:series.idea,current:series.series_bible},'Series Bible approval');fictionRejectAIDefaultWorld25285(bible,{idea:series.idea,current:series.series_bible},'Series Bible approval');approvalValidation=await fictionLiveCollisionCheck25288({candidate:bible,label:'Series Bible approval',context:{series_name:series.series_name,idea:series.idea},bookId:null,advisoryCharacterIdentity:true})}catch(e){return res.status(Number(e?.status)||502).json({error:e.message})}
   const characters=Array.isArray(bible.characters)?bible.characters:[],books=Array.isArray(bible.proposed_books)?bible.proposed_books:[];
   for(const c of characters){if(!String(c?.name||'').trim())return res.status(400).json({error:'Every core character must have a name before approval.'})}
   for(const b of books){if(!String(b?.working_title||'').trim())return res.status(400).json({error:'Every proposed book must have a working title before approval.'})}
-  const reviewedAt=new Date().toISOString();
-  const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:bible,status:'bible_approved',bible_reviewed_at:reviewedAt,updated_at:reviewedAt})});
+  const reviewedAt=new Date().toISOString(),approvalWarnings=Array.isArray(approvalValidation?.advisory_identity_warnings)?approvalValidation.advisory_identity_warnings:[],currentAuto=(series.autopilot_state&&typeof series.autopilot_state==='object')?series.autopilot_state:{},currentSeriesJob=(currentAuto.series_development&&typeof currentAuto.series_development==='object')?currentAuto.series_development:{},nextAuto={...currentAuto,series_development:{...currentSeriesJob,validation_warnings:approvalWarnings,updated_at:reviewedAt}};
+  const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:bible,status:'bible_approved',bible_reviewed_at:reviewedAt,autopilot_state:nextAuto,updated_at:reviewedAt})});
   series.series_bible=bible;series.bible_reviewed_at=reviewedAt;series.status='bible_approved';if(rows?.[0]?.autopilot_state)series.autopilot_state=rows[0].autopilot_state;
   await syncUndevelopedBooks25239(bible);
   let firstSeed=null;try{firstSeed=await fictionSeedFirstBookDirection252123({bible,reviewedAt})}catch(e){return res.status(Number(e?.status)||502).json({error:`Series Bible approved, but Sol could not create the Book 1 Development seed: ${e.message||String(e)}`,bible_approved:true,bible_reviewed_at:reviewedAt})}
@@ -1666,7 +1669,7 @@ if(mode==='develop-step'){
     }
     if(job.stage==='collision'){
       const markerHits252112=fictionAnyCharacterMarkers252112(job.draft||{});if(markerHits252112.length)throw Object.assign(new Error(`Series Development cannot validate while ${markerHits252112.length} unresolved [[CHAR:...]] marker${markerHits252112.length===1?'':'s'} remain. The checkpoint is preserved.`),{status:502});
-      const candidate={...(job.draft||{}),location_fact_pack:job.location_pack||null,profession_fact_pack:job.profession_pack||fictionAssembleProfessionPack252106(job.profession_state?.results||[])};fictionRejectForbiddenNames25284(candidate,{idea:series.idea,current:series.series_bible,message:job.message},'Series Development');fictionRejectAIDefaultWorld25285(candidate,{idea:series.idea,current:series.series_bible,message:job.message},'Series Development');await fictionLiveCollisionCheck25288({candidate,label:'Series Development',context:{series_name:series.series_name,idea:series.idea,current_bible:series.series_bible},bookId:null});next={...next,draft:candidate,stage:'finalize',progress:'Real-world validation passed. Finalising Series Bible…'};const row=await saveJob(next);return res.status(200).json({pipeline:fictionSeriesPipelinePublic252106(next),series:row});
+      const candidate={...(job.draft||{}),location_fact_pack:job.location_pack||null,profession_fact_pack:job.profession_pack||fictionAssembleProfessionPack252106(job.profession_state?.results||[])};fictionRejectForbiddenNames25284(candidate,{idea:series.idea,current:series.series_bible,message:job.message},'Series Development');fictionRejectAIDefaultWorld25285(candidate,{idea:series.idea,current:series.series_bible,message:job.message},'Series Development');const validation=await fictionLiveCollisionCheck25288({candidate,label:'Series Development',context:{series_name:series.series_name,idea:series.idea,current_bible:series.series_bible},bookId:null,advisoryCharacterIdentity:true});const validationWarnings=Array.isArray(validation?.advisory_identity_warnings)?validation.advisory_identity_warnings:[];next={...next,draft:candidate,validation_warnings:validationWarnings,stage:'finalize',progress:validationWarnings.length?`Real-world validation completed with ${validationWarnings.length} character-name warning${validationWarnings.length===1?'':'s'}. Finalising Series Bible…`:'Real-world validation passed. Finalising Series Bible…'};const row=await saveJob(next);return res.status(200).json({pipeline:fictionSeriesPipelinePublic252106(next),series:row});
     }
     if(job.stage==='finalize'){
       const markerHits252112=fictionAnyCharacterMarkers252112(job.draft||{});if(markerHits252112.length)throw Object.assign(new Error(`Series Bible finalisation blocked safely because ${markerHits252112.length} unresolved [[CHAR:...]] marker${markerHits252112.length===1?'':'s'} remain.`),{status:502});

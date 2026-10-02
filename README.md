@@ -1,3 +1,12 @@
+# V252.133 — advisory character identity warnings
+
+- Series Development real-world identity checks no longer discard a completed Series Bible merely because a fictional character matches a prominent real person or triggers a character-name plausibility warning.
+- Those character/person-name findings are preserved as advisory warnings and production continues to the existing mandatory cast/title checkpoint.
+- The cast/title review now shows each flagged character, the validator reason/source, and advises the developer to rename before Book Development. The developer may rename or deliberately leave the name unchanged.
+- Truly non-character collision failures (for example a problematic real business/institution/place/title collision) remain blocking safeguards.
+- Rechecking the approved Series Bible refreshes the stored advisory warnings, so a successful manual rename clears the warning.
+- No Supabase migration required.
+
 ## V252.132 — permanent Adult Novel Studio usage accounting
 - Fixed the developer Usage page accounting bug where deleting a Fiction Studio book or series also deleted its `developer_fiction_usage_events` rows.
 - Fiction usage events are now treated as immutable spend history and survive book/series deletion.
