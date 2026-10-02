@@ -19,7 +19,7 @@
  const s=(await c.auth.getSession()).data.session;
  if(!s){u.textContent='Sign into Moonbeam first';return}
  window.moonbeamDeveloperSession=s;
-  const r=await fetch('/api/usage-summary',{headers:{Authorization:'Bearer '+s.access_token}});
+  const r=await fetch('/api/usage-summary?ts='+Date.now(),{cache:'no-store',headers:{Authorization:'Bearer '+s.access_token}});
  const d=await r.json(); if(!r.ok){u.textContent=d.error||'Could not load usage';return}
 
  const money=n=>n==null?'—':'$'+Number(n).toFixed(4);
@@ -85,7 +85,7 @@
      ${row(F,fictionCols,'OpenAI cost','openAICostUSD',money)}
     </tbody>
    </table></div>
-   <p class="usage-note">Adult Novel Studio cost is calculated directly from its recorded model/token usage. It is kept separate from Moonbeam Stories throughout this dashboard.</p>
+   <p class="usage-note">Adult Novel Studio cost is calculated directly from its recorded model/token usage. Its usage ledger is permanent accounting history: deleting a novel or series no longer removes those costs.</p>
   </section>
 
   <section class="usage-section usage-baseline-section">

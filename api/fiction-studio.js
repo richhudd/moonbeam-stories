@@ -610,7 +610,8 @@ const legacyOrphanSnapshot25273=async()=>{
   const orphanChapters=arr(chapterRows).filter(badBase),orphanContinuity=arr(continuityRows).filter(badBase);
   const orphanEditorialChapters=arr(editorialChapterRows).filter(x=>badBase(x)||!validRunIds.has(String(x.run_id)));
   const orphanEditorialContinuity=arr(editorialContinuityRows).filter(x=>badBase(x)||!validRunIds.has(String(x.run_id)));
-  const orphanUsage=arr(usageRows).filter(x=>!seriesIds.has(String(x.series_id))||(x.book_id&& !validBookIds.has(String(x.book_id))));
+  // V252.132: usage rows remain valid historical accounting even after their source book/series is deleted.
+  const orphanUsage=[];
   const impactedSeriesIds=new Set();
   const noteSeries=x=>{const sid=String(x?.series_id||'');if(seriesIds.has(sid))impactedSeriesIds.add(sid)};
   [...orphanBooks,...orphanRuns,...orphanChapters,...orphanContinuity,...orphanEditorialChapters,...orphanEditorialContinuity,...orphanUsage].forEach(noteSeries);
@@ -627,7 +628,6 @@ const purgeLegacyOrphans25273=async()=>{
   for(const x of before.orphanRuns)await delId('developer_fiction_editorial_runs',x.id);
   for(const x of before.orphanChapters)await delId('developer_fiction_chapters',x.id);
   for(const x of before.orphanContinuity)await rest(`developer_fiction_continuity?book_id=eq.${encodeURIComponent(x.book_id)}&series_id=eq.${encodeURIComponent(x.series_id)}&parent_id=eq.${u}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
-  for(const x of before.orphanUsage)await delId('developer_fiction_usage_events',x.id);
   for(const x of before.orphanBooks)await delId('developer_fiction_books',x.id);
   // A surviving series may have Series Intelligence or cached selective context derived from a now-deleted legacy book.
   // Reset those derived stores; surviving final books remain untouched and can rebuild intelligence retrospectively.
@@ -870,13 +870,13 @@ const purgeVerifyEmpty25272=async(checks)=>{
 const purgeBook25272=async(bookId,{resetSeriesMemory=true}={})=>{
   const encBook=encodeURIComponent(bookId),encSeries=encodeURIComponent(id),encUser=encodeURIComponent(user.id);
   const del=async(table,filter)=>rest(`${table}?${filter}&parent_id=eq.${encUser}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
-  // Child/detail records first, then run/manuscript parents, usage ledger, finally the book row.
+  // Child/detail records first, then run/manuscript parents, finally the book row.
+  // V252.132: usage events are immutable accounting history and deliberately survive book deletion.
   await del('developer_fiction_editorial_chapters',`book_id=eq.${encBook}`);
   await del('developer_fiction_editorial_continuity',`book_id=eq.${encBook}`);
   await del('developer_fiction_editorial_runs',`book_id=eq.${encBook}`);
   await del('developer_fiction_chapters',`book_id=eq.${encBook}`);
   await del('developer_fiction_continuity',`book_id=eq.${encBook}`);
-  await del('developer_fiction_usage_events',`book_id=eq.${encBook}`);
   await del('developer_fiction_books',`id=eq.${encBook}&series_id=eq.${encSeries}`);
   await purgeVerifyEmpty25272([
     ['developer_fiction_editorial_chapters',`book_id=eq.${encBook}`],
@@ -884,7 +884,6 @@ const purgeBook25272=async(bookId,{resetSeriesMemory=true}={})=>{
     ['developer_fiction_editorial_runs',`book_id=eq.${encBook}`],
     ['developer_fiction_chapters',`book_id=eq.${encBook}`],
     ['developer_fiction_continuity',`book_id=eq.${encBook}`],
-    ['developer_fiction_usage_events',`book_id=eq.${encBook}`],
     ['developer_fiction_books',`id=eq.${encBook}`]
   ]);
   if(resetSeriesMemory){
@@ -905,7 +904,6 @@ const purgeSeries25272=async()=>{
   await del('developer_fiction_editorial_runs');
   await del('developer_fiction_chapters');
   await del('developer_fiction_continuity');
-  await del('developer_fiction_usage_events');
   await del('developer_fiction_books');
   await rest(`developer_fiction_series?id=eq.${encSeries}&parent_id=eq.${encUser}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
   await purgeVerifyEmpty25272([
@@ -914,7 +912,6 @@ const purgeSeries25272=async()=>{
     ['developer_fiction_editorial_runs',`series_id=eq.${encSeries}`],
     ['developer_fiction_chapters',`series_id=eq.${encSeries}`],
     ['developer_fiction_continuity',`series_id=eq.${encSeries}`],
-    ['developer_fiction_usage_events',`series_id=eq.${encSeries}`],
     ['developer_fiction_books',`series_id=eq.${encSeries}`],
     ['developer_fiction_series',`id=eq.${encSeries}`]
   ]);

@@ -1,3 +1,10 @@
+## V252.132 — permanent Adult Novel Studio usage accounting
+- Fixed the developer Usage page accounting bug where deleting a Fiction Studio book or series also deleted its `developer_fiction_usage_events` rows.
+- Fiction usage events are now treated as immutable spend history and survive book/series deletion.
+- Legacy orphan cleanup no longer classifies historical usage rows as deletable orphans.
+- Developer Usage fetches the summary with an explicit cache-buster/no-store request so a manual refresh always reads the latest ledger.
+- No Supabase migration required.
+
 ## V252.131 — Sol report after every Luna rewrite
 - Moves Sol’s advisory appraisal to the human-review loop: after Luna’s automatic second draft, Sol immediately reads that exact manuscript and reports before the developer decides whether to finish or rewrite again.
 - The report includes deterministic word count, Content rating /10, Anti-AI / Style rating /10, a brief content review, a brief style review, and an explicit assessment of how successful Luna’s latest rewrite was.
