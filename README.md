@@ -1,3 +1,17 @@
+## V252.140 — Book Development naming checkpoint repair
+
+- Fixes `Cannot set properties of undefined (setting '<character_key>')` during Book Development demographic naming.
+- `arch_naming_state.candidate_pools` is now reconstructed on every resume/checkpoint, with a safe `{}` fallback for already-saved V252.139 planning state.
+- Existing saved Series Bible, architecture and completed planning checkpoints are preserved; no Supabase migration is required. Resume Book Development after deploying this build.
+
+## V252.139 — canonical cast extraction for manual Series Bibles
+
+- Fixes the mandatory cast/title checkpoint so a saved Bible using `core_characters` is recognised as having an established recurring cast; the older generated-schema `characters` array remains supported.
+- Recognises `younger_female_member_pool.members` and `older_male_partner_pool.members` as selectable canonical cast reservoirs rather than reporting that no cast exists. Unnamed pool profiles remain unnamed until Book Development actually selects them.
+- Book Development now receives explicit cast-reservoir instructions: prefer a suitable existing pool profile before inventing a near-duplicate character; if a selected canonical profile has `canonical_name: null`, preserve its profile facts and route it through the existing backstage demographic naming pipeline rather than letting the creative model invent a name.
+- Book-level naming collision avoidance now includes names from `characters`, `core_characters`, and already-named canonical pool members. Profession discovery receives the same combined cast context.
+- Backwards-compatible with already-saved Series Bibles: no re-save or Supabase migration is required. Reopen the cast/title checkpoint after deployment and the existing Asunder Bible is read correctly.
+
 ## V252.138 — model-free backstage collision renaming
 
 - Removes the V252.137 Luna-based fictionalisation/renaming step entirely. Sol, Luna and Astra are no longer allowed to invent collision-replacement proper nouns.
