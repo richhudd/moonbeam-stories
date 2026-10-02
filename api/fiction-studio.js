@@ -726,7 +726,7 @@ const selectSeriesContext25259=async(book,memory)=>{
 
 // V252.116 — Sol seeds the following book's Development direction after a completed Proof.
 // Seeds live in the Series JSONB state, never overwrite human direction, and are idempotent/recoverable.
-const fictionNextBookSeeds252116=fictionNextBookSeeds252123;
+const fictionNextBookSeeds252116=(state)=>{const s=(state&&typeof state==='object')?state:{};const x=(s.next_book_direction_seeds&&typeof s.next_book_direction_seeds==='object'&&!Array.isArray(s.next_book_direction_seeds))?s.next_book_direction_seeds:{};return {...x}};
 const fictionSeedNextBookDirection252116=async(book,{force=false}={})=>{
   const pos=Math.max(1,Number(book?.position)||1),nextPos=pos+1,proposed=Array.isArray(series.series_bible?.proposed_books)?series.series_bible.proposed_books:[],next=proposed[nextPos-1];
   if(!next)return {ok:true,skipped:true,reason:'no_next_proposed_book',next_position:nextPos};
@@ -779,7 +779,7 @@ if(mode==='save-bible'){
 // V252.124 — Book 1 gets the same Sol-authored Development handoff as every later book.
 // For Book 1 the source is the approved Series Bible, regardless of which selectable model developed
 // the series; for Book 2+ the source remains the preceding completed book. Seeds share one recoverable JSONB map.
-const fictionNextBookSeeds252123=(state)=>{const s=(state&&typeof state==='object')?state:{};const x=(s.next_book_direction_seeds&&typeof s.next_book_direction_seeds==='object'&&!Array.isArray(s.next_book_direction_seeds))?s.next_book_direction_seeds:{};return {...x}};
+const fictionNextBookSeeds252123=fictionNextBookSeeds252116;
 const fictionSeedFirstBookDirection252123=async({bible=series.series_bible,reviewedAt=series.bible_reviewed_at,force=false}={})=>{
   const proposed=Array.isArray(bible?.proposed_books)?bible.proposed_books:[],first=proposed[0];
   if(!first)return {ok:true,skipped:true,reason:'no_first_proposed_book',next_position:1};

@@ -2437,6 +2437,13 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Human direction still outranks the automatic seed when deliberately supplied, and existing developed/planned Book 1 material is not overwritten.
 - Uses the existing `/api/fiction-studio` route and existing JSONB state. API count remains 12.
 
+
+## V252.126 — fix Book 1 seed helper initialization
+
+- Fixed the Adult Novel Studio crash `Cannot access 'fictionNextBookSeeds252123' before initialization`.
+- The shared next-book seed reader is now initialized before the legacy Book 2+ seed alias uses it.
+- Book 1 Sol seed behaviour and later-book handoffs are otherwise unchanged.
+
 ## V252.125 — separate Moonbeam Stories / Adult Novel Studio usage accounting
 
 - Splits the developer Usage page into independent **Moonbeam Stories** and **Adult Novel Studio** sections.
