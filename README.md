@@ -1,10 +1,19 @@
-## V252.136 — advisory real-world name/organisation collision warnings
+## V252.138 — model-free backstage collision renaming
+
+- Removes the V252.137 Luna-based fictionalisation/renaming step entirely. Sol, Luna and Astra are no longer allowed to invent collision-replacement proper nouns.
+- Character collision replacements now come only from the hidden demographic candidate pools already researched during backstage naming. The unused candidates are checkpointed privately and never exposed to the creative models.
+- Business, institution, fictional-place and title/brand collisions use a model-free conservative backstage replacement pool; every replacement is immediately sent back through the live real-world validator and is accepted only if it clears validation.
+- Up to three bounded replacement attempts remain. If no safe backstage candidate survives, the generated fiction is preserved and the developer receives an advisory warning rather than a destructive rerun.
+- Book Development also carries its hidden backstage character candidate pools into collision checking, so the same rule applies to newly introduced book-specific characters.
+- No Supabase migration is required for V252.138.
+
+## V252.137 — advisory real-world name/organisation collision warnings
 
 - Extends the V252.133 non-blocking validation approach from fictional character identity/name matches to fictional business, institution, organisation and title/brand name collisions during Series Development and Bible approval.
 - A real-world naming collision no longer destroys a completed Series Development run. The Bible is saved normally and the existing cast/title review checkpoint shows the flagged name, reason/source and advice to rename before Book Development.
 - These warnings remain advisory: the developer may rename the fictional entity or deliberately keep it and continue.
 - High-confidence non-naming plausibility/geography problems remain blocking safeguards.
-- No Supabase migration is required for V252.136.
+- No Supabase migration is required for V252.137.
 
 ## V252.135 — Fiction Studio X password lockout
 
@@ -2552,3 +2561,11 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - The detailed live accounting now labels the new editorial rows by their real role (Astra structural review, Sol structural revision/correction, Astra style review, Sol anti-AI/style revision, Astra final sign-off/self-repair/verification) while preserving the V252.127 additive reconciliation.
 - Series Development remains selectable at series creation, as established in V252.124. Selecting Astra there yields the full Astra-series-development path; the Book 1 Sol handoff still reads whichever approved Series Bible you chose to create.
 - No Supabase migration and no new Vercel API route are required.
+
+
+## V252.137 — self-healing real-world identity/reputational validation
+- High-confidence collisions with real people, businesses, institutions, brands/titles or fictional place names are automatically fictionalised at the proper-noun level and revalidated.
+- Up to three bounded repair attempts are allowed. The repairer may change only the conflicting identifying name; plot, role, background, relationships, geography and other canon must remain unchanged.
+- Remaining collision risks after bounded retries become advisory warnings instead of discarding an expensive Series Development/Book Development stage.
+- Genuine non-identity plausibility/factual failures can still block safely.
+- Book Development now persists any automatic collision-name repairs made during architecture/final-plan validation.
