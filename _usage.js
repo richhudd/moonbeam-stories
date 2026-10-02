@@ -65,19 +65,26 @@ async function countUsageEvents(eventType, metadataContains={}) {
 
 
 const DEFAULT_USAGE_BASELINE_UTC = '2026-09-26T13:38:25Z';
-async function getUsageBaselineUTC() {
+const DEFAULT_FICTION_USAGE_BASELINE_UTC = '2026-09-26T13:38:25Z';
+async function getAdminBaselineUTC(key, fallbackEnv, fallbackValue) {
   if (SECRET_KEY) {
     try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/moonbeam_admin_settings?select=value&key=eq.usage_baseline_utc&limit=1`, { headers: adminHeaders() });
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/moonbeam_admin_settings?select=value&key=eq.${encodeURIComponent(key)}&limit=1`, { headers: adminHeaders() });
       if (r.ok) {
         const rows = await r.json();
         const value = String(rows?.[0]?.value || '').trim();
         if (Number.isFinite(Date.parse(value))) return new Date(value).toISOString();
-      } else console.error('baseline setting read failed', r.status, await r.text());
-    } catch (e) { console.error('baseline setting read failed', e); }
+      } else console.error(`${key} setting read failed`, r.status, await r.text());
+    } catch (e) { console.error(`${key} setting read failed`, e); }
   }
-  const fallback = String(process.env.MOONBEAM_USAGE_BASELINE_UTC || DEFAULT_USAGE_BASELINE_UTC).trim();
-  return Number.isFinite(Date.parse(fallback)) ? new Date(fallback).toISOString() : DEFAULT_USAGE_BASELINE_UTC;
+  const fallback = String(process.env[fallbackEnv] || fallbackValue).trim();
+  return Number.isFinite(Date.parse(fallback)) ? new Date(fallback).toISOString() : fallbackValue;
+}
+async function getUsageBaselineUTC() {
+  return getAdminBaselineUTC('usage_baseline_utc','MOONBEAM_USAGE_BASELINE_UTC',DEFAULT_USAGE_BASELINE_UTC);
+}
+async function getFictionUsageBaselineUTC() {
+  return getAdminBaselineUTC('fiction_usage_baseline_utc','MOONBEAM_FICTION_USAGE_BASELINE_UTC',DEFAULT_FICTION_USAGE_BASELINE_UTC);
 }
 
 function estimateGBP(kind, meta={}) {
@@ -91,4 +98,4 @@ function estimateGBP(kind, meta={}) {
   return 0;
 }
 
-module.exports = { logUsage, countUsageEvents, estimateGBP, getUsageBaselineUTC, SUPABASE_URL, SECRET_KEY, adminHeaders };
+module.exports = { logUsage, countUsageEvents, estimateGBP, getUsageBaselineUTC, getFictionUsageBaselineUTC, SUPABASE_URL, SECRET_KEY, adminHeaders };

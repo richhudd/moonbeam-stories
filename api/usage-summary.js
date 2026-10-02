@@ -1,4 +1,4 @@
-const { SUPABASE_URL, SECRET_KEY, adminHeaders, getUsageBaselineUTC } = require('../_usage');
+const { SUPABASE_URL, SECRET_KEY, adminHeaders, getUsageBaselineUTC, getFictionUsageBaselineUTC } = require('../_usage');
 
 const PUBLISHABLE_KEY =
   String(process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_fF-Pc61g82cwksFta61dow_lRpWuX4q').trim();
@@ -57,40 +57,64 @@ async function fetchOpenAICostUSD(startTime,endTime){
   return {available:true,totalUSD,projectFiltered:!!projectId};
 }
 
+async function fetchPaged(path,label){
+  const rows=[],pageSize=1000;
+  for(let offset=0,safety=0;safety<100;safety++,offset+=pageSize){
+    const end=offset+pageSize-1;
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{headers:adminHeaders({Range:`${offset}-${end}`})});
+    if(!r.ok){console.error(`${label} failed`,r.status,await r.text());throw new Error(`Could not read ${label}.`)}
+    const page=await r.json();
+    if(!Array.isArray(page))throw new Error(`Could not read ${label}.`);
+    rows.push(...page);
+    if(page.length<pageSize)break;
+    if(safety===99)throw new Error(`${label} history is too large to read safely.`);
+  }
+  return rows;
+}
+
 function count(list,type){return list.filter(x=>x.event_type===type).length}
-// V251.99: completed stories used to be logged as `story`; the current pipeline logs
-// `story_finalize`. Treat both as completions, but deduplicate modern finalisation
-// retries by generation_run_id so a resumed/retried book is counted only once.
 function completedStoryEvents(list){
-  const modernByRun=new Map();
-  const legacy=[];
+  const modernByRun=new Map(),legacy=[];
   for(const e of list){
     if(e.event_type==='story_finalize'){
       const run=String(e?.metadata?.generation_run_id||'').trim();
-      if(run){
-        const prior=modernByRun.get(run);
-        if(!prior || Date.parse(e.created_at)>Date.parse(prior.created_at))modernByRun.set(run,e);
-      }else modernByRun.set(`no-run:${e.created_at}:${modernByRun.size}`,e);
+      if(run){const prior=modernByRun.get(run);if(!prior||Date.parse(e.created_at)>Date.parse(prior.created_at))modernByRun.set(run,e)}
+      else modernByRun.set(`no-run:${e.created_at}:${modernByRun.size}`,e);
     }else if(e.event_type==='story') legacy.push(e);
   }
   const modernRuns=new Set([...modernByRun.keys()].filter(k=>!k.startsWith('no-run:')));
-  for(const e of legacy){
-    const run=String(e?.metadata?.generation_run_id||'').trim();
-    if(!run || !modernRuns.has(run))modernByRun.set(`legacy:${run||e.created_at}:${modernByRun.size}`,e);
-  }
+  for(const e of legacy){const run=String(e?.metadata?.generation_run_id||'').trim();if(!run||!modernRuns.has(run))modernByRun.set(`legacy:${run||e.created_at}:${modernByRun.size}`,e)}
   return [...modernByRun.values()];
 }
 function usageFor(events,startMs,endMs=null){
   const list=events.filter(x=>{const t=Date.parse(String(x.created_at||''));return (startMs==null||t>=startMs)&&(endMs==null||t<endMs)});
-  const trackedCostGBP=list.reduce((sum,x)=>sum+(Number(x.estimated_cost_gbp)||0),0);
-  return {stories:completedStoryEvents(list).length,images:count(list,'image'),narrations:count(list,'narration'),trackedCostGBP};
+  return {stories:completedStoryEvents(list).length,images:count(list,'image'),narrations:count(list,'narration')};
 }
-
 function eventsForUser(events,userId,mode='only'){
   const id=String(userId||'');
   return events.filter(e=>{const eventUser=String(e?.metadata?.user_id||'');return mode==='other'?!!eventUser&&eventUser!==id:eventUser===id});
 }
+function fictionFor(events,startMs,endMs=null){
+  const list=events.filter(x=>{const t=Date.parse(String(x.completed_at||x.created_at||x.started_at||''));return (startMs==null||t>=startMs)&&(endMs==null||t<endMs)});
+  const sum=k=>list.reduce((n,x)=>n+(Number(x?.[k])||0),0);
+  return {
+    requests:list.length,
+    inputTokens:sum('input_tokens'),
+    outputTokens:sum('output_tokens'),
+    costUSD:Number(sum('cost_usd').toFixed(8))
+  };
+}
+function clampMoney(n){return Number.isFinite(n)?Math.max(0,n):null}
 
+async function saveBaseline(key){
+  const baselineUTC=new Date().toISOString();
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/moonbeam_admin_settings`,{
+    method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=representation'}),
+    body:JSON.stringify({key,value:baselineUTC,updated_at:baselineUTC})
+  });
+  if(!r.ok){console.error('baseline reset failed',key,r.status,await r.text());throw new Error('Could not reset the baseline.')}
+  return baselineUTC;
+}
 
 module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
@@ -100,40 +124,26 @@ module.exports=async function handler(req,res){
 
   if(req.method==='POST'){
     const body=typeof req.body==='string'?JSON.parse(req.body||'{}'):(req.body||{});
-    if(String(body.action||'')!=='reset-baseline')return res.status(400).json({error:'Unknown action.'});
-    const baselineUTC=new Date().toISOString();
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/moonbeam_admin_settings`,{
-      method:'POST',headers:adminHeaders({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=representation'}),
-      body:JSON.stringify({key:'usage_baseline_utc',value:baselineUTC,updated_at:baselineUTC})
-    });
-    if(!r.ok){console.error('baseline reset failed',r.status,await r.text());return res.status(500).json({error:'Could not reset the baseline.'})}
-    return res.status(200).json({ok:true,baselineUTC});
+    const action=String(body.action||'');
+    try{
+      if(action==='reset-moonbeam-baseline'||action==='reset-baseline')return res.status(200).json({ok:true,baselineUTC:await saveBaseline('usage_baseline_utc')});
+      if(action==='reset-fiction-baseline')return res.status(200).json({ok:true,baselineUTC:await saveBaseline('fiction_usage_baseline_utc')});
+      return res.status(400).json({error:'Unknown action.'});
+    }catch(e){return res.status(500).json({error:e.message||'Could not reset the baseline.'})}
   }
 
-  const baselineUTC=await getUsageBaselineUTC();
-  const baselineSeconds=unixSeconds(baselineUTC);
-  if(!baselineSeconds)return res.status(500).json({error:'Usage baseline is invalid.'});
+  const [baselineUTC,fictionBaselineUTC]=await Promise.all([getUsageBaselineUTC(),getFictionUsageBaselineUTC()]);
+  const baselineSeconds=unixSeconds(baselineUTC),fictionBaselineSeconds=unixSeconds(fictionBaselineUTC);
+  if(!baselineSeconds||!fictionBaselineSeconds)return res.status(500).json({error:'Usage baseline is invalid.'});
   const now=Math.floor(Date.now()/1000);
 
-  // V252.01: PostgREST applies the project's max-rows limit to a collection request.
-  // The old single request therefore stopped at the oldest 1,000 usage rows; once
-  // api_usage_events exceeded 1,000 rows the dashboard appeared to freeze in time.
-  // Page explicitly until the final short page so all historical and current events
-  // are available to every period, user summary and support-log calculation.
-  const events=[];
-  const usagePageSize=1000;
-  for(let offset=0,safety=0;safety<100;safety++,offset+=usagePageSize){
-    const end=offset+usagePageSize-1;
-    const er=await fetch(`${SUPABASE_URL}/rest/v1/api_usage_events?select=event_type,estimated_cost_gbp,created_at,metadata&order=created_at.asc`,{
-      headers:adminHeaders({Range:`${offset}-${end}`})
-    });
-    if(!er.ok){console.error('usage events failed',er.status,await er.text());return res.status(500).json({error:'Could not read Moonbeam usage events.'})}
-    const page=await er.json();
-    if(!Array.isArray(page)){console.error('usage events returned a non-array page');return res.status(500).json({error:'Could not read Moonbeam usage events.'})}
-    events.push(...page);
-    if(page.length<usagePageSize)break;
-    if(safety===99){console.error('usage events pagination safety limit reached',events.length);return res.status(500).json({error:'Moonbeam usage history is too large to read safely.'})}
-  }
+  let events=[],fictionEvents=[];
+  try{
+    [events,fictionEvents]=await Promise.all([
+      fetchPaged('api_usage_events?select=event_type,estimated_cost_gbp,created_at,metadata&order=created_at.asc','Moonbeam usage events'),
+      fetchPaged('developer_fiction_usage_events?select=cost_usd,input_tokens,output_tokens,started_at,completed_at,created_at&order=created_at.asc','Adult Novel Studio usage events')
+    ]);
+  }catch(e){return res.status(500).json({error:e.message||'Could not read usage events.'})}
 
   const ar=await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`,{headers:adminHeaders()});
   let users=[],registeredUsers=null;
@@ -141,13 +151,10 @@ module.exports=async function handler(req,res){
   else console.error('usage users failed',ar.status,await ar.text());
   const emailById=new Map(users.map(u=>[String(u.id),String(u.email||'')]));
 
-  const allTimeStart=unixSeconds(MOONBEAM_ALL_TIME_START_UTC);
-  const today=startOfUtcDaySeconds();
-  const thisMonth=startOfUtcMonthSeconds();
-  const yesterday=today-86400;
-  const sevenDays=today-(6*86400);
+  const allTimeStart=unixSeconds(MOONBEAM_ALL_TIME_START_UTC),today=startOfUtcDaySeconds(),thisMonth=startOfUtcMonthSeconds(),yesterday=today-86400,sevenDays=today-(6*86400);
+  const ranges={allTime:[allTimeStart,now],thisMonth:[thisMonth,now],today:[today,now],yesterday:[yesterday,today],last7Days:[sevenDays,now]};
 
-  const periods={
+  const moonbeamPeriods={
     allTime:usageFor(events,allTimeStart*1000),
     sinceBaseline:usageFor(events,baselineSeconds*1000),
     developerSinceBaseline:usageFor(eventsForUser(events,verified.user.id),baselineSeconds*1000),
@@ -157,94 +164,45 @@ module.exports=async function handler(req,res){
     yesterday:usageFor(events,yesterday*1000,today*1000),
     last7Days:usageFor(events,sevenDays*1000)
   };
-  periods.allTime.registeredUsers=registeredUsers;
+  moonbeamPeriods.allTime.registeredUsers=registeredUsers;
 
-  const [allCost,monthCost,baseCost,todayCost,yesterdayCost,sevenCost]=await Promise.all([
-    fetchOpenAICostUSD(allTimeStart,now),
-    fetchOpenAICostUSD(thisMonth,now),
-    fetchOpenAICostUSD(baselineSeconds,now),
-    fetchOpenAICostUSD(today,now),
-    fetchOpenAICostUSD(yesterday,today),
-    fetchOpenAICostUSD(sevenDays,now)
-  ]);
-  const costs={
-    allTime:allCost,
-    sinceBaseline:baseCost,
-    developerSinceBaseline:{available:false,totalUSD:null},
-    otherUsersSinceBaseline:{available:false,totalUSD:null},
-    thisMonth:monthCost,
-    today:todayCost,
-    yesterday:yesterdayCost,
-    last7Days:sevenCost
+  const fictionPeriods={
+    allTime:fictionFor(fictionEvents,allTimeStart*1000),
+    sinceBaseline:fictionFor(fictionEvents,fictionBaselineSeconds*1000),
+    thisMonth:fictionFor(fictionEvents,thisMonth*1000),
+    today:fictionFor(fictionEvents,today*1000),
+    yesterday:fictionFor(fictionEvents,yesterday*1000,today*1000),
+    last7Days:fictionFor(fictionEvents,sevenDays*1000)
   };
-  for(const key of Object.keys(periods)){
-    const c=costs[key];
-    periods[key].openAICostUSD=c.totalUSD;
-    periods[key].averageStoryCostUSD=c.available&&periods[key].stories>0?c.totalUSD/periods[key].stories:null;
-    periods[key].trackedCostPerStoryGBP=periods[key].stories>0?periods[key].trackedCostGBP/periods[key].stories:null;
-  }
 
+  const [allCost,monthCost,moonbeamBaseCost,fictionBaseProjectCost,todayCost,yesterdayCost,sevenCost]=await Promise.all([
+    fetchOpenAICostUSD(allTimeStart,now),fetchOpenAICostUSD(thisMonth,now),fetchOpenAICostUSD(baselineSeconds,now),fetchOpenAICostUSD(fictionBaselineSeconds,now),fetchOpenAICostUSD(today,now),fetchOpenAICostUSD(yesterday,today),fetchOpenAICostUSD(sevenDays,now)
+  ]);
+  const projectCosts={allTime:allCost,thisMonth:monthCost,today:todayCost,yesterday:yesterdayCost,last7Days:sevenCost};
+  for(const key of ['allTime','thisMonth','today','yesterday','last7Days']){
+    const c=projectCosts[key],fiction=fictionPeriods[key];
+    moonbeamPeriods[key].openAICostUSD=c.available?clampMoney(c.totalUSD-fiction.costUSD):null;
+    moonbeamPeriods[key].averageStoryCostUSD=moonbeamPeriods[key].stories>0&&moonbeamPeriods[key].openAICostUSD!=null?moonbeamPeriods[key].openAICostUSD/moonbeamPeriods[key].stories:null;
+    fiction.openAICostUSD=fiction.costUSD;
+  }
+  const fictionDuringMoonbeamBaseline=fictionFor(fictionEvents,baselineSeconds*1000);
+  moonbeamPeriods.sinceBaseline.openAICostUSD=moonbeamBaseCost.available?clampMoney(moonbeamBaseCost.totalUSD-fictionDuringMoonbeamBaseline.costUSD):null;
+  moonbeamPeriods.sinceBaseline.averageStoryCostUSD=moonbeamPeriods.sinceBaseline.stories>0&&moonbeamPeriods.sinceBaseline.openAICostUSD!=null?moonbeamPeriods.sinceBaseline.openAICostUSD/moonbeamPeriods.sinceBaseline.stories:null;
+  moonbeamPeriods.developerSinceBaseline.openAICostUSD=null;moonbeamPeriods.developerSinceBaseline.averageStoryCostUSD=null;
+  moonbeamPeriods.otherUsersSinceBaseline.openAICostUSD=null;moonbeamPeriods.otherUsersSinceBaseline.averageStoryCostUSD=null;
+  fictionPeriods.sinceBaseline.openAICostUSD=fictionPeriods.sinceBaseline.costUSD;
 
   const storyEventsByUser=new Map();
-  for(const e of completedStoryEvents(events)){
-    const userId=String(e?.metadata?.user_id||'');
-    if(!userId)continue;
-    const list=storyEventsByUser.get(userId)||[];
-    list.push(e);
-    storyEventsByUser.set(userId,list);
-  }
+  for(const e of completedStoryEvents(events)){const userId=String(e?.metadata?.user_id||'');if(!userId)continue;const list=storyEventsByUser.get(userId)||[];list.push(e);storyEventsByUser.set(userId,list)}
+  const userSummaries=users.map(user=>{const userId=String(user.id||''),storyEvents=storyEventsByUser.get(userId)||[];let lastGenerationAt=null;for(const e of storyEvents)if(!lastGenerationAt||Date.parse(e.created_at)>Date.parse(lastGenerationAt))lastGenerationAt=e.created_at;return{id:userId,email:String(user.email||''),createdAt:user.created_at||null,lastSignInAt:user.last_sign_in_at||null,storiesGenerated:storyEvents.length,lastGenerationAt}}).sort((a,b)=>Date.parse(b.createdAt||0)-Date.parse(a.createdAt||0));
 
-  const userSummaries=users
-    .map(user=>{
-      const userId=String(user.id||'');
-      const storyEvents=storyEventsByUser.get(userId)||[];
-      let lastGenerationAt=null;
-      for(const e of storyEvents){
-        if(!lastGenerationAt || Date.parse(e.created_at)>Date.parse(lastGenerationAt)){
-          lastGenerationAt=e.created_at;
-        }
-      }
-      return {
-        id:userId,
-        email:String(user.email||''),
-        createdAt:user.created_at||null,
-        lastSignInAt:user.last_sign_in_at||null,
-        storiesGenerated:storyEvents.length,
-        lastGenerationAt
-      };
-    })
-    .sort((a,b)=>Date.parse(b.createdAt||0)-Date.parse(a.createdAt||0));
-
-  const supportAttempts=events
-    .filter(x=>x.event_type==='generation_attempt')
-    .slice(-100).reverse()
-    .map(x=>{
-      const m=x.metadata||{};
-      return {
-        createdAt:x.created_at,
-        email:emailById.get(String(m.user_id||''))||'—',
-        status:m.status||'—',
-        creditDeducted:!!m.credit_deducted,
-        creditRefunded:!!m.credit_refunded,
-        generationRunId:m.generation_run_id||null,
-        imagesGenerated:Number(m.images_generated||0),
-        errorCode:m.error_code||null,
-        durationMs:Number(m.duration_ms||0)
-      };
-    });
+  const supportAttempts=events.filter(x=>x.event_type==='generation_attempt').slice(-100).reverse().map(x=>{const m=x.metadata||{};return{createdAt:x.created_at,email:emailById.get(String(m.user_id||''))||'—',status:m.status||'—',creditDeducted:!!m.credit_deducted,creditRefunded:!!m.credit_refunded,generationRunId:m.generation_run_id||null,imagesGenerated:Number(m.images_generated||0),errorCode:m.error_code||null,durationMs:Number(m.duration_ms||0)}});
 
   return res.status(200).json({
-    baselineUTC,
-    allTimeStartUTC:MOONBEAM_ALL_TIME_START_UTC,
-    periods,
-    users:userSummaries,
-    supportAttempts,
-    openai:{
-      available:baseCost.available,
-      thisMonthAvailable:monthCost.available,
-      thisMonthCostUSD:monthCost.totalUSD,
-      projectFiltered:!!baseCost.projectFiltered,
-      error:baseCost.error||monthCost.error||null
-    }
+    baselineUTC,fictionBaselineUTC,allTimeStartUTC:MOONBEAM_ALL_TIME_START_UTC,
+    periods:moonbeamPeriods,moonbeam:{baselineUTC,periods:moonbeamPeriods},fiction:{baselineUTC:fictionBaselineUTC,periods:fictionPeriods},
+    users:userSummaries,supportAttempts,
+    openai:{available:moonbeamBaseCost.available,fictionProjectAvailable:fictionBaseProjectCost.available,projectFiltered:!!moonbeamBaseCost.projectFiltered,error:moonbeamBaseCost.error||monthCost.error||null,
+      splitMethod:'Adult Novel Studio uses its token-metered fiction ledger; Moonbeam Stories is the configured OpenAI project cost less Adult Novel Studio metered cost for the same period.'}
   });
 };

@@ -2436,3 +2436,12 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Adds recovery for pre-V252.123 or interrupted series. If an approved series reaches Book 1 without a stored seed, opening/starting Book 1 Development asks Sol to recreate the missing handoff before Luna begins.
 - Human direction still outranks the automatic seed when deliberately supplied, and existing developed/planned Book 1 material is not overwritten.
 - Uses the existing `/api/fiction-studio` route and existing JSONB state. API count remains 12.
+
+## V252.125 — separate Moonbeam Stories / Adult Novel Studio usage accounting
+
+- Splits the developer Usage page into independent **Moonbeam Stories** and **Adult Novel Studio** sections.
+- Adult Novel Studio costs come from its dedicated token/cost ledger (`developer_fiction_usage_events`). Moonbeam Stories cost is shown as the configured OpenAI project cost less the metered Adult Novel Studio cost for the same period, so the two products are not double-counted.
+- Removes the two **Tracked attributable cost** rows from the usage page.
+- Adds an independent **Reset Moonbeam Stories** baseline and **Reset Adult Novel Studio** baseline. Resetting one does not alter the other and never deletes historical records.
+- The Moonbeam Stories reset continues to control the existing average story-generation timing baseline; the Adult Novel Studio reset is usage-only.
+- Uses the existing `moonbeam_admin_settings` table with a second setting key (`fiction_usage_baseline_utc`), so no Supabase migration or new API route is required.
