@@ -1,3 +1,13 @@
+## V252.130 — simple style-first pipeline + human creative gate
+- Replaces the Astra/Sol structural rewrite hierarchy with the deliberately simpler production flow: **selected Series Development model → Sol seed → Luna first draft → Sol style-only anti-AI review → Luna style-only second draft → human review**.
+- Removes automatic post-draft structural critique/rewrite from the default fiction pipeline. Sol's first manuscript review is explicitly prohibited from requesting plot, scene-order, character-arc, clue, ending or series-architecture changes.
+- After Luna's second draft the book is marked **Awaiting human review**. The developer can approve that exact version or give Luna a manual rewrite instruction; manual human/Luna rewrites can loop indefinitely and each version remains preserved.
+- Human approval is the only creative sign-off. The approved manuscript is locked before Sol's final appraisal.
+- Sol's final appraisal is advisory only and must report **Content Quality /10** and **Anti-AI Style /10** with reasons. It cannot trigger or request an automatic rewrite.
+- After the advisory appraisal, deterministic publication checks run on the exact human-approved manuscript. Sol then seeds the following book from the full finished manuscript rather than only representative excerpts.
+- Series-intelligence housekeeping after a finished book now uses Sol rather than Luna.
+- Retains the V252.127 accounting redesign and the destructive-rewrite length safeguards for any human-directed full revision.
+
 # V252.117 — fully checkpointed structural architecture
 
 - Splits the remaining Book Development structural architecture into three independently saved calls: major turning points, continuity watchlist, and ending.
@@ -2406,7 +2416,7 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 ## V252.122 — live draft-length control + bounded editorial escalation
 
 - Rebuilds the automatic adult-fiction production hierarchy around bounded escalation rather than repeated Luna revision loops: **Luna first draft → Sol senior review → one Luna revision if required → Sol re-review → Astra escalation diagnosis only if Sol still rejects → one Sol surgical repair → Astra recheck → one Astra surgical final repair only if genuinely necessary → Astra narrow final verification → deterministic publication preflight**.
-- Astra remains the final quality authority. If the cheaper Sol/Luna path clears the book, Astra still performs one true final whole-book quality/copy-integrity gate before the prose is locked.
+- From V252.128 onward, Sol is the normal terminal quality gate after Luna’s mandatory redraft/prose-naturalisation pass. Astra is escalation-only: she is called when Sol cannot sign off or when the finished book may require forward-series reconciliation.
 - Removes automatic generative Line/style and Proof after final approval. Once Astra approves the actual manuscript, no model may rewrite it. The only downstream stage is a non-creative deterministic publication preflight.
 - Astra's last-resort repair is a locked-manuscript surgical pass. It receives only the current unresolved chapter actions, copies unaffected chapters unchanged, returns exact find/replace patches rather than rewritten chapters, and is mechanically rejected if it attempts a broad edit footprint. Previously approved plot facts, clues, chronology, character knowledge, relationships, setting, professional facts, voice and ending are protected unless the unresolved finding explicitly requires that exact change.
 - The final Astra verification is deliberately narrow: verify the named blockers were fixed, check for material regressions and copy integrity, and stop. It is not permission to reopen resolved stylistic preferences or invent fresh improvement work.
@@ -2461,3 +2471,31 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Direct model totals reconcile independently against Direct book production cost.
 - The Series page now shows actual series cost to date beside the series title and each book's current fully allocated cost beside its title.
 - No Supabase migration required; existing detailed usage-event rows are reused.
+
+
+## V252.128 — closure-led editorial gates and Sol final authority
+- Every Luna first draft now receives one mandatory conservative **redraft / prose-naturalisation pass** after Sol’s first senior review, even when the manuscript needs no structural rewrite. The pass explicitly targets recurrent Luna/AI-style habits while protecting strong prose, voice, canon and approved material.
+- Sol’s first review now distinguishes structural approval from prose naturalisation. Sol is told not to treat “no structural rewrite required” as “no prose naturalisation required.”
+- Sol’s second review is now a structured **closure audit** rather than a fresh review. It must mark every prior critical, material and synthetic-writing finding as resolved / partial / unresolved, then separately report any new regressions introduced by Luna.
+- The second Sol review also checks whether the finished book substantially fulfils the approved Book Plan and the objectives/role established by the Series Bible. Beneficial deviations are allowed; literal plan obedience is not required.
+- **Sol is now the normal final gate.** If Luna’s redraft resolves the earlier findings, introduces no material regressions, fulfils the book/series objectives and needs no forward-series reconciliation, Sol signs the book off without an Astra call.
+- Astra is invoked only when Sol cannot approve or when Sol judges that the now-canonical finished book may require the forward series plan to change.
+- Astra escalation/final reviews use the same structured closure + regression audit. After Astra-authorised repairs, every Astra finding must be explicitly checked as resolved before approval is possible.
+- Astra’s final brief also checks the finished novel against the original Book Plan and the overall Series Bible. A good creative departure is allowed. If the finished book genuinely changes assumptions behind future books, Astra can mark a Series Bible update as required and provide narrowly targeted future-book adjustments.
+- Those Astra-authorised future-plan adjustments are applied to the Series Bible before Sol seeds the following book. Standalone-case series can simply leave the forward plan unchanged when no downstream consequence exists.
+- Senior-review cards and review ZIP reports now expose previous-finding resolution, new regressions, Book Plan/series-objective alignment and series-trajectory judgement.
+- No Supabase migration and no new API file are required; the existing `/api/fiction-studio` route is reused.
+
+## V252.129 — Astra-led editorial hierarchy + destructive-rewrite protection
+- Rebuilds the automatic adult-fiction editorial pipeline as: **selected Series Development model / approved Bible → Sol Book 1 seed → Luna first draft → Astra structural review → Sol structural revision → Astra structural verification + dedicated anti-AI/style review → Sol prose-only style revision → Astra final creative sign-off → optional tightly bounded Astra self-repair if she rejects Sol's final work → deterministic publication preflight**.
+- Luna is no longer used for whole-manuscript structural rewriting after the first draft. In the default automatic configuration Luna drafts, Astra judges, and Sol executes both structural and prose revision.
+- Astra's post-structure review is explicitly two-phase: it first checks every previous structural finding and any new regression; only once structure is sound does it move on to prose/anti-AI style. If structural blockers remain, style editing does not begin.
+- Allows one bounded second Sol structural correction if Astra finds a concrete unresolved structural blocker after the first Sol structural revision. If structure still cannot be closed, the pipeline stops safely with all checkpoints preserved rather than polishing an unstable manuscript.
+- Sol's style pass is now a true prose-only stage after structure lock. It receives Astra's synthetic-writing findings, chapter-specific style actions and protected strengths, and uses exact targeted patches rather than whole-chapter rewrites.
+- Astra owns final creative sign-off. Her final review must check every style finding, detect new structural/continuity/character regressions, verify Book Plan and Series Bible objectives, and decide whether the finished canon changes any future-series assumptions.
+- If Astra rejects Sol's final style work, Astra gets one tightly bounded surgical self-repair followed by an Astra verification. The workflow never enters an open-ended self-approval loop.
+- Adds a **hard destructive-revision guard**. Structural revision chapters cannot be radically compressed, and a complete revision manuscript must remain at least 90% of its source length (and no more than 125% without a separately redesigned workflow). A destructive pass is marked rejected before it can be promoted as the source for another stage; the prior manuscript remains authoritative.
+- Line/style and proof whole-stage length guards are also hard rather than advisory. The existing exact-patch protections remain in force.
+- The detailed live accounting now labels the new editorial rows by their real role (Astra structural review, Sol structural revision/correction, Astra style review, Sol anti-AI/style revision, Astra final sign-off/self-repair/verification) while preserving the V252.127 additive reconciliation.
+- Series Development remains selectable at series creation, as established in V252.124. Selecting Astra there yields the full Astra-series-development path; the Book 1 Sol handoff still reads whichever approved Series Bible you chose to create.
+- No Supabase migration and no new Vercel API route are required.
