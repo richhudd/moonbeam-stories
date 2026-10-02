@@ -1,3 +1,11 @@
+## V252.136 — advisory real-world name/organisation collision warnings
+
+- Extends the V252.133 non-blocking validation approach from fictional character identity/name matches to fictional business, institution, organisation and title/brand name collisions during Series Development and Bible approval.
+- A real-world naming collision no longer destroys a completed Series Development run. The Bible is saved normally and the existing cast/title review checkpoint shows the flagged name, reason/source and advice to rename before Book Development.
+- These warnings remain advisory: the developer may rename the fictional entity or deliberately keep it and continue.
+- High-confidence non-naming plausibility/geography problems remain blocking safeguards.
+- No Supabase migration is required for V252.136.
+
 ## V252.135 — Fiction Studio X password lockout
 
 - Adds persistent server-side brute-force protection to the discreet Fiction Studio X password gate.
