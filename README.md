@@ -2367,3 +2367,11 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Human direction is never overwritten. If the following book already has user direction or substantive planning, seeding is skipped.
 - Seeding is idempotent, safely retried after Proof, and recovered on opening the next undeveloped slot if a completion-time request was lost.
 - No new API route or Supabase migration.
+
+
+## V252.118
+- Increased Luna Book Development architecture reasoning/output headroom now that architecture is split into checkpointed requests.
+- Core architecture and character architecture: 16,000 token ceiling each.
+- Turning points and ending architecture: 12,000 each.
+- Continuity watchlist: 10,000.
+- No workflow/schema/API-route change; this is a reliability change to prevent max_output_tokens failures during substantial planning work.
