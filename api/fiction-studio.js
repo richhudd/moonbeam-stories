@@ -49,9 +49,26 @@ const fictionXPassword252134=String(process.env.FICTION_STUDIO_X_PASSWORD||'');
 const fictionXSign252134=(value)=>crypto.createHmac('sha256',String(SECRET_KEY||'moonbeam-fiction-x')).update(value).digest('hex');
 const fictionXIssue252134=()=>{const expiry=Date.now()+2*60*60*1000,base=`${user.id}|${expiry}`;return `${expiry}.${fictionXSign252134(base)}`};
 const fictionXValid252134=(token)=>{try{const [expiryRaw,sig]=String(token||'').split('.'),expiry=Number(expiryRaw);if(!Number.isFinite(expiry)||expiry<Date.now()||expiry>Date.now()+3*60*60*1000||!sig)return false;const expected=fictionXSign252134(`${user.id}|${expiry}`),a=Buffer.from(sig),b=Buffer.from(expected);return a.length===b.length&&crypto.timingSafeEqual(a,b)}catch{return false}};
+// V252.135 — persistent server-side brute-force protection for Fiction Studio X.
+// Five consecutive wrong passwords lock this developer identity for 15 minutes. The state
+// lives in Supabase so serverless cold starts cannot reset the counter.
+const fictionXLockRest252135=async(path,options={})=>{const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw new Error(data?.message||data?.error||`Fiction Studio X lockout storage returned HTTP ${r.status}`);return data};
+const fictionXLockRead252135=async()=>{const rows=await fictionXLockRest252135(`developer_fiction_x_login_attempts?user_id=eq.${encodeURIComponent(String(user.id||''))}&select=user_id,failed_attempts,locked_until,updated_at&limit=1`);return Array.isArray(rows)&&rows[0]?rows[0]:null};
+const fictionXLockWrite252135=async(failedAttempts,lockedUntil)=>fictionXLockRest252135('developer_fiction_x_login_attempts',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:String(user.id||''),failed_attempts:Number(failedAttempts)||0,locked_until:lockedUntil||null,updated_at:new Date().toISOString()})});
+const fictionXLockClear252135=async()=>fictionXLockRest252135(`developer_fiction_x_login_attempts?user_id=eq.${encodeURIComponent(String(user.id||''))}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
 if(mode==='x-unlock'){
   if(!fictionXPassword252134)return res.status(503).json({error:'Fiction Studio X password is not configured. Add FICTION_STUDIO_X_PASSWORD in Vercel Environment Variables.'});
-  const supplied=Buffer.from(String(body.password||'')),expected=Buffer.from(fictionXPassword252134);if(supplied.length!==expected.length||!crypto.timingSafeEqual(supplied,expected))return res.status(401).json({error:'Incorrect password.'});
+  const now=Date.now();let gate=await fictionXLockRead252135();let lockedUntilMs=gate?.locked_until?Date.parse(gate.locked_until):0;
+  if(Number.isFinite(lockedUntilMs)&&lockedUntilMs>now){const retry=Math.max(1,Math.ceil((lockedUntilMs-now)/1000));res.setHeader('Retry-After',String(retry));return res.status(429).json({error:`Too many incorrect passwords. Fiction Studio X is locked for another ${Math.ceil(retry/60)} minute${Math.ceil(retry/60)===1?'':'s'}.`,retry_after_seconds:retry})}
+  // Once a completed lock has expired, begin a fresh five-attempt window.
+  if(lockedUntilMs&&lockedUntilMs<=now){await fictionXLockClear252135();gate=null;lockedUntilMs=0}
+  const supplied=Buffer.from(String(body.password||'')),expected=Buffer.from(fictionXPassword252134),matches=supplied.length===expected.length&&crypto.timingSafeEqual(supplied,expected);
+  if(!matches){
+    const attempts=Math.max(0,Number(gate?.failed_attempts)||0)+1;
+    if(attempts>=5){const lockUntil=new Date(now+15*60*1000).toISOString();await fictionXLockWrite252135(5,lockUntil);res.setHeader('Retry-After',String(15*60));return res.status(429).json({error:'Five incorrect passwords. Fiction Studio X is locked for 15 minutes.',retry_after_seconds:15*60})}
+    await fictionXLockWrite252135(attempts,null);const remaining=5-attempts;return res.status(401).json({error:`Incorrect password. ${remaining} attempt${remaining===1?'':'s'} remaining before a 15-minute lock.`,attempts_remaining:remaining});
+  }
+  await fictionXLockClear252135();
   return res.status(200).json({ok:true,x_access:fictionXIssue252134()});
 }
 if(fictionStudioSection252134==='fiction_x'&&!fictionXValid252134(body.x_access))return res.status(401).json({error:'Fiction Studio X is locked. Unlock it again from Fiction Studio.'});

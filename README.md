@@ -1,3 +1,12 @@
+## V252.135 — Fiction Studio X password lockout
+
+- Adds persistent server-side brute-force protection to the discreet Fiction Studio X password gate.
+- Each developer identity gets **5 consecutive incorrect password attempts**. The API reports the remaining attempts after each failure.
+- The fifth failure locks Fiction Studio X for **15 minutes** and returns a server-enforced `Retry-After` interval; refreshing, redeploying or hitting a different serverless instance cannot bypass it.
+- A successful unlock clears the failed-attempt counter. Once a 15-minute lock naturally expires, the next attempt starts a fresh five-attempt window.
+- Lockout state is stored in a dedicated server-only Supabase table; no frontend code can reset or edit it.
+- Requires running `SUPABASE_V252_135_FICTION_STUDIO_X_LOCKOUT.sql` once. The V252.134 Fiction Studio X namespace/password architecture is otherwise unchanged.
+
 
 ## V252.134 — password-gated Fiction Studio X
 
