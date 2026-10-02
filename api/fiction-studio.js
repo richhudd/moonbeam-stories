@@ -726,7 +726,7 @@ const selectSeriesContext25259=async(book,memory)=>{
 
 // V252.116 — Sol seeds the following book's Development direction after a completed Proof.
 // Seeds live in the Series JSONB state, never overwrite human direction, and are idempotent/recoverable.
-const fictionNextBookSeeds252116=(state)=>{const s=(state&&typeof state==='object')?state:{};const x=(s.next_book_direction_seeds&&typeof s.next_book_direction_seeds==='object'&&!Array.isArray(s.next_book_direction_seeds))?s.next_book_direction_seeds:{};return {...x}};
+const fictionNextBookSeeds252116=fictionNextBookSeeds252123;
 const fictionSeedNextBookDirection252116=async(book,{force=false}={})=>{
   const pos=Math.max(1,Number(book?.position)||1),nextPos=pos+1,proposed=Array.isArray(series.series_bible?.proposed_books)?series.series_bible.proposed_books:[],next=proposed[nextPos-1];
   if(!next)return {ok:true,skipped:true,reason:'no_next_proposed_book',next_position:nextPos};
@@ -776,6 +776,31 @@ if(mode==='save-bible'){
   const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patch25281)});
   return res.status(200).json({series:rows?.[0]||null});
 }
+// V252.124 — Book 1 gets the same Sol-authored Development handoff as every later book.
+// For Book 1 the source is the approved Series Bible, regardless of which selectable model developed
+// the series; for Book 2+ the source remains the preceding completed book. Seeds share one recoverable JSONB map.
+const fictionNextBookSeeds252123=(state)=>{const s=(state&&typeof state==='object')?state:{};const x=(s.next_book_direction_seeds&&typeof s.next_book_direction_seeds==='object'&&!Array.isArray(s.next_book_direction_seeds))?s.next_book_direction_seeds:{};return {...x}};
+const fictionSeedFirstBookDirection252123=async({bible=series.series_bible,reviewedAt=series.bible_reviewed_at,force=false}={})=>{
+  const proposed=Array.isArray(bible?.proposed_books)?bible.proposed_books:[],first=proposed[0];
+  if(!first)return {ok:true,skipped:true,reason:'no_first_proposed_book',next_position:1};
+  const bookRows=await rest(`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&position=eq.1&limit=1`),book1=bookRows?.[0]||null;
+  if(book1){const plan=(book1.book_plan&&typeof book1.book_plan==='object')?book1.book_plan:{},st=(book1.development_state&&typeof book1.development_state==='object')?book1.development_state:{},humanDirection=String(st.direction||'').trim(),hasPlanning=Object.keys(plan).length>0||(st.phase&&st.phase!=='architecture');if((humanDirection||hasPlanning)&&!force)return {ok:true,skipped:true,reason:humanDirection?'human_direction_present':'book_1_already_developed',next_position:1};}
+  const currentState=(series.autopilot_state&&typeof series.autopilot_state==='object')?series.autopilot_state:{},seeds=fictionNextBookSeeds252123(currentState),existing=seeds['1'],sourceKey=String(reviewedAt||series.bible_reviewed_at||series.updated_at||'');
+  if(existing&&!force&&String(existing.source_series_reviewed_at||'')===sourceKey&&String(existing.direction||'').trim())return {ok:true,skipped:true,reason:'seed_already_current',next_position:1,seed:existing};
+  const prompt=`You are SOL, senior series editor in a private commercial-fiction studio. The developer-selected Series Development model has completed Series Development and the developer has approved the definitive Series Bible. Write the DEVELOPMENT DIRECTION that should be pre-seeded into the prompt box for BOOK 1 so Luna can develop the first novel from a strong editorial starting point. ${fictionLanguageInstruction25280(series)}
+
+APPROVED SERIES BIBLE: ${JSON.stringify(bible||{})}
+FIRST PROPOSED BOOK: ${JSON.stringify({position:1,title:first.working_title||'Book 1',premise:first.premise||''})}
+
+Read the whole approved Series Bible before writing the direction. Translate the series design into a practical Book 1 brief: what the opening novel must establish about the series promise, protagonist, recurring world and important relationships; what should be introduced naturally rather than front-loaded; what should deliberately remain available for later books; and what qualities of pace, accessibility, narrative texture and commercial appeal this particular series needs. Use the proposed Book 1 premise as a springboard but do NOT solve it in advance: do not choose the culprit, twist, final explanation, climax, detailed chapter sequence or compulsory new cast unless the approved Bible has already made one of those facts canonical. Do not add a generic formula, force callbacks to future books, or redesign the approved series. Preserve all hard canon. Quality and suitability to this specific series matter more than arbitrary word count. The result must read like concise instructions a human senior editor would put directly into Luna's Book Development prompt box. Do not mention Sol, Astra, Luna, AI, models or the backstage process.`;
+  const schema={type:'object',additionalProperties:false,required:['direction'],properties:{direction:{type:'string',minLength:120,maxLength:7000}}};
+  const model='gpt-6-sol',startedAt=Date.now();const rr=await astraFetch25240({model,input:prompt,max_output_tokens:4000,text:{format:{type:'json_schema',name:'fiction_first_book_direction_seed',strict:true,schema}}});const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}await meterFiction25243({bookId:book1?.id||null,stage:'first_book_seed',substage:'book-1',model,data,startedAt:startedAt,httpStatus:rr.status,ok:rr.ok});if(!rr.ok)throw Object.assign(new Error(data?.error?.message||`Sol Book 1 seed returned HTTP ${rr.status}`),{status:502});const parsed=parseFictionStructured25238(data,'Book 1 direction seed'),direction=String(parsed?.direction||'').trim();if(!direction)throw Object.assign(new Error('Sol returned an empty Book 1 direction seed.'),{status:502});
+  const seed={direction,source:'approved_series_bible',source_series_development_model:fictionModel25243(series.development_model||'gpt-6-luna').id,source_series_reviewed_at:sourceKey,generated_at:new Date().toISOString(),model};seeds['1']=seed;const patchedState={...currentState,next_book_direction_seeds:seeds};const sr=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({autopilot_state:patchedState,updated_at:new Date().toISOString()})});series.autopilot_state=sr?.[0]?.autopilot_state||patchedState;return {ok:true,next_position:1,seed,series:sr?.[0]||{...series,autopilot_state:patchedState}};
+};
+if(mode==='seed-first-book-direction'){
+  if(!series.bible_reviewed_at)return res.status(409).json({error:'Approve the Series Bible before Sol seeds Book 1 Development.'});
+  try{return res.status(200).json(await fictionSeedFirstBookDirection252123({force:body.force===true}))}catch(e){return res.status(Number(e?.status)||502).json({error:e.message||String(e)})}
+}
 if(mode==='approve-bible-review'){
   const bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
   try{fictionRejectForbiddenNames25284(bible,{idea:series.idea,current:series.series_bible},'Series Bible approval');fictionRejectAIDefaultWorld25285(bible,{idea:series.idea,current:series.series_bible},'Series Bible approval');await fictionLiveCollisionCheck25288({candidate:bible,label:'Series Bible approval',context:{series_name:series.series_name,idea:series.idea},bookId:null})}catch(e){return res.status(Number(e?.status)||502).json({error:e.message})}
@@ -784,8 +809,10 @@ if(mode==='approve-bible-review'){
   for(const b of books){if(!String(b?.working_title||'').trim())return res.status(400).json({error:'Every proposed book must have a working title before approval.'})}
   const reviewedAt=new Date().toISOString();
   const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_bible:bible,status:'bible_approved',bible_reviewed_at:reviewedAt,updated_at:reviewedAt})});
+  series.series_bible=bible;series.bible_reviewed_at=reviewedAt;series.status='bible_approved';if(rows?.[0]?.autopilot_state)series.autopilot_state=rows[0].autopilot_state;
   await syncUndevelopedBooks25239(bible);
-  return res.status(200).json({series:rows?.[0]||null,bible_reviewed_at:reviewedAt});
+  let firstSeed=null;try{firstSeed=await fictionSeedFirstBookDirection252123({bible,reviewedAt})}catch(e){return res.status(Number(e?.status)||502).json({error:`Series Bible approved, but Sol could not create the Book 1 Development seed: ${e.message||String(e)}`,bible_approved:true,bible_reviewed_at:reviewedAt})}
+  return res.status(200).json({series:firstSeed?.series||rows?.[0]||null,bible_reviewed_at:reviewedAt,book_1_seed:firstSeed?.seed||null});
 }
 // V252.31 — full-length Book Development remains inside the isolated Back Room branch.
 if(mode==='list-books'){
@@ -943,8 +970,14 @@ if(mode==='start-book-development'||mode==='continue-book-development'){
       const rows=await rest('developer_fiction_books',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,position,working_title:workingTitle,premise,book_plan:{},status:'planning',development_model:fictionModel25243(body.model).id,development_state:{phase:'architecture',next_batch_start:1,direction:String(body.message||'')}})});book=rows?.[0]
     }
   }
-  const state=book.development_state||{},phase=state.phase||'architecture',seed252116=fictionNextBookSeeds252116(series.autopilot_state)[String(sourceIndex+1)]||null,direction=String(state.direction||body.message||seed252116?.direction||'');
-  if(!String(state.direction||'').trim()&&!String(body.message||'').trim()&&String(seed252116?.direction||'').trim()){state.direction=String(seed252116.direction);const z=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:{...state},updated_at:new Date().toISOString()})});book=z?.[0]||book;}
+  const state=book.development_state||{},phase=state.phase||'architecture';let seed252116=fictionNextBookSeeds252116(series.autopilot_state)[String(sourceIndex+1)]||null;
+  // V252.124 recovery: legacy/interrupted Book 1 series cannot start cold. If there is no human
+  // direction and no stored seed, Sol reads the approved Series Bible and creates the missing handoff.
+  if(sourceIndex===0&&!String(state.direction||'').trim()&&!String(body.message||'').trim()&&!String(seed252116?.direction||'').trim()){
+    try{const seeded=await fictionSeedFirstBookDirection252123();seed252116=seeded?.seed||fictionNextBookSeeds252116(series.autopilot_state)['1']||null}catch(e){return res.status(Number(e?.status)||502).json({error:`Book 1 Development cannot start until Sol has seeded it from the approved Series Bible: ${e.message||String(e)}`})}
+  }
+  const direction=String(state.direction||body.message||seed252116?.direction||'');
+  if(!String(state.direction||'').trim()&&!String(body.message||'').trim()&&String(seed252116?.direction||'').trim()){state.direction=String(seed252116.direction);state.direction_source=sourceIndex===0?'sol_series_bible_seed':'sol_previous_book_seed';const z=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:{...state},updated_at:new Date().toISOString()})});book=z?.[0]||book;}
   let bookModel=fictionModel25243(book.development_model||(Object.keys(book.book_plan||{}).length?'gpt-6-astra':body.model)).id;if(!book.development_model){const z=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_model:bookModel,updated_at:new Date().toISOString()})});book=z?.[0]||{...book,development_model:bookModel}}
   const seriesMemory25259=await ensureSeriesMemoryThrough25259(Math.max(0,Number(book.position||1)-1));
   let seriesContext25259=state.series_context&&typeof state.series_context==='object'?state.series_context:null;

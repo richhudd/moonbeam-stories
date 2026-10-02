@@ -2418,3 +2418,21 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Adds a deterministic publication preflight after final model approval. It checks structural publication faults, unresolved internal placeholders, suspicious duplicate long paragraphs/backstage artefacts and the existing deterministic whole-manuscript pattern audit without paraphrasing or stylistically editing approved prose.
 - The final approved manuscript and preflight state are persisted in existing `generation_state` JSONB. Reader/export selection follows that approved manuscript. Sol's next-book direction seed now treats this final approval/preflight as completion rather than requiring a legacy Proof run.
 - No Supabase migration and no new Vercel API route are required.
+
+## V252.124 — Book 1 Sol seed respects the selected Series Development model
+
+- Corrects V252.123's Astra assumption. **Series Development remains fully selectable at series creation** (Luna, Sol or Astra); the Book 1 handoff never changes or overrides that selection.
+- After the selected Series Development model finishes and the developer approves the definitive Series Bible, **Sol reads that approved Bible and writes the Development direction for Book 1**.
+- Sol is instructed to treat the approved Bible as authoritative without assuming which model authored it, and the seed records the actual Series Development model as provenance.
+- The intended chain is therefore: **selected Series Development model → approved Series Bible → Sol Book 1 seed → Luna Book 1 Development → existing pipeline**.
+- No Supabase migration and no new API route are required.
+
+## V252.123 — Sol seeds Book 1 from the approved Series Bible
+
+- Closes the Book 1 handoff gap in the adult-fiction pipeline. After the selected Series Development model completes Series Development and the developer approves the definitive Series Bible, **Sol reads the approved Bible and writes the Development direction for Book 1**.
+- The Book 1 direction is stored in the same recoverable `next_book_direction_seeds` Series JSON state already used for later books, at position `1`; no new Supabase migration is required.
+- Book 1 Development now opens with Sol's seed prefilled in the Development direction box for Luna, with clear UI provenance that it came from the approved Series Bible.
+- Book 2+ behaviour is unchanged: after each completed book, Sol continues to seed the following proposed book from the finished manuscript, senior reviews, Series Intelligence and next-book premise.
+- Adds recovery for pre-V252.123 or interrupted series. If an approved series reaches Book 1 without a stored seed, opening/starting Book 1 Development asks Sol to recreate the missing handoff before Luna begins.
+- Human direction still outranks the automatic seed when deliberately supplied, and existing developed/planned Book 1 material is not overwritten.
+- Uses the existing `/api/fiction-studio` route and existing JSONB state. API count remains 12.
