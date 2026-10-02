@@ -2345,3 +2345,8 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - As a final deterministic safety net, any accidental downstream `[[CHAR:role]]` token is converted to a natural unnamed role (for example `[[CHAR:waiter]]` → `the waiter`) before saving, then a hard invariant verifies that no marker remains.
 - Revision and later editorial output receive the same containment check, preventing an internal marker from being introduced during editing.
 - Publication validation now also fails any manuscript chapter that somehow contains an unresolved internal character placeholder.
+
+## V252.115 — checkpointed Book Architecture
+- Replaces the single monolithic 8,000-token Astra novel-architecture call with three independently saved stages: core architecture, character/relationship architecture, and structural architecture.
+- Each stage performs one bounded model call and persists its result before the next request, so a max_output_tokens failure cannot discard earlier architecture work.
+- Backstage naming/research remains downstream and resumable; no schema or API-route changes.
