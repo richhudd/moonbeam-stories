@@ -2452,3 +2452,12 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Adds an independent **Reset Moonbeam Stories** baseline and **Reset Adult Novel Studio** baseline. Resetting one does not alter the other and never deletes historical records.
 - The Moonbeam Stories reset continues to control the existing average story-generation timing baseline; the Adult Novel Studio reset is usage-only.
 - Uses the existing `moonbeam_admin_settings` table with a second setting key (`fiction_usage_baseline_utc`), so no Supabase migration or new API route is required.
+
+## V252.127 — reconcilable Fiction Studio accounting
+- Rebuilt each novel's live production accounting as an additive ledger: dynamically allocated shared series development/research, Sol handoff seed, Book Development, manuscript drafting, every editorial/revision pass, book-specific research/validation, any residual direct calls, Direct book production cost, and Fully allocated book cost.
+- Shared series overhead now means every metered series-level call (including initial Series Development, naming, geography, professional-practice research, validation, and later Extend Series work). Its per-book allocation is recalculated against the current proposed-book count whenever the series grows.
+- Sol next-book handoff costs are attributed to the book they prepare. Historical `next_book_seed` rows are re-attributed at reporting time from their `book-N` marker, so prior books no longer carry the following book's seed cost.
+- The novel ledger lists editorial/revision passes dynamically in the order actually incurred, including model, request count, duration, and cost; books that need more gate/repair cycles therefore show more rows automatically.
+- Direct model totals reconcile independently against Direct book production cost.
+- The Series page now shows actual series cost to date beside the series title and each book's current fully allocated cost beside its title.
+- No Supabase migration required; existing detailed usage-event rows are reused.
