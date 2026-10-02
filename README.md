@@ -2320,3 +2320,21 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Whole-stage Line/style/Proof length bands are now advisory rather than blocking. Because destructive chapter edits are rejected before saving, aggregate drift can be recorded without stranding the book at an unfinished quality gate.
 - Result: word count cannot trap the automated pipeline. Quality governs Revision; Line/style and Proof cannot quietly eat the manuscript; ordinary editorial completion continues without indefinite repair loops.
 - No Supabase migration and no new Vercel API route.
+
+
+## V252.112 — canonical character placeholder invariant
+- Fixed a Series Development loophole where Astra could return a new `[[CHAR:key]]` character with `naming_profile: null`, causing the backstage resolver to skip it and expose an unnamed placeholder in the final Bible.
+- Series Development now checkpoints a dedicated `naming_profile_repair` stage for any malformed placeholder, repairing one profile per request without choosing a name and without inventing ethnicity/religion/migration history merely for naming.
+- Naming now scans every character placeholder, not only placeholders that already have a non-null profile.
+- Hard invariants prevent any `[[CHAR:...]]` marker from passing naming, collision validation, or final Series Bible save.
+- The Series Development prompt now states semantically that `naming_profile:null` is permitted only for already-named canonical characters.
+- Book Development also asserts that every new-character placeholder has a profile and that no marker survives architecture validation.
+- No database migration and no new API route.
+
+## V252.113 — universal character-placeholder containment
+- Extended the V252.112 naming invariant beyond Series/Book architecture so internal `[[CHAR:...]]` markers can never leak into chapter plans, draft manuscript, Revision, Line/style or Proof output.
+- Series Development and Book Development remain the only stages allowed to create canonical character placeholders; important named characters must be resolved there by the demographic naming pipeline.
+- Chapter planning and drafting are instructed never to emit placeholders. Truly incidental one-scene people may remain naturally unnamed by role.
+- As a final deterministic safety net, any accidental downstream `[[CHAR:role]]` token is converted to a natural unnamed role (for example `[[CHAR:waiter]]` → `the waiter`) before saving, then a hard invariant verifies that no marker remains.
+- Revision and later editorial output receive the same containment check, preventing an internal marker from being introduced during editing.
+- Publication validation now also fails any manuscript chapter that somehow contains an unresolved internal character placeholder.
