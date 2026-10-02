@@ -1,3 +1,13 @@
+
+## V252.134 — password-gated Fiction Studio X
+
+- Adds a discreet developer-only padlock in the top-right of Fiction Studio. The ordinary screen does not label or advertise the hidden library.
+- The padlock opens a password prompt. A successful server-side check switches the shared Fiction Studio interface into **Fiction Studio X**. Closing the studio or refreshing the app clears the browser-held X access token, so it must be unlocked again.
+- Fiction Studio X deliberately reuses the normal Fiction Studio UI, controls, series creation, model selectors, book architecture, drafting/review loop, exports, deletion, extension and accounting code. It is a namespace, not a duplicated second implementation, so future shared Fiction Studio improvements continue to apply to both.
+- Series created while X is open are tagged `studio_section='fiction_x'`; ordinary series use `studio_section='fiction'`. Server-side list/create/load checks enforce the separation, so X series do not leak into the normal series list/dashboard.
+- Set a Vercel environment variable named `FICTION_STUDIO_X_PASSWORD` to the password you want. The password is never stored in frontend code. Unlock returns a short-lived signed server token held only in page memory.
+- Requires running `SUPABASE_V252_134_FICTION_STUDIO_X.sql` once before deploying this version. Existing series remain ordinary Fiction Studio series.
+
 # V252.133 — advisory character identity warnings
 
 - Series Development real-world identity checks no longer discard a completed Series Bible merely because a fictional character matches a prominent real person or triggers a character-name plausibility warning.

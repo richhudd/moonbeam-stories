@@ -43,6 +43,19 @@ const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toL
 if(!developerEmail||String(user.email||'').trim().toLowerCase()!==developerEmail)return res.status(403).json({error:'Developer access only.'});
 if(!SECRET_KEY)return res.status(500).json({error:'Fiction Studio storage is unavailable.'});
 const mode=String(body.mode||'').trim();
+// V252.134 — Fiction Studio X is a namespaced private library behind a separate server-side password gate.
+const fictionStudioSection252134=String(body.studio_section||'fiction')==='fiction_x'?'fiction_x':'fiction';
+const fictionXPassword252134=String(process.env.FICTION_STUDIO_X_PASSWORD||'');
+const fictionXSign252134=(value)=>crypto.createHmac('sha256',String(SECRET_KEY||'moonbeam-fiction-x')).update(value).digest('hex');
+const fictionXIssue252134=()=>{const expiry=Date.now()+2*60*60*1000,base=`${user.id}|${expiry}`;return `${expiry}.${fictionXSign252134(base)}`};
+const fictionXValid252134=(token)=>{try{const [expiryRaw,sig]=String(token||'').split('.'),expiry=Number(expiryRaw);if(!Number.isFinite(expiry)||expiry<Date.now()||expiry>Date.now()+3*60*60*1000||!sig)return false;const expected=fictionXSign252134(`${user.id}|${expiry}`),a=Buffer.from(sig),b=Buffer.from(expected);return a.length===b.length&&crypto.timingSafeEqual(a,b)}catch{return false}};
+if(mode==='x-unlock'){
+  if(!fictionXPassword252134)return res.status(503).json({error:'Fiction Studio X password is not configured. Add FICTION_STUDIO_X_PASSWORD in Vercel Environment Variables.'});
+  const supplied=Buffer.from(String(body.password||'')),expected=Buffer.from(fictionXPassword252134);if(supplied.length!==expected.length||!crypto.timingSafeEqual(supplied,expected))return res.status(401).json({error:'Incorrect password.'});
+  return res.status(200).json({ok:true,x_access:fictionXIssue252134()});
+}
+if(fictionStudioSection252134==='fiction_x'&&!fictionXValid252134(body.x_access))return res.status(401).json({error:'Fiction Studio X is locked. Unlock it again from Fiction Studio.'});
+const fictionStudioSectionFilter252134=encodeURIComponent(fictionStudioSection252134);
 const FICTION_TABLES_25269=new Set(['developer_fiction_series','developer_fiction_books','developer_fiction_chapters','developer_fiction_continuity','developer_fiction_editorial_runs','developer_fiction_editorial_chapters','developer_fiction_editorial_continuity','developer_fiction_usage_events']);
     const rest=async(path,options={})=>{const table=String(path||'').split('?')[0].split('/')[0];if(!FICTION_TABLES_25269.has(table))throw new Error('Fiction Studio storage boundary blocked a non-fiction table.');const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Fiction Studio storage returned HTTP ${r.status}`),{status:r.status});return data};
 // V252.40: bounded retry only for transport-level OpenAI failures. HTTP/model/schema errors fail closed.
@@ -657,7 +670,7 @@ if(mode==='legacy-orphan-purge'){
 if(mode==='series-dashboard'){
   const u=encodeURIComponent(user.id);
   const [seriesRows,bookRows,runRows,chapterRows]=await Promise.all([
-    rest(`developer_fiction_series?select=*&parent_id=eq.${u}&order=updated_at.desc`),
+    rest(`developer_fiction_series?select=*&parent_id=eq.${u}&studio_section=eq.${fictionStudioSectionFilter252134}&order=updated_at.desc`),
     rest(`developer_fiction_books?select=*&parent_id=eq.${u}&order=position.asc`),
     rest(`developer_fiction_editorial_runs?select=id,series_id,book_id,stage,status,created_at,completed_at&parent_id=eq.${u}&order=created_at.asc`),
     rest(`developer_fiction_chapters?select=book_id,chapter_number&parent_id=eq.${u}`)
@@ -701,18 +714,18 @@ if(mode==='series-dashboard'){
   return res.status(200).json({series:out});
 }
 if(mode==='list'){
-  const rows=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&order=updated_at.desc`);
+  const rows=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&studio_section=eq.${fictionStudioSectionFilter252134}&order=updated_at.desc`);
   return res.status(200).json({series:Array.isArray(rows)?rows:[]});
 }
 if(mode==='create'){
   const penName=String(body.pen_name||'').trim(),seriesName=String(body.series_name||'').trim(),idea=String(body.idea||'').trim(),languageLocale=fictionLocale25280(body.language_locale,'en-GB');
   if(!penName||!seriesName||!idea)return res.status(400).json({error:'Pen name, series name and Series Brief are required.'});
-  const rows=await rest('developer_fiction_series',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,pen_name:penName,series_name:seriesName,idea,status:'development',development_model:fictionModel25243(body.model).id,language_locale:languageLocale})});
+  const rows=await rest('developer_fiction_series',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,pen_name:penName,series_name:seriesName,idea,status:'development',development_model:fictionModel25243(body.model).id,language_locale:languageLocale,studio_section:fictionStudioSection252134})});
   return res.status(200).json({series:rows?.[0]||null});
 }
 const id=String(body.id||'').trim();if(!id)return res.status(400).json({error:'Fiction series id is required.'});
 const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`),series=found?.[0];
-if(!series)return res.status(404).json({error:'Fiction series not found.'});
+if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});
 // V252.60 — Series Intelligence: permanent canon/archive plus selective current-book context.
 // Archive facts constrain continuity; they do not create an obligation to dramatize, reminisce, reuse or resolve them.
 const emptySeriesMemory25259=()=>({version:2,last_updated_book:0,established_canon:[],characters:[],timeline:[],relationships:[],knowledge_states:[],secrets:[],institutions:[],unresolved_threads:[],open_consequences:[],planted_details:[],world_changes:[],open_questions:[],future_possibilities:[],book_voice_refs:[]});
