@@ -1,3 +1,13 @@
+## V252.131 — Sol report after every Luna rewrite
+- Moves Sol’s advisory appraisal to the human-review loop: after Luna’s automatic second draft, Sol immediately reads that exact manuscript and reports before the developer decides whether to finish or rewrite again.
+- The report includes deterministic word count, Content rating /10, Anti-AI / Style rating /10, a brief content review, a brief style review, and an explicit assessment of how successful Luna’s latest rewrite was.
+- Sol also supplies one optional ready-to-paste improvement prompt for Luna. It is advisory only and can never trigger a rewrite automatically; if Sol sees no worthwhile remaining rewrite, the suggested prompt is blank.
+- Every later human-directed Luna rewrite automatically receives a fresh Sol report on the new manuscript before returning to Awaiting human review. The human/Luna/Sol-report loop can repeat indefinitely.
+- The developer remains the only creative gate. **Finish & Save** locks the exact current manuscript; there is no additional post-approval Sol appraisal. Deterministic publication checks then run and Sol seeds the following book from the human-approved finished text.
+- Sol’s report compares the latest rewrite with the relevant prior style brief / human instruction and previous advisory report where available, while separately checking for new content or style damage.
+- Human-review reports are preserved as editorial records and separately labelled in the production-cost ledger, but are not treated as senior quality gates.
+- No Supabase migration and no new API route are required.
+
 ## V252.130 — simple style-first pipeline + human creative gate
 - Replaces the Astra/Sol structural rewrite hierarchy with the deliberately simpler production flow: **selected Series Development model → Sol seed → Luna first draft → Sol style-only anti-AI review → Luna style-only second draft → human review**.
 - Removes automatic post-draft structural critique/rewrite from the default fiction pipeline. Sol's first manuscript review is explicitly prohibited from requesting plot, scene-order, character-arc, clue, ending or series-architecture changes.
