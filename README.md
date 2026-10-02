@@ -1,3 +1,12 @@
+# V252.111
+
+- Locale now supplies the default geographic home for NEW Fiction Studio series unless the developer explicitly overrides it: English (UK) → United Kingdom, English (US) → United States, Spanish (Spain) → Spain, Spanish (Latin America) → Latin America, with equivalent locale anchors for the other supported locale codes. Existing series keep their established setting and are never silently relocated.
+- Removes the backstage instruction to prefer the most common/ordinary names. Demographic research now samples a natural spread of attested common, mid-frequency and less-common-but-unremarkable names instead of collapsing toward bland high-frequency Anglo defaults.
+- Keeps the hard hidden AI-default/near-variant blacklist intact, so de-blanding the pool does not reopen synthetic Voss/Vale/Mara-style naming.
+- Adds account-level recent-name memory entirely backstage. Before Series or Book Development assigns new names, it checkpoints name components recently used in up to 10 series and 40 book plans, asks the demographic selector not to recycle them, and filters repeated components from candidate pools when alternatives exist. This history is never shown to Astra/Luna as creative seed material.
+- Anti-repetition is strong but non-blocking: if a culturally constrained pool genuinely offers no fresh candidate, Moonbeam may use a non-blacklisted attested candidate rather than deadlocking the pipeline.
+- No new API route and no Supabase migration.
+
 # V252.110
 
 - Hardened backstage character naming after a Book Development surname-pool `max_output_tokens` failure.
