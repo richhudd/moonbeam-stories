@@ -1,3 +1,11 @@
+# V252.117 — fully checkpointed structural architecture
+
+- Splits the remaining Book Development structural architecture into three independently saved calls: major turning points, continuity watchlist, and ending.
+- Fixes the V252.116 failure mode where the combined structural response could still exhaust max_output_tokens even after the earlier architecture split.
+- Each component is now concise, bounded, and persisted before the next request; resume starts at the unfinished component.
+- Existing V252.115/V252.116 Book 2 jobs stuck at `architecture_structure` recover safely: Resume generates only the turning-points component first, then continuity, then ending.
+- No new API route and no Supabase migration.
+
 # V252.111
 ## V252.114 — resumable character naming iterator fix
 
@@ -2350,3 +2358,12 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Replaces the single monolithic 8,000-token Astra novel-architecture call with three independently saved stages: core architecture, character/relationship architecture, and structural architecture.
 - Each stage performs one bounded model call and persists its result before the next request, so a max_output_tokens failure cannot discard earlier architecture work.
 - Backstage naming/research remains downstream and resumable; no schema or API-route changes.
+
+
+## V252.116 — Sol next-book direction seed
+- After a completed Proof, Sol automatically prepares a concise development-direction brief for the following proposed book.
+- The seed is stored in the existing Series autopilot JSONB state and appears directly in the next book's Development direction box.
+- Sol sees the completed book, final continuity/Series Intelligence, senior-review findings, representative final prose, and the next proposed premise. It is told to preserve strengths, flag repetition risks, and not pre-solve the next book.
+- Human direction is never overwritten. If the following book already has user direction or substantive planning, seeding is skipped.
+- Seeding is idempotent, safely retried after Proof, and recovered on opening the next undeveloped slot if a completion-time request was lost.
+- No new API route or Supabase migration.
