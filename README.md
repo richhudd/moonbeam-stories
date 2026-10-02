@@ -2375,3 +2375,46 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Turning points and ending architecture: 12,000 each.
 - Continuity watchlist: 10,000.
 - No workflow/schema/API-route change; this is a reliability change to prevent max_output_tokens failures during substantial planning work.
+
+
+## V252.119 — visible Book Development checkpoint progress
+
+- Long Book Development jobs now show the exact persisted stage instead of the generic ‘developing the novel architecture’ message.
+- The status line accumulates completed checkpoints (core architecture, character architecture, turning points, continuity, ending, naming, location/profession grounding, validation) and names the stage currently running.
+- During chapter planning it reports the saved chapter range and the exact next four-chapter batch, e.g. `✓ Chapters 1–4 saved · Luna is planning chapters 5–8 of 32…`.
+- Progress is derived only from the saved `development_state`, so a refresh reconstructs truthful progress and does not pretend an unsaved stage completed.
+- No API, schema or Supabase changes.
+
+
+## V252.120 — serious manuscript-length planning without padding
+
+- The approved Book Plan target is now fed to Luna during every first-draft chapter with live cumulative progress, remaining chapter count and an indicative remaining scale. It is a serious planning constraint, not a quota; padding, recap and manufactured scenes remain prohibited.
+- Sol now performs an explicit length/completeness assessment whenever a manuscript is more than 15% below its approved target. He must diagnose whether the shortfall reflects missing dramatic, psychological, structural, relational or causal substance.
+- A materially short manuscript may still be approved when it is genuinely complete and stronger at the shorter length, but Sol must record a substantive explicit justification. A missing/empty justification cannot silently approve the book.
+- Senior-review UI and review ZIP now expose the length assessment, qualitative gaps and any shorter-length approval justification.
+- No SQL or API-route changes.
+
+## V252.121 — Astra senior editor + bounded Sol escalation
+
+- Changes the default automatic adult-fiction editorial hierarchy to: Luna first draft → Astra whole-manuscript senior review → one Luna revision → Astra re-review → one Sol repair only if material findings remain → Astra final independent quality gate → Luna Line/style → Luna Proof.
+- Removes the old repeated-Luna revision loop from the automatic pipeline. Luna gets one ordinary revision attempt; difficult cross-novel repair escalates to Sol rather than asking Luna to mutate the manuscript repeatedly.
+- Keeps Astra as the independent judge before and after the Sol repair, so Sol does not simply mark its own work.
+- The escalation is bounded: if Astra still finds material/critical defects after the Sol repair, the pipeline pauses for human review instead of cycling indefinitely.
+- Adds an explicit Escalation repairer model selector; defaults remain Luna / Astra / Luna / Sol / Luna / Luna for draft / senior / revision / escalation / line / proof.
+- Existing persisted editorial runs remain preserved; no Supabase migration or new API route is required.
+
+## V252.122 — live draft-length control + bounded editorial escalation
+
+- Rebuilds the automatic adult-fiction production hierarchy around bounded escalation rather than repeated Luna revision loops: **Luna first draft → Sol senior review → one Luna revision if required → Sol re-review → Astra escalation diagnosis only if Sol still rejects → one Sol surgical repair → Astra recheck → one Astra surgical final repair only if genuinely necessary → Astra narrow final verification → deterministic publication preflight**.
+- Astra remains the final quality authority. If the cheaper Sol/Luna path clears the book, Astra still performs one true final whole-book quality/copy-integrity gate before the prose is locked.
+- Removes automatic generative Line/style and Proof after final approval. Once Astra approves the actual manuscript, no model may rewrite it. The only downstream stage is a non-creative deterministic publication preflight.
+- Astra's last-resort repair is a locked-manuscript surgical pass. It receives only the current unresolved chapter actions, copies unaffected chapters unchanged, returns exact find/replace patches rather than rewritten chapters, and is mechanically rejected if it attempts a broad edit footprint. Previously approved plot facts, clues, chronology, character knowledge, relationships, setting, professional facts, voice and ending are protected unless the unresolved finding explicitly requires that exact change.
+- The final Astra verification is deliberately narrow: verify the named blockers were fixed, check for material regressions and copy integrity, and stop. It is not permission to reopen resolved stylistic preferences or invent fresh improvement work.
+- Adds live first-draft word-count trajectory management so expensive Sol/Astra stages are not expected to manufacture tens of thousands of missing words. Every Luna chapter sees the approved target, words already saved, expected cumulative scale, remaining chapter count and the approximate remaining chapter scale needed to stay broadly on target.
+- When the draft falls materially behind trajectory, Luna is told to recover through genuine dramatic, psychological, causal, atmospheric and relationship depth — never padding, recap or repetitive exposition.
+- At saved 50%, 75% and 90% checkpoints, a materially under-length draft triggers a separate, checkpointed Luna `draft-rebalance` call. That call deepens the architecture of only the remaining chapters while preserving completed chapters, culprit/solution, ending, canon and continuity. The resulting chapter-specific depth directions are saved and fed back into later drafting.
+- Draft-rebalance calls have a 20,000-token ceiling and normal chapter generation has a 16,000-token ceiling, giving Luna enough reasoning/output room to execute a full-length commercial novel rather than silently compressing it.
+- The existing >15% shortfall assessment remains as a senior-editor diagnostic safeguard, but it is now the backstop rather than the primary length-control mechanism. A genuinely stronger shorter novel can still be approved; a large accidental drafting undershoot should be corrected while Luna is still drafting.
+- Adds a deterministic publication preflight after final model approval. It checks structural publication faults, unresolved internal placeholders, suspicious duplicate long paragraphs/backstage artefacts and the existing deterministic whole-manuscript pattern audit without paraphrasing or stylistically editing approved prose.
+- The final approved manuscript and preflight state are persisted in existing `generation_state` JSONB. Reader/export selection follows that approved manuscript. Sol's next-book direction seed now treats this final approval/preflight as completion rather than requiring a legacy Proof run.
+- No Supabase migration and no new Vercel API route are required.
