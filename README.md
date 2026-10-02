@@ -1,4 +1,11 @@
 # V252.111
+## V252.114 — resumable character naming iterator fix
+
+- Fixed Series Development and Book Development naming checkpoints so they always process the first currently unresolved `[[CHAR:...]]` character after each saved checkpoint instead of reusing a stale cursor against a newly shortened unresolved-character list.
+- Added a separate completed-character counter used only for progress reporting. Completion is now determined exclusively by there being no unresolved character placeholders left.
+- This also recovers safely from V252.113 jobs already checkpointed with the old cursor value: resuming recalculates the unresolved set and continues with the next unresolved character rather than falsely declaring naming complete.
+- Existing hard naming invariants remain in place, so unresolved internal character markers still cannot become canonical.
+
 
 - Locale now supplies the default geographic home for NEW Fiction Studio series unless the developer explicitly overrides it: English (UK) → United Kingdom, English (US) → United States, Spanish (Spain) → Spain, Spanish (Latin America) → Latin America, with equivalent locale anchors for the other supported locale codes. Existing series keep their established setting and are never silently relocated.
 - Removes the backstage instruction to prefer the most common/ordinary names. Demographic research now samples a natural spread of attested common, mid-frequency and less-common-but-unremarkable names instead of collapsing toward bland high-frequency Anglo defaults.
