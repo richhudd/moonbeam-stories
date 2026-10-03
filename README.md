@@ -2681,3 +2681,11 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Background X jobs are not interrupted: each running job continues using the private X access context captured when that job started, independent of the now-locked visible workspace.
 - Closing the Back Room also locks X immediately; returning later requires the password while any same-tab background X job may continue independently.
 - No Supabase migration required.
+
+## V252.151
+- Asunder profile portraits now use a dedicated sanitised image-facing payload. The image endpoint no longer receives the full erotic character/profile canon, sexual-history data, or bust-size labels. It receives ordinary adult lifestyle-portrait facts only, with explicit no-nudity/no-sexual-activity instructions.
+- Canonical prose continuity remains unchanged: the richer internal appearance/biography record is still stored and supplied to manuscript generation where relevant.
+- New Asunder profile portraits are now also written to the immutable Fiction Studio usage ledger with `stage: illustrations` and attributed to the book and series that first created them.
+- Book accounting now always includes an `Illustrations` row. Series pages also show the cumulative `Illustrations` total. Reusing an existing saved canonical profile creates no new illustration event/cost.
+- Fiction image USD cost uses `FICTION_IMAGE_COST_USD` (or `MOONBEAM_COST_IMAGE_USD`) when configured; otherwise it converts the existing Moonbeam per-image GBP estimate using `MOONBEAM_GBP_PER_USD` (default 0.75).
+- No Supabase schema migration required.
