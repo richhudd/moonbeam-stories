@@ -1,3 +1,23 @@
+# V252.148
+
+- Corrects the Asunder template packaging: the production profile reference is now a **clean blank shell only**. The previous instructional composite image has been removed entirely.
+- `assets/asunder-profile-template-v1.png` contains no sample woman, no example values, no generation steps and no developer instructions. It preserves only the fixed visual architecture and structural labels.
+- All instructions for creating a woman, generating her portrait, filling the profile, enforcing first-name-only privacy, checking continuity and reusing returning characters remain in `ASUNDER_PROFILE_TEMPLATE_V1.md` and server-side Fiction Studio logic. They are never part of the rendered story opener.
+- No new Supabase migration. The V252.147 profile-table migration is still the only migration required for this feature if it has not already been run.
+
+## V252.148 — canonical Asunder profile/title pages before drafting
+
+- Every fixed-format Asunder volume now pauses after its four story plans are validated and, **before Luna can draft any prose**, builds or reuses one canonical female Asunder profile for each story.
+- The profile/title-page architecture is permanently locked to `asunder_profile_page_v1`. The approved blank visual reference is shipped at `assets/asunder-profile-template-v1.png`; the machine-readable field/specification guide is `ASUNDER_PROFILE_TEMPLATE_V1.md`.
+- Each new principal young woman receives a canonical pre-writing package: internal full name, first name, exact adult age, city/background/relationship/member metadata, full biography, concise public bio, member tags, detailed physical identity, portrait styling/setting and a generated canonical portrait.
+- Public Asunder profiles display **first name only**. Surnames remain private internal canon and may be used in prose where appropriate, but never render on the Asunder profile page.
+- All female leads are locked as exceptionally beautiful and petite while body proportions/bust size, ethnicity/background, face, colouring, hair, clothing, setting and overall presentation are deliberately varied. The portrait brief explicitly avoids the repeated cocktail-dress/hotel-bar default; yachts, beaches, villas, high-end homes, chic casualwear, resort/travel settings and other character-appropriate looks are permitted.
+- Returning women are matched to their canonical Asunder record and reuse the **exact saved portrait and profile data** rather than being regenerated.
+- The story opener is now the Asunder profile page itself: only the story number (for example `1.3`) appears above the profile screenshot. The woman's given-name subtitle remains planning/contents metadata only and is not repeated on the story opener.
+- Manuscript drafting receives the canonical profile/appearance record as binding continuity. Luna is explicitly told not to contradict it and not to re-describe the profile/image as a catalogue; prose should reinforce only occasional relevant details and otherwise get on with the story.
+- The Fiction Studio reader renders the canonical Asunder title/profile page before each story using the fixed coded template and stored portrait.
+- Adds `developer_fiction_asunder_profiles` for persistent canonical profile records. Run `SUPABASE_V252_147_ASUNDER_PROFILES.sql` once before using the feature.
+
 ## V252.146 — Asunder Sol seed heat + cross-volume variation lock
 
 - The persistent Asunder series identity now gives Sol a series-specific seed contract for Book 1 and every later numbered volume, even if the visible series name is changed later.
