@@ -1,3 +1,28 @@
+# Moonbeam Stories V252.143
+- The fixed four-story anthology format is now durably attached to the specific series that is currently named **Asunder**. The one-time retrofit still identifies that series by its current Asunder identity, then stores `series_format_identity: asunder_fixed_four_story_identity_v1`; all ongoing behaviour keys off that persistent marker, so renaming the series later does not remove the four-story/numbered-volume architecture.
+- Numbered volume titles follow the series' *current* visible name (`<current series name>: Volume N`). Renaming this specific series cascades deterministically to its proposed-book slate and existing book records while preserving IDs, plans, costs and manuscript history.
+- Asunder story subtitles are now constrained to **only the principal younger wife's given name**: `1.1 — Raquel`, `1.2 — Julie`, etc. Husbands, third-party partners, group participants, surnames and invented literary titles are excluded from the subtitle.
+- Saving or re-approving the Bible preserves the persistent Asunder format identity and these structural rules, preventing a later Bible edit or series rename from silently dropping them.
+- No Supabase migration required.
+
+## V252.142 — Asunder fixed four-story volume format
+- Retrofits the existing **Asunder** series in place without deleting or regenerating the saved Bible: the Bible receives `series_format: fixed_four_story_anthology` plus a deterministic four-story format block, while every unrelated Bible field is preserved.
+- Renames the existing Asunder slate and any existing book records deterministically to **Asunder: Volume 1**, **Volume 2**, etc.; any existing Book Plan content is preserved, with only its stored title normalised.
+- Asunder Book Development is now structurally enforced as exactly **four substantial top-level stories** per volume, with a 40,000–50,000 word volume target. The generic Fiction Studio planner remains unchanged for every other series.
+- Story labels are deterministic **N.1–N.4** and use the principal protagonist/couple/group names as subtitles rather than invented literary story titles.
+- The server validates the four-story count and volume word range on plan save, so a 20–30 chapter novel architecture cannot accidentally be approved for Asunder.
+- Drafting treats each top-level unit as a complete substantial anthology story and raises the output allowance only for this fixed format so roughly quarter-volume stories are practical.
+- Existing Asunder Sol handoff text is preserved while known legacy volume titles inside stored seed directions are normalised to the new numbered titles.
+- `Extend series` continues the deterministic numbering automatically; no Supabase migration is required.
+
+
+## V252.141 — erotica drafting density + Sol density rating
+- Adds a hard erotica-only drafting overlay to manuscript generation so high-explicitness Bibles are not softened into occasional tasteful open-door material.
+- Converts the Bible's erotic promise into behavioural drafting guidance: early activation, repeated meaningful erotic beats, substantial scene space, direct character-specific language, and warnings against long neutral stretches.
+- Preserves chapter function: the overlay does not force sex into genuine setup/aftermath chapters.
+- If a Bible explicitly bans condoms, that ban is carried directly into the chapter drafting prompt.
+- Sol's post-rewrite human advisory report now includes an **Erotic density /10** rating and short review for erotica; non-erotica books suppress the UI row.
+- No extra model call and no Supabase migration.
 ## V252.140 — Book Development naming checkpoint repair
 
 - Fixes `Cannot set properties of undefined (setting '<character_key>')` during Book Development demographic naming.
