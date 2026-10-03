@@ -1054,21 +1054,30 @@ if(mode==='openrouter-sample'){
   const plans=Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters:[],story=plans[0];if(!story)return res.status(409).json({error:'The copied Book Plan has no Story 1 plan to test.'});
   const system=`You are writing a short model-comparison sample from an existing adult commercial-fiction plan. All sexual characters are adults aged 21 or older. Follow the supplied canon exactly. Write polished UK English. Dramatise rather than summarise. Keep explanatory dialogue under control. Avoid generic stock phrases, purple prose, thematic self-explanation, porn clichés and synopsis-like compression. Preserve the established personalities rather than flattening characters into erotic archetypes. Do not write an outline, synopsis, commentary, analysis or preface: output prose only.`;
   const prompt=`This is deliberately a SMALL QUALITY TEST, not a whole story and not a whole book.\n\nWrite ONE contained scene from the central encounter already described in Story 1. Begin shortly before the encounter becomes dramatically important and end only after one meaningful shift or consequence has genuinely played out. There is NO Moonbeam word-count target or artificial output-length cap for this test: use as much of the selected model's available completion space as the scene actually needs, and do not stop mid-sentence merely to hit a size target. Do not attempt to cover the entire Story 1 arc. Do not race through the scene merely to reach an ending. Use the existing Series Bible and Story 1 plan as authoritative canon and match their intended content level. Keep the prose specific to these characters rather than generic adult-fiction boilerplate.\n\nSERIES BIBLE:\n${JSON.stringify(series.series_bible||{},null,2)}\n\nBOOK ARCHITECTURE:\n${JSON.stringify({title:book.working_title,target_words:book.book_plan?.target_words,core_promise:book.book_plan?.core_promise,pov_strategy:book.book_plan?.pov_strategy,heat_progression:book.book_plan?.heat_progression},null,2)}\n\nSTORY 1 PLAN:\n${JSON.stringify(story,null,2)}\n\nReturn only the finished prose scene.`;
-  let advertisedMax=0;
+  let advertisedMax=0,contextLength=0;
   try{
     const mr=await fetch('https://openrouter.ai/api/v1/models',{headers:{Authorization:`Bearer ${key}`,'HTTP-Referer':'https://moonbeamstories.co.uk','X-Title':'Moonbeam Fiction Studio'}});
-    if(mr.ok){const md=await mr.json();const mm=(Array.isArray(md?.data)?md.data:[]).find(x=>String(x?.id||'')===model);advertisedMax=Number(mm?.top_provider?.max_completion_tokens||mm?.max_completion_tokens||0)||0}
+    if(mr.ok){const md=await mr.json();const mm=(Array.isArray(md?.data)?md.data:[]).find(x=>String(x?.id||'')===model);advertisedMax=Number(mm?.top_provider?.max_completion_tokens||mm?.max_completion_tokens||0)||0;contextLength=Number(mm?.context_length||0)||0}
   }catch{}
-  const payload={model,messages:[{role:'system',content:system},{role:'user',content:prompt}],temperature:0.8};
-  if(advertisedMax>0)payload.max_tokens=advertisedMax;
+  // V252.163: never reserve the provider's entire theoretical completion allowance.
+  // The previous build could ask Cydonia for ~118k output tokens on top of a ~26k prompt,
+  // which exceeded its 131k total context before generation even started. For this bake-off
+  // 12k output tokens is already far more than a contained scene needs. We also subtract a
+  // conservative prompt estimate and a 4k safety margin from the model's total context.
+  const promptChars=system.length+prompt.length,estimatedInputTokens=Math.ceil(promptChars/3.2),testCeiling=12000,safetyMargin=4096;
+  let requestedMax=testCeiling;
+  if(advertisedMax>0)requestedMax=Math.min(requestedMax,advertisedMax);
+  if(contextLength>0)requestedMax=Math.min(requestedMax,Math.max(1024,contextLength-estimatedInputTokens-safetyMargin));
+  requestedMax=Math.max(1024,Math.floor(requestedMax));
+  const payload={model,messages:[{role:'system',content:system},{role:'user',content:prompt}],temperature:0.8,max_tokens:requestedMax};
   const started=Date.now(),r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':'https://moonbeamstories.co.uk','X-Title':'Moonbeam Fiction Studio'},body:JSON.stringify(payload)}),raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{};
   if(!r.ok)return res.status(r.status).json({error:d?.error?.message||d?.error||raw.slice(0,500)||`OpenRouter returned HTTP ${r.status}`});
   const sample=String(d?.choices?.[0]?.message?.content||'').trim();if(!sample)return res.status(502).json({error:'OpenRouter returned an empty sample.'});
   const wordCount=sample.split(/\s+/).filter(Boolean).length,finish=String(d?.choices?.[0]?.finish_reason||''),safeKey=model.replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'').toLowerCase();
-  const entry={text:sample,story_number:Number(story.number||1),story_title:String(story.title||'Story 1'),provider:'openrouter',model,word_count:wordCount,finish_reason:finish,advertised_max_completion_tokens:advertisedMax||null,duration_ms:Date.now()-started,generated_at:new Date().toISOString(),usage:d?.usage||null,generation_id:String(d?.id||'')};
+  const entry={text:sample,story_number:Number(story.number||1),story_title:String(story.title||'Story 1'),provider:'openrouter',model,word_count:wordCount,finish_reason:finish,context_length:contextLength||null,advertised_max_completion_tokens:advertisedMax||null,requested_max_tokens:requestedMax,estimated_input_tokens:estimatedInputTokens,duration_ms:Date.now()-started,generated_at:new Date().toISOString(),usage:d?.usage||null,generation_id:String(d?.id||'')};
   const old=book.generation_state||{},samples={...(old.openrouter_samples||{}),[safeKey]:entry},gs={...old,openrouter_samples:samples,small_sample_test:true};
   const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:gs,updated_at:new Date().toISOString()})});
-  return res.status(200).json({ok:true,sample:entry,key:safeKey,progress:`One ${model} sample generated · ${wordCount.toLocaleString()} words · ${Math.max(1,Math.round((Date.now()-started)/1000))}s${finish?` · ${finish}`:''}`,book:rows?.[0]||{...book,generation_state:gs}});
+  return res.status(200).json({ok:true,sample:entry,key:safeKey,progress:`One ${model} sample generated · ${wordCount.toLocaleString()} words · max ${requestedMax.toLocaleString()} output tokens · ${Math.max(1,Math.round((Date.now()-started)/1000))}s${finish?` · ${finish}`:''}`,book:rows?.[0]||{...book,generation_state:gs}});
 }
 
 // V252.156 — durable Venice mirror: sibling series in the main library, same Bible + Book 1 plan, Venice first draft only.

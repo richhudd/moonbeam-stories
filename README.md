@@ -2788,3 +2788,10 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Venice's additional system prompt is disabled for this test so the copied Series Bible, Book Plan and Moonbeam test brief govern the request.
 - The sample is stored only in the mirror book generation state and does not become a manuscript chapter or mark the book complete.
 - Earlier Venice draft chapters, if present from V252.155–157 testing, are ignored by the new sample test.
+
+
+## V252.163 — OpenRouter context-safe bake-off
+- Fixed Cydonia/OpenRouter test requests that could reserve the model's entire advertised completion allowance and exceed the total context window before generation started.
+- OpenRouter scene tests now use a maximum of 12,000 output tokens, bounded by the provider's completion ceiling and by total context minus a conservative prompt estimate and 4,096-token safety margin.
+- Saved test metadata now records context length, advertised completion ceiling, estimated input tokens, and the actual requested output-token cap.
+- No Supabase migration required.
