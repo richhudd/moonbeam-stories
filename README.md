@@ -2747,3 +2747,11 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Venice mirror accounting is intentionally hidden unless/until a reliable Venice cost source is integrated.
 - Venice mirror series pages no longer request or display OpenAI-style series/book costs or illustration accounting.
 - Venice mirror review ZIPs omit accounting files to avoid implying a cost calculation that is not authoritative.
+
+## V252.158 — smaller Venice quality test
+- Venice mirrors no longer launch the four-story auto-generation loop from the book page.
+- The mirror now offers one deliberately small Story 1 scene test (about 1,800–2,500 words).
+- Each button press makes exactly one Venice text request; there is no retry or continuation loop.
+- Venice's additional system prompt is disabled for this test so the copied Series Bible, Book Plan and Moonbeam test brief govern the request.
+- The sample is stored only in the mirror book generation state and does not become a manuscript chapter or mark the book complete.
+- Earlier Venice draft chapters, if present from V252.155–157 testing, are ignored by the new sample test.
