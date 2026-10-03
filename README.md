@@ -1,3 +1,13 @@
+## V252.164 — Aion full Raquel story test
+
+- Converts the OpenRouter bake-off from a contained scene into the decisive long-form test: the selected model now writes the complete Story 1 / Raquel story in one call.
+- Targets approximately 9,000–12,000 finished words, covering the full planned arc: setup, progression, central encounter, aftermath and consequence.
+- Keeps the Series Bible and Story 1 plan authoritative and explicitly prevents synopsis-like compression, skipped central material, generic character flattening, over-explanation and late-story rushing.
+- Raises the context-safe output ceiling from 12,000 to 20,000 tokens, while still respecting the provider completion limit and reserving prompt/context safety margin.
+- Stores long-form results separately in `generation_state.openrouter_story_tests`, preserving all earlier OpenRouter scene samples for comparison.
+- The test still does not mutate the production manuscript or Fiction Studio accounting.
+- No Supabase migration required.
+
 ## V252.162 — OpenRouter full model output allowance
 
 - Removes Moonbeam's fixed 5,000-token cap from the OpenRouter scene bake-off.
