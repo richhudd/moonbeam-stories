@@ -1,3 +1,14 @@
+# Moonbeam Stories
+
+## V252.159 — Gemma 4 31B one-scene test
+- The Venice mirror small-quality test now targets Venice model `e2ee-gemma-4-31b` explicitly rather than inheriting `venice-uncensored` or `VENICE_TEXT_MODEL`.
+- Existing `venice-uncensored` sample output is preserved but ignored, giving a clean side-by-side model experiment.
+- The task remains deliberately small: one Story 1 scene, approximately 1,800–2,500 words, exactly one API call, no retries and no continuation loop.
+- Venice's additional system prompt remains disabled.
+- Gemma is capped at 4,096 output tokens to match Venice's current hosted limit for this model.
+- No manuscript chapter, completion state, image generation or accounting is created by the test.
+- Still 12 Vercel API files; no Supabase migration required.
+
 # V252.156
 
 ## V252.156 — Venice mirror as a sibling series
