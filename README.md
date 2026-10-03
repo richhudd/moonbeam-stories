@@ -1,3 +1,20 @@
+# V252.150
+
+## V252.150 — bounded Asunder long-term continuity
+
+- Asunder no longer grows its prompt context by forwarding old manuscripts, old illustrations, full historical Book Plans or the generic Fiction Studio Series Intelligence archive into later volumes.
+- After each completed Asunder volume, Sol performs one compact extraction pass over that volume only and stores a deliberately small `asunder_compact` ledger in the existing `series_memory` JSONB field. No schema migration is required.
+- The compact ledger stores only: (1) each previously used wife’s canonical physical identity, keyed to her persistent Asunder profile lookup key, and (2) one short record per story of the partners involved, broad sexual activities/configuration and a compact configuration summary. It stores no manuscript prose, no dialogue, no scene-by-scene recap and no image bytes/URLs.
+- Book Development receives this compact ledger directly. It does not run an expanding retrieval pass over a generic full-series archive.
+- Manuscript drafting is even narrower: Luna receives only the current wife’s canonical profile plus compact prior encounter records for that same woman. Other archived wives and old encounter history are not injected into each story-writing call.
+- If a previously used woman is selected again, her `profile_lookup_key`/character key is used to retrieve the existing canonical Asunder profile and portrait from the dedicated profile store; the portrait itself is not forwarded through prompts.
+- Sol’s Volume 2+ seed no longer receives the complete previous manuscript for Asunder. It receives the compact ledger only. Normal Fiction Studio series retain the existing full-intelligence behaviour.
+- The old hard anti-repetition framing has been removed for Asunder. Familiar sexual activities, partner types and successful configurations may recur naturally across a long series. The system asks only for enough variation to avoid obvious carbon-copy stories, and explicitly forbids inventing bizarre/extreme practices merely to satisfy a novelty quota.
+- `recent_patterns_to_avoid` / `underused_variation_opportunities` have been replaced by advisory `recent_patterns_to_note` / `natural_variation_options`. These are awareness cues, not bans or checklists.
+- The deterministic Asunder seed marker is now `[ASUNDER_DETERMINISTIC_SEED_CONTRACT_V252_150]`; older V252.149 seeds are refreshed so they pick up the softer, long-series-safe variation rule while retaining the four-story and high-heat requirements.
+- Series-extension planning for Asunder also uses the compact ledger and slim book-history metadata rather than historical Book Plans/development state.
+- No Supabase migration required.
+
 # V252.149
 
 ## V252.149 — deterministic Asunder seed enforcement
