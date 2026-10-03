@@ -1,3 +1,12 @@
+## V252.161 — OpenRouter model bake-off
+- Added an OpenRouter one-call comparison inside the existing Asunder Venice mirror.
+- Uses server-side `OPENROUTER_API_KEY`; the key is never exposed to the browser.
+- Loads the current OpenRouter model catalogue live and offers only the candidate creative-writing models that are actually available: Aion 3.0, Cydonia 24B v4.1, Magnum v4 72B, and Valkyrie 49B when present.
+- Every model receives the same copied Series Bible, Book architecture, Story 1 plan and contained 1,800–2,500-word Raquel scene brief.
+- Exactly one API call per press: no retry, no continuation loop, no manuscript mutation and no Fiction Studio accounting.
+- Each model result is stored separately in the mirror book generation state for side-by-side comparison.
+- No Supabase migration required.
+
 ## V252.160 — fix Venice Gemma model ID
 - Corrected the Venice Gemma 4 31B model identifier from the invalid `e2ee-gemma-4-31b` to Venice's returned valid ID `google-gemma-4-31b-it`.
 - The small one-call Story 1 scene test is otherwise unchanged: no retries, no continuation loop, no manuscript mutation, and Venice's extra system prompt remains disabled.

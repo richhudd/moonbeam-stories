@@ -1030,6 +1030,41 @@ if(mode==='venice-gemma4-31b-sample'){
   return res.status(200).json({ok:true,sample:entry,progress:`One Gemma 4 31B sample generated · ${wordCount.toLocaleString()} words · ${Math.max(1,Math.round((Date.now()-started)/1000))}s${finish?` · ${finish}`:''}`,book:rows?.[0]||{...book,generation_state:gs}});
 }
 
+// V252.161 — OpenRouter one-call bake-off. Same contained Story 1 scene, no retries/continuations.
+if(mode==='openrouter-models'){
+  const key=String(process.env.OPENROUTER_API_KEY||'').trim().replace(/^[\'\"]|[\'\"]$/g,'');
+  if(!key)return res.status(503).json({error:'OPENROUTER_API_KEY is not configured in Vercel.'});
+  try{
+    const r=await fetch('https://openrouter.ai/api/v1/models',{headers:{Authorization:`Bearer ${key}`,'HTTP-Referer':'https://moonbeamstories.co.uk','X-Title':'Moonbeam Fiction Studio'}});
+    const raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}
+    if(!r.ok)return res.status(r.status).json({error:d?.error?.message||d?.error||raw.slice(0,500)||`OpenRouter models returned HTTP ${r.status}`});
+    const wanted=[/aion.*3\.0/i,/cydonia.*24b.*v4\.1/i,/magnum.*v4.*72b/i,/valkyrie.*49b/i];
+    const models=(Array.isArray(d?.data)?d.data:[]).filter(m=>wanted.some(rx=>rx.test(String(m.id||'')+' '+String(m.name||'')))).map(m=>({id:String(m.id||''),name:String(m.name||m.id||''),context_length:Number(m.context_length||0),pricing:m.pricing||null,description:String(m.description||'')})).filter(m=>m.id);
+    return res.status(200).json({models});
+  }catch(e){return res.status(502).json({error:e.message||String(e)})}
+}
+if(mode==='openrouter-sample'){
+  const vm=series?.autopilot_state?.venice_mirror;if(!vm?.source_series_id)return res.status(400).json({error:'OpenRouter comparison is only available inside the Asunder mirror.'});
+  const key=String(process.env.OPENROUTER_API_KEY||'').trim().replace(/^[\'\"]|[\'\"]$/g,'');if(!key)return res.status(503).json({error:'OPENROUTER_API_KEY is not configured in Vercel.'});
+  const model=String(body.model||'').trim();if(!model)return res.status(400).json({error:'Choose an OpenRouter model first.'});
+  const allow=/^(?:aion-labs\/.*aion-3\.0|thedrummer\/cydonia-24b-v4\.1|anthracite-org\/magnum-v4-72b|thedrummer\/valkyrie-49b.*)$/i;
+  if(!allow.test(model))return res.status(400).json({error:'That model is not one of the approved OpenRouter comparison candidates.'});
+  const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
+  const books=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`),book=books?.[0];if(!book)return res.status(404).json({error:'Mirror book not found.'});
+  const plans=Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters:[],story=plans[0];if(!story)return res.status(409).json({error:'The copied Book Plan has no Story 1 plan to test.'});
+  const system=`You are writing a short model-comparison sample from an existing adult commercial-fiction plan. All sexual characters are adults aged 21 or older. Follow the supplied canon exactly. Write polished UK English. Dramatise rather than summarise. Keep explanatory dialogue under control. Avoid generic stock phrases, purple prose, thematic self-explanation, porn clichés and synopsis-like compression. Preserve the established personalities rather than flattening characters into erotic archetypes. Do not write an outline, synopsis, commentary, analysis or preface: output prose only.`;
+  const prompt=`This is deliberately a SMALL QUALITY TEST, not a whole story and not a whole book.\n\nWrite ONE contained scene of approximately 1,800–2,500 words from the central encounter already described in Story 1. Begin shortly before the encounter becomes dramatically important and end after one meaningful shift or consequence. Do not attempt to cover the entire Story 1 arc. Do not race through the scene merely to reach an ending. Use the existing Series Bible and Story 1 plan as authoritative canon and match their intended content level. Keep the prose specific to these characters rather than generic adult-fiction boilerplate.\n\nSERIES BIBLE:\n${JSON.stringify(series.series_bible||{},null,2)}\n\nBOOK ARCHITECTURE:\n${JSON.stringify({title:book.working_title,target_words:book.book_plan?.target_words,core_promise:book.book_plan?.core_promise,pov_strategy:book.book_plan?.pov_strategy,heat_progression:book.book_plan?.heat_progression},null,2)}\n\nSTORY 1 PLAN:\n${JSON.stringify(story,null,2)}\n\nReturn only the finished prose scene.`;
+  const payload={model,messages:[{role:'system',content:system},{role:'user',content:prompt}],max_tokens:5000,temperature:0.8};
+  const started=Date.now(),r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':'https://moonbeamstories.co.uk','X-Title':'Moonbeam Fiction Studio'},body:JSON.stringify(payload)}),raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{};
+  if(!r.ok)return res.status(r.status).json({error:d?.error?.message||d?.error||raw.slice(0,500)||`OpenRouter returned HTTP ${r.status}`});
+  const sample=String(d?.choices?.[0]?.message?.content||'').trim();if(!sample)return res.status(502).json({error:'OpenRouter returned an empty sample.'});
+  const wordCount=sample.split(/\s+/).filter(Boolean).length,finish=String(d?.choices?.[0]?.finish_reason||''),safeKey=model.replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'').toLowerCase();
+  const entry={text:sample,story_number:Number(story.number||1),story_title:String(story.title||'Story 1'),provider:'openrouter',model,word_count:wordCount,finish_reason:finish,duration_ms:Date.now()-started,generated_at:new Date().toISOString(),usage:d?.usage||null,generation_id:String(d?.id||'')};
+  const old=book.generation_state||{},samples={...(old.openrouter_samples||{}),[safeKey]:entry},gs={...old,openrouter_samples:samples,small_sample_test:true};
+  const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:gs,updated_at:new Date().toISOString()})});
+  return res.status(200).json({ok:true,sample:entry,key:safeKey,progress:`One ${model} sample generated · ${wordCount.toLocaleString()} words · ${Math.max(1,Math.round((Date.now()-started)/1000))}s${finish?` · ${finish}`:''}`,book:rows?.[0]||{...book,generation_state:gs}});
+}
+
 // V252.156 — durable Venice mirror: sibling series in the main library, same Bible + Book 1 plan, Venice first draft only.
 if(mode==='venice-mirror-create'){
   if(series?.autopilot_state?.venice_mirror?.source_series_id)return res.status(400).json({error:'This series is already a Venice mirror.'});
