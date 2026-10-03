@@ -1,7 +1,11 @@
+## V252.160 — fix Venice Gemma model ID
+- Corrected the Venice Gemma 4 31B model identifier from the invalid `e2ee-gemma-4-31b` to Venice's returned valid ID `google-gemma-4-31b-it`.
+- The small one-call Story 1 scene test is otherwise unchanged: no retries, no continuation loop, no manuscript mutation, and Venice's extra system prompt remains disabled.
+
 # Moonbeam Stories
 
 ## V252.159 — Gemma 4 31B one-scene test
-- The Venice mirror small-quality test now targets Venice model `e2ee-gemma-4-31b` explicitly rather than inheriting `venice-uncensored` or `VENICE_TEXT_MODEL`.
+- The Venice mirror small-quality test now targets Venice model `google-gemma-4-31b-it` explicitly rather than inheriting `venice-uncensored` or `VENICE_TEXT_MODEL`.
 - Existing `venice-uncensored` sample output is preserved but ignored, giving a clean side-by-side model experiment.
 - The task remains deliberately small: one Story 1 scene, approximately 1,800–2,500 words, exactly one API call, no retries and no continuation loop.
 - Venice's additional system prompt remains disabled.
