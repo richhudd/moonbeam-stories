@@ -1,3 +1,14 @@
+# V252.156
+
+## V252.156 — Venice mirror as a sibling series
+
+- `Create Venice mirror` now returns to the main Fiction Studio Series page instead of opening the mirror immediately.
+- The Venice copy is displayed directly underneath its source series, regardless of database creation order.
+- The mirror is visibly named `<source series> - Venice mirror` and carries a prominent `VENICE MIRROR` label plus `Venice first draft only`.
+- Existing mirrors created by V252.155 are rendered with the new clear name without requiring a database migration.
+- Newly created mirrors are stored with the same clear `- Venice mirror` name.
+- The Venice mirror remains text-only and first-draft-only; no image or editorial pipeline changes in this build.
+
 # V252.155
 
 ## V252.155 — Venice mirror first-draft pipeline
@@ -2731,3 +2742,8 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Text test calls Venice chat completions, defaults to `venice-uncensored` when available, supports up to 24,000 output tokens, and lets the developer download the result as a local `.txt` file.
 - Image test calls Venice's OpenAI-compatible `/images/generations` endpoint with `moderation: low`, displays the result only in the Lab, and does not add it to the profile or illustration ledger.
 - No Supabase migration required.
+
+## V252.157
+- Venice mirror accounting is intentionally hidden unless/until a reliable Venice cost source is integrated.
+- Venice mirror series pages no longer request or display OpenAI-style series/book costs or illustration accounting.
+- Venice mirror review ZIPs omit accounting files to avoid implying a cost calculation that is not authoritative.
