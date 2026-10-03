@@ -1,3 +1,12 @@
+## V252.162 — OpenRouter full model output allowance
+
+- Removes Moonbeam's fixed 5,000-token cap from the OpenRouter scene bake-off.
+- Uses each selected model's advertised maximum completion tokens when OpenRouter reports one. If OpenRouter does not report a ceiling, Moonbeam omits `max_tokens` instead of inventing a limit.
+- Removes the 1,800–2,500-word instruction from the shared test prompt. The model can use as much of its available completion space as the contained scene genuinely needs.
+- The OpenRouter output textarea has no character limit.
+- Still exactly one API call per button press: no automatic retry and no continuation loop.
+- No Supabase migration required.
+
 ## V252.161 — OpenRouter model bake-off
 - Added an OpenRouter one-call comparison inside the existing Asunder Venice mirror.
 - Uses server-side `OPENROUTER_API_KEY`; the key is never exposed to the browser.
