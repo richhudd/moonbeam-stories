@@ -1,3 +1,11 @@
+## V252.167 — Asunder harder-bible compatibility
+
+- Keeps the permanent `asunder_fixed_four_story_identity_v1` marker and all existing Asunder-specific four-wife, profile/portrait, cover, continuity and Aion chunking machinery unchanged.
+- Removes the obsolete deterministic seed ceiling that forced BDSM to remain optional and group encounters to remain exceptional. The code-enforced seed now defers to the approved Series Bible for the intensity and recurrence of power-exchange and multi-partner material.
+- Prevents the deterministic Asunder contract from automatically converting a willing submissive wife's arc into empowerment, reclaimed control or later dominance.
+- Keeps adult consent and health safeguards as underlying canon without forcing repetitive procedural reassurance, compulsory aftercare or administrative exposition.
+- Bumps the deterministic seed marker to `ASUNDER_DETERMINISTIC_SEED_CONTRACT_V252_151` and strips V252.150/V252.149 markers when refreshing, ensuring an already-saved seed picks up the new contract.
+
 ## V252.166 — Fiction Studio X Aion production architecture
 
 - Normal Fiction Studio remains on its existing Luna/Sol/Astra pipeline; the new creative architecture is gated to `fiction_x` only.
