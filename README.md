@@ -2689,3 +2689,15 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Book accounting now always includes an `Illustrations` row. Series pages also show the cumulative `Illustrations` total. Reusing an existing saved canonical profile creates no new illustration event/cost.
 - Fiction image USD cost uses `FICTION_IMAGE_COST_USD` (or `MOONBEAM_COST_IMAGE_USD`) when configured; otherwise it converts the existing Moonbeam per-image GBP estimate using `MOONBEAM_GBP_PER_USD` (default 0.75).
 - No Supabase schema migration required.
+
+## V252.152 — guaranteed character-marker repair + final Asunder cover architecture
+
+- Book Development no longer stops permanently when a `[[CHAR:...]]` placeholder survives an earlier naming checkpoint. Validation diverts into a self-healing backstage repair stage, resolves one marker at a time through the demographic naming system, replaces that marker everywhere in the saved Book Plan, rescans, and refuses to advance until the marker count is zero. Missing naming profiles are repaired first; creative models still do not invent replacement names.
+- The persistent Asunder-format series now has a fixed final-cover architecture (`asunder_volume_cover_v1`) which remains attached to `asunder_fixed_four_story_identity_v1` even if the visible series name changes.
+- Final cover generation is only available after human approval and deterministic publication preflight. It reads the four finished stories plus the four canonical female profile identities.
+- Four new rear-panel images are generated from the four saved canonical profile portraits, with each panel grounded in that woman's actual finished story (setting, clothing context, mood and ordinary props). Generic yacht/hotel/bikini substitutions are explicitly forbidden when unsupported by the prose.
+- Story N.1's woman receives a fifth, separate foreground image: the same recognisable woman, but in a different, more dominant story-consistent cover pose.
+- The five image assets are composited deterministically into one fixed branded cover with four rear panels, a large N.1 foreground image, series wordmark, `VOLUME N`, and the current series pen name (Ana Rojas for Asunder). The image model never lays out the cover typography.
+- The finished JPEG is stored privately, appears as the first page of the Fiction Studio reader, and has a separate **Download cover JPEG** action. It is treated as a separate publishing asset; the intended future Fiction Studio EPUB export must not embed it.
+- Cover image calls are booked to the existing **Illustrations** accounting category for the book and series.
+- No Supabase migration is required.
