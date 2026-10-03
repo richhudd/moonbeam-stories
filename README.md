@@ -1,3 +1,18 @@
+# V252.155
+
+## V252.155 — Venice mirror first-draft pipeline
+
+- Replaces the visible Venice Lab entry point with **Create Venice mirror** on a normal Fiction Studio/X series.
+- The mirror is a durable separate Fiction Studio series, named `<source series> · Venice`, so it cannot overwrite or contaminate the OpenAI version.
+- Copies the existing authoritative Series Bible and the existing completed Book 1 plan exactly into the mirror; it does not rerun Series Development or Book Development.
+- The Venice mirror generates **text only**. No profile portraits, cover art or other illustration calls are made.
+- One click on **Generate Venice first draft** writes the four existing Asunder story plans sequentially through Venice and checkpoints each completed story in the normal first-draft chapter table. If a call fails, **Resume Venice first draft** continues from the first missing story.
+- There is only one Venice manuscript draft: no Sol review, Luna rewrite, second draft, editorial pass or automatic publication pipeline is run.
+- The Venice API key remains server-side. `VENICE_TEXT_MODEL` can override the default `venice-uncensored`; otherwise the mirror uses `venice-uncensored`.
+- Existing Fiction Studio reader and review-ZIP actions can read/export the saved Venice first draft.
+- Still 12 Vercel API files: Venice uses the existing `api/fiction-studio.js` route.
+- No Supabase migration required.
+
 # V252.150
 
 ## V252.150 — bounded Asunder long-term continuity
