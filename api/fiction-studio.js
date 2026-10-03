@@ -1052,6 +1052,8 @@ if(mode==='openrouter-sample'){
   const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
   const books=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`),book=books?.[0];if(!book)return res.status(404).json({error:'Mirror book not found.'});
   const plans=Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters:[],story=plans[0];if(!story)return res.status(409).json({error:'The copied Book Plan has no Story 1 plan to test.'});
+  const wc=t=>String(t||'').trim().split(/\s+/).filter(Boolean).length;
+  const headers={Authorization:`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':'https://moonbeamstories.co.uk','X-Title':'Moonbeam Fiction Studio'};
   const system=`You are writing one complete standalone story from an existing adult commercial-fiction plan. All sexual characters are adults aged 21 or older. Follow the supplied canon exactly. Write polished UK English. Dramatise rather than summarise. Keep explanatory dialogue under control. Avoid generic stock phrases, purple prose, thematic self-explanation, porn clichés and synopsis-like compression. Preserve the established personalities rather than flattening characters into erotic archetypes. Maintain continuity from beginning to end and do not rush the later sections merely because the story is long. Do not write an outline, synopsis, commentary, analysis or preface: output prose only.`;
   const prompt=`This is the LONG-FORM WRITER TEST. Write the ENTIRE Story 1 / Raquel story as a finished standalone story of approximately 9,000–12,000 words. This is not a sample scene. Cover the complete Story 1 arc specified below, including setup, progression, the central encounter, its aftermath and the meaningful consequence for Raquel and Nicholas.\n\nUse the Series Bible and Story 1 plan as authoritative canon. Do not add a new plot, compress planned material into summary, or skip the central encounter. Give important scenes enough page space to play out fully. Keep the prose specific to these characters. Preserve Raquel's established personality, profession, marriage and agency, and preserve Tiago as the man described by canon rather than turning him into a generic erotic archetype. The intended adult content level is part of the book specification; do not fade to black or substitute vague summary where the plan calls for an on-page encounter. Keep exposition and therapeutic/thematic dialogue under control. Show changes through behaviour and concrete detail rather than repeatedly explaining what they mean.\n\nAim for the requested 9,000–12,000 words, but finish the complete story cleanly rather than cutting off mid-sentence or padding it with repetition. Do not attempt Story 2 or any other part of the volume.\n\nSERIES BIBLE:\n${JSON.stringify(series.series_bible||{},null,2)}\n\nBOOK ARCHITECTURE:\n${JSON.stringify({title:book.working_title,target_words:book.book_plan?.target_words,core_promise:book.book_plan?.core_promise,pov_strategy:book.book_plan?.pov_strategy,heat_progression:book.book_plan?.heat_progression},null,2)}\n\nSTORY 1 PLAN:\n${JSON.stringify(story,null,2)}\n\nReturn only the complete finished Story 1 prose.`;
   let advertisedMax=0,contextLength=0;
@@ -1059,24 +1061,50 @@ if(mode==='openrouter-sample'){
     const mr=await fetch('https://openrouter.ai/api/v1/models',{headers:{Authorization:`Bearer ${key}`,'HTTP-Referer':'https://moonbeamstories.co.uk','X-Title':'Moonbeam Fiction Studio'}});
     if(mr.ok){const md=await mr.json();const mm=(Array.isArray(md?.data)?md.data:[]).find(x=>String(x?.id||'')===model);advertisedMax=Number(mm?.top_provider?.max_completion_tokens||mm?.max_completion_tokens||0)||0;contextLength=Number(mm?.context_length||0)||0}
   }catch{}
-  // V252.164: full Story 1 long-form test. Request enough output for roughly 9k-12k words,
-  // but remain safely inside the selected model/provider context window. The 20k-token ceiling
-  // gives Aion ample room to finish a ~10k-word story without repeating V252.162's mistake of
-  // reserving the provider's entire theoretical completion allowance.
-  const promptChars=system.length+prompt.length,estimatedInputTokens=Math.ceil(promptChars/3.2),testCeiling=20000,safetyMargin=4096;
-  let requestedMax=testCeiling;
-  if(advertisedMax>0)requestedMax=Math.min(requestedMax,advertisedMax);
-  if(contextLength>0)requestedMax=Math.min(requestedMax,Math.max(1024,contextLength-estimatedInputTokens-safetyMargin));
-  requestedMax=Math.max(1024,Math.floor(requestedMax));
-  const payload={model,messages:[{role:'system',content:system},{role:'user',content:prompt}],temperature:0.8,max_tokens:requestedMax};
-  const started=Date.now(),r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':'https://moonbeamstories.co.uk','X-Title':'Moonbeam Fiction Studio'},body:JSON.stringify(payload)}),raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{};
-  if(!r.ok)return res.status(r.status).json({error:d?.error?.message||d?.error||raw.slice(0,500)||`OpenRouter returned HTTP ${r.status}`});
-  const sample=String(d?.choices?.[0]?.message?.content||'').trim();if(!sample)return res.status(502).json({error:'OpenRouter returned an empty sample.'});
-  const wordCount=sample.split(/\s+/).filter(Boolean).length,finish=String(d?.choices?.[0]?.finish_reason||''),safeKey=model.replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'').toLowerCase();
-  const entry={text:sample,story_number:Number(story.number||1),story_title:String(story.title||'Story 1'),provider:'openrouter',model,word_count:wordCount,finish_reason:finish,context_length:contextLength||null,advertised_max_completion_tokens:advertisedMax||null,requested_max_tokens:requestedMax,estimated_input_tokens:estimatedInputTokens,duration_ms:Date.now()-started,generated_at:new Date().toISOString(),usage:d?.usage||null,generation_id:String(d?.id||'')};
-  const old=book.generation_state||{},tests={...(old.openrouter_story_tests||{}),[safeKey]:entry},gs={...old,openrouter_story_tests:tests,long_form_story_test:true};
+  const safeMax=(sys,userPrompt,ceiling)=>{
+    const estimatedInputTokens=Math.ceil((String(sys||'').length+String(userPrompt||'').length)/3.2),safetyMargin=4096;
+    let requestedMax=ceiling;
+    if(advertisedMax>0)requestedMax=Math.min(requestedMax,advertisedMax);
+    if(contextLength>0)requestedMax=Math.min(requestedMax,Math.max(1024,contextLength-estimatedInputTokens-safetyMargin));
+    return {estimatedInputTokens,requestedMax:Math.max(1024,Math.floor(requestedMax))};
+  };
+  const callOpenRouter=async(sys,userPrompt,ceiling,temperature=0.8)=>{
+    const budget=safeMax(sys,userPrompt,ceiling),started=Date.now(),payload={model,messages:[{role:'system',content:sys},{role:'user',content:userPrompt}],temperature,max_tokens:budget.requestedMax};
+    const r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers,body:JSON.stringify(payload)}),raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}
+    if(!r.ok){const provider=String(d?.error?.metadata?.provider_name||d?.provider||'').trim(),detail=d?.error?.message||d?.error||raw.slice(0,1000)||`OpenRouter returned HTTP ${r.status}`;const e=new Error(`${detail}${provider?` · provider ${provider}`:''}`);e.status=r.status;throw e}
+    return {data:d,text:String(d?.choices?.[0]?.message?.content||'').trim(),finish:String(d?.choices?.[0]?.finish_reason||''),duration_ms:Date.now()-started,estimated_input_tokens:budget.estimatedInputTokens,requested_max_tokens:budget.requestedMax,usage:d?.usage||null,generation_id:String(d?.id||'')};
+  };
+
+  // V252.165: author-owned deterministic length gate. Aion (or the selected writer) must
+  // expand its own story if it stops below 9,000 words. Expansion is insertion-only: the
+  // existing draft is never rewritten, shortened or replaced by another model.
+  const first=await callOpenRouter(system,prompt,20000,0.8);
+  if(!first.text)return res.status(502).json({error:'OpenRouter returned an empty Story 1 test.'});
+  let text=first.text,initialWordCount=wc(text),wordCount=initialWordCount;
+  const expansionAttempts=[],usageCalls=[first.usage].filter(Boolean),maxExpansionAttempts=3,minWords=9000,maxWords=12000;
+  for(let attempt=1;wordCount<minWords&&attempt<=maxExpansionAttempts;attempt++){
+    const shortfall=minWords-wordCount,upperRoom=Math.max(shortfall,maxWords-wordCount),wantedMax=Math.min(upperRoom,Math.max(shortfall+700,Math.ceil(shortfall*1.35)));
+    const expansionSystem=`You are the same author extending your own existing adult commercial-fiction story. All sexual characters are adults aged 21 or older. Preserve the existing manuscript exactly. You are not rewriting, polishing, toning down or replacing any existing prose. Your job is only to supply new prose insertions that deepen under-developed moments already present. Keep the same voice, characterisation, content level and UK English. Do not add a new subplot, new principal character, extra encounter solely for length, repeated thematic explanation, or synopsis. Output valid JSON only.`;
+    const expansionPrompt=`The manuscript below is ${wordCount.toLocaleString()} words. Its required finished range is 9,000–12,000 words, so it is currently ${shortfall.toLocaleString()} words short of the minimum. Add approximately ${shortfall.toLocaleString()}–${wantedMax.toLocaleString()} genuinely useful words by deepening places that already have natural dramatic room: scene development, concrete action, transitions, interiority, work/travel texture, encounter progression or aftermath. Do NOT pad the ending and do NOT repeat the already-established themes of choice, ownership, architecture, independence or keeping things for herself. Preserve every existing word.\n\nReturn ONLY this JSON shape:\n{"insertions":[{"after":"EXACT existing paragraph copied verbatim from the manuscript","text":"new prose to insert immediately after that paragraph"}]}\n\nRules:\n- 1 to 8 insertions.\n- Each \"after\" value must be one complete paragraph copied EXACTLY and VERBATIM from the manuscript and must occur only once.\n- New text must fit naturally immediately after its anchor.\n- Do not include any existing prose inside \"text\".\n- Do not delete, paraphrase, reorder or rewrite existing prose.\n- Do not introduce Story 2.\n- Stay faithful to the Series Bible and Story 1 plan.\n\nSERIES BIBLE:\n${JSON.stringify(series.series_bible||{},null,2)}\n\nSTORY 1 PLAN:\n${JSON.stringify(story,null,2)}\n\nCURRENT MANUSCRIPT:\n${text}`;
+    let ex;
+    try{ex=await callOpenRouter(expansionSystem,expansionPrompt,8000,0.65)}catch(e){expansionAttempts.push({attempt,status:'provider_error',error:String(e.message||e),word_count_before:wordCount});continue}
+    if(ex.usage)usageCalls.push(ex.usage);
+    let parsed=null,parseError='';
+    try{let raw=ex.text.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const a=raw.indexOf('{'),b=raw.lastIndexOf('}');if(a>=0&&b>a)raw=raw.slice(a,b+1);parsed=JSON.parse(raw)}catch(e){parseError=e.message||String(e)}
+    const inserts=Array.isArray(parsed?.insertions)?parsed.insertions.slice(0,8):[],placements=[],seen=new Set();
+    for(const ins of inserts){const anchor=String(ins?.after||''),add=String(ins?.text||'').trim();if(!anchor||!add||seen.has(anchor))continue;const i=text.indexOf(anchor);if(i<0||text.indexOf(anchor,i+anchor.length)>=0)continue;seen.add(anchor);placements.push({index:i+anchor.length,anchor,text:add})}
+    if(!placements.length){expansionAttempts.push({attempt,status:'invalid_insertions',error:parseError||'No unique exact anchors could be applied.',word_count_before:wordCount,finish_reason:ex.finish,requested_max_tokens:ex.requested_max_tokens});continue}
+    const before=wordCount;
+    placements.sort((a,b)=>b.index-a.index);for(const x of placements)text=text.slice(0,x.index)+`\n\n${x.text}`+text.slice(x.index);
+    wordCount=wc(text);
+    expansionAttempts.push({attempt,status:wordCount>before?'applied':'no_growth',word_count_before:before,word_count_after:wordCount,added_words:Math.max(0,wordCount-before),insertions_applied:placements.length,finish_reason:ex.finish,requested_max_tokens:ex.requested_max_tokens,duration_ms:ex.duration_ms});
+  }
+  const lengthStatus=wordCount>=minWords&&wordCount<=maxWords?'passed':wordCount<minWords?'under_target':'over_target';
+  const safeKey=String(model).replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'').toLowerCase(),entry={text,story_number:Number(story.number||1),story_title:String(story.title||'Story 1'),provider:'openrouter',model,word_count:wordCount,initial_word_count:initialWordCount,length_target:{min:minWords,max:maxWords},length_status:lengthStatus,expansion_attempts:expansionAttempts,finish_reason:first.finish,context_length:contextLength||null,advertised_max_completion_tokens:advertisedMax||null,requested_max_tokens:first.requested_max_tokens,estimated_input_tokens:first.estimated_input_tokens,duration_ms:first.duration_ms+expansionAttempts.reduce((n,x)=>n+(Number(x.duration_ms)||0),0),generated_at:new Date().toISOString(),usage:first.usage||null,usage_calls:usageCalls,generation_id:first.generation_id};
+  const old=book.generation_state||{},tests={...(old.openrouter_story_tests||{}),[safeKey]:entry},gs={...old,openrouter_story_tests:tests,long_form_story_test:true,length_gate_test:true};
   const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:gs,updated_at:new Date().toISOString()})});
-  return res.status(200).json({ok:true,sample:entry,key:safeKey,progress:`Complete Story 1 test · ${model} · ${wordCount.toLocaleString()} words · max ${requestedMax.toLocaleString()} output tokens · ${Math.max(1,Math.round((Date.now()-started)/1000))}s${finish?` · ${finish}`:''}`,book:rows?.[0]||{...book,generation_state:gs}});
+  const extra=wordCount>initialWordCount?` · expanded +${(wordCount-initialWordCount).toLocaleString()} words in ${expansionAttempts.filter(x=>x.status==='applied').length} pass${expansionAttempts.filter(x=>x.status==='applied').length===1?'':'es'}`:'';
+  return res.status(200).json({ok:true,sample:entry,key:safeKey,progress:`Complete Story 1 test · ${model} · ${wordCount.toLocaleString()} words · length ${lengthStatus}${extra}`,book:rows?.[0]||{...book,generation_state:gs}});
 }
 
 // V252.156 — durable Venice mirror: sibling series in the main library, same Bible + Book 1 plan, Venice first draft only.

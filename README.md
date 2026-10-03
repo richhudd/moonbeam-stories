@@ -1,3 +1,15 @@
+## V252.165 — Aion self-expanding length gate
+
+- Keeps the complete Raquel / Story 1 target at 9,000–12,000 words.
+- After the selected OpenRouter writer finishes its first draft, Moonbeam counts the actual words deterministically.
+- If the draft is below 9,000 words, the **same model** receives its own manuscript for up to three expansion passes; Sol, Astra and Luna never add the missing prose.
+- Expansion is deliberately non-destructive: the model must return insertion blocks anchored after exact, unique paragraphs from its existing draft. Moonbeam inserts those blocks without deleting, paraphrasing, reordering or replacing any accepted prose.
+- Expansion instructions forbid new subplots, extra encounters added merely for length, ending padding and repeated explanation of the existing choice/ownership/architecture themes.
+- Each pass is re-counted. The saved test records initial word count, final word count, pass-by-pass added words, length status and usage metadata.
+- Maximum expansion attempts: 3. If the story is still below 9,000 words after that, it is saved as `under_target` rather than looping indefinitely.
+- Provider errors during an expansion pass are recorded and consume that pass; they do not destroy the existing draft.
+- No Supabase migration required.
+
 ## V252.164 — Aion full Raquel story test
 
 - Converts the OpenRouter bake-off from a contained scene into the decisive long-form test: the selected model now writes the complete Story 1 / Raquel story in one call.
