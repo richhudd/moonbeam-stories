@@ -2608,3 +2608,20 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Remaining collision risks after bounded retries become advisory warnings instead of discarding an expensive Series Development/Book Development stage.
 - Genuine non-identity plausibility/factual failures can still block safely.
 - Book Development now persists any automatic collision-name repairs made during architecture/final-plan validation.
+
+## V252.144 — Fiction Studio X jobs can continue while working in normal Fiction Studio
+- Running Fiction Studio X Book Development, manuscript generation, automatic pipeline and editorial jobs now capture and retain their own locked studio namespace and X access context when the job starts.
+- Switching from Fiction Studio X back to normal Fiction Studio no longer blocks while an X job is running. The X job continues in the same browser tab while the normal Fiction Studio library can be used independently.
+- Background requests no longer follow the currently visible studio namespace, preventing a running X job from accidentally sending later checkpoints to the normal Fiction Studio after a switch.
+- The private X access token is retained only in browser memory while an X background job still needs it, and is released after the final X job finishes when X is not open.
+- Returning to Fiction Studio X during the same session does not require another password while that retained access context remains valid.
+- Leaving the Back Room UI for another Moonbeam page in the same tab also no longer kills an already-running X job. Closing/reloading the browser tab still stops browser-side orchestration; saved checkpoints remain resumable.
+- No Supabase migration required.
+
+
+## V252.145 — Fiction Studio X always requires password on re-entry
+- Leaving the visible Fiction Studio X workspace immediately clears the interactive X access token, even if an X generation is still running in the background.
+- Re-entering Fiction Studio X from normal Fiction Studio always opens the password gate and requires a fresh successful unlock.
+- Background X jobs are not interrupted: each running job continues using the private X access context captured when that job started, independent of the now-locked visible workspace.
+- Closing the Back Room also locks X immediately; returning later requires the password while any same-tab background X job may continue independently.
+- No Supabase migration required.
