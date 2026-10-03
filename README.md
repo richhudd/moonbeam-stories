@@ -1,4 +1,14 @@
-# V252.148
+# V252.149
+
+## V252.149 — deterministic Asunder seed enforcement
+
+- Sol still authors the editorial seed, but Asunder no longer trusts Sol to preserve hard format/heat requirements through paraphrase.
+- After Sol returns a seed, the server appends a deterministic `[ASUNDER_DETERMINISTIC_SEED_CONTRACT_V252_149]` block. It explicitly requires exactly four top-level stories, 40,000–50,000 words, very frequent graphic/high-heat erotic content, substantial page space for major encounters, character-appropriate direct/crude language, several meaningful erotic developments per story, no fade-to-black/coy summary, and no long sex-neutral stretches.
+- The contract is keyed to `asunder_fixed_four_story_identity_v1`, so it remains attached to this series if the visible series title changes.
+- For Volume 2+, Sol must additionally return structured `recent_patterns_to_avoid` and `underused_variation_opportunities`; these are inserted verbatim into the deterministic contract so variation is based on the actual completed prior volume rather than generic advice.
+- The Book Development execution path re-applies the deterministic contract even to an older/cached seed or an already-stored direction, preventing stale soft wording from bypassing the rule.
+- The UI detects pre-V252.149 Asunder seeds and regenerates them once so the developer prompt box shows the corrected seed before Book Development.
+- No Supabase migration.
 
 - Corrects the Asunder template packaging: the production profile reference is now a **clean blank shell only**. The previous instructional composite image has been removed entirely.
 - `assets/asunder-profile-template-v1.png` contains no sample woman, no example values, no generation steps and no developer instructions. It preserves only the fixed visual architecture and structural labels.
