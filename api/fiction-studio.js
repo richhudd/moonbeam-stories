@@ -964,6 +964,13 @@ if(mode==='series-dashboard'){
   });
   return res.status(200).json({series:out});
 }
+// V252.154 — isolated Venice test harness. No Fiction Studio records are mutated by these modes.
+if(mode==='venice-models'){
+  const veniceKey=String(process.env.VENICE_API_KEY||'').trim().replace(/^[\'\"]|[\'\"]$/g,'');
+  if(!veniceKey)return res.status(503).json({error:'VENICE_API_KEY is not configured in Vercel.'});
+  const getModels=async(type)=>{const r=await fetch(`https://api.venice.ai/api/v1/models?type=${encodeURIComponent(type)}`,{headers:{Authorization:`Bearer ${veniceKey}`}});const raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(d?.error||`Venice models returned HTTP ${r.status}`);return (Array.isArray(d?.data)?d.data:[]).map(m=>({id:String(m.id||''),name:String(m?.model_spec?.name||m.id||''),type:String(m.type||type),privacy:String(m?.model_spec?.privacy||''),traits:Array.isArray(m?.model_spec?.traits)?m.model_spec.traits:[],description:String(m?.model_spec?.description||''),pricing:m?.model_spec?.pricing||null})).filter(m=>m.id)};
+  try{const [textModels,imageModels]=await Promise.all([getModels('text'),getModels('image')]);return res.status(200).json({text_models:textModels,image_models:imageModels})}catch(e){return res.status(502).json({error:e.message||String(e)})}
+}
 if(mode==='list'){
   const rows=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&studio_section=eq.${fictionStudioSectionFilter252134}&order=updated_at.desc`),out=[];
   for(const sr of(Array.isArray(rows)?rows:[]))out.push(await fictionRetrofitAsunder252142(sr));
@@ -978,6 +985,31 @@ if(mode==='create'){
 const id=String(body.id||'').trim();if(!id)return res.status(400).json({error:'Fiction series id is required.'});
 const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);let series=found?.[0];
 if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=await fictionRetrofitAsunder252142(series);
+// V252.154 — Venice Lab reads the current series/book plan, but writes nothing back to Moonbeam.
+if(mode==='venice-test-context'){
+  const books=await rest(`developer_fiction_books?select=id,position,working_title,book_plan,development_state&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=position.asc`);
+  const book=(Array.isArray(books)?books:[]).find(b=>b?.book_plan&&Object.keys(b.book_plan||{}).length)||(Array.isArray(books)?books:[])[0]||null;
+  const profiles=await rest(`developer_fiction_asunder_profiles?select=character_key,full_name,first_name,appearance_spec,profile_data,portrait_path,created_at&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=created_at.asc`);
+  return res.status(200).json({series:{id:series.id,series_name:series.series_name,pen_name:series.pen_name,language_locale:series.language_locale,series_bible:series.series_bible||{}},book,profiles:Array.isArray(profiles)?profiles:[]});
+}
+if(mode==='venice-test-text'){
+  const veniceKey=String(process.env.VENICE_API_KEY||'').trim().replace(/^[\'\"]|[\'\"]$/g,'');
+  if(!veniceKey)return res.status(503).json({error:'VENICE_API_KEY is not configured in Vercel.'});
+  const model=String(body.model||'venice-uncensored').trim()||'venice-uncensored',prompt=String(body.prompt||'').trim(),system=String(body.system_prompt||'').trim();
+  if(!prompt)return res.status(400).json({error:'A Venice text prompt is required.'});
+  const maxTokens=Math.max(512,Math.min(24000,Number(body.max_tokens)||16000));
+  const payload={model,messages:[...(system?[{role:'system',content:system}]:[]),{role:'user',content:prompt}],max_tokens:maxTokens,temperature:Number.isFinite(Number(body.temperature))?Math.max(0,Math.min(2,Number(body.temperature))):0.9,venice_parameters:{include_venice_system_prompt:body.include_venice_system_prompt!==false}};
+  const started=Date.now();const r=await fetch('https://api.venice.ai/api/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${veniceKey}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});const raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}if(!r.ok)return res.status(r.status).json({error:d?.error?.message||d?.error||raw.slice(0,500)||`Venice returned HTTP ${r.status}`});
+  const text=String(d?.choices?.[0]?.message?.content||'');return res.status(200).json({text,model:d?.model||model,usage:d?.usage||null,duration_ms:Date.now()-started,request_id:r.headers.get('cf-ray')||null,balance_usd:r.headers.get('x-venice-balance-usd')||null,balance_diem:r.headers.get('x-venice-balance-diem')||null});
+}
+if(mode==='venice-test-image'){
+  const veniceKey=String(process.env.VENICE_API_KEY||'').trim().replace(/^[\'\"]|[\'\"]$/g,'');
+  if(!veniceKey)return res.status(503).json({error:'VENICE_API_KEY is not configured in Vercel.'});
+  const prompt=String(body.prompt||'').trim().slice(0,1500),model=String(body.model||'default').trim()||'default';if(!prompt)return res.status(400).json({error:'A Venice image prompt is required.'});
+  const payload={prompt,model,moderation:'low',n:1,output_format:'png',response_format:'b64_json',size:String(body.size||'1024x1536'),style:'natural'};
+  const started=Date.now();const r=await fetch('https://api.venice.ai/api/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${veniceKey}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});const raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}if(!r.ok)return res.status(r.status).json({error:d?.error?.message||d?.error||raw.slice(0,500)||`Venice returned HTTP ${r.status}`});const b64=String(d?.data?.[0]?.b64_json||'');if(!b64)return res.status(502).json({error:'Venice returned no image data.'});
+  return res.status(200).json({image_data_url:`data:image/png;base64,${b64}`,model:r.headers.get('x-venice-model-id')||model,duration_ms:Date.now()-started,request_id:r.headers.get('cf-ray')||null,balance_usd:r.headers.get('x-venice-balance-usd')||null,balance_diem:r.headers.get('x-venice-balance-diem')||null,blurred:r.headers.get('x-venice-is-blurred')||null,content_violation:r.headers.get('x-venice-is-content-violation')||null});
+}
 // V252.60 — Series Intelligence: permanent canon/archive plus selective current-book context.
 // Archive facts constrain continuity; they do not create an obligation to dramatize, reminisce, reuse or resolve them.
 const emptySeriesMemory25259=()=>({version:2,last_updated_book:0,established_canon:[],characters:[],timeline:[],relationships:[],knowledge_states:[],secrets:[],institutions:[],unresolved_threads:[],open_consequences:[],planted_details:[],world_changes:[],open_questions:[],future_possibilities:[],book_voice_refs:[]});

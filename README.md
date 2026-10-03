@@ -2707,3 +2707,12 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Hardened Asunder profile portrait generation against image-safety false positives. The image endpoint now receives a one-way sanitised visual payload with erotic terminology stripped; the canonical character record is untouched.
 - Added one automatic ultra-safe fully-clothed editorial portrait retry when the first portrait request is rejected specifically by the image safety system.
 - Book Development remains resumable; successful portrait generation continues into the pre-draft profile gate.
+
+## V252.154 — isolated Venice Lab
+- Added a developer-only **Venice Lab** button to each Fiction Studio series.
+- Uses `VENICE_API_KEY` only on the server; the key is never exposed to browser code.
+- Reads the current saved Book Plan and canonical Asunder profile records for test prompts, but writes **nothing** back to Fiction Studio.
+- Dynamically loads Venice text and image models from `/api/v1/models`.
+- Text test calls Venice chat completions, defaults to `venice-uncensored` when available, supports up to 24,000 output tokens, and lets the developer download the result as a local `.txt` file.
+- Image test calls Venice's OpenAI-compatible `/images/generations` endpoint with `moderation: low`, displays the result only in the Lab, and does not add it to the profile or illustration ledger.
+- No Supabase migration required.
