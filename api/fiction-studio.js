@@ -819,21 +819,29 @@ const fictionAsunderStorageDataUrl252147=async(path)=>{if(!path)return'';const e
 // V252.151 — image-facing profile data is deliberately separated from the richer erotic/physical canon.
 // The portrait endpoint receives only ordinary adult lifestyle-portrait facts, never sexual preferences,
 // explicit story material, bust-size labels or the full canonical profile JSON.
+const fictionAsunderPortraitSafeText252153=(value,max=220)=>{
+  let s=String(value||'').replace(/\s+/g,' ').trim();
+  // Image-facing portrait prompts must never inherit erotic-fiction vocabulary. The canonical
+  // record remains untouched; this is a one-way sanitised view used only for image generation.
+  const blocked=/\b(?:sex|sexual|erotic|porn|pornographic|nude|nudity|naked|breast|bust|cleavage|lingerie|underwear|bra|thong|fetish|bdsm|dominant|submissive|cuckold|hotwife|bull|orgasm|penetrat|intercourse|masturbat|arousal|seduc(?:e|ed|ing|tive)|provocative|explicit|intimate encounter|bedroom|bed|strip|topless|bottomless)\w*\b/gi;
+  s=s.replace(blocked,'').replace(/\s{2,}/g,' ').replace(/^[,;:\- ]+|[,;:\- ]+$/g,'').trim();
+  return s.slice(0,max);
+};
 const fictionAsunderPortraitSafePayload252151=(profile={},appearance={})=>({
-  adult_age:Number(profile.age)||21,
-  nationality_or_background:String(profile.background||''),
-  current_city:String(profile.current_city||''),
+  adult_age:Math.max(21,Number(profile.age)||21),
+  nationality_or_background:fictionAsunderPortraitSafeText252153(profile.background,120),
+  current_city:fictionAsunderPortraitSafeText252153(profile.current_city,120),
   petite_build:appearance?.petite===true,
-  general_figure:String(appearance.figure||appearance.height_impression||''),
-  face:String(appearance.face||''),
-  hair:String(appearance.hair||''),
-  eyes:String(appearance.eyes||''),
-  complexion:String(appearance.complexion||''),
-  distinguishing_features:String(appearance.distinguishing_features||''),
-  personal_style:String(appearance.style||''),
-  outfit:String(appearance.portrait_outfit||''),
-  setting:String(appearance.portrait_setting||''),
-  mood:String(appearance.portrait_mood||'')
+  general_figure:fictionAsunderPortraitSafeText252153(appearance.figure||appearance.height_impression,180),
+  face:fictionAsunderPortraitSafeText252153(appearance.face,220),
+  hair:fictionAsunderPortraitSafeText252153(appearance.hair,180),
+  eyes:fictionAsunderPortraitSafeText252153(appearance.eyes,120),
+  complexion:fictionAsunderPortraitSafeText252153(appearance.complexion,140),
+  distinguishing_features:fictionAsunderPortraitSafeText252153(appearance.distinguishing_features,180),
+  personal_style:fictionAsunderPortraitSafeText252153(appearance.style,180),
+  outfit:fictionAsunderPortraitSafeText252153(appearance.portrait_outfit,180),
+  setting:fictionAsunderPortraitSafeText252153(appearance.portrait_setting,180),
+  mood:fictionAsunderPortraitSafeText252153(appearance.portrait_mood,120)
 });
 const fictionImageCostUSD252151=()=>{
   const direct=Number(process.env.FICTION_IMAGE_COST_USD||process.env.MOONBEAM_COST_IMAGE_USD||0);if(Number.isFinite(direct)&&direct>0)return direct;
@@ -845,9 +853,24 @@ const meterFictionIllustration252151=async({seriesId,bookId,characterKey='',subs
   const snapshot={currency:'USD',source:process.env.FICTION_IMAGE_COST_USD||process.env.MOONBEAM_COST_IMAGE_USD?'configured per-image estimate':'MOONBEAM image estimate converted with configured/default GBP-per-USD',per_image_usd:costUsd,model:'gpt-image-2.5-flare'};
   await rest('developer_fiction_usage_events',{method:'POST',body:JSON.stringify({parent_id:user.id,series_id:seriesId,book_id:bookId||null,stage:'illustrations',substage:substage||`asunder-profile:${characterKey}`,model:'gpt-image-2.5-flare',response_id:responseId||null,attempt:1,ok:!!ok,http_status:+httpStatus||null,started_at:new Date(startedAt).toISOString(),completed_at:now,duration_ms:Math.max(0,Date.now()-startedAt),input_tokens:0,cached_input_tokens:0,cache_write_tokens:0,output_tokens:0,reasoning_tokens:0,cost_usd:costUsd,pricing_snapshot:snapshot})});
 };
-const fictionAsunderGeneratePortrait252147=async({profile,appearance,characterKey,seriesId,bookId=null})=>{const safe=fictionAsunderPortraitSafePayload252151(profile,appearance),prompt=`Create ONE sophisticated high-end lifestyle/profile photograph of this fictional ADULT woman. No text, logos, interface, border, collage or second person. She must visibly match the exact adult age supplied. Match the supplied face, hair, eyes, complexion, background and overall petite build without stereotyping. Keep the pose natural and suitable for an elite private-members profile. Clothing and setting should follow the supplied character-specific brief; ordinary fashion, casualwear, eveningwear, resort wear or standard swimwear are acceptable when specified. No nudity, no explicit sexual content, no sexual activity and no pornographic posing. Natural premium editorial photography, flattering but believable.
+const fictionAsunderGeneratePortrait252147=async({profile,appearance,characterKey,seriesId,bookId=null})=>{
+  const safe=fictionAsunderPortraitSafePayload252151(profile,appearance);
+  const primaryPrompt=`Create ONE sophisticated high-end fashion/lifestyle profile photograph of this fictional ADULT woman. No text, logos, interface, border, collage or second person. She must visibly match the exact adult age supplied. Match the supplied face, hair, eyes, complexion, cultural background and overall petite build without stereotyping. Keep the pose natural, confident and suitable for an exclusive members' portrait. Clothing and setting may be stylish, glamorous or casual as the supplied safe brief suggests, but the result must remain an ordinary fashion/lifestyle photograph. Fully non-explicit. No nudity, no sexual activity, no fetish styling and no pornographic posing. Natural premium editorial photography, flattering and believable.
 
-SAFE PORTRAIT BRIEF: ${JSON.stringify(safe)}`;const startedAt=Date.now(),r=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-image-2.5-flare',prompt,size:'1024x1024',quality:'medium',output_format:'webp'})});const raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}if(!r.ok)throw Object.assign(new Error(d?.error?.message||`Asunder portrait generation returned HTTP ${r.status}`),{status:502});const b64=d?.data?.[0]?.b64_json;if(!b64)throw Object.assign(new Error('Asunder portrait generation returned no image.'),{status:502});const path=`fiction-studio/asunder-profiles/${user.id}/${seriesId}/${characterKey}/portrait.webp`;await fictionAsunderStorageUpload252147(path,Buffer.from(b64,'base64'));await Promise.all([logUsage({event_type:'developer_fiction_asunder_profile_image',estimated_cost_gbp:estimateGBP('image'),metadata:{user_id:user.id,series_id:seriesId,book_id:bookId,character_key:characterKey,template_id:fictionAsunderProfileTemplateId252147}}),meterFictionIllustration252151({seriesId,bookId,characterKey,startedAt,responseId:d?.id||null,httpStatus:r.status,ok:r.ok})]);return{path,prompt}};
+SAFE PORTRAIT BRIEF: ${JSON.stringify(safe)}`;
+  const fallbackPrompt=`Create ONE premium editorial portrait photograph of a fictional ADULT woman aged ${safe.adult_age}. She has a petite adult build. Preserve these ordinary identity traits where supplied: background ${safe.nationality_or_background||'unspecified'}; face ${safe.face||'natural'}; hair ${safe.hair||'natural'}; eyes ${safe.eyes||'natural'}; complexion ${safe.complexion||'natural'}; distinguishing features ${safe.distinguishing_features||'none specified'}. Show her alone, fully clothed in tasteful upscale contemporary fashion, in a refined everyday or travel setting. Natural confident pose, no text or logos, no nudity, no sexual content, no bedroom context, no fetish styling, no provocative pose. Photorealistic luxury editorial portrait.`;
+  const startedAt=Date.now();
+  const call=async(prompt)=>{const r=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-image-2.5-flare',prompt,size:'1024x1024',quality:'medium',output_format:'webp'})});const raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}return{r,d,raw,prompt}};
+  let result=await call(primaryPrompt);
+  if(!result.r.ok&&String(result.d?.error?.code||result.d?.error?.type||result.raw||'').toLowerCase().includes('safety')) result=await call(fallbackPrompt);
+  const {r,d,prompt}=result;
+  if(!r.ok)throw Object.assign(new Error(d?.error?.message||`Asunder portrait generation returned HTTP ${r.status}`),{status:502});
+  const b64=d?.data?.[0]?.b64_json;if(!b64)throw Object.assign(new Error('Asunder portrait generation returned no image.'),{status:502});
+  const path=`fiction-studio/asunder-profiles/${user.id}/${seriesId}/${characterKey}/portrait.webp`;
+  await fictionAsunderStorageUpload252147(path,Buffer.from(b64,'base64'));
+  await Promise.all([logUsage({event_type:'developer_fiction_asunder_profile_image',estimated_cost_gbp:estimateGBP('image'),metadata:{user_id:user.id,series_id:seriesId,book_id:bookId,character_key:characterKey,template_id:fictionAsunderProfileTemplateId252147}}),meterFictionIllustration252151({seriesId,bookId,characterKey,startedAt,responseId:d?.id||null,httpStatus:r.status,ok:r.ok})]);
+  return{path,prompt};
+};
 
 // V252.152 — final Asunder cover architecture. Covers are made only from the finished,
 // human-approved volume. Four rear panels correspond to the four finished stories; the

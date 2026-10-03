@@ -2701,3 +2701,9 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - The finished JPEG is stored privately, appears as the first page of the Fiction Studio reader, and has a separate **Download cover JPEG** action. It is treated as a separate publishing asset; the intended future Fiction Studio EPUB export must not embed it.
 - Cover image calls are booked to the existing **Illustrations** accounting category for the book and series.
 - No Supabase migration is required.
+
+
+## V252.153
+- Hardened Asunder profile portrait generation against image-safety false positives. The image endpoint now receives a one-way sanitised visual payload with erotic terminology stripped; the canonical character record is untouched.
+- Added one automatic ultra-safe fully-clothed editorial portrait retry when the first portrait request is rejected specifically by the image safety system.
+- Book Development remains resumable; successful portrait generation continues into the pre-draft profile gate.
