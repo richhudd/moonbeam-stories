@@ -3102,7 +3102,7 @@ function openFictionStudioXPrompt252134(){
 }
 async function toggleFictionStudioX252134(){
  if(fictionStudioNamespace252134==='fiction_x'){
-  // V252.145 — leaving the visible X workspace always locks re-entry immediately.
+  // V252.146 — leaving the visible X workspace always locks re-entry immediately.
   // Any already-running X job keeps the private access token captured on its own
   // immutable job context, so relocking the UI does not interrupt background work.
   fictionStudioXAccess252134='';fictionStudioNamespace252134='fiction';fictionStudioSeries25229=[];fictionStudioActive25229=null;updateFictionStudioChrome252134();await loadFictionStudio25229();return

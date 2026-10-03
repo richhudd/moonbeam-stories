@@ -1,3 +1,12 @@
+## V252.146 — Asunder Sol seed heat + cross-volume variation lock
+
+- The persistent Asunder series identity now gives Sol a series-specific seed contract for Book 1 and every later numbered volume, even if the visible series name is changed later.
+- Book 1 seed must explicitly restate very frequent, graphic/high-explicitness erotic content, substantial scene space, direct/crude language where character-appropriate, no long neutral stretches, and the fixed four-story structure.
+- Book 2+ seeds must first audit the human-approved previous volume for relationship configuration, age gaps, husband role, third-party type, jealousy, voyeurism/exhibitionism, group/BDSM use, initiation/control, setting/travel, messaging, pacing, scene structure, explicit-language intensity and aftermath pattern.
+- Sol must explicitly tell Book Development what recent combinations not to repeat and prefer underused axes / unused possibilities, while preserving the same high heat rather than using lower explicitness as "variation".
+- The logic keys off the permanent `asunder_fixed_four_story_identity_v1` marker, not the current display name, so renaming the series does not remove it. Other Fiction Studio series are unaffected.
+- No Supabase migration.
+
 # Moonbeam Stories V252.143
 - The fixed four-story anthology format is now durably attached to the specific series that is currently named **Asunder**. The one-time retrofit still identifies that series by its current Asunder identity, then stores `series_format_identity: asunder_fixed_four_story_identity_v1`; all ongoing behaviour keys off that persistent marker, so renaming the series later does not remove the four-story/numbered-volume architecture.
 - Numbered volume titles follow the series' *current* visible name (`<current series name>: Volume N`). Renaming this specific series cascades deterministically to its proposed-book slate and existing book records while preserving IDs, plans, costs and manuscript history.
@@ -2619,7 +2628,7 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - No Supabase migration required.
 
 
-## V252.145 — Fiction Studio X always requires password on re-entry
+## V252.146 — Fiction Studio X always requires password on re-entry
 - Leaving the visible Fiction Studio X workspace immediately clears the interactive X access token, even if an X generation is still running in the background.
 - Re-entering Fiction Studio X from normal Fiction Studio always opens the password gate and requires a fresh successful unlock.
 - Background X jobs are not interrupted: each running job continues using the private X access context captured when that job started, independent of the now-locked visible workspace.
