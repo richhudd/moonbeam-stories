@@ -1,3 +1,9 @@
+# V252.184
+
+- Asunder five-part chunk planning now uses the model selected for Book Development (Luna, Sol or Astra), not hard-coded Luna.
+- The same selected planning model performs the lightweight post-story continuity extraction. Aion remains the Fiction Studio X prose writer for each saved mini-chapter.
+- Book Development and generation are now one-click: **Develop & Generate Book** runs the normal checkpointed Book Development flow and automatically enters the production pipeline when planning completes. Resume continues from the latest saved planning or drafting checkpoint.
+
 
 ## V252.183
 - Restores durable Asunder drafting chunking in Fiction Studio X.
