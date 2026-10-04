@@ -2905,3 +2905,13 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Venice requests are now hard-capped at 1,500 characters.
 - Reworked Asunder profile and cover prompts to be compact and canon-first so age/background/face/hair/eyes/complexion/figure/distinguishing features survive the provider limit, while retaining the real-skin / anti-airbrushed / anti-AI-doll direction and cast differentiation.
 - No change to the normal Fiction Studio planning architecture, the 9-characteristic Asunder variation gate, or Aion's prose-only substitution in Fiction Studio X.
+
+
+### V252.180
+- Fixed Asunder canonical-name validation for international name order. The explicit `first_name` must match the story subtitle and occur in the canonical full name; family-name-first forms such as Japanese names no longer fail because the first whitespace token is a surname.
+
+
+## V252.181
+- Asunder international-script names now retain original script on the profile page with the standard Latin-script romanised form in brackets underneath.
+- Asunder manuscript prose is locked to the Latin-script form for those characters.
+- Existing non-Latin Asunder profiles missing the romanised fields are repaired on resume without changing the canonical character identity or portrait.
