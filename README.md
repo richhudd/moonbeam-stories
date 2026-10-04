@@ -2937,3 +2937,20 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Venice Asunder profile/cover images now record the resolved Venice model and per-image USD price from Venice model metadata, with published-price fallback.
 - Live book accounting and developer usage reports now reconcile costs by provider: OpenAI, OpenRouter and Venice.
 - Corrected Fiction Studio X first-draft progress label to show Aion rather than stale Luna.
+
+### V252.185
+- Fiction Studio X Book Development model selector now includes **Aion (experimental)** alongside Luna, Sol and Astra.
+- If Aion is selected, it owns the creative Book Development structured-planning calls and the five-part Asunder mini-chapter plan before Aion manuscript drafting.
+- Backstage live web research and real-world validation remain on the established Luna web-tool helpers; selecting Aion does not remove those factual safeguards.
+- Series Development model choices are unchanged.
+
+## V252.186
+- Restores an explicit Sol whole-story stitch/continuity audit after Asunder's five invisible Aion drafting chunks are assembled into each visible story.
+- The stitch audit checks only chunk-boundary integrity: transitions, duplication, state continuity, viewpoint/tense, time/location continuity, repeated setup, progression resets and missing joins.
+- If Sol finds a material seam defect, a Sol surgical-repair pass applies only the smallest necessary text patches; unaffected prose and story architecture are protected.
+- The normal Sol style/anti-AI review then runs on the repaired manuscript (or directly on the first draft if the stitch audit passes cleanly).
+
+
+## V252.187
+- Makes Asunder canonical-profile writes idempotent using the existing `(parent_id, series_id, character_key)` unique key, so resumed/overlapping Book Development calls reuse/upsert the same profile instead of failing with a duplicate-key error.
+- Fixes the Book Development screen to show **Develop & Generate Book** and actually continue directly into the automatic generation pipeline after planning completes.
