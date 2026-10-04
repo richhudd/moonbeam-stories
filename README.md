@@ -2862,3 +2862,8 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - OpenRouter scene tests now use a maximum of 12,000 output tokens, bounded by the provider's completion ceiling and by total context minus a conservative prompt estimate and 4,096-token safety margin.
 - Saved test metadata now records context length, advertised completion ceiling, estimated input tokens, and the actual requested output-token cap.
 - No Supabase migration required.
+
+
+## V252.171
+- Fixes Fiction Studio Series Development crash `Assignment to constant variable.` introduced in V252.170 when normalising Aion's generated Series Bible.
+- No changes to Asunder identity, four-wife architecture, Aion sectioning, portraits, covers, or JSON/naming behaviour beyond this crash fix.
