@@ -3175,3 +3175,10 @@ V252.200
 - New flow: **Aion 5-chunk draft → Sol review → Sol protected surgical edit if needed → Sol verification → one protected Sol cleanup only if objective findings remain → lock.**
 - If Sol's first review approves the vignette and the deterministic scan is below thresholds, the vignette locks without any repair pass.
 - No whole-vignette rewrite is performed after Aion's draft.
+
+
+## V252.213
+
+- Fixed Book Development crash when a manual wife reference image is supplied.
+- The shared Asunder reference-image helpers are now initialized before the Book Development route can call them, removing the JavaScript temporal-dead-zone error: `Cannot access 'fictionAsunderReferenceImage252209' before initialization`.
+- No database migration required. Existing planning checkpoints remain valid.
