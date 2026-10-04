@@ -1,3 +1,11 @@
+
+## V252.183
+- Restores durable Asunder drafting chunking in Fiction Studio X.
+- Luna splits each approved Asunder story into exactly five invisible mini-chapters before prose generation.
+- Aion drafts one mini-chapter per request; every completed mini-chapter is saved immediately in the book generation checkpoint.
+- Resume continues from the first missing mini-chapter rather than regenerating the whole story.
+- After mini-chapter 5, Moonbeam assembles the five saved chunks into the single visible anthology story and Luna extracts the story continuity delta.
+- Progress UI reports the current mini-chapter and saved checkpoint count; retry wording no longer implies content-safety rewriting.
 ## V252.175
 
 Fiction Studio X restored to the proven normal Fiction Studio architecture. Sol/Astra planning, structured development, review/reporting, seeding, resume and human-gate workflow are shared with normal Fiction Studio. Aion replaces Luna only for prose drafting and writer-side rewrite stages. Asunder deterministic four-wife, chunking, portrait and cover rules remain intact.
