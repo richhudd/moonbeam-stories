@@ -2990,3 +2990,11 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - After the final report, Moonbeam runs the deterministic publication preflight automatically, locks the four verified draft stories as the final manuscript, generates the final Asunder cover automatically, and presents the completed reader with the cover, canonical illustrated wife-profile pages and the four stories.
 - The reader uses the locked canonical draft directly; Asunder no longer needs a synthetic Line/style or Proof manuscript version merely to qualify as finished.
 - Normal Fiction Studio's existing editorial/human-review workflow is unchanged.
+
+## V252.193 — Asunder Venice visual audition
+- Adds a developer-only **Audition hotter Venice visuals** action for existing Asunder volumes.
+- Reuses the existing four canonical wife profiles and existing Book 1 manuscript; it does not rerun Book Development or rewrite prose.
+- Sends Venice a stronger Asunder-specific profile brief: elite wife-sharing profile, deliberately hotter/sexually charged than mainstream dating/fashion imagery, provocative premium styling and pose, while remaining photorealistic and non-explicit.
+- Generates four draft wife portraits plus a Venice-only draft cover when four manuscript stories are available.
+- Draft assets are stored separately and do not replace canonical art until **Accept new visuals** is pressed.
+- Comparison overlay shows current vs new portraits and current vs draft cover, with Accept, Regenerate again, and Keep old visuals actions.
