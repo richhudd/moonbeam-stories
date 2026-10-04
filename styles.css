@@ -4513,3 +4513,13 @@ body.fiction-reader-open-25250{overflow:hidden}
 @media (max-width:1550px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:1050px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:700px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:1fr}}
+
+/* V252.206 — clear Asunder Volume > Vignette > Chunk production tracker */
+.fiction-asunder-vignette-list-252206{display:grid;gap:8px;margin:14px 0}
+.fiction-asunder-vignette-row-252206{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;padding:10px 12px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.025)}
+.fiction-asunder-vignette-row-252206>strong{min-width:0}
+.fiction-asunder-vignette-row-252206>span{font-weight:800;letter-spacing:.02em}
+.fiction-asunder-vignette-row-252206>small{grid-column:1/-1;opacity:.78}
+.fiction-asunder-review-group-252206{margin-top:18px;padding-top:4px}
+.fiction-asunder-review-group-252206>h4{margin:0 0 10px}
+@media(max-width:700px){.fiction-asunder-vignette-row-252206{grid-template-columns:1fr}.fiction-asunder-vignette-row-252206>small{grid-column:1}}

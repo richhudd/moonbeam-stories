@@ -1,3 +1,22 @@
+## V252.207 — simplified failsafe Asunder vignette pipeline
+
+- Each vignette now has exactly one editorial cycle: **Aion first draft → Sol first review → one Aion revision (only if needed) → one Sol final verification**.
+- If Sol confirms her original findings were repaired, the vignette locks immediately and the next vignette begins.
+- If Aion did not repair the original findings, Sol performs exactly one final targeted fallback repair herself; the existing server-side erotic-content shield remains active, and the vignette then locks with **no further review**.
+- The previous second Aion repair / second Sol verification loop has been removed.
+- Recoverable provider failures during Asunder editorial work (including empty Aion responses, timeouts and transient 4xx/5xx provider failures) now retry automatically with capped backoff instead of pausing after three attempts.
+- Review labels now match the simplified flow: **Sol first review → Sol final verification → Sol final targeted repair (only if needed)**.
+
+## V252.206 — Asunder live pipeline clarity + per-vignette Sol length logic
+
+- Replaces generic chapter/revision status language on Asunder Book screens with the actual hierarchy: **Volume → Vignette → Chunk**.
+- The top status now reports how many of the four vignettes are locked, which vignette is active, whether it is drafting/reviewing/repairing/verifying, and—during drafting—how many of its five chunks are safely saved.
+- Removes the old V252.93 whole-novel assumption from Asunder, so starting an editorial pass no longer falsely makes the UI claim all four first-draft chapters are saved.
+- Asunder editorial jobs preserve meaningful activity labels such as `Aion Vignette 3 targeted repair` and `Sol Vignette 3 verification` instead of collapsing back to generic `Revision · 1 chapter saved`.
+- The old `Second draft / Final gate: Human` footer is replaced for Asunder with the real automatic pipeline description.
+- Sol reviews are grouped by **Vignette 1–4**, with initial review, verification passes and final Sol micro-patch shown under the correct vignette.
+- Per-vignette Sol gates now calculate word count against that vignette's own five-chunk target. The 40–50k target is reserved for the completed volume and no longer creates false short-book warnings during each vignette review.
+
 ## V252.205 — self-healing Asunder generation locks
 
 - Fixes the `Story N mini-chapter N is already being generated` deadlock.
