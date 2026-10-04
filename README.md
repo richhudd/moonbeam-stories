@@ -3163,3 +3163,15 @@ V252.200
   2. canonical wife image → final Asunder profile photo
 - Manual wife anchors are persisted into the resumable Book Development pipeline and are applied both to story planning and to canonical profile creation.
 - Reference-image handling remains opt-in and is intended for fictional/synthetic images or references you have permission to use.
+
+
+## V252.212 — Aion drafts, Sol repairs
+
+- Simplified the Asunder vignette pipeline: **Aion now writes the five first-draft chunks only. Sol owns all post-draft continuity and anti-AI repair.**
+- Removed the full-vignette Aion revision pass. Sol now applies narrow **exact-text surgical patches** against the assembled vignette.
+- Sol receives the whole vignette and preserved five-chunk map for continuity awareness, but may edit only the chunk locations authorised by her review.
+- The erotic-content shield now protects **both** Sol's primary surgical edit and any final cleanup, not merely the old fallback pass.
+- Protected erotic paragraphs reject unsafe word-level rewrites; punctuation/spacing cleanup remains allowed. This is specifically intended to preserve Aion's explicit sexual substance while allowing Sol to remove em-dash excess, repeated “not X / but Y” constructions, triplet rhythm, stock phrasing and bad chunk joins.
+- New flow: **Aion 5-chunk draft → Sol review → Sol protected surgical edit if needed → Sol verification → one protected Sol cleanup only if objective findings remain → lock.**
+- If Sol's first review approves the vignette and the deterministic scan is below thresholds, the vignette locks without any repair pass.
+- No whole-vignette rewrite is performed after Aion's draft.
