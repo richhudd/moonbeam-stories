@@ -3043,9 +3043,9 @@ function fictionJobStateClass25271(status){return status==='running'?'running':s
 function fictionStartJob25265(kind,{seriesId,bookId,seriesName='',bookTitle=''}){
  const existing=fictionRunningJobForBook25265(bookId);if(existing)return null;
  const key=fictionJobKey25265(kind,bookId),job={key,kind,studio_section:fictionStudioNamespace252134,x_access:fictionStudioNamespace252134==='fiction_x'?fictionStudioXAccess252134:'',series_id:seriesId,book_id:bookId,series_name:seriesName||'Fiction series',book_title:bookTitle||'Book',stage:'Starting',progress:'',status:'running',started_at:new Date().toISOString()};
- fictionBackgroundJobs25265.set(key,job);fictionRefreshJobsPanel25265();fictionRefreshVisiblePipelineStatus25296();return job
+ job.heartbeat_at=job.heartbeat_at||new Date().toISOString();fictionBackgroundJobs25265.set(key,job);fictionRefreshJobsPanel25265();fictionRefreshVisiblePipelineStatus25296();return job
 }
-function fictionUpdateJob25265(job,patch={}){if(!job)return;Object.assign(job,patch);fictionBackgroundJobs25265.set(job.key,job);fictionRefreshJobsPanel25265();fictionRefreshVisiblePipelineStatus25296()}
+function fictionUpdateJob25265(job,patch={}){if(!job)return;Object.assign(job,patch);if(job.status==='running')job.heartbeat_at=new Date().toISOString();fictionBackgroundJobs25265.set(job.key,job);fictionRefreshJobsPanel25265();fictionRefreshVisiblePipelineStatus25296()}
 function fictionFinishJob25265(job,status='completed',progress=''){if(!job)return;Object.assign(job,{status,progress,finished_at:new Date().toISOString()});fictionBackgroundJobs25265.set(job.key,job);if(job.studio_section==='fiction_x'&&fictionStudioNamespace252134!=='fiction_x'&&![...fictionBackgroundJobs25265.values()].some(j=>(j.studio_section||'fiction')==='fiction_x'&&j.status==='running'))fictionStudioXAccess252134='';fictionRefreshJobsPanel25265();fictionRefreshVisiblePipelineStatus25296()}
 function fictionActiveJobsHtml25265(){const jobs=[...fictionBackgroundJobs25265.values()].filter(j=>(j.studio_section||'fiction')===fictionStudioNamespace252134).sort((a,b)=>String(b.finished_at||b.started_at||'').localeCompare(String(a.finished_at||a.started_at||'')));if(!jobs.length)return '<div id="fictionActiveJobs25265"></div>';const kindLabel=j=>j.kind==='reedit'?'Re-edit':j.kind==='planning'?'Book Development':'Automatic book pipeline';return `<div id="fictionActiveJobs25265" class="fiction-usage-card fiction-active-jobs-25265"><h3>Generation status</h3><p class="muted">Each book shows whether it is running, paused or complete, its current stage, and its latest saved checkpoint.</p><div class="fiction-active-jobs-list-25265">${jobs.map(j=>`<button type="button" class="fiction-active-job-25265 fiction-job-${fictionJobStateClass25271(j.status)}" data-fiction-job-series="${escapeHtml(j.series_id)}" data-fiction-job-book="${escapeHtml(j.book_id)}"><div class="fiction-job-title-25271"><strong>${escapeHtml(j.series_name)} · ${escapeHtml(j.book_title)}</strong><span class="fiction-job-badge-25271 ${fictionJobStateClass25271(j.status)}">${fictionJobStateLabel25271(j.status)}</span></div><span class="fiction-job-stage-25271">${escapeHtml(kindLabel(j))} · ${escapeHtml(j.stage||'Working')}</span><small>${escapeHtml(j.progress||'No saved progress yet')}</small></button>`).join('')}</div></div>`}
 function fictionRefreshJobsPanel25265(){const el=$('fictionActiveJobs25265');if(!el)return;const tmp=document.createElement('div');tmp.innerHTML=fictionActiveJobsHtml25265();el.replaceWith(tmp.firstElementChild);fictionBindJobsPanel25265()}
@@ -3117,8 +3117,59 @@ function saveFictionAutoPipelineState25255(bookId,state){try{localStorage.setIte
 function fictionAutoPipelineDefaults25255(){const writer=fictionStudioNamespace252134==='fiction_x'?'aion-labs/aion-3.0':'gpt-6-luna';return {active:false,paused:false,role_policy_version:'v252.179',max_revision_rounds:1,models:{manuscript:writer,developmental:'gpt-6-sol',revision:writer,escalation_review:'gpt-6-sol',escalation:writer,final_repair:writer}}}
 function fictionAutoPipelineConfig25255(bookId){const raw=fictionAutoPipelineState25255(bookId)||{},d=fictionAutoPipelineDefaults25255();return {...d,...raw,models:{...d.models,...(raw.models||{})}}}
 function fictionAutoPipelineModelSummary25255(cfg){if(fictionStudioNamespace252134==='fiction_x'&&fictionAsunderSeriesIdentity252149(fictionStudioActive25229))return 'Asunder pipeline: Aion writes each vignette in 5 saved chunks → Sol reviews that vignette → targeted repair if needed → vignette locks → repeat ×4 → Sol final volume report → automatic preflight';return [`Draft: ${fictionStudioNamespace252134==='fiction_x'?'Aion':fictionModelLabel25243(cfg.models.manuscript||'gpt-6-luna')}`,`Style review: Sol`,`Second draft: ${fictionStudioNamespace252134==='fiction_x'?'Aion':'Luna'}`,`Post-rewrite reports: Sol`,`Final gate: Human`].join(' · ')}
-function pauseFictionAutoPipeline25255(bookId){const cfg=fictionAutoPipelineConfig25255(bookId);cfg.active=true;cfg.paused=true;saveFictionAutoPipelineState25255(bookId,cfg);fictionAutoPipeline25255Paused.add(bookId);const st=$('fictionBookHomeStatus25233');if(st)st.textContent='Automatic pipeline paused safely. The current API request, if any, will finish and save before stopping.';const btn=$('fictionPrimaryBook25233');if(btn){btn.disabled=false;btn.textContent='Resume automatic pipeline'}}
+function pauseFictionAutoPipeline25255(bookId){const cfg=fictionAutoPipelineConfig25255(bookId);cfg.active=true;cfg.paused=true;saveFictionAutoPipelineState25255(bookId,cfg);fictionAutoPipeline25255Paused.add(bookId);const b=fictionStudioBooks25231.find(x=>x.id===bookId),seriesId=cfg.series_id||fictionStudioActive25229?.id;if(b&&seriesId)fictionPersistAutoIntent252210(b,seriesId,true,true);const st=$('fictionBookHomeStatus25233');if(st)st.textContent='Automatic pipeline paused safely. The current API request, if any, will finish and save before stopping.';const btn=$('fictionPrimaryBook25233');if(btn){btn.disabled=false;btn.textContent='Resume automatic pipeline'}}
 function fictionAutoPipelineIsPaused25255(bookId){return fictionAutoPipeline25255Paused.has(bookId)||fictionAutoPipelineConfig25255(bookId).paused===true}
+function fictionPersistAutoIntent252210(b,seriesId,active,paused){
+ if(!b?.id||!seriesId)return;
+ const local=fictionAutoPipelineConfig25255(b.id);local.active=!!active;local.paused=!!paused;local.series_id=seriesId;saveFictionAutoPipelineState25255(b.id,local);
+ void fictionAuxTimeout252210(fictionStudioRequest25229({mode:'set-asunder-auto-pipeline-state',id:seriesId,book_id:b.id,active:!!active,paused:!!paused}),12000,'pipeline-state checkpoint').then(d=>{if(d?.book)Object.assign(b,d.book)}).catch(()=>{});
+}
+const fictionPipelineWatchdogs252210=new Map(),fictionPipelineWatchdogBusy252210=new Set();
+function fictionServerAutoState252210(b){const x=b?.generation_state?.asunder_auto_pipeline;return x&&typeof x==='object'?x:null}
+function fictionRehydrateAutoState252210(b,seriesId){
+ const server=fictionServerAutoState252210(b),local=fictionAutoPipelineConfig25255(b.id);
+ if(server?.active===true&&local.active!==true){local.active=true;local.paused=server.paused===true;local.series_id=seriesId||local.series_id||null;saveFictionAutoPipelineState25255(b.id,local)}
+ if(server?.active===false&&local.active===true&&server?.completed_at){local.active=false;local.paused=false;saveFictionAutoPipelineState25255(b.id,local)}
+ return fictionAutoPipelineConfig25255(b.id)
+}
+function fictionDisarmPipelineWatchdog252210(bookId){const x=fictionPipelineWatchdogs252210.get(bookId);if(x){clearInterval(x.interval);clearTimeout(x.initial);fictionPipelineWatchdogs252210.delete(bookId)}}
+function fictionArmPipelineWatchdog252210(b,seriesId){
+ if(!b?.id||!seriesId||fictionPipelineWatchdogs252210.has(b.id))return;
+ const tick=async()=>{
+  if(fictionPipelineWatchdogBusy252210.has(b.id))return;
+  const cfg=fictionRehydrateAutoState252210(b,seriesId);
+  if(!cfg.active||cfg.paused){if(!cfg.active)fictionDisarmPipelineWatchdog252210(b.id);return}
+  fictionPipelineWatchdogBusy252210.add(b.id);
+  try{
+   const status=await fictionAuxTimeout252210(fictionStudioRequest25229({mode:'novel-status',id:seriesId,book_id:b.id}),15000,'pipeline watchdog status');
+   if(status?.book)Object.assign(b,status.book);
+   const p=status?.progress||{},chunk=p.asunder_chunk||null;
+   // Never interfere with a server-owned active prose request.
+   if(chunk?.in_flight){return}
+   const savedMini=Number(chunk?.saved_sections||0),hasDraftCheckpoint=!!chunk&&savedMini<Number(chunk?.planned_sections||5);
+   const localJob=fictionRunningJobForBook25265(b.id);
+   if(localJob){
+    const hb=Date.parse(localJob.heartbeat_at||localJob.started_at||0),age=Date.now()-(Number.isFinite(hb)?hb:0);
+    // A local job can legitimately be quiet while Aion is running; that case has an in_flight lock above.
+    // With no server lock, 90s of silence means the browser orchestrator itself has died/stalled.
+    if(age<90000)return;
+    fictionFinishJob25265(localJob,'stale','Watchdog detected a stalled browser orchestrator; restarting from the saved server checkpoint.');
+   }
+   // Draft watchdog scope is intentionally conservative. It restarts only when there is an unfinished
+   // story/chunk checkpoint (or drafting has not yet begun), never while a completed vignette is waiting
+   // on an editorial lock gate.
+   const stabilized=new Set((p.asunder_stabilized_stories||[]).map(Number)),saved=(p.saved_numbers||[]).map(Number),pendingEditorial=saved.some(n=>!stabilized.has(n));
+   if(pendingEditorial)return;
+   if(p.complete!==true&&(hasDraftCheckpoint||Number(p.next_chapter||0)>0)){
+    const visible=fictionStudioOpenBookId25265===b.id,st=visible?$('fictionBookHomeStatus25233'):null;
+    if(st)st.textContent=`Automatic watchdog recovered a stalled drafting loop. Resuming from the last saved checkpoint${chunk?` (${savedMini}/5 chunks saved)`:''}…`;
+    await runAutomaticFictionPipeline25255(b);
+   }
+  }catch{}finally{fictionPipelineWatchdogBusy252210.delete(b.id)}
+ };
+ const initial=setTimeout(()=>void tick(),6000),interval=setInterval(()=>void tick(),30000);
+ fictionPipelineWatchdogs252210.set(b.id,{initial,interval,tick});
+}
 function fictionEditorialChoiceKey25249(bookId,stage){return `${bookId}:${stage}`}
 function fictionEditorialChoice25249(bookId,stage,activeRun){if(activeRun?.model)return activeRun.model;return fictionEditorialModelChoice25249.get(fictionEditorialChoiceKey25249(bookId,stage))||'gpt-6-luna'}
 function mountFictionStudioEntry25229(){
@@ -3361,6 +3412,7 @@ async function refreshFictionBooks252462(){
  const s=fictionStudioActive25229;if(!s)return [];
  const d=await fictionStudioRequest25229({mode:'list-books',id:s.id});
  fictionStudioBooks25231=Array.isArray(d.books)?d.books:[];
+ if(fictionStudioNamespace252134==='fiction_x'&&fictionAsunderSeriesIdentity252149(s))for(const b of fictionStudioBooks25231){const cfg=fictionRehydrateAutoState252210(b,s.id);if(cfg.active&&!cfg.paused)fictionArmPipelineWatchdog252210(b,s.id)}
  return fictionStudioBooks25231
 }
 async function openFictionBookSlot252462(sourceIndex){
@@ -3646,7 +3698,7 @@ async function openSavedFictionBook25233(bookId){
  const devDone=branch25260.dev,revDone=branch25260.revision,lineDone=branch25260.line,proofDone=branch25260.proof,anyProof=completed('proof');
  const active=running('developmental')||running('revision')||running('line')||running('proof');
  const finalPreflight252122=b?.generation_state?.publication_preflight||null,finalComplete252122=b?.status==='complete'&&finalPreflight252122?.ok===true;
- const autoCfg=fictionAutoPipelineConfig25255(b.id),autoIncomplete=!finalComplete252122,autoCanResume=!!(autoCfg.active&&autoIncomplete),autoPaused=!!autoCfg.paused;
+ const autoCfg=fictionRehydrateAutoState252210(b,s.id),autoIncomplete=!finalComplete252122,autoCanResume=!!(autoCfg.active&&autoIncomplete),autoPaused=!!autoCfg.paused;if(isAsunderSequential252206&&autoCanResume&&!autoPaused)fictionArmPipelineWatchdog252210(b,s.id);
  function editorialBox(stage,title,sourceRun=null,buttonLabel=null){const activeRun=running(stage),choice=fictionEditorialChoice25249(b.id,stage,activeRun),mid=`fictionEditorialModel25251_${stage}`,did=`fictionEditorialDirection25251_${stage}`,bid=`fictionEditorialRun25251_${stage}`,liveJob=fictionRunningJobForBook25265(b.id),liveStage=String(liveJob?.stage||'').toLowerCase(),activelyRunning=!!(activeRun&&liveJob&&liveStage===String(stage||'').toLowerCase()),stageLabel=fictionEditorialStageLabel25247(stage),runLabel=activelyRunning?`${stageLabel} in progress`:(buttonLabel||(activeRun?'Resume':'Run')+' '+stageLabel);return `<div class="fiction-editorial-pass-25251"><h4>${escapeHtml(title)}</h4><label><span>Model</span>${fictionModelSelect25243(mid,choice,!!activeRun)}</label><label><span>Editorial direction for this pass</span><textarea id="${did}" rows="4" ${activeRun?'disabled':''} placeholder="Optional one-off instruction for this pass. The Series Bible and existing continuity remain authoritative.">${activeRun?escapeHtml(activeRun.direction||''):''}</textarea></label><div class="fiction-actions"><button class="primary" id="${bid}" type="button" ${activelyRunning?'disabled':''}>${escapeHtml(runLabel)}</button>${activeRun?`<button class="secondary" id="${bid}_reject" type="button">Reject this pass</button>`:''}</div></div>`}
  let pipeline='';
  if(complete){
@@ -3853,7 +3905,8 @@ function fictionBookDevelopmentProgress252119(book,label){
 }
 async function runBookDevelopment25233(b,{continueToGeneration=false}={}){const st=$('fictionBookHomeStatus25233'),seriesId=fictionStudioActive25229?.id,seriesName=fictionStudioActive25229?.series_name||'Fiction series';if(!seriesId)throw new Error('The Book Development job has no locked series.');let job=fictionStartJob25265('planning',{seriesId,bookId:b.id,seriesName,bookTitle:b.working_title||'Book'});if(!job){const existing=fictionRunningJobForBook25265(b.id);if(existing&&existing.kind!=='planning'){if(st)st.innerHTML='<span class="error">This book already has another active generation or editing job.</span>';return}job=existing}try{let current=b;for(let guard=0;guard<100;guard++){const model=current.development_model||(Object.keys(current.book_plan||{}).length?'gpt-6-astra':'gpt-6-luna'),label=fictionModelLabel25243(model),progress=fictionBookDevelopmentProgress252119(current,label);if(st)st.textContent=progress;fictionUpdateJob25265(job,{stage:'Book Development',progress});const d=await fictionJobRequest252144(job,{mode:current.development_state?.phase?'continue-book-development':'start-book-development',id:seriesId,book_id:current.id,source_index:Number(current.position||1)-1,model});current=d.book||current;Object.assign(b,current);const saved=fictionBookDevelopmentProgress252119(current,fictionModelLabel25243(current.development_model||model));if(st)st.textContent=saved;fictionUpdateJob25265(job,{stage:'Book Development',progress:saved});if(d.complete){fictionFinishJob25265(job,'completed',fictionFixedFourAnthologyUI252142()?'4 stories planned':`${Number(current.book_plan?.chapters?.length||0)} chapters planned`);if(continueToGeneration){if(st)st.textContent='Book Development complete. Starting generation automatically…';return startAutomaticFictionPipeline25255(b)}if(fictionStudioActive25229?.id===seriesId&&fictionStudioOpenBookId25265===b.id)await openSavedFictionBook25233(b.id);return}}throw new Error('Book development paused safely. Press Resume Book Development to continue.')}catch(e){fictionFinishJob25265(job,'paused',String(e.message||e));if(st)st.innerHTML=`<span class="error">${escapeHtml(e.message||String(e))}</span>`}}
 function fictionSleep25240(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-async function refreshFictionLiveUsage25243(b,seriesId=fictionStudioActive25229?.id){const el=$('fictionLiveUsage25243');if(!el||!seriesId||fictionStudioActive25229?.id!==seriesId)return;try{const [u,su]=await Promise.all([fictionStudioRequest25229({mode:'usage-summary',id:seriesId,book_id:b.id}),fictionStudioRequest25229({mode:'usage-summary',id:seriesId})]);const tmp=document.createElement('div');tmp.innerHTML=fictionUsageCard25243(u.usage,su.usage,b);el.replaceWith(tmp.firstElementChild)}catch{}}
+function fictionAuxTimeout252210(promise,ms=12000,label='auxiliary request'){let timer;return Promise.race([Promise.resolve(promise),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`${label} timed out without blocking production`)),ms)})]).finally(()=>clearTimeout(timer))}
+async function refreshFictionLiveUsage25243(b,seriesId=fictionStudioActive25229?.id){const el=$('fictionLiveUsage25243');if(!el||!seriesId||fictionStudioActive25229?.id!==seriesId)return;try{const [u,su]=await fictionAuxTimeout252210(Promise.all([fictionStudioRequest25229({mode:'usage-summary',id:seriesId,book_id:b.id}),fictionStudioRequest25229({mode:'usage-summary',id:seriesId})]),12000,'usage refresh');const tmp=document.createElement('div');tmp.innerHTML=fictionUsageCard25243(u.usage,su.usage,b);el.replaceWith(tmp.firstElementChild)}catch{}}
 async function runNovel25233(b){
  const st=$('fictionBookHomeStatus25233'),btn=$('fictionPrimaryBook25233'),seriesId=fictionStudioActive25229?.id,series=fictionStudioActive25229;btn.disabled=true;
  const existing=fictionRunningJobForBook25265(b.id);if(existing){if(st)st.textContent='This book already has a background job running.';btn.disabled=false;return}
@@ -3970,12 +4023,12 @@ async function fictionStabilizeAsunderStory252190(b,storyNumber,seriesId,job){
   if(st)st.textContent=`Vignette ${n} passed Sol's final check. Locking it and moving on…`;fictionUpdateJob25265(job,{stage:`Lock Vignette ${n}`,progress:'approved · automatic lock'});
  }
 
- const locked=await fictionJobRequest252144(job,{mode:'asunder-stabilize-story',id:seriesId,book_id:b.id,story_number:n,verification_run_id:verification.id,...(repair?{repair_run_id:repair.id}:{}),...(editorialFallback?{editorial_fallback_run_id:editorialFallback.id}:{})});if(locked?.book)Object.assign(b,locked.book);await refreshFictionLiveUsage25243(b,seriesId);return locked;
+ const locked=await fictionJobRequest252144(job,{mode:'asunder-stabilize-story',id:seriesId,book_id:b.id,story_number:n,verification_run_id:verification.id,...(repair?{repair_run_id:repair.id}:{}),...(editorialFallback?{editorial_fallback_run_id:editorialFallback.id}:{})});if(locked?.book)Object.assign(b,locked.book);void refreshFictionLiveUsage25243(b,seriesId);return locked;
 }
 async function runAutomaticFictionPipeline25255(b){
  const cfg=fictionAutoPipelineConfig25255(b.id),seriesId=cfg.series_id||fictionStudioActive25229?.id,st=$('fictionBookHomeStatus25233'),btn=$('fictionPrimaryBook25233');
  if(!seriesId){if(st)st.innerHTML='<span class="error">Could not lock this generation to its series.</span>';return}
- cfg.series_id=seriesId;cfg.active=true;cfg.paused=false;saveFictionAutoPipelineState25255(b.id,cfg);fictionAutoPipeline25255Paused.delete(b.id);if(btn){btn.disabled=true;btn.textContent='Automatic pipeline running…'}
+ cfg.series_id=seriesId;cfg.active=true;cfg.paused=false;saveFictionAutoPipelineState25255(b.id,cfg);fictionAutoPipeline25255Paused.delete(b.id);fictionPersistAutoIntent252210(b,seriesId,true,false);fictionArmPipelineWatchdog252210(b,seriesId);if(btn){btn.disabled=true;btn.textContent='Automatic pipeline running…'}
  const existing=fictionRunningJobForBook25265(b.id);if(existing){if(st)st.textContent=`This book already has a running ${existing.kind==='reedit'?'re-edit':'generation'} job.`;if(btn){btn.disabled=false;btn.textContent='Continue automatic pipeline'}return}
  const series=fictionStudioSeries25229.find(x=>x.id===seriesId),job=fictionStartJob25265('automatic',{seriesId,bookId:b.id,seriesName:series?.series_name||'',bookTitle:b.working_title||''});
  try{
@@ -3987,11 +4040,11 @@ async function runAutomaticFictionPipeline25255(b){
    fictionUpdateJob25265(job,{stage:'First draft',progress:`${done} of ${total} chapters saved${next?` · writing ${next}`:''}${p.trajectory?.materially_behind?` · ${Number(p.trajectory.behind_pct||0).toFixed(1)}% behind target trajectory`:''}`});
    if(fictionStudioNamespace252134==='fiction_x'&&fictionFixedFourAnthologyUI252142()){const stabilized252190=new Set((p.asunder_stabilized_stories||[]).map(Number)),pending252190=(p.saved_numbers||[]).map(Number).sort((a,b)=>a-b).find(n=>!stabilized252190.has(n));if(pending252190){const z=await fictionStabilizeAsunderStory252190(b,pending252190,seriesId,job);if(!z){fictionFinishJob25265(job,'paused',`Story ${pending252190} stitch gate paused`);return}continue}}
    if(p.complete===true)break;
-   if(p.rebalance_needed){const tr=p.trajectory||{};if(st)st.textContent=`${fictionStudioNamespace252134==='fiction_x'?'Aion':fictionModelLabel25243(cfg.models.manuscript||'gpt-6-luna')} · First draft · ${done}/${total} saved · ${Number(tr.behind_pct||0).toFixed(1)}% behind trajectory · deepening remaining chapter architecture…`;fictionUpdateJob25265(job,{stage:'First draft architecture correction',progress:`checkpoint ${Math.round(Number(p.rebalance_checkpoint||0)*100)}% · deepening remaining chapters`});await fictionJobRequest252144(job,{mode:'draft-rebalance',id:seriesId,book_id:b.id});await refreshFictionLiveUsage25243(b,seriesId);continue}
+   if(p.rebalance_needed){const tr=p.trajectory||{};if(st)st.textContent=`${fictionStudioNamespace252134==='fiction_x'?'Aion':fictionModelLabel25243(cfg.models.manuscript||'gpt-6-luna')} · First draft · ${done}/${total} saved · ${Number(tr.behind_pct||0).toFixed(1)}% behind trajectory · deepening remaining chapter architecture…`;fictionUpdateJob25265(job,{stage:'First draft architecture correction',progress:`checkpoint ${Math.round(Number(p.rebalance_checkpoint||0)*100)}% · deepening remaining chapters`});await fictionJobRequest252144(job,{mode:'draft-rebalance',id:seriesId,book_id:b.id});void refreshFictionLiveUsage25243(b,seriesId);continue}
    if(!next)throw new Error('Novel progress is inconsistent: no next planned chapter was identified.');
    if(done!==lastSaved){failures=0;lastSaved=done}
    const model=b.manuscript_model||cfg.models.manuscript||'gpt-6-luna',writerLabel252182=fictionStudioNamespace252134==='fiction_x'?'Aion':fictionModelLabel25243(model),chunk252183=p.asunder_chunk;if(st)st.textContent=fictionFixedFourAnthologyUI252142()?(fictionStudioNamespace252134==='fiction_x'?(chunk252183?`Aion · First draft · Story ${next} · mini-chapter ${Math.min(5,Number(chunk252183.next_section||1))}/5 · ${Number(chunk252183.saved_sections||0)} safely saved`:`${fictionModelLabel25243(b.development_model||'gpt-6-luna')} · Story ${next} drafting plan · splitting into five invisible mini-chapters…`):`${writerLabel252182} · First draft · ${done} of ${total} saved · writing Story ${next}…`):`${writerLabel252182} · First draft · ${done} of ${total} saved · writing Chapter ${next}…`;
-   try{const d=await fictionJobRequest252144(job,{mode:'generate-chapter',id:seriesId,book_id:b.id,direction:'',model});if(d?.chapter&&!b.manuscript_model)b.manuscript_model=model;failures=0;await refreshFictionLiveUsage25243(b,seriesId)}
+   try{const d=await fictionJobRequest252144(job,{mode:'generate-chapter',id:seriesId,book_id:b.id,direction:'',model});if(d?.chapter&&!b.manuscript_model)b.manuscript_model=model;failures=0;fictionUpdateJob25265(job,{stage:'First draft',progress:chunk252183?`Story ${next} · chunk checkpoint saved · continuing immediately`:`${fictionFixedFourAnthologyUI252142()?'Story':'Chapter'} ${next} checkpoint saved · continuing immediately`});void refreshFictionLiveUsage25243(b,seriesId);await Promise.resolve()}
    catch(e){let check=null;try{check=await fictionJobRequest252144(job,{mode:'novel-status',id:seriesId,book_id:b.id})}catch{}const cp=check?.progress||{},now=Number(cp.saved_count||0);if(cp.complete===true||now>done||!((cp.missing_numbers||[]).includes(next))){lastSaved=now;failures=0;if(st)st.textContent=fictionFixedFourAnthologyUI252142()?`Story ${next} saved. Continuing…`:`Chapter ${next} saved. Continuing…`;continue}
    const isAsunderX252205=fictionStudioNamespace252134==='fiction_x'&&fictionFixedFourAnthologyUI252142(),code252205=String(e?.code||''),waitingOnChunk252205=isAsunderX252205&&(code252205==='chunk_in_flight'||code252205==='chunk_claim_lost');
    if(waitingOnChunk252205){const savedMini252205=Number(cp?.asunder_chunk?.saved_sections||0),waitMs252205=Math.max(2500,Math.min(10000,Number(e?.details?.retry_after_ms)||5000));failures=0;if(st)st.textContent=`Story ${next} · ${savedMini252205}/5 mini-chapters safely saved · another request owns mini-chapter ${Number(e?.details?.saved_sections||savedMini252205)+1}. Waiting automatically…`;fictionUpdateJob25265(job,{stage:'First draft',progress:`Story ${next} · waiting for active mini-chapter request; no manual action needed`});await fictionSleep25240(waitMs252205);continue}
@@ -4014,7 +4067,7 @@ async function runAutomaticFictionPipeline25255(b){
    if(st)st.textContent='Sol report complete. Running deterministic preflight and compiling the finished illustrated volume…';fictionUpdateJob25265(job,{stage:'Compile finished book',progress:'preflight + cover + illustrated reader'});
    const fin252192=await fictionJobRequest252144(job,{mode:'finalize-asunder-automatic',id:seriesId,book_id:b.id,report_run_id:finalReport252192.id});if(fin252192?.book)Object.assign(b,fin252192.book);if(!fin252192?.ok)throw new Error((fin252192?.report?.blockers||[]).join(' · ')||'Finished-book compilation did not pass deterministic preflight.');
    try{await seedFollowingBook252116(b,seriesId)}catch(e){console.warn('V252.192 next-book seed did not complete',e)}
-   cfg.active=false;cfg.paused=false;cfg.awaiting_human_review=false;cfg.human_candidate_run_id=null;cfg.human_report_run_id=null;cfg.completed_at=new Date().toISOString();saveFictionAutoPipelineState25255(b.id,cfg);
+   cfg.active=false;cfg.paused=false;cfg.awaiting_human_review=false;cfg.human_candidate_run_id=null;cfg.human_report_run_id=null;cfg.completed_at=new Date().toISOString();saveFictionAutoPipelineState25255(b.id,cfg);fictionPersistAutoIntent252210(b,seriesId,false,false);fictionDisarmPipelineWatchdog252210(b.id);
    if(st)st.textContent='Finished book compiled — cover, profile illustrations and Sol final report are ready.';fictionFinishJob25265(job,'completed','Finished illustrated book + Sol final report');
    if(fictionStudioOpenBookId25265===b.id)await openSavedFictionBook25233(b.id);else fictionRefreshVisiblePipelineStatus25296();return
   }
@@ -4033,7 +4086,7 @@ async function runAutomaticFictionPipeline25255(b){
   if(st)st.textContent='Second draft and Sol report complete — awaiting your review.';
   fictionFinishJob25265(job,'completed','Sol report ready · awaiting human review');
   if(fictionStudioOpenBookId25265===b.id)await openSavedFictionBook25233(b.id);else fictionRefreshVisiblePipelineStatus25296()
- }catch(e){cfg.active=true;cfg.paused=true;saveFictionAutoPipelineState25255(b.id,cfg);fictionAutoPipeline25255Paused.add(b.id);fictionFinishJob25265(job,'paused',String(e.message||e));if(st)st.innerHTML=`<span class="error">${escapeHtml(e.message||String(e))}</span><br>Automatic pipeline paused. Every completed chapter and editorial checkpoint remains saved. Press Resume automatic pipeline to continue safely.`;if(btn){btn.disabled=false;btn.textContent='Resume automatic pipeline'}}
+ }catch(e){cfg.active=true;cfg.paused=true;saveFictionAutoPipelineState25255(b.id,cfg);fictionAutoPipeline25255Paused.add(b.id);fictionPersistAutoIntent252210(b,seriesId,true,true);fictionFinishJob25265(job,'paused',String(e.message||e));if(st)st.innerHTML=`<span class="error">${escapeHtml(e.message||String(e))}</span><br>Automatic pipeline paused. Every completed chapter and editorial checkpoint remains saved. Press Resume automatic pipeline to continue safely.`;if(btn){btn.disabled=false;btn.textContent='Resume automatic pipeline'}}
 }
 function fictionSafeName25233(v){return String(v||'fiction').replace(/[^a-z0-9._-]+/gi,'_').replace(/^_+|_+$/g,'')||'fiction'}
 async function makeReviewZip25233(files,name){const entries=Object.entries(files).map(([p,c])=>({name:p,data:typeof c==='string'?c:JSON.stringify(c,null,2)})),blob=kindleStoredZip(entries),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}

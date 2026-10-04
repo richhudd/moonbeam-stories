@@ -1,3 +1,16 @@
+## V252.210 — self-healing Asunder automatic runner
+
+- Fixes the observed failure where an Aion chunk was successfully saved but the browser orchestrator never sent the next chunk.
+- Production no longer waits for the live usage/cost panel after a chunk save. Usage refresh is fire-and-forget and has a 12-second ceiling, so a cosmetic UI request cannot stall manuscript production.
+- Automatic jobs now carry a heartbeat. A watchdog checks active Asunder drafting every 30 seconds.
+- If the browser job goes silent for 90 seconds **and the server shows no active chunk lock**, the watchdog marks the dead local orchestrator stale and restarts from the durable server checkpoint.
+- The watchdog will **not** duplicate an active Aion request: the persisted server `in_flight` chunk lock remains authoritative.
+- `novel-status` now exposes current chunk `in_flight`, `last_saved_at`, and `last_error` metadata so recovery can distinguish a genuinely running provider request from a dead browser loop.
+- Automatic-pipeline intent is now also checkpointed in Supabase (`generation_state.asunder_auto_pipeline`) instead of existing only in browser memory/localStorage. Reloading/reopening the book can therefore rehydrate and resume an active unpaused Asunder pipeline.
+- Book/series navigation re-arms the watchdog automatically for active Asunder volumes.
+- Pause, hard-error pause and successful completion are persisted to the server as well as locally.
+- Existing chunk checkpoints, duplicate-generation locking, one-Aion-revision editorial limits and erotic-prose protection remain unchanged.
+
 ## V252.209 — finished-volume Asunder vignette replacement / image-led recasting
 
 - Finished Asunder volumes now show **Replace vignette** for each of the four wives.
