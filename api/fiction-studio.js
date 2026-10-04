@@ -923,6 +923,15 @@ const fictionAsunderVenicePortraitPrompt252196=(safe,castContrast=[])=>{
   const others=(Array.isArray(castContrast)?castContrast:[]).slice(0,3).map(x=>{const a=x?.appearance||{};return `${clip(x?.first_name,20)}: ${clip(x?.background,38)}, ${clip(a.hair,38)}, ${clip(a.complexion,30)}, ${clip(a.figure,38)}`}).join(' | ');
   return fictionVenicePrompt252179(`Create ONE photorealistic private-membership profile photograph of a fictional ADULT woman for an elite wife-sharing network. Preserve a natural, believable, non-airbrushed photographic look. She must remain a recognisably real individual woman with realistic skin texture, facial asymmetry, natural eyes, natural hair and a human finish: do NOT turn her into a glossy AI glamour model. The image should feel more vulnerable, intimate and sexy than a normal portrait, but the erotic charge should come from styling, context, framing, body language and emotional openness rather than a generic glamour expression. Preserve her underlying emotional character: she may look natural, shy, sweet, softly flirtatious, slightly nervous, faintly embarrassed, hesitant or vulnerable. Do NOT flatten all wives into the same bold, sassy, knowingly seductive persona. Vary wardrobe and setting naturally. Sexy but non-explicit clothing may include underwear, bikini, short skirt and tube top, camisole, cropped top, fitted dress, low-cut top or open shirt where compatible with canon. Do NOT default all women to sheer lingerie, satin slips or the same hotel-bedroom look. Use intimate attractive settings such as a bedroom, apartment interior, dressing area, bathroom mirror, balcony, terrace, lounge, casual home interior or poolside setting where compatible with canon. Preserve strong visual distinction from the other wives. Canon: ${canon}. No explicit sexual act, visible genitals, porn aesthetic, plastic glamour finish, text, logo, UI, border, collage or second person.${others?` Keep her visibly distinct from the other principal women: ${others}.`:''}`,1600);
 };
+const fictionAsunderVenicePortraitPrompt252198=(safe,castContrast=[],photoMode='partner',backgroundHint='')=>{
+  const clip=(v,n=82)=>String(v||'').replace(/\s+/g,' ').trim().slice(0,n);
+  const canon=[`age ${clip(safe.adult_age,12)}`,`background ${clip(safe.nationality_or_background)}`,`face ${clip(safe.face)}`,`hair ${clip(safe.hair)}`,`eyes ${clip(safe.eyes,45)}`,`complexion ${clip(safe.complexion,58)}`,`figure ${clip(safe.general_figure,72)}`,`features ${clip(safe.distinguishing_features,70)}`].filter(x=>!/(?:undefined|null)\s*$/i.test(x)).join('; ');
+  const others=(Array.isArray(castContrast)?castContrast:[]).slice(0,3).map(x=>{const a=x?.appearance||{};return `${clip(x?.first_name,18)}: ${clip(x?.background,32)}, ${clip(a.hair,32)}, ${clip(a.complexion,26)}`}).join(' | ');
+  const source=photoMode==='selfie'
+    ?`Make it look like a genuine phone selfie she took herself: informal personal framing, playful/flirtatious expression such as a soft pout, teasing half-smile or blowing a kiss. She may dress a little more provocatively than the partner-taken portraits—body-conscious top, low-cut dress, fitted casualwear, bikini where context fits, or an open shirt over normal clothing—but she is not nude. Avoid glamour-model posing.`
+    :`Make it look like a genuine flattering phone photo taken by her husband or partner: relaxed, natural and affectionate rather than staged. She is more dressed—smart casual, ordinary stylish clothes or a simple dress—and should preferably be smiling warmly or looking openly happy.`;
+  return fictionVenicePrompt252179(`Create ONE photorealistic personal profile photograph of a fictional ADULT woman. ABSOLUTE PRIORITY: natural human realism, not AI glamour. Real skin texture, facial asymmetry, believable eyes and hair, ordinary photographic imperfections and a genuine expression. Never airbrush, plasticise, beautify toward a generic model face or make this look like a coordinated fashion campaign. ${source} Use a clearly different believable background: ${clip(backgroundHint,120)}. The four women must look like unrelated real people photographed in different circumstances. Canon identity: ${canon}. Preserve her specific face, colouring, age and petite proportions. No explicit sexual act, visible genitals, full nudity, porn aesthetic, text, logo, border, collage or second person.${others?` Keep her visibly distinct from the other women: ${others}.`:''}`,1500);
+};
 const fictionAsunderVenicePortraitPrompt252179=fictionAsunderVenicePortraitPrompt252193;
 const fictionAsunderGeneratePortrait252147=async({profile,appearance,characterKey,seriesId,bookId=null,castContrast=null})=>{
   const safe=fictionAsunderPortraitSafePayload252151(profile,appearance);
@@ -1876,6 +1885,39 @@ if(mode==='discard-asunder-visual-drafts'){
 }
 
 
+
+if(mode==='regenerate-asunder-prompt4-profiles'){
+  const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
+  if(!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'This Prompt 4 profile experiment applies only to the persistent Asunder-format series.'});
+  const veniceKey=String(process.env.VENICE_API_KEY||'').trim().replace(/^[\'"]|[\'"]$/g,'');if(!veniceKey)return res.status(503).json({error:'VENICE_API_KEY is not configured.'});
+  const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});
+  const maps=(book.book_plan?.chapters||[]).slice(0,4);if(maps.length!==4)return res.status(409).json({error:'Prompt 4 profile generation requires the four planned stories.'});
+  const all=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`),profiles=[];
+  for(const m of maps){const p=(all||[]).find(x=>String(x.character_key)===String(m.asunder_character_key||''));if(!p)throw Object.assign(new Error(`Missing canonical Asunder profile for story ${m.number||''}.`),{status:409});profiles.push(p)}
+  const contrast=profiles.map(p=>({first_name:p.first_name,background:p.profile_data?.background,appearance:p.appearance_spec||{}}));
+  const photoModes=['partner','selfie','partner','selfie'];
+  const backgroundHints=[
+    'outdoors in daylight: a garden, terrace, balcony or relaxed holiday setting; candid rather than editorial',
+    'a believable private mirror or phone-selfie setting at home, such as a bedroom dressing area or bathroom, with ordinary personal details',
+    'a different everyday or travel location such as a cafe terrace, street, park, promenade or casual home setting; natural daylight if plausible',
+    'a different casual selfie context such as a balcony, apartment, poolside or holiday room; personal phone-photo energy rather than studio lighting'
+  ];
+  const stamp=Date.now(),draftProfiles=[];
+  for(let i=0;i<profiles.length;i++){
+    const p=profiles[i],safe=fictionAsunderPortraitSafePayload252151(p.profile_data||{},p.appearance_spec||{}),prompt=fictionAsunderVenicePortraitPrompt252198(safe,contrast.filter((_,j)=>j!==i),photoModes[i],backgroundHints[i]),startedAt=Date.now();
+    const img=await fictionXVeniceImage252166({prompt,size:'1024x1536'}),path=`fiction-studio/asunder-chat-review/${user.id}/${id}/${bookId}/prompt4/${stamp}/profile-${i+1}.png`;
+    await fictionAsunderStorageUpload252147(path,img.bytes,'image/png');
+    await meterFictionIllustration252151({seriesId:id,bookId,characterKey:p.character_key,substage:`asunder-visual-prompt4:profile-${i+1}`,startedAt,httpStatus:200,ok:true,model:img.model||'venice',provider:'venice',costUsd:img.cost_usd,pricingSource:img.pricing_source});
+    const review_signed_url=await fictionAsunderStorageSignedUrl252197(path,604800);
+    draftProfiles.push({character_key:p.character_key,first_name:p.first_name,path,prompt,photo_mode:photoModes[i],review_signed_url});
+  }
+  const visualDraft={generated_at:new Date().toISOString(),provider:'venice',review_folder:`fiction-studio/asunder-chat-review/${user.id}/${id}/${bookId}/prompt4/${stamp}/`,review_url_expires_at:new Date(Date.now()+604800000).toISOString(),profiles:draftProfiles};
+  const generation_state={...(book.generation_state||{}),asunder_visual_prompt4:visualDraft};
+  await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});
+  const newProfiles=[];for(const p of draftProfiles)newProfiles.push({...p,data_url:await fictionAsunderStorageDataUrl252147(p.path)});
+  return res.status(200).json({draft:visualDraft,new_profiles:newProfiles});
+}
+
 if(mode==='regenerate-asunder-prompt3-profiles'){
   const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
   if(!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'This Prompt 3 profile experiment applies only to the persistent Asunder-format series.'});
@@ -1904,10 +1946,10 @@ if(mode==='regenerate-asunder-prompt3-profiles'){
 if(mode==='refresh-asunder-chat-review-links'){
   const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
   const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});
-  const manifest=book.generation_state?.asunder_visual_prompt3;if(!Array.isArray(manifest?.profiles)||!manifest.profiles.length)return res.status(409).json({error:'No Prompt 3 review images have been generated yet.'});
+  const key=String(body.prompt||'prompt4').toLowerCase()==='prompt3'?'asunder_visual_prompt3':'asunder_visual_prompt4',manifest=book.generation_state?.[key];if(!Array.isArray(manifest?.profiles)||!manifest.profiles.length)return res.status(409).json({error:`No ${key==='asunder_visual_prompt3'?'Prompt 3':'Prompt 4'} review images have been generated yet.`});
   const profiles=[];for(const p of manifest.profiles){profiles.push({...p,review_signed_url:await fictionAsunderStorageSignedUrl252197(p.path,604800)})}
   const refreshed={...manifest,profiles,review_url_expires_at:new Date(Date.now()+604800000).toISOString()};
-  const generation_state={...(book.generation_state||{}),asunder_visual_prompt3:refreshed};
+  const generation_state={...(book.generation_state||{}),[key]:refreshed};
   await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});
   return res.status(200).json({ok:true,review_folder:refreshed.review_folder,review_url_expires_at:refreshed.review_url_expires_at,profiles});
 }
@@ -1952,7 +1994,20 @@ if(mode==='list-asunder-visual-sets'){
         prompt3={profiles,generated_at:manifest.generated_at||null,review_folder:manifest.review_folder||'',review_url_expires_at:manifest.review_url_expires_at||null};
       }
     }catch{}
-    out.push({book_id:book.id,position:book.position,working_title:book.working_title,originals,regenerations,prompt3})
+    let prompt4={};
+    try{
+      const manifest=book.generation_state?.asunder_visual_prompt4;
+      if(Array.isArray(manifest?.profiles)&&manifest.profiles.length>=4){
+        const profiles=[];
+        for(let n=0;n<4;n++){
+          const mp=manifest.profiles[n]||{};
+          const data_url=await fictionAsunderStorageDataUrl252147(mp.path||'');
+          profiles.push({first_name:mp.first_name||chosen[n]?.first_name||`Profile ${n+1}`,data_url,review_signed_url:mp.review_signed_url||'',photo_mode:mp.photo_mode||''});
+        }
+        prompt4={profiles,generated_at:manifest.generated_at||null,review_folder:manifest.review_folder||'',review_url_expires_at:manifest.review_url_expires_at||null};
+      }
+    }catch{}
+    out.push({book_id:book.id,position:book.position,working_title:book.working_title,originals,regenerations,prompt3,prompt4})
   }
   return res.status(200).json({books:out});
 }

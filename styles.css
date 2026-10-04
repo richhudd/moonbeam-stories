@@ -4507,3 +4507,9 @@ body.fiction-reader-open-25250{overflow:hidden}
 .fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:1400px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:700px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:1fr}}
+
+/* V252.198 — Prompt 4 fifth comparison box */
+.fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1550px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1050px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:1fr}}

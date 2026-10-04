@@ -3026,3 +3026,12 @@ V252.197
 - Each Prompt 3 manifest stores exact storage paths plus 7-day signed review URLs in the book generation state, allowing the images to be retrieved for review in ChatGPT without making the storage bucket public.
 - Added a backend mode to refresh the signed review links without regenerating or changing the images.
 - The series-page Prompt 3 box reads from the saved manifest rather than scanning the storage schema.
+
+
+V252.198
+- Added an isolated Asunder “Prompt 4” portrait experiment; manuscript and cover are untouched.
+- Prompt 4 returns to the original natural, dressed photographic direction. Natural non-airbrushed realism is the highest-priority instruction.
+- The four portraits deliberately vary source and setting: two partner/husband-taken phone portraits (more dressed, relaxed and preferably smiling) and two wife-taken selfies (more playful/flirtatious and somewhat more provocative, but non-explicit and not nude).
+- Backgrounds are deliberately varied across outdoor/daylight, everyday/travel and private selfie contexts rather than a matching hotel/interior campaign.
+- Prompt 4 images save to the private asunder-chat-review/prompt4 folder with seven-day signed review links.
+- The Asunder series page now displays a fifth comparison box labelled Prompt 4.
