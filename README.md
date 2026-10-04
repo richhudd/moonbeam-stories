@@ -2915,3 +2915,11 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Asunder international-script names now retain original script on the profile page with the standard Latin-script romanised form in brackets underneath.
 - Asunder manuscript prose is locked to the Latin-script form for those characters.
 - Existing non-Latin Asunder profiles missing the romanised fields are repaired on resume without changing the canonical character identity or portrait.
+
+
+## V252.182
+- Rebuilt Fiction Studio accounting for the shared normal/X pipeline.
+- OpenRouter Aion prose calls now record provider-returned usage cost (published Aion 3.0 token pricing is the fallback).
+- Venice Asunder profile/cover images now record the resolved Venice model and per-image USD price from Venice model metadata, with published-price fallback.
+- Live book accounting and developer usage reports now reconcile costs by provider: OpenAI, OpenRouter and Venice.
+- Corrected Fiction Studio X first-draft progress label to show Aion rather than stale Luna.

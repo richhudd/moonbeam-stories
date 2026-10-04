@@ -96,13 +96,9 @@ function eventsForUser(events,userId,mode='only'){
 }
 function fictionFor(events,startMs,endMs=null){
   const list=events.filter(x=>{const t=Date.parse(String(x.completed_at||x.created_at||x.started_at||''));return (startMs==null||t>=startMs)&&(endMs==null||t<endMs)});
-  const sum=k=>list.reduce((n,x)=>n+(Number(x?.[k])||0),0);
-  return {
-    requests:list.length,
-    inputTokens:sum('input_tokens'),
-    outputTokens:sum('output_tokens'),
-    costUSD:Number(sum('cost_usd').toFixed(8))
-  };
+  const sum=k=>list.reduce((n,x)=>n+(Number(x?.[k])||0),0),providerOf=x=>{const p=String(x?.pricing_snapshot?.provider||'').toLowerCase();if(p)return p;if(String(x?.model||'')==='aion-labs/aion-3.0')return'openrouter';return'openai'};
+  const costs={openai:0,openrouter:0,venice:0,other:0};for(const x of list){const p=providerOf(x),k=Object.hasOwn(costs,p)?p:'other';costs[k]+=Number(x?.cost_usd)||0}for(const k of Object.keys(costs))costs[k]=Number(costs[k].toFixed(8));
+  return {requests:list.length,inputTokens:sum('input_tokens'),outputTokens:sum('output_tokens'),costUSD:Number(sum('cost_usd').toFixed(8)),totalCostUSD:Number(sum('cost_usd').toFixed(8)),openAICostUSD:costs.openai,openRouterCostUSD:costs.openrouter,veniceCostUSD:costs.venice,otherCostUSD:costs.other};
 }
 function clampMoney(n){return Number.isFinite(n)?Math.max(0,n):null}
 
@@ -141,7 +137,7 @@ module.exports=async function handler(req,res){
   try{
     [events,fictionEvents]=await Promise.all([
       fetchPaged('api_usage_events?select=event_type,estimated_cost_gbp,created_at,metadata&order=created_at.asc','Moonbeam usage events'),
-      fetchPaged('developer_fiction_usage_events?select=cost_usd,input_tokens,output_tokens,started_at,completed_at,created_at&order=created_at.asc','Adult Novel Studio usage events')
+      fetchPaged('developer_fiction_usage_events?select=cost_usd,input_tokens,output_tokens,model,stage,pricing_snapshot,started_at,completed_at,created_at&order=created_at.asc','Adult Novel Studio usage events')
     ]);
   }catch(e){return res.status(500).json({error:e.message||'Could not read usage events.'})}
 
@@ -181,16 +177,14 @@ module.exports=async function handler(req,res){
   const projectCosts={allTime:allCost,thisMonth:monthCost,today:todayCost,yesterday:yesterdayCost,last7Days:sevenCost};
   for(const key of ['allTime','thisMonth','today','yesterday','last7Days']){
     const c=projectCosts[key],fiction=fictionPeriods[key];
-    moonbeamPeriods[key].openAICostUSD=c.available?clampMoney(c.totalUSD-fiction.costUSD):null;
+    moonbeamPeriods[key].openAICostUSD=c.available?clampMoney(c.totalUSD-fiction.openAICostUSD):null;
     moonbeamPeriods[key].averageStoryCostUSD=moonbeamPeriods[key].stories>0&&moonbeamPeriods[key].openAICostUSD!=null?moonbeamPeriods[key].openAICostUSD/moonbeamPeriods[key].stories:null;
-    fiction.openAICostUSD=fiction.costUSD;
   }
   const fictionDuringMoonbeamBaseline=fictionFor(fictionEvents,baselineSeconds*1000);
-  moonbeamPeriods.sinceBaseline.openAICostUSD=moonbeamBaseCost.available?clampMoney(moonbeamBaseCost.totalUSD-fictionDuringMoonbeamBaseline.costUSD):null;
+  moonbeamPeriods.sinceBaseline.openAICostUSD=moonbeamBaseCost.available?clampMoney(moonbeamBaseCost.totalUSD-fictionDuringMoonbeamBaseline.openAICostUSD):null;
   moonbeamPeriods.sinceBaseline.averageStoryCostUSD=moonbeamPeriods.sinceBaseline.stories>0&&moonbeamPeriods.sinceBaseline.openAICostUSD!=null?moonbeamPeriods.sinceBaseline.openAICostUSD/moonbeamPeriods.sinceBaseline.stories:null;
   moonbeamPeriods.developerSinceBaseline.openAICostUSD=null;moonbeamPeriods.developerSinceBaseline.averageStoryCostUSD=null;
   moonbeamPeriods.otherUsersSinceBaseline.openAICostUSD=null;moonbeamPeriods.otherUsersSinceBaseline.averageStoryCostUSD=null;
-  fictionPeriods.sinceBaseline.openAICostUSD=fictionPeriods.sinceBaseline.costUSD;
 
   const storyEventsByUser=new Map();
   for(const e of completedStoryEvents(events)){const userId=String(e?.metadata?.user_id||'');if(!userId)continue;const list=storyEventsByUser.get(userId)||[];list.push(e);storyEventsByUser.set(userId,list)}
@@ -203,6 +197,6 @@ module.exports=async function handler(req,res){
     periods:moonbeamPeriods,moonbeam:{baselineUTC,periods:moonbeamPeriods},fiction:{baselineUTC:fictionBaselineUTC,periods:fictionPeriods},
     users:userSummaries,supportAttempts,
     openai:{available:moonbeamBaseCost.available,fictionProjectAvailable:fictionBaseProjectCost.available,projectFiltered:!!moonbeamBaseCost.projectFiltered,error:moonbeamBaseCost.error||monthCost.error||null,
-      splitMethod:'Adult Novel Studio uses its token-metered fiction ledger; Moonbeam Stories is the configured OpenAI project cost less Adult Novel Studio metered cost for the same period.'}
+      splitMethod:'Adult Novel Studio uses its permanent provider-aware ledger (OpenAI + OpenRouter + Venice). Moonbeam Stories is the configured OpenAI project cost less only the Adult Novel Studio OpenAI portion for the same period.'}
   });
 };

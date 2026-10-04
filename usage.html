@@ -82,10 +82,13 @@
      ${row(F,fictionCols,'AI requests','requests')}
      ${row(F,fictionCols,'Input tokens','inputTokens')}
      ${row(F,fictionCols,'Output tokens','outputTokens')}
+     ${row(F,fictionCols,'Total AI cost','totalCostUSD',money)}
      ${row(F,fictionCols,'OpenAI cost','openAICostUSD',money)}
+     ${row(F,fictionCols,'OpenRouter cost (Aion)','openRouterCostUSD',money)}
+     ${row(F,fictionCols,'Venice illustration cost','veniceCostUSD',money)}
     </tbody>
    </table></div>
-   <p class="usage-note">Adult Novel Studio cost is calculated directly from its recorded model/token usage. Its usage ledger is permanent accounting history: deleting a novel or series no longer removes those costs.</p>
+   <p class="usage-note">Adult Novel Studio cost is calculated from its permanent provider-aware ledger: OpenAI model usage, OpenRouter/Aion usage and Venice illustration requests. Its usage ledger is permanent accounting history: deleting a novel or series no longer removes those costs.</p>
   </section>
 
   <section class="usage-section usage-baseline-section">
