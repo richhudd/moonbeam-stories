@@ -1,3 +1,12 @@
+
+## V252.169 — Fiction Studio X is Aion-only
+
+- Removed Luna/Sol/Astra selectors and labels from Fiction Studio X series and book development.
+- Fiction Studio X series creation, series development/refinement and series extension now use Aion.
+- Book Development in Fiction Studio X goes directly to Aion; legacy automatic book-seeding calls are disabled there.
+- Existing Asunder identity, fixed four-wife architecture, invisible Aion production sections, Venice portraits/cover generation and human final gate are unchanged.
+- Legacy model history is masked in Fiction Studio X accounting/provenance so the active workspace presents the current Aion/Venice architecture only.
+- Normal Fiction Studio remains unchanged.
 ## V252.168 — Fiction Studio accounting helper repair
 
 - Restores the missing `fictionMoney25241` front-end formatter used by Fiction Studio series/book cost displays.
