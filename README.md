@@ -3052,3 +3052,10 @@ V252.200
 - Prompt 5 now renders through the same authenticated server-side Storage download -> data URL path already used successfully by Prompt 3 and Prompt 4.
 - Signed Prompt 5 review links are still retained in the saved manifest for external/chat-review use, but are no longer used directly as browser <img> sources.
 - No images are regenerated and no manuscript or cover data is changed.
+
+
+## V252.201
+- Prompt 5 is now the canonical/default Asunder profile-image generation direction.
+- Standard Asunder profile creation now uses the natural husband/partner-taken smiling portrait brief automatically, with non-airbrushed realism, varied believable backgrounds and no pouting/selfie glamour logic.
+- Removed the temporary experimental Asunder image UI from the series and book pages (no more Prompt 3/4/5 experiment controls or visual-set comparison panel in the normal workflow).
+- Existing experimental backend manifests remain harmlessly readable, but routine production now uses the locked-in Prompt 5 architecture by default.
