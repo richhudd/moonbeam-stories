@@ -4486,3 +4486,24 @@ body.fiction-reader-open-25250{overflow:hidden}
 /* V252.156 — Venice mirror cards are unmistakable sibling series in the main Fiction Studio library. */
 .fiction-venice-mirror-card-252156{border-style:dashed!important;box-shadow:inset 4px 0 0 rgba(255,255,255,.28)!important}
 .fiction-venice-mirror-card-252156 .fiction-series-model-25278{font-weight:800!important;letter-spacing:.16em!important}
+
+
+/* V252.195 — Asunder series visual-set browser */
+.fiction-series-books-and-visuals-252195{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:18px;align-items:start}
+.fiction-asunder-visuals-panel-252195{background:#f6f5fb;border:1px solid #ddd7ff;border-radius:16px;padding:16px}
+.fiction-asunder-visuals-loading-252195{min-height:120px;display:flex;align-items:center;justify-content:center;color:#5f5b78;background:#fff;border:1px dashed #d6d0f5;border-radius:12px;padding:14px;text-align:center}
+.fiction-asunder-book-visual-row-252195+.fiction-asunder-book-visual-row-252195{margin-top:16px;padding-top:16px;border-top:1px solid #ddd7ff}
+.fiction-asunder-book-visual-head-252195{display:flex;gap:10px;align-items:baseline;margin-bottom:10px}
+.fiction-asunder-book-visual-head-252195 strong{font-size:.85rem;letter-spacing:.08em;color:#5b547d}
+.fiction-asunder-book-visual-grid-252195{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fiction-asunder-visual-box-252195{background:#fff;border:1px solid #e5e0fb;border-radius:14px;padding:10px}
+.fiction-asunder-visual-box-252195 h4{margin:0 0 8px;font-size:.95rem}
+.fiction-asunder-visual-thumb-grid-252195{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.fiction-asunder-visual-thumb-252195{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:8px;border:1px solid #ddd7ff;background:#f3f1fd}
+.fiction-asunder-visual-cover-thumb-252195{grid-column:span 3;aspect-ratio:4/5}
+@media (max-width:1100px){.fiction-series-books-and-visuals-252195{grid-template-columns:1fr}.fiction-asunder-book-visual-grid-252195{grid-template-columns:1fr}}
+
+/* V252.196 — Prompt 3 fourth comparison box */
+.fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1400px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.fiction-asunder-book-visual-grid-252196{grid-template-columns:1fr}}

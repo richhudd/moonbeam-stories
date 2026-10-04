@@ -2998,3 +2998,23 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Generates four draft wife portraits plus a Venice-only draft cover when four manuscript stories are available.
 - Draft assets are stored separately and do not replace canonical art until **Accept new visuals** is pressed.
 - Comparison overlay shows current vs new portraits and current vs draft cover, with Accept, Regenerate again, and Keep old visuals actions.
+
+
+## V252.194
+- Asunder per-vignette Sol gate now combines five-part stitch/continuity review with targeted anti-AI/style review before each vignette is locked.
+- Aion repairs only Sol-authorised mini-chapters for continuity and/or concrete style findings, then Sol verifies both before the next vignette starts.
+- Deterministic Asunder house style converts drafting-model Markdown italics into clean canonical prose plus structured italic-span metadata, so the reader displays italics without raw asterisks. Spoken dialogue punctuation is preserved.
+
+
+V252.195
+- Added an Asunder series-page visual-set browser beside the Books panel.
+- It shows three boxes per saved book: Originals, Regen 1 and Regen 2.
+- Each box displays the full set of four profile portraits plus the matching cover.
+- The browser reads saved Venice audition assets without altering canonical artwork.
+
+
+V252.196
+- Added a developer-only "Generate Prompt 3 profiles" action for Asunder books.
+- Prompt 3 regenerates profile portraits only, with no cover generation and no manuscript changes.
+- The Asunder series-page visual comparison panel now shows four boxes per book: Originals, Regen 1, Regen 2, and Prompt 3.
+- Prompt 3 is designed to preserve natural, non-airbrushed realism while making the wives more vulnerable and sexy through styling, context and expression rather than generic AI glamour.
