@@ -2867,3 +2867,10 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 ## V252.171
 - Fixes Fiction Studio Series Development crash `Assignment to constant variable.` introduced in V252.170 when normalising Aion's generated Series Bible.
 - No changes to Asunder identity, four-wife architecture, Aion sectioning, portraits, covers, or JSON/naming behaviour beyond this crash fix.
+
+
+## V252.172
+- Restores the proven Series Development contract used by the former Sol flow, with Aion as a drop-in replacement.
+- Aion Series Development now uses a strict API-level JSON schema and a 6,500-token ceiling.
+- Adds one narrow schema-constrained repair retry if the provider returns malformed structured output.
+- Leaves deterministic naming, location/profession research, collision checks, Asunder four-wife rules, Aion production sections, portraits and covers unchanged.
