@@ -1,3 +1,11 @@
+## V252.170 — Aion Series Bible contract + stale-draft repair
+
+- Aion Series Development now uses an explicit machine-JSON output contract and requests JSON-object mode from OpenRouter.
+- New-character `[[CHAR:...]]` markers are only valid when backed by a `characters[]` naming profile; orphan markers are neutralised before naming.
+- If orphan markers somehow survive character naming, the pipeline repairs them deterministically instead of dead-ending with a naming invariant failure.
+- Manually saving a Series Bible now supersedes any stale in-progress Series Development job, so an old Aion draft cannot overwrite or keep warning against a pasted replacement bible.
+- Existing Asunder identity, exactly-four-wife architecture, Aion invisible production sections, Venice portraits/covers and V252.169 Aion-only routing are unchanged.
+
 
 ## V252.169 — Fiction Studio X is Aion-only
 
