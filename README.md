@@ -1,3 +1,10 @@
+## V252.168 — Fiction Studio accounting helper repair
+
+- Restores the missing `fictionMoney25241` front-end formatter used by Fiction Studio series/book cost displays.
+- Restores the missing `fictionDuration25241` formatter used by production-accounting duration displays.
+- Prevents the `Can't find variable: fictionMoney25241` runtime failure when opening/creating Fiction Studio series.
+- Retains the complete V252.167 Asunder harder-bible compatibility patch unchanged, including the permanent `asunder_fixed_four_story_identity_v1` trigger, fixed four-wife architecture, Aion invisible-section drafting, wife portraits and final-cover machinery.
+
 ## V252.167 — Asunder harder-bible compatibility
 
 - Keeps the permanent `asunder_fixed_four_story_identity_v1` marker and all existing Asunder-specific four-wife, profile/portrait, cover, continuity and Aion chunking machinery unchanged.

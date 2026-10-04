@@ -3473,6 +3473,21 @@ function fictionSavedStatus25244(b){
  if(planned)return `READY · Book Plan complete · ${planned} chapters`;
  return 'READY · Develop Book'
 }
+function fictionMoney25241(value){
+ const n=Number(value);
+ return `$${(Number.isFinite(n)?n:0).toFixed(4)}`;
+}
+function fictionDuration25241(ms){
+ const n=Math.max(0,Number(ms)||0);
+ if(n<1000)return `${Math.round(n)} ms`;
+ const seconds=n/1000;
+ if(seconds<60)return `${seconds<10?seconds.toFixed(1):Math.round(seconds)} s`;
+ const minutes=Math.floor(seconds/60),remain=Math.round(seconds%60);
+ if(minutes<60)return `${minutes}m ${remain}s`;
+ const hours=Math.floor(minutes/60),mins=minutes%60;
+ return `${hours}h ${mins}m`;
+}
+
 async function refreshFictionSeriesHeadline252127(s){if(fictionIsVeniceMirror252155(s))return;try{if(!s?.id)return;const d=await fictionStudioRequest25229({mode:'usage-summary',id:s.id}),u=d?.usage||{},el=$('fictionSeriesCost252127');if(el&&fictionStudioActive25229?.id===s.id)el.textContent=`· Series cost to date ${fictionMoney25241(u?.total?.cost_usd||0)}`}catch{const el=$('fictionSeriesCost252127');if(el)el.textContent=''}}
 async function loadSavedFictionBooks25233(){
  const s=fictionStudioActive25229,body=$('fictionStudioBody25229');if(!s||!body)return;
