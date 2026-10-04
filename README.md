@@ -1,3 +1,17 @@
+## V252.209 — finished-volume Asunder vignette replacement / image-led recasting
+
+- Finished Asunder volumes now show **Replace vignette** for each of the four wives.
+- A replacement can be guided by a short wife/story brief, an optional pasted/dropped/uploaded fictional reference image, or both.
+- Reference images are analysed only for visible non-sensitive appearance features; nationality/ethnicity and other canon come from the explicit story brief/series plan, not image inference.
+- New character names still come from the deterministic backstage demographic naming engine; Sol plans identities/roles but does not choose names.
+- If a reference image is supplied, it becomes the visual source of truth for a new photorealistic husband/partner-taken canonical Asunder portrait. The source image itself is not used as the finished profile picture.
+- The replacement is prepared non-destructively first. Only after the new plan, names, profile record and canonical portrait are safely saved is the selected old vignette detached.
+- The old vignette plan, manuscript and profile snapshot are archived in the book generation state; the other three vignettes remain untouched.
+- Only the selected vignette is removed from the lock/chunk/execution-memory ledger, so the existing automatic pipeline regenerates exactly that vignette in five chunks, runs the normal Aion → Sol gate, then rebuilds the final report/preflight/cover.
+- Old editorial runs belonging to a replaced vignette are retained for audit but hidden from the active book workflow.
+- Replacing Vignette 1 invalidates the old cover; all replacements invalidate the old whole-volume final report/preflight so the finished volume is recompiled from the accepted four-vignette set.
+- Removed the replacement path's dependence on the old `petite=true` assumption: a reference-led wife may be short, tall, fuller, broader, athletic or otherwise distinct.
+
 ## V252.208 — deterministic anti-AI cleanup + immutable erotic prose
 
 - Asunder Sol reviews now receive a deterministic **per-vignette** pattern scan, not the whole-volume pattern rate.
