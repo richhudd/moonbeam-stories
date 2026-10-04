@@ -2892,3 +2892,10 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Book Plan output ceiling reduced to a focused 9,000 tokens with one schema-constrained retry on provider/formatting failure.
 - Asunder four-woman cast design now also uses strict JSON schema output with one constrained retry.
 - No changes to the four-wife format, invisible production-section architecture, naming/collision machinery, Venice portraits/covers, or one-click orchestration.
+
+## V252.178
+- Fiction Studio X now shares the normal Fiction Studio control flow wholesale for Series Development, Book Development, Sol seeding/reports, naming/research/validation, checkpoint/resume, human review, proofing and next-book seeding.
+- The only model substitution is prose production: where normal Fiction Studio uses Luna to write/rewrite manuscript prose, Fiction Studio X uses Aion.
+- Removed the abandoned Aion-only X planning/drafting/revision orchestration paths and their UI/status text.
+- Asunder remains a bespoke layer keyed by `series_format_identity: asunder_fixed_four_story_identity_v1`.
+- Asunder canonical wife portraits use Venice, retain the anti-airbrushed photorealism prompt, and again enforce the 9-characteristic variation gate (minimum 5/9 differences for every wife pair in a volume) before accepting the cast.
