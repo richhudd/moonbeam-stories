@@ -1,3 +1,10 @@
+## V252.204 — Sol filth shield in Asunder fallback repairs
+
+- Sol's final Asunder micro-patch remains exact-patch-only, but now has a server-side erotic-content shield as well as the prompt instruction.
+- During `[SOL_ASUNDER_EDITORIAL_FALLBACK]`, any patch that touches an explicit sexual span is automatically blocked unless it preserves the protected erotic vocabulary and avoids material compression of that span.
+- Blocked fallback patches are dropped rather than applied, so Sol cannot silently sanitise, euphemise or tone down Aion's explicit prose while still being allowed to fix non-erotic continuity/style defects.
+- The run metadata records any blocked fallback patches for inspection.
+
 # V252.184
 
 - Asunder five-part chunk planning now uses the model selected for Book Development (Luna, Sol or Astra), not hard-coded Luna.
