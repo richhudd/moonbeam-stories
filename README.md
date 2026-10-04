@@ -2899,3 +2899,9 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Removed the abandoned Aion-only X planning/drafting/revision orchestration paths and their UI/status text.
 - Asunder remains a bespoke layer keyed by `series_format_identity: asunder_fixed_four_story_identity_v1`.
 - Asunder canonical wife portraits use Venice, retain the anti-airbrushed photorealism prompt, and again enforce the 9-characteristic variation gate (minimum 5/9 differences for every wife pair in a volume) before accepting the cast.
+
+## V252.179
+- Fixed Asunder canonical-wife portrait generation failing with `Invalid request parameters` at the Venice image stage. Venice's OpenAI-compatible image endpoint limits `prompt` to 1,500 characters; the prior helper allowed up to 4,500.
+- Venice requests are now hard-capped at 1,500 characters.
+- Reworked Asunder profile and cover prompts to be compact and canon-first so age/background/face/hair/eyes/complexion/figure/distinguishing features survive the provider limit, while retaining the real-skin / anti-airbrushed / anti-AI-doll direction and cast differentiation.
+- No change to the normal Fiction Studio planning architecture, the 9-characteristic Asunder variation gate, or Aion's prose-only substitution in Fiction Studio X.
