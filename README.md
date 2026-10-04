@@ -1,3 +1,13 @@
+## V252.208 — deterministic anti-AI cleanup + immutable erotic prose
+
+- Asunder Sol reviews now receive a deterministic **per-vignette** pattern scan, not the whole-volume pattern rate.
+- High-density em dashes, `not X … but Y` framing, triplet rhythm and repeated stock phrases are supplied to Sol with chunk-number locators and concrete occurrence excerpts.
+- After Aion's single revision, any pattern still above the Asunder intervention threshold automatically forces the final Sol targeted-repair path; Sol cannot simply approve past the remaining deterministic defect.
+- Sol's final fallback receives those deterministic targets explicitly and is required to clean the remaining non-erotic AI fingerprints before the vignette locks.
+- The erotic shield is stronger: if a Sol fallback patch touches a paragraph containing protected explicit sexual vocabulary, the **entire word-token sequence of that paragraph is immutable**. Sol may alter punctuation/spacing there, which lets her reduce em-dash abuse without rewriting or sanitising Aion's erotic wording.
+- Any attempted word-level change inside a protected erotic paragraph is rejected server-side and logged rather than applied.
+- No additional AI review is added: after Sol's targeted fallback repair, the vignette still locks automatically.
+
 ## V252.207 — simplified failsafe Asunder vignette pipeline
 
 - Each vignette now has exactly one editorial cycle: **Aion first draft → Sol first review → one Aion revision (only if needed) → one Sol final verification**.
