@@ -3152,3 +3152,14 @@ V252.200
 - A successful Sol fallback locks the vignette immediately **without another subjective style-review loop**, then the automatic pipeline proceeds to the next story.
 - The existing hard stop remains for genuine technical failures (missing manuscript/chunk, unsafe patch mismatch, corrupt state, model/API failure, etc.).
 - Existing paused Asunder books migrate naturally: pressing Resume reuses the saved two Aion repair/verification checkpoints, enters the Sol fallback, locks the repaired story and continues instead of repeating the same pause.
+
+
+## V252.211
+
+- Added **manual wife insertion at Book Development** for Asunder volumes.
+- You can now optionally seed **Vignettes 1–4** with a brief and a pasted/dropped/uploaded image.
+- Moonbeam now uses a **two-step image path** for these manual wife seeds:
+  1. source image → clean canonical wife image
+  2. canonical wife image → final Asunder profile photo
+- Manual wife anchors are persisted into the resumable Book Development pipeline and are applied both to story planning and to canonical profile creation.
+- Reference-image handling remains opt-in and is intended for fictional/synthetic images or references you have permission to use.
