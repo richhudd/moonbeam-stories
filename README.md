@@ -1,3 +1,11 @@
+## V252.173 — Fiction Studio X one-click book production
+
+- **Develop Book is now the single launch action for Fiction Studio X.** After Aion finishes resumable Book Development, the client immediately continues into the existing Aion production pipeline instead of stopping for another manual click.
+- The automatic chain is: **Aion Book Plan → any Asunder cast/profile/portrait gates → Aion Draft 1 → Aion Draft 2 → final product assembly / required Venice visuals → Awaiting human review**.
+- The pipeline still stops at the human final gate. Human approval or a targeted Aion rewrite remains deliberate and manual.
+- Existing checkpoint/resume behaviour is preserved. If a request fails or the browser session is interrupted, completed planning, draft and revision checkpoints remain saved and the Book screen can resume safely.
+- The legacy non-X Fiction Studio workflow is unchanged.
+
 ## V252.170 — Aion Series Bible contract + stale-draft repair
 
 - Aion Series Development now uses an explicit machine-JSON output contract and requests JSON-object mode from OpenRouter.
@@ -2874,3 +2882,9 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 - Aion Series Development now uses a strict API-level JSON schema and a 6,500-token ceiling.
 - Adds one narrow schema-constrained repair retry if the provider returns malformed structured output.
 - Leaves deterministic naming, location/profession research, collision checks, Asunder four-wife rules, Aion production sections, portraits and covers unchanged.
+
+## V252.174
+- Fiction Studio X Book Development now uses strict API-level JSON schema output for the Aion Book Plan instead of a free-form JSON request.
+- Book Plan output ceiling reduced to a focused 9,000 tokens with one schema-constrained retry on provider/formatting failure.
+- Asunder four-woman cast design now also uses strict JSON schema output with one constrained retry.
+- No changes to the four-wife format, invisible production-section architecture, naming/collision machinery, Venice portraits/covers, or one-click orchestration.
