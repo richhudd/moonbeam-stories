@@ -3182,3 +3182,10 @@ V252.200
 - Fixed Book Development crash when a manual wife reference image is supplied.
 - The shared Asunder reference-image helpers are now initialized before the Book Development route can call them, removing the JavaScript temporal-dead-zone error: `Cannot access 'fictionAsunderReferenceImage252209' before initialization`.
 - No database migration required. Existing planning checkpoints remain valid.
+
+
+## V252.214
+
+- Book Development no longer dies when a prohibited AI-default name slips through.
+- Banned names such as `Cross` are converted to an internal character marker, checkpointed, and passed through the existing backstage demographic naming engine for automatic replacement.
+- No database migration required.
