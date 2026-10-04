@@ -3059,3 +3059,15 @@ V252.200
 - Standard Asunder profile creation now uses the natural husband/partner-taken smiling portrait brief automatically, with non-airbrushed realism, varied believable backgrounds and no pouting/selfie glamour logic.
 - Removed the temporary experimental Asunder image UI from the series and book pages (no more Prompt 3/4/5 experiment controls or visual-set comparison panel in the normal workflow).
 - Existing experimental backend manifests remain harmlessly readable, but routine production now uses the locked-in Prompt 5 architecture by default.
+
+
+## V252.202
+- Replaced the old four-panel Asunder final cover with the definitive single-wife aftermath architecture.
+- Every volume cover now uses the wife from Story N.1 only, avoiding ambiguity over which character is being illustrated.
+- Her saved canonical Asunder portrait is passed as the binding image-generation reference so the cover woman remains the same person as her profile image.
+- Luna extracts the cover moment from the finished Story 1 manuscript and treats concrete story facts as binding, including clothing colour/type, shoes, jewellery, location and departure context.
+- The cover scene is explicitly after the encounter and on the way home: leaving the venue/hotel, travelling after departure, being dropped off, or approaching home, according to the actual story. It is never a sex scene or immediate bedroom aftermath.
+- Non-explicit aftermath cues may include mussed hair, smudged makeup, flushed skin, rumpled/displaced clothing, heels in hand and an emotionally affected expression, while explicit nudity, sexual activity and bodily fluids are prohibited in the cover art.
+- Image composition reserves a calm top 22% title-safe zone and bottom 12% author-safe zone; the wife's face must remain entirely outside the title zone and fully visible.
+- Moonbeam deterministically overlays ASUNDER, VOLUME N and ANA ROJAS using Georgia / Times New Roman serif typography.
+- Final cover metadata records the Story 1 wife, canonical portrait path, story number and extracted art-direction brief.
