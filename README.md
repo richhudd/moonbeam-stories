@@ -1,3 +1,7 @@
+## V252.175
+
+Fiction Studio X restored to the proven normal Fiction Studio architecture. Sol/Astra planning, structured development, review/reporting, seeding, resume and human-gate workflow are shared with normal Fiction Studio. Aion replaces Luna only for prose drafting and writer-side rewrite stages. Asunder deterministic four-wife, chunking, portrait and cover rules remain intact.
+
 ## V252.173 — Fiction Studio X one-click book production
 
 - **Develop Book is now the single launch action for Fiction Studio X.** After Aion finishes resumable Book Development, the client immediately continues into the existing Aion production pipeline instead of stopping for another manual click.
