@@ -1,3 +1,12 @@
+## V252.205 — self-healing Asunder generation locks
+
+- Fixes the `Story N mini-chapter N is already being generated` deadlock.
+- An active mini-chapter lock is now a **WAIT** state, not a fatal/pause state. The browser automatically waits, polls the saved checkpoint, and continues as soon as the existing request saves or the 15-minute lock becomes stale and can be reclaimed.
+- `chunk_claim_lost` is handled the same way, so racing browser requests cannot pause a volume.
+- Recoverable Asunder Fiction Studio X draft failures (408/409/425/429/5xx) no longer stop after three attempts; they retry automatically with capped backoff while preserving every saved mini-chapter checkpoint.
+- The duplicate-generation lock remains in place, so this does not deliberately start a second Aion request for a mini-chapter already owned by another request.
+- Non-retryable/corrupt-state failures still fail closed rather than risking duplicate or destructive generation.
+
 ## V252.204 — Sol filth shield in Asunder fallback repairs
 
 - Sol's final Asunder micro-patch remains exact-patch-only, but now has a server-side erotic-content shield as well as the prompt instruction.
