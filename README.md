@@ -2954,3 +2954,30 @@ Series Development now checkpoints Astra's creative Series Bible before any nami
 ## V252.187
 - Makes Asunder canonical-profile writes idempotent using the existing `(parent_id, series_id, character_key)` unique key, so resumed/overlapping Book Development calls reuse/upsert the same profile instead of failing with a duplicate-key error.
 - Fixes the Book Development screen to show **Develop & Generate Book** and actually continue directly into the automatic generation pipeline after planning completes.
+
+
+## V252.189
+- Asunder now preserves the full five-mini-chapter production map after each story is assembled, including labelled section plans and exact saved chunk text.
+- Sol's stitch audit receives that labelled map and must identify exact mini-chapter numbers (and seam where relevant) for every repair.
+- Stitch repairs are executed by Aion, not Sol, and are hard-limited to exact text originating in Sol-authorised mini-chapters; adjacent chunks are read-only context.
+- The normal reader still sees one continuous story; mini-chapter boundaries remain internal production metadata only.
+
+## V252.190
+
+- Moves the Asunder five-part stitch/continuity gate from the end of the whole first draft to the end of EACH individual top-level story.
+- Story N is now blocked from allowing Story N+1 to start until Sol has read the assembled five mini-chapters, approved the joins, or identified exact mini-chapter/seam defects for a targeted Aion repair.
+- Aion stitch repair is limited to Sol-authorised mini-chapters; Sol then re-verifies the repaired story. Up to two targeted repair/verification cycles are allowed before the automatic pipeline pauses.
+- Only after Sol approval is the verified story promoted as the canonical draft, its preserved mini-chapter map updated, and its continuity ledger rebuilt from the final repaired text. The next story therefore inherits continuity from the stable version rather than a pre-repair draft.
+- Adds durable `asunder_stabilized_stories` checkpoints so resume cannot skip the per-story Sol gate after a connection loss.
+- Removes the redundant end-of-volume stitch audit; the later whole-volume Sol pass remains style/anti-AI only.
+- Aion remains available experimentally as the Book Development/chunk-planning model and now uses the OpenRouter structured-output route for the five-part split and continuity extraction instead of an OpenAI-only request path.
+
+## V252.191
+
+- Treats Asunder's four top-level stories as independent vignettes rather than novel chapters with narrative carry-over.
+- Removes the intra-volume narrative continuity ledger from the Asunder five-part drafting path. Scene state, chronology, clothing, emotions, unresolved events and relationship state from Story N are not fed into Story N+1.
+- After each vignette passes the per-story Sol stitch/continuity gate, Sol creates a compact **volume execution memory** describing how that finished vignette was actually executed: distinctive beats, scene shapes, initiation/control patterns, setting sequence, escalation shape and ending pattern.
+- The compact execution memory is stored durably in `generation_state.asunder_volume_execution_memory` and supplied to both the selected Book Development/chunk-planning model and Aion for later vignettes in the same volume.
+- The memory is explicitly anti-repetition context only. The approved Book Plan remains authoritative and always wins; later stories must not be redesigned merely to differ from earlier ones, and deliberate/relevant recurrence is allowed.
+- Existing legacy Asunder book-level continuity ledgers are cleared when a vignette is assembled/stabilised so a resumed older run cannot accidentally leak narrative state into the next vignette.
+- The five-part mini-chapter archive, Sol seam verification and targeted Aion repair remain unchanged.
