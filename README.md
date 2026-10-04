@@ -3071,3 +3071,12 @@ V252.200
 - Image composition reserves a calm top 22% title-safe zone and bottom 12% author-safe zone; the wife's face must remain entirely outside the title zone and fully visible.
 - Moonbeam deterministically overlays ASUNDER, VOLUME N and ANA ROJAS using Georgia / Times New Roman serif typography.
 - Final cover metadata records the Story 1 wife, canonical portrait path, story number and extracted art-direction brief.
+
+
+## V252.203
+- Asunder per-story gates can no longer deadlock after two targeted Aion repairs.
+- If Sol still reports only local continuity/assembly or concentrated anti-AI/style defects after both Aion repair passes, Sol now performs one final **continuity-only surgical micro-patch** against its own latest findings.
+- The Sol fallback uses the existing exact-text patch machinery and preserved mini-chapter locators; surrounding prose is read-only and explicit/erotic content is specifically protected from broad rewriting, softening, euphemising, shortening or sanitising.
+- A successful Sol fallback locks the vignette immediately **without another subjective style-review loop**, then the automatic pipeline proceeds to the next story.
+- The existing hard stop remains for genuine technical failures (missing manuscript/chunk, unsafe patch mismatch, corrupt state, model/API failure, etc.).
+- Existing paused Asunder books migrate naturally: pressing Resume reuses the saved two Aion repair/verification checkpoints, enters the Sol fallback, locks the repaired story and continues instead of repeating the same pause.

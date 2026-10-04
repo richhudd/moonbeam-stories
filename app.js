@@ -3876,9 +3876,16 @@ async function fictionStabilizeAsunderStory252190(b,storyNumber,seriesId,job){
   verification=await fictionAutoRunEditorialStage25255(b,'developmental','gpt-6-sol',repair.id,seriesId,job,verifyDirection);if(!verification)return null;
   verdict=String(verification?.editorial_plan?.quality_gate?.verdict||'').toLowerCase();review=verification;
  }
- if(verdict!=='approved')throw new Error(`Story ${n} still has an unresolved continuity or anti-AI/style defect after two targeted Aion repairs. Automatic generation paused before starting the next story.`);
- if(st)st.textContent=`Story ${n} passed Sol continuity/style verification. Locking the vignette and storing its compact anti-repetition memory…`;fictionUpdateJob25265(job,{stage:`Lock Story ${n}`,progress:'promoting verified vignette and storing execution memory'});
- const locked=await fictionJobRequest252144(job,{mode:'asunder-stabilize-story',id:seriesId,book_id:b.id,story_number:n,verification_run_id:verification.id,...(repair?{repair_run_id:repair.id}:{})});if(locked?.book)Object.assign(b,locked.book);await refreshFictionLiveUsage25243(b,seriesId);return locked;
+ let editorialFallback=null;
+ if(verdict!=='approved'){
+  const fallbackDirection=`[SURGICAL_REPAIR][ASUNDER_STITCH_REPAIR][SOL_ASUNDER_EDITORIAL_FALLBACK][ASUNDER_STITCH_STORY:${n}] FINAL CONTINUITY-ONLY MICRO-PATCH. Apply ONLY the exact unresolved Story ${n} findings in your latest review. Your own chapter actions and locators are binding. Make the smallest exact-text substitutions needed to remove the remaining continuity/assembly defects and concentrated synthetic-writing habits. DO NOT broadly rewrite, polish, shorten, sanitise or reinterpret the story. DO NOT reduce, soften or euphemise explicit sexual content, crude language, erotic choreography, scene duration, power dynamics, character behaviour or aftermath unless one of those exact words is itself the identified defect. Preserve every unaffected sentence. This is commercial high-heat erotica, not a literary-perfection gate: once these named local defects are patched, the story will lock automatically without another style review.`;
+  if(st)st.textContent=`Story ${n} still has narrow local defects after two Aion repairs. Sol is applying one final continuity-only micro-patch; erotic content is locked…`;fictionUpdateJob25265(job,{stage:`Sol Story ${n} final micro-patch`,progress:'continuity-only editorial fallback'});
+  editorialFallback=await fictionAutoRunEditorialStage25255(b,'revision','gpt-6-sol',review.id,seriesId,job,fallbackDirection);if(!editorialFallback)return null;repair=editorialFallback;
+  if(st)st.textContent=`Sol's final micro-patch for Story ${n} is saved. Locking the vignette automatically and continuing…`;fictionUpdateJob25265(job,{stage:`Lock Story ${n}`,progress:'editorial fallback applied; locking without another style gate'});
+ }else{
+  if(st)st.textContent=`Story ${n} passed Sol continuity/style verification. Locking the vignette and storing its compact anti-repetition memory…`;fictionUpdateJob25265(job,{stage:`Lock Story ${n}`,progress:'promoting verified vignette and storing execution memory'});
+ }
+ const locked=await fictionJobRequest252144(job,{mode:'asunder-stabilize-story',id:seriesId,book_id:b.id,story_number:n,verification_run_id:verification.id,...(repair?{repair_run_id:repair.id}:{}),...(editorialFallback?{editorial_fallback_run_id:editorialFallback.id}:{})});if(locked?.book)Object.assign(b,locked.book);await refreshFictionLiveUsage25243(b,seriesId);return locked;
 }
 async function runAutomaticFictionPipeline25255(b){
  const cfg=fictionAutoPipelineConfig25255(b.id),seriesId=cfg.series_id||fictionStudioActive25229?.id,st=$('fictionBookHomeStatus25233'),btn=$('fictionPrimaryBook25233');
