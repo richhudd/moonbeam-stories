@@ -3045,3 +3045,10 @@ V252.199
 - Backgrounds remain deliberately varied across indoor, outdoor, everyday and travel-like settings.
 - Prompt 5 touches neither manuscript nor cover and saves to the private asunder-chat-review/prompt5 folder with signed review links.
 - The Asunder series visual browser now shows a Prompt 5 comparison box.
+
+
+V252.200
+- Fixed broken Prompt 5 thumbnails in the Asunder series visual-set browser.
+- Prompt 5 now renders through the same authenticated server-side Storage download -> data URL path already used successfully by Prompt 3 and Prompt 4.
+- Signed Prompt 5 review links are still retained in the saved manifest for external/chat-review use, but are no longer used directly as browser <img> sources.
+- No images are regenerated and no manuscript or cover data is changed.

@@ -2051,8 +2051,8 @@ if(mode==='list-asunder-visual-sets'){
       if(Array.isArray(manifest?.profiles)&&manifest.profiles.length){
         const profiles=[];
         for(const p of manifest.profiles){
-          const review_signed_url=String(p.review_signed_url||'');
-          profiles.push({first_name:p.first_name||'Profile',data_url:review_signed_url||await fictionAsunderStorageDataUrl252147(p.path)})
+          const data_url=await fictionAsunderStorageDataUrl252147(p.path||'');
+          profiles.push({first_name:p.first_name||'Profile',data_url,review_signed_url:String(p.review_signed_url||'')})
         }
         prompt5={profiles,generated_at:manifest.generated_at||null,review_folder:manifest.review_folder||'',review_url_expires_at:manifest.review_url_expires_at||null};
       }
