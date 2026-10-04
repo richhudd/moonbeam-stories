@@ -870,7 +870,10 @@ const fictionAsunderProfileRules252147=`ASUNDER CANONICAL FEMALE PROFILE — MAN
 - The manuscript must not contradict the canonical profile/portrait, but it must NOT mechanically redescribe the profile image or biography. Reinforce only occasional relevant physical/biographical details naturally and get on with the story.`;
 const fictionAsunderStorageUpload252147=async(path,bytes,contentType='image/webp')=>{const enc=String(path).split('/').map(encodeURIComponent).join('/');const r=await fetch(`${SUPABASE_URL}/storage/v1/object/fiction-studio-art/${enc}`,{method:'POST',headers:adminHeaders({'Content-Type':contentType,'x-upsert':'true'}),body:bytes});const raw=await r.text();if(!r.ok)throw Object.assign(new Error(`Asunder portrait storage failed: ${raw||r.status}`),{status:502});return path};
 const fictionAsunderStorageDataUrl252147=async(path)=>{if(!path)return'';const enc=String(path).split('/').map(encodeURIComponent).join('/');const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/fiction-studio-art/${enc}`,{headers:adminHeaders()});if(!r.ok)return'';const ab=await r.arrayBuffer();return`data:${r.headers.get('content-type')||'image/webp'};base64,${Buffer.from(ab).toString('base64')}`};
-const fictionAdminRest252195=async(path,options={})=>{const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Fiction Studio storage returned HTTP ${r.status}`),{status:r.status});return data};
+const fictionAdminRest252195=async(path,options={})=>{const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Fiction Studio REST returned HTTP ${r.status}`),{status:r.status});return data};
+// V252.197 — Storage must use the Storage API, not PostgREST's public schema cache.
+const fictionAsunderStorageList252197=async(prefix)=>{const r=await fetch(`${SUPABASE_URL}/storage/v1/object/list/fiction-studio-art`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify({prefix:String(prefix||''),limit:1000,offset:0,sortBy:{column:'name',order:'asc'}})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Asunder storage list returned HTTP ${r.status}`),{status:r.status});return Array.isArray(data)?data:[]};
+const fictionAsunderStorageSignedUrl252197=async(path,expiresIn=604800)=>{if(!path)return'';const enc=String(path).split('/').map(encodeURIComponent).join('/');const r=await fetch(`${SUPABASE_URL}/storage/v1/object/sign/fiction-studio-art/${enc}`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify({expiresIn})});const raw=await r.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Asunder signed URL returned HTTP ${r.status}`),{status:r.status});const u=String(data.signedURL||data.signedUrl||data.signed_url||'');return u.startsWith('http')?u:(u?`${SUPABASE_URL}${u.startsWith('/')?'':'/'}${u}`:'')};
 // V252.151 — image-facing profile data is deliberately separated from the richer erotic/physical canon.
 // The portrait endpoint receives only ordinary adult lifestyle-portrait facts, never sexual preferences,
 // explicit story material, bust-size labels or the full canonical profile JSON.
@@ -1885,16 +1888,28 @@ if(mode==='regenerate-asunder-prompt3-profiles'){
   const stamp=Date.now(),draftProfiles=[];
   for(let i=0;i<profiles.length;i++){
     const p=profiles[i],safe=fictionAsunderPortraitSafePayload252151(p.profile_data||{},p.appearance_spec||{}),prompt=fictionAsunderVenicePortraitPrompt252196(safe,contrast.filter((_,j)=>j!==i)),startedAt=Date.now();
-    const img=await fictionXVeniceImage252166({prompt,size:'1024x1536'}),path=`fiction-studio/asunder-visual-prompt3/${user.id}/${id}/${bookId}/${stamp}/profile-${i+1}.png`;
+    const img=await fictionXVeniceImage252166({prompt,size:'1024x1536'}),path=`fiction-studio/asunder-chat-review/${user.id}/${id}/${bookId}/prompt3/${stamp}/profile-${i+1}.png`;
     await fictionAsunderStorageUpload252147(path,img.bytes,'image/png');
     await meterFictionIllustration252151({seriesId:id,bookId,characterKey:p.character_key,substage:`asunder-visual-prompt3:profile-${i+1}`,startedAt,httpStatus:200,ok:true,model:img.model||'venice',provider:'venice',costUsd:img.cost_usd,pricingSource:img.pricing_source});
-    draftProfiles.push({character_key:p.character_key,first_name:p.first_name,path,prompt});
+    const review_signed_url=await fictionAsunderStorageSignedUrl252197(path,604800);
+    draftProfiles.push({character_key:p.character_key,first_name:p.first_name,path,prompt,review_signed_url});
   }
-  const visualDraft={generated_at:new Date().toISOString(),provider:'venice',profiles:draftProfiles};
+  const visualDraft={generated_at:new Date().toISOString(),provider:'venice',review_folder:`fiction-studio/asunder-chat-review/${user.id}/${id}/${bookId}/prompt3/${stamp}/`,review_url_expires_at:new Date(Date.now()+604800000).toISOString(),profiles:draftProfiles};
   const generation_state={...(book.generation_state||{}),asunder_visual_prompt3:visualDraft};
   await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});
   const newProfiles=[];for(const p of draftProfiles)newProfiles.push({...p,data_url:await fictionAsunderStorageDataUrl252147(p.path)});
   return res.status(200).json({draft:visualDraft,new_profiles:newProfiles});
+}
+
+if(mode==='refresh-asunder-chat-review-links'){
+  const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
+  const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});
+  const manifest=book.generation_state?.asunder_visual_prompt3;if(!Array.isArray(manifest?.profiles)||!manifest.profiles.length)return res.status(409).json({error:'No Prompt 3 review images have been generated yet.'});
+  const profiles=[];for(const p of manifest.profiles){profiles.push({...p,review_signed_url:await fictionAsunderStorageSignedUrl252197(p.path,604800)})}
+  const refreshed={...manifest,profiles,review_url_expires_at:new Date(Date.now()+604800000).toISOString()};
+  const generation_state={...(book.generation_state||{}),asunder_visual_prompt3:refreshed};
+  await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});
+  return res.status(200).json({ok:true,review_folder:refreshed.review_folder,review_url_expires_at:refreshed.review_url_expires_at,profiles});
 }
 
 if(mode==='list-asunder-visual-sets'){
@@ -1909,7 +1924,7 @@ if(mode==='list-asunder-visual-sets'){
     const originalsProfiles=[];for(const p of chosen)originalsProfiles.push({character_key:p.character_key,first_name:p.first_name,data_url:await fictionAsunderStorageDataUrl252147(p.portrait_path)});
     const originals={profiles:originalsProfiles,cover:book.generation_state?.asunder_cover?.cover_path?{data_url:await fictionAsunderStorageDataUrl252147(book.generation_state.asunder_cover.cover_path)}:null};
     const prefix=`fiction-studio/asunder-visual-auditions/${user.id}/${id}/${book.id}/`;
-    const objs=await fictionAdminRest252195(`storage.objects?select=name,created_at&bucket_id=eq.fiction-studio-art&name=like.${encodeURIComponent(prefix+'%')}&order=name.asc`);
+    const objs=(await fictionAsunderStorageList252197(prefix)).map(o=>({name:`${prefix}${o.name}`,created_at:o.created_at||o.updated_at||null}));
     const byStamp=new Map();
     for(const obj of(Array.isArray(objs)?objs:[])){
       const parts=String(obj.name||'').split('/');const stamp=parts[5]||'',file=parts[6]||'';if(!stamp||!file)continue;
@@ -1926,18 +1941,15 @@ if(mode==='list-asunder-visual-sets'){
     }
     let prompt3={};
     try{
-      const p3prefix=`fiction-studio/asunder-visual-prompt3/${user.id}/${id}/${book.id}/`;
-      const p3objs=await fictionAdminRest252195(`storage.objects?select=name,created_at&bucket_id=eq.fiction-studio-art&name=like.${encodeURIComponent(p3prefix+'%')}&order=name.asc`);
-      const byP3Stamp=new Map();
-      for(const obj of(Array.isArray(p3objs)?p3objs:[])){
-        const parts=String(obj.name||'').split('/');const stamp=parts[5]||'',file=parts[6]||'';if(!stamp||!file)continue;
-        if(!byP3Stamp.has(stamp))byP3Stamp.set(stamp,{stamp,profiles:new Map(),created_at:obj.created_at||null});
-        const row=byP3Stamp.get(stamp);const pm=file.match(/^profile-(\d+)\.(png|webp|jpg|jpeg)$/i);if(pm)row.profiles.set(Number(pm[1]),`${p3prefix}${stamp}/${file}`)
-      }
-      const latest=[...byP3Stamp.values()].filter(x=>x.profiles.size>=4).sort((a,b)=>Number(a.stamp)-Number(b.stamp)).pop();
-      if(latest){
-        const profiles=[];for(let n=1;n<=4;n++)profiles.push({first_name:chosen[n-1]?.first_name||`Profile ${n}`,data_url:await fictionAsunderStorageDataUrl252147(latest.profiles.get(n)||'')});
-        prompt3={profiles,generated_at:latest.created_at};
+      const manifest=book.generation_state?.asunder_visual_prompt3;
+      if(Array.isArray(manifest?.profiles)&&manifest.profiles.length>=4){
+        const profiles=[];
+        for(let n=0;n<4;n++){
+          const mp=manifest.profiles[n]||{};
+          const data_url=await fictionAsunderStorageDataUrl252147(mp.path||'');
+          profiles.push({first_name:mp.first_name||chosen[n]?.first_name||`Profile ${n+1}`,data_url,review_signed_url:mp.review_signed_url||''});
+        }
+        prompt3={profiles,generated_at:manifest.generated_at||null,review_folder:manifest.review_folder||'',review_url_expires_at:manifest.review_url_expires_at||null};
       }
     }catch{}
     out.push({book_id:book.id,position:book.position,working_title:book.working_title,originals,regenerations,prompt3})

@@ -3018,3 +3018,11 @@ V252.196
 - Prompt 3 regenerates profile portraits only, with no cover generation and no manuscript changes.
 - The Asunder series-page visual comparison panel now shows four boxes per book: Originals, Regen 1, Regen 2, and Prompt 3.
 - Prompt 3 is designed to preserve natural, non-airbrushed realism while making the wives more vulnerable and sexy through styling, context and expression rather than generic AI glamour.
+
+
+V252.197
+- Fixed the Venice visual-set browser error caused by querying `storage.objects` through PostgREST. Storage object listing now uses the Supabase Storage API directly.
+- Prompt 3 images now save into a dedicated private `fiction-studio/asunder-chat-review/.../prompt3/...` folder.
+- Each Prompt 3 manifest stores exact storage paths plus 7-day signed review URLs in the book generation state, allowing the images to be retrieved for review in ChatGPT without making the storage bucket public.
+- Added a backend mode to refresh the signed review links without regenerating or changing the images.
+- The series-page Prompt 3 box reads from the saved manifest rather than scanning the storage schema.
