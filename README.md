@@ -3035,3 +3035,13 @@ V252.198
 - Backgrounds are deliberately varied across outdoor/daylight, everyday/travel and private selfie contexts rather than a matching hotel/interior campaign.
 - Prompt 4 images save to the private asunder-chat-review/prompt4 folder with seven-day signed review links.
 - The Asunder series page now displays a fifth comparison box labelled Prompt 4.
+
+
+V252.199
+- Added isolated Asunder Prompt 5 portrait experiment.
+- Prompt 5 removes selfies, pouting and kiss-blowing entirely.
+- All four portraits are husband/partner-taken casual phone photographs with natural smiles: toothy, laughing, shy or warm/open.
+- Natural non-airbrushed realism remains the highest-priority visual instruction.
+- Backgrounds remain deliberately varied across indoor, outdoor, everyday and travel-like settings.
+- Prompt 5 touches neither manuscript nor cover and saves to the private asunder-chat-review/prompt5 folder with signed review links.
+- The Asunder series visual browser now shows a Prompt 5 comparison box.
