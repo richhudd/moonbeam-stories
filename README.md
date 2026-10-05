@@ -3460,3 +3460,12 @@ V252.255 — Fiction Studio series-card accounting repair
 - Fixed Asunder reader profile-page layout so the profile photo, name and metadata columns render correctly without vertical letter wrapping.
 - Restored manual regenerate-final-cover control for Asunder books in Fiction Studio X.
 - Final Asunder cover reuse is now versioned, so legacy/unflattened covers are regenerated instead of being silently reused.
+
+### V252.257
+- Fixed Asunder final-cover regeneration so it now uses the Venice image-edit path with the canonical Story 1 portrait as the binding identity reference instead of the OpenAI image-edit path that was tripping the safety blocker.
+- The **Regenerate final cover** button now forces a genuinely new render instead of silently reusing the cached current cover.
+- The UI status text now makes it clear that the regenerated cover is being **saved back to the book record** immediately after generation.
+
+
+### V252.258
+- Fixed Asunder member-profile pages inside the desktop two-page reader. The profile layout now responds to the actual page width via a container query, so a narrow desktop half-page uses the same stable single-column composition that already worked on mobile.

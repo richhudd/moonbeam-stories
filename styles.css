@@ -4535,3 +4535,26 @@ body.fiction-reader-open-25250{overflow:hidden}
 .fiction-asunder-beat-252225 small{display:block;margin-top:4px;line-height:1.3}
 .fiction-asunder-beat-aion-252225{border-width:2px}
 @media(max-width:700px){.fiction-asunder-beat-grid-252225{grid-template-columns:1fr}}
+
+
+/* V252.258 — Asunder profile pages must respond to the actual reader-page width,
+   not only the browser viewport. On desktop the book is a two-page spread, so each
+   page can be narrower than the mobile breakpoint even on a wide monitor. */
+.fiction-reader-asunder-page-252147{container-type:inline-size}
+@container (max-width:680px){
+  .fiction-reader-asunder-page-252147 .fiction-reader-page-inner-25250{padding:8px 10px 12px}
+  .fiction-reader-asunder-page-252147 .asunder-story-number-252147{font-size:2rem;margin:2px 0 8px}
+  .fiction-reader-asunder-page-252147 .asunder-profile-shot-252147{width:100%;max-width:none;box-shadow:none}
+  .fiction-reader-asunder-page-252147 .asunder-profile-brand-252147{grid-template-columns:auto minmax(0,1fr);padding:10px 12px;gap:10px}
+  .fiction-reader-asunder-page-252147 .asunder-profile-verified-head-252147{grid-column:1/-1;text-align:center;white-space:normal}
+  .fiction-reader-asunder-page-252147 .asunder-profile-wordmark-252147{font-size:1.5rem}
+  .fiction-reader-asunder-page-252147 .asunder-profile-brand-252147 small{font-size:.46rem;letter-spacing:.20em}
+  .fiction-reader-asunder-page-252147 .asunder-profile-main-252147{grid-template-columns:1fr;padding:10px}
+  .fiction-reader-asunder-page-252147 .asunder-profile-photo-252147{min-height:0;aspect-ratio:.9}
+  .fiction-reader-asunder-page-252147 .asunder-profile-facts-252147{padding:14px 3px 0}
+  .fiction-reader-asunder-page-252147 .asunder-profile-facts-252147 h2{font-size:2rem}
+  .fiction-reader-asunder-page-252147 .asunder-profile-row-252147{grid-template-columns:22px 112px minmax(0,1fr)}
+  .fiction-reader-asunder-page-252147 .asunder-profile-row-252147>span:last-child{overflow-wrap:break-word;word-break:normal}
+  .fiction-reader-asunder-page-252147 .asunder-profile-tags-252147>div:last-child{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fiction-reader-asunder-page-252147 .asunder-profile-footer-252147 small{display:none}
+}
