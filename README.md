@@ -1,3 +1,20 @@
+## V252.251 — Asunder book-first casting flow
+
+- Wife Library is now management-only; casting is the first step inside the new-book generation page.
+- The book page loads the Wife Library, lets the developer choose exactly four wives in vignette order, and only then reveals Book Development controls.
+- Added immediate click feedback/disable states when continuing and when starting Book Development.
+- Fixed a backend stale-development-state overwrite that could erase `asunder_cast` after it had been saved.
+- Preserves the V252.250 economisation changes and all existing Moonbeam routes/links.
+
+## V252.250 — bandwidth / Vercel-origin economisation without changing Moonbeam links
+
+- Keeps all existing Moonbeam routes, saved-story IDs, share links, reader URLs, storage paths and public navigation unchanged.
+- Removes speculative next-page narration generation: TTS is now requested only when the reader actually reaches a narrated page.
+- Adds compact Fiction Studio usage summaries that omit raw usage-event arrays while preserving totals, stages, models, provider totals, shared-pool allocation, per-book totals and editorial-pass accounting.
+- Series overview reuses the single series accounting response for per-book costs instead of making one extra usage-summary request per book.
+- Adds compact novel-status and editorial-status polling payloads for series cards/watchdogs; full responses remain available to book pages, exports and editorial screens.
+- No changes to /api/illustrate response format in this build, deliberately avoiding a risky Moonbeam artwork-link/storage migration.
+
 ## V252.249
 
 - Fixed FireRed erotic Wife Library edits by omitting the unsupported `resolution` parameter from Venice `/image/edit` requests.
