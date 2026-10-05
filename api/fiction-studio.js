@@ -790,6 +790,50 @@ const fictionAssembleProfessionPack252106=(roles)=>{const r=Array.isArray(roles)
 // to the shared series-development/research pool or to the book that actually benefits from it.
 // Historical next-book seeds are re-attributed by their `book-N` substage, so Book N+1 carries its
 // own Sol handoff cost even if an older build stored that event against the preceding book id.
+
+// V252.271 — compact series-page accounting path.
+// Keep this deliberately independent of editorial-run reconciliation so a book-review
+// accounting edge case can never zero the whole series dashboard.
+const fictionSeriesAccountingSummary252271=async(seriesId)=>{
+  const [rows,bookRows]=await Promise.all([
+    rest(`developer_fiction_usage_events?select=id,book_id,stage,substage,model,cost_usd,duration_ms,input_tokens,cached_input_tokens,output_tokens,pricing_snapshot,created_at&series_id=eq.${encodeURIComponent(seriesId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=created_at.asc&limit=10000`),
+    rest(`developer_fiction_books?select=id,position,working_title&series_id=eq.${encodeURIComponent(seriesId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=position.asc&limit=1000`)
+  ]);
+  const all=Array.isArray(rows)?rows:[],books=Array.isArray(bookRows)?bookRows:[],bookByPos=new Map(books.map(b=>[Number(b.position||0),b])),currentBookIds=new Set(books.map(b=>String(b.id||'')).filter(Boolean));
+  const effectiveBookId=x=>{
+    const stage=String(x?.stage||''),sub=String(x?.substage||''),raw=String(x?.book_id||'');
+    if(stage==='next_book_seed'&&raw&&currentBookIds.has(raw)){
+      const m=sub.match(/book-(\d+)/i),pos=m?Number(m[1]):0,target=bookByPos.get(pos)?.id||null;
+      if(target)return target;
+    }
+    return x?.book_id||null;
+  };
+  const normalized=all.map(x=>{
+    const effective_book_id=effectiveBookId(x),rawCost=Number(x?.cost_usd)||0,provider=String(x?.pricing_snapshot?.provider||'').toLowerCase();
+    const isZeroImage=String(x?.stage||'')==='illustrations'&&rawCost<=0&&!String(x?.model||'').toLowerCase().startsWith('gpt-6-');
+    if(!isZeroImage)return {...x,effective_book_id};
+    const estimatedCost=fictionIllustrationFallbackCostUSD252263(provider||'openai',x?.model||'');
+    return {...x,effective_book_id,cost_usd:estimatedCost,pricing_snapshot:{...(x?.pricing_snapshot||{}),provider:provider||'openai',per_image_usd:estimatedCost,source:'V252.271 historical provider/model fallback estimate',estimated:true},_accounting_estimated:true};
+  });
+  const sum=(xs,k)=>xs.reduce((n,x)=>n+(Number(x?.[k])||0),0);
+  const pack=xs=>{
+    const provider_costs={openai:0,openrouter:0,venice:0,other:0};
+    for(const x of xs){
+      let p=String(x?.pricing_snapshot?.provider||'').toLowerCase();
+      if(!p)p=String(x?.model||'')===fictionXAionModel252166?'openrouter':'openai';
+      const k=Object.prototype.hasOwnProperty.call(provider_costs,p)?p:'other';
+      provider_costs[k]+=Number(x?.cost_usd)||0;
+    }
+    for(const k of Object.keys(provider_costs))provider_costs[k]=Number(provider_costs[k].toFixed(8));
+    return {requests:xs.length,cost_usd:Number(sum(xs,'cost_usd').toFixed(8)),api_duration_ms:sum(xs,'duration_ms'),input_tokens:sum(xs,'input_tokens'),cached_input_tokens:sum(xs,'cached_input_tokens'),output_tokens:sum(xs,'output_tokens'),estimated_requests:xs.filter(x=>x?._accounting_estimated===true||x?.pricing_snapshot?.estimated===true).length,provider_costs};
+  };
+  const byStage={};for(const x of normalized)(byStage[x.stage]??=[]).push(x);
+  const byModel={};for(const x of normalized)(byModel[x.model]??=[]).push(x);
+  const shared=normalized.filter(x=>!x.effective_book_id),currentDirect=normalized.filter(x=>currentBookIds.has(String(x.effective_book_id||''))),historicalOrShared=normalized.filter(x=>!currentBookIds.has(String(x.effective_book_id||'')));
+  const bookTotals={};for(const b of books)bookTotals[String(b.id)]={...pack(normalized.filter(x=>String(x.effective_book_id||'')===String(b.id))),position:Number(b.position||0),working_title:b.working_title||''};
+  return {total:pack(normalized),stages:Object.fromEntries(Object.entries(byStage).map(([k,v])=>[k,pack(v)])),models:Object.fromEntries(Object.entries(byModel).map(([k,v])=>[k,pack(v)])),accounting:{shared_series_pool:pack(shared),current_books_direct:pack(currentDirect),historical_or_shared:pack(historicalOrShared),book_totals:bookTotals,editorial_passes:[]}};
+};
+
 const fictionUsageSummary25243=async(seriesId,bookId=null)=>{
   const [rows,bookRows]=await Promise.all([
     rest(`developer_fiction_usage_events?select=*&series_id=eq.${encodeURIComponent(seriesId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=created_at.asc`),
@@ -2603,7 +2647,7 @@ if(mode==='save-asunder-browser-flat-cover'){
 if(mode==='generate-asunder-cover'){
   const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});if(!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'This cover architecture applies only to the persistent Asunder-format series.'});const finalRunId=String(book.generation_state?.final_manuscript_run_id||''),finalSource=String(book.generation_state?.final_manuscript_source||'');if(String(book.status)!=='complete'||book.generation_state?.publication_preflight?.ok!==true)return res.status(409).json({error:'Finish the manuscript and pass publication preflight before generating the final volume cover.'});const sourceKey=finalRunId||finalSource||'draft';const existing=book.generation_state?.asunder_cover;const existingFresh=existing?.cover_path&&String(existing.source_final_run_id||'')===sourceKey&&String(existing.template_id||'')===String(fictionAsunderCoverTemplateId252202)&&existing.flattened===true&&String(existing.render_version||'')==='v252.259';if(existingFresh&&!body.force){return res.status(200).json({cover:existing,cover_data_url:await fictionAsunderStorageDataUrl252147(existing.cover_path),reused:true})}if(body.force&&existing?.artwork_path){const art=await fictionAsunderStorageBytes252152(existing.artwork_path);const flat=await fictionAsunderComposeAftermathCover252202({book,art});const coverPath=existing.cover_path||`fiction-studio/asunder-covers/${user.id}/${series.id}/${book.id}/cover.jpg`;await fictionAsunderStorageUpload252147(coverPath,flat,'image/jpeg');const cover={...existing,template_id:fictionAsunderCoverTemplateId252202,render_version:'v252.259',flattened:true,flatten_method:'vector-glyphs-v1',cover_path:coverPath,generated_at:new Date().toISOString(),saved_to_book_at:new Date().toISOString(),source_final_run_id:sourceKey};const generation_state={...book.generation_state,asunder_cover:cover};await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});return res.status(200).json({cover,cover_data_url:await fictionAsunderStorageDataUrl252147(coverPath),reused:false,reflattened:true})}const chapters=finalRunId?await rest(`developer_fiction_editorial_chapters?select=chapter_number,chapter_title,manuscript&run_id=eq.${encodeURIComponent(finalRunId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`):await rest(`developer_fiction_chapters?select=chapter_number,chapter_title,manuscript&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`);if((chapters||[]).length!==4)return res.status(409).json({error:'Final Asunder cover generation requires the four finished story manuscripts.'});const cover=await fictionAsunderGenerateFinalCover252202({series,book,chapters});const generation_state={...book.generation_state,asunder_cover:cover};await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});return res.status(200).json({cover,cover_data_url:await fictionAsunderStorageDataUrl252147(cover.cover_path),reused:false});
 }
-if(mode==='usage-summary'){const bookId=String(body.book_id||'').trim()||null,usage=await fictionUsageSummary25243(id,bookId);if(body.compact===true&&usage&&typeof usage==='object'){const compactUsage={...usage};delete compactUsage.events;return res.status(200).json({usage:compactUsage})}return res.status(200).json({usage});}
+if(mode==='usage-summary'){const bookId=String(body.book_id||'').trim()||null,usage=(!bookId&&body.compact===true)?await fictionSeriesAccountingSummary252271(id):await fictionUsageSummary25243(id,bookId);if(body.compact===true&&usage&&typeof usage==='object'){const compactUsage={...usage};delete compactUsage.events;return res.status(200).json({usage:compactUsage})}return res.status(200).json({usage});}
 // V252.32 — sequential manuscript drafting with authoritative live continuity.
 if(mode==='list-chapters'){
   const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});

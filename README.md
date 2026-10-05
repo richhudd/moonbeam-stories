@@ -3529,3 +3529,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - Rebuilt from the last known-good V252.268 source rather than patching the broken V252.269 tree.
 - The Venice Asunder cover-image prompt is now deliberately minimal and exactly limited to the requested identity/aftermath/top-clearance instruction.
 - Retains the V252.268 near-full-width ASUNDER masthead treatment.
+
+
+### V252.271
+- Fixed the series accounting dashboard regression that could collapse every visible total to $0.0000.
+- Added a dedicated compact series-page accounting path, independent of editorial-run reconciliation.
+- Series accounting now reads the full usage ledger directly, preserves historical/deleted-book spend, current surviving-book spend and illustration estimates, and calculates current book totals in one resilient pass.
+- Removed the frontend catch that silently converted accounting request failures into fake zero totals.
