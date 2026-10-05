@@ -1210,7 +1210,7 @@ Return the structured brief only.`;
 };
 const fictionAsunderGenerateAftermathImage252202=async({profile,portraitBytes,brief,seriesId,bookId})=>{
   const safe=fictionAsunderPortraitSafePayload252151(profile?.profile_data||{},profile?.appearance_spec||{});
-  const prompt=`Use the canonical wife image as the identity reference. Create a close up image of this woman's face after extremely intense sex. She should look completely exhausted, sexually spent and dishevelled, with messy hair and slightly sweaty skin. She may be looking at the camera, and a faint satisfied smile is allowed. She should look deeply pleased and drained, not injured, frightened or distressed. Leave the top 30% of the page clear so she sits lower in the frame.`;
+  const prompt=`Use the canonical wife image as the identity reference only. Create a close up image of this woman's face after extremely intense sex. She should look totally exhausted, sexually spent and dishevelled. Her hair should be messy and her skin slightly sweaty. She may look at the camera and smile. She must not look injured, beaten, bruised or frightened. Make this a tight portrait with a soft, plain, indistinct background and do not reuse the background from the canonical image. Leave the top 30% of the page clear so she sits lower in the frame.`;
   const startedAt=Date.now();
   const preferredModel='firered-image-edit';
   const tried=[];let lastErr=null;
