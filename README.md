@@ -1,3 +1,34 @@
+## V252.232 — stronger beauty requirement for Asunder wives
+- Asunder wife profile portraits are now explicitly required to be **stunningly attractive / exceptionally attractive** while still remaining recognisably real and individual.
+- The main Venice portrait prompt, the alternate portrait prompt, the fallback portrait prompt and the reference-image portrait prompt now all state that attractiveness must be preserved **within the woman’s own ethnicity/background, age, body type and canonical traits**.
+- This strengthens the old weaker wording (such as merely “naturally attractive”) which could undershoot and produce wives who looked too ordinary.
+- The realism bans remain in place: no plastic skin, no generic AI glamour face, no airbrushed doll-like finish.
+
+## V252.231 — optional canonical weight control for Asunder wives
+- Adds **Weight (kg)** to the Wife Library generation controls.
+- Weight is optional; blank means the engine chooses freely.
+- A supplied weight is stored in the wife’s canonical `appearance_spec` and is passed separately to portrait generation alongside height, body type and bust size.
+- Image prompts state that a supplied numeric weight is hard canon and that visible body mass/proportions must be consistent with the combined weight, height and body-type constraints.
+
+## V252.230 — height and clothing wife-generation controls
+- Adds optional **Height** and **Clothing** controls to the Asunder Wife Library generation menu.
+- Height choices: Very short, Short, Average height, Tall, Very tall.
+- Clothing choices include cosy knitwear, smart workwear, formal/elegant, refined casualwear, casualwear, soft eveningwear, seductive but non-explicit, bikini, sarong/beachwear, and holiday/resort wear.
+- Blank still means no preference. Any selected value is hard canon for the generated wife and portrait.
+- Height is now passed separately from body type into the portrait prompt, and clothing is passed as canonical portrait outfit; neither can be silently dropped or substituted.
+
+## V252.229 — all wife trait fields enforced in portrait generation
+- The main Asunder portrait-generation path now treats every supplied visible wife trait as mandatory image canon.
+- `bust_size` is now passed into the safe portrait payload and explicitly enforced in the Venice, reference-image and fallback portrait prompts.
+- If a breast-size choice is supplied (for example **E-cup or fuller**), the prompt now states that it must be visibly reflected and must not be flattened, hidden or downplayed by clothing, framing or pose.
+- The main Venice portrait prompts no longer include the ambiguous line about “the four women” and now carry the one-person-only composition rule directly.
+- Main portrait prompts now describe the setting as private or visibly empty so they do not invite background people.
+
+## V252.228 — add "Very slender" wife body-type option
+- The Asunder Wife Library generation form now includes **Very slender** as an explicit body-type choice.
+- This behaves like the other optional trait filters: if selected, it is passed through as a hard wife-generation preference; if left blank, the engine chooses freely.
+- No other Wife Library behaviour has changed.
+
 ## V252.227 — Wife Library four-column desktop grid
 - The Asunder Wife Library now displays **four wife cards per row on desktop**.
 - Portraits and card padding are reduced so more of the library is visible at once without oversized images.
