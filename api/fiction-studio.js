@@ -802,8 +802,8 @@ const fictionUsageSummary25243=async(seriesId,bookId=null)=>{
   // current slate, proving it belongs to this surviving production chain.
   const currentBookIds=new Set(books.map(b=>String(b.id||'')).filter(Boolean));
   const effectiveBookId=x=>{const stage=String(x?.stage||''),sub=String(x?.substage||''),raw=String(x?.book_id||'');if(stage==='next_book_seed'&&raw&&currentBookIds.has(raw)){const m=sub.match(/book-(\d+)/i),pos=m?Number(m[1]):0,target=bookByPos.get(pos)?.id||null;if(target)return target}return x.book_id||null};
-  const normalized=all.map(x=>({...x,effective_book_id:effectiveBookId(x)})),a=bookId?normalized.filter(x=>String(x.effective_book_id||'')===String(bookId)&&currentBookIds.has(String(x.effective_book_id||''))):normalized;
-  const sum=(xs,k)=>xs.reduce((n,x)=>n+(+x[k]||0),0),providerOf=x=>String(x?.pricing_snapshot?.provider||'').toLowerCase()||(String(x?.model||'')===fictionXAionModel252166?'openrouter':(String(x?.stage||'')==='illustrations'&&String(x?.pricing_snapshot?.provider||'').toLowerCase()==='venice'?'venice':'openai')),pack=xs=>{const provider_costs={openai:0,openrouter:0,venice:0,other:0};for(const x of xs){const p=providerOf(x),k=Object.hasOwn(provider_costs,p)?p:'other';provider_costs[k]+=Number(x?.cost_usd)||0}for(const k of Object.keys(provider_costs))provider_costs[k]=Number(provider_costs[k].toFixed(8));return{requests:xs.length,cost_usd:Number(sum(xs,'cost_usd').toFixed(8)),api_duration_ms:sum(xs,'duration_ms'),input_tokens:sum(xs,'input_tokens'),cached_input_tokens:sum(xs,'cached_input_tokens'),output_tokens:sum(xs,'output_tokens'),provider_costs}};
+  const normalized=all.map(x=>{const effective_book_id=effectiveBookId(x),provider=String(x?.pricing_snapshot?.provider||'').toLowerCase(),rawCost=Number(x?.cost_usd)||0,isZeroImage=String(x?.stage||'')==='illustrations'&&rawCost<=0&&!String(x?.model||'').toLowerCase().startsWith('gpt-6-');if(!isZeroImage)return {...x,effective_book_id};const estimatedCost=fictionIllustrationFallbackCostUSD252263(provider||'openai',x?.model||'');return {...x,effective_book_id,cost_usd:estimatedCost,pricing_snapshot:{...(x?.pricing_snapshot||{}),per_image_usd:estimatedCost,source:'V252.263 historical provider/model fallback estimate',estimated:true},_accounting_estimated:true,_raw_cost_usd:rawCost}}),a=bookId?normalized.filter(x=>String(x.effective_book_id||'')===String(bookId)&&currentBookIds.has(String(x.effective_book_id||''))):normalized;
+  const sum=(xs,k)=>xs.reduce((n,x)=>n+(+x[k]||0),0),providerOf=x=>String(x?.pricing_snapshot?.provider||'').toLowerCase()||(String(x?.model||'')===fictionXAionModel252166?'openrouter':(String(x?.stage||'')==='illustrations'&&String(x?.pricing_snapshot?.provider||'').toLowerCase()==='venice'?'venice':'openai')),pack=xs=>{const provider_costs={openai:0,openrouter:0,venice:0,other:0};for(const x of xs){const p=providerOf(x),k=Object.hasOwn(provider_costs,p)?p:'other';provider_costs[k]+=Number(x?.cost_usd)||0}for(const k of Object.keys(provider_costs))provider_costs[k]=Number(provider_costs[k].toFixed(8));return{requests:xs.length,cost_usd:Number(sum(xs,'cost_usd').toFixed(8)),api_duration_ms:sum(xs,'duration_ms'),input_tokens:sum(xs,'input_tokens'),cached_input_tokens:sum(xs,'cached_input_tokens'),output_tokens:sum(xs,'output_tokens'),estimated_requests:xs.filter(x=>x?._accounting_estimated===true||x?.pricing_snapshot?.estimated===true).length,provider_costs}};
   const byStage={};for(const x of a)(byStage[x.stage]??=[]).push(x);const byModel={};for(const x of a)(byModel[x.model]??=[]).push(x);
   const shared=normalized.filter(x=>!x.effective_book_id),currentDirect=normalized.filter(x=>currentBookIds.has(String(x.effective_book_id||''))),historicalOrShared=normalized.filter(x=>!currentBookIds.has(String(x.effective_book_id||''))),bookTotals={};for(const b of books)bookTotals[String(b.id)]={...pack(normalized.filter(x=>String(x.effective_book_id||'')===String(b.id))),position:Number(b.position||0),working_title:b.working_title||''};
   let editorial_passes=[];
@@ -998,9 +998,28 @@ const fictionImageCostUSD252151=()=>{
   const gbp=Number(estimateGBP('image')||0),gbpPerUsd=Number(process.env.MOONBEAM_GBP_PER_USD||0.75);
   return gbp>0&&gbpPerUsd>0?Number((gbp/gbpPerUsd).toFixed(8)):0;
 };
+// V252.263 — illustration accounting may never silently price a real image call at $0.
+// Prefer a provider-reported price; otherwise use a provider/model-specific estimate.
+// The Venice default photoreal model is currently Z-Image Turbo ($0.01/image). Unknown
+// image-edit models use a conservative explicit estimate instead of the old Moonbeam $0 fallback.
+const fictionIllustrationFallbackCostUSD252263=(provider,model)=>{
+  const p=String(provider||'').toLowerCase(),m=String(model||'').toLowerCase();
+  if(p==='venice'){
+    if(m==='default'||m==='z-image-turbo'||m==='venice-sd35'||m==='chroma'||m==='firered-image-edit')return .01;
+    if(m==='qwen-edit-uncensored'||m==='qwen-image')return .03;
+    const live=fictionVeniceFallbackPrice252182(m,'1024x1536');if(Number(live)>0)return Number(live);
+    return .01;
+  }
+  if(p==='openai'){
+    if(m.includes('gpt-image-2.5-flare'))return .07;
+    const configured=fictionImageCostUSD252151();if(configured>0)return configured;
+    return .07;
+  }
+  const configured=fictionImageCostUSD252151();return configured>0?configured:.01;
+};
 const meterFictionIllustration252151=async({seriesId,bookId,characterKey='',substage='',startedAt,responseId=null,httpStatus=200,ok=true,model='gpt-image-2.5-flare',provider='openai',costUsd=null,pricingSource=''})=>{
-  const now=new Date().toISOString(),explicit=Number(costUsd),hasExplicit=Number.isFinite(explicit)&&explicit>=0,resolvedCost=hasExplicit?explicit:fictionImageCostUSD252151();
-  const snapshot={currency:'USD',source:pricingSource||(process.env.FICTION_IMAGE_COST_USD||process.env.MOONBEAM_COST_IMAGE_USD?'configured per-image estimate':'MOONBEAM image estimate converted with configured/default GBP-per-USD'),per_image_usd:resolvedCost,model:String(model||'gpt-image-2.5-flare'),provider:String(provider||'openai')};
+  const now=new Date().toISOString(),hasSupplied=costUsd!==null&&costUsd!==undefined&&costUsd!==''&&Number.isFinite(Number(costUsd))&&Number(costUsd)>0,explicit=hasSupplied?Number(costUsd):0,resolvedCost=hasSupplied?explicit:fictionIllustrationFallbackCostUSD252263(provider,model),estimated=!hasSupplied;
+  const snapshot={currency:'USD',source:pricingSource||(estimated?'provider/model fallback estimate':'provider-reported image price'),per_image_usd:resolvedCost,model:String(model||'gpt-image-2.5-flare'),provider:String(provider||'openai'),estimated};
   await rest('developer_fiction_usage_events',{method:'POST',body:JSON.stringify({parent_id:user.id,series_id:seriesId,book_id:bookId||null,stage:'illustrations',substage:substage||`asunder-profile:${characterKey}`,model:String(model||'gpt-image-2.5-flare'),response_id:responseId||null,attempt:1,ok:!!ok,http_status:+httpStatus||null,started_at:new Date(startedAt).toISOString(),completed_at:now,duration_ms:Math.max(0,Date.now()-startedAt),input_tokens:0,cached_input_tokens:0,cache_write_tokens:0,output_tokens:0,reasoning_tokens:0,cost_usd:resolvedCost,pricing_snapshot:snapshot})});
 };
 const fictionAsunderVenicePortraitPrompt252193=(safe,castContrast=[])=>{
@@ -2578,7 +2597,7 @@ if(mode==='asunder-cover-artwork'){
   const maps=(book.book_plan?.chapters||[]).slice(0,4),story1Map=maps[0],story1=(chapters||[]).slice().sort((a,b)=>Number(a.chapter_number)-Number(b.chapter_number))[0];
   const all=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(series.id)}&order=created_at.asc`),profile=(all||[]).find(x=>String(x.character_key)===String(story1Map?.asunder_character_key||''));
   if(!profile?.portrait_path)return res.status(409).json({error:'Missing canonical profile portrait for the Story 1 wife.'});
-  const brief=await fictionAsunderCoverBrief252202({series,book,story:story1,profile}),portraitBytes=await fictionAsunderStorageBytes252152(profile.portrait_path),art=await fictionAsunderGenerateAftermathImage252202({profile,portraitBytes,brief,seriesId:series.id,bookId:book.id}),base=`fiction-studio/asunder-covers/${user.id}/${series.id}/${book.id}`,artPath=`${base}/story-1-aftermath.webp`;
+  const brief=await fictionAsunderCoverBrief252202({series,book,story:story1,profile}),portraitBytes=await fictionAsunderStorageBytes252152(profile.portrait_path),art=await fictionAsunderGenerateAftermathImage252202({profile,portraitBytes,brief,seriesId:series.id,bookId:book.id}),base=`fiction-studio/asunder-covers/${user.id}/${series.id}/${book.id}`,stamp=Date.now(),artPath=`${base}/story-1-aftermath-${stamp}.webp`;
   await fictionAsunderStorageUpload252147(artPath,art,'image/webp');
   const sourceKey=String(book.generation_state?.final_manuscript_run_id||book.generation_state?.final_manuscript_source||'draft'),cover_meta={...existing,template_id:fictionAsunderCoverTemplateId252202,artwork_path:artPath,story_number:`${Number(book.position)||1}.1`,character_key:profile.character_key,wife_first_name:profile.first_name,canonical_portrait_path:profile.portrait_path,brief,source_final_run_id:sourceKey,author:series.pen_name||'Ana Rojas',volume:Number(book.position)||1,provider:'venice'};
   return res.status(200).json({artwork_data_url:await fictionAsunderStorageDataUrl252147(artPath),cover_meta,reused:false});
@@ -2590,7 +2609,7 @@ if(mode==='save-asunder-browser-flat-cover'){
   const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});
   const old=book.generation_state?.asunder_cover||{},meta=body.cover_meta&&typeof body.cover_meta==='object'?body.cover_meta:{},coverPath=`fiction-studio/asunder-covers/${user.id}/${series.id}/${book.id}/cover.jpg`;
   await fictionAsunderStorageUpload252147(coverPath,bytes,'image/jpeg');
-  const now=new Date().toISOString(),cover={...old,...meta,template_id:fictionAsunderCoverTemplateId252202,render_version:'v252.260',flattened:true,flatten_method:'browser-canvas-moonbeam-v1',cover_path:coverPath,generated_at:now,saved_to_book_at:now,author:series.pen_name||meta.author||'Ana Rojas',volume:Number(book.position)||1};
+  const now=new Date().toISOString(),cover={...old,...meta,template_id:fictionAsunderCoverTemplateId252202,render_version:'v252.264',flattened:true,flatten_method:'browser-canvas-moonbeam-v1',cover_path:coverPath,generated_at:now,saved_to_book_at:now,author:series.pen_name||meta.author||'Ana Rojas',volume:Number(book.position)||1};
   const generation_state={...(book.generation_state||{}),asunder_cover:cover};await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({generation_state,updated_at:now})});
   return res.status(200).json({ok:true,cover,cover_data_url:await fictionAsunderStorageDataUrl252147(coverPath)});
 }

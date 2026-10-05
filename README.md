@@ -3488,3 +3488,16 @@ V252.255 — Fiction Studio series-card accounting repair
 
 ### V252.262
 - Strengthened the Asunder final-cover artwork prompt. The cover wife must now remain the exact canonical Story 1 woman, the scene must match the story’s actual circumstances and time-of-day, the wife must be the only visible person, and the mood is explicitly aftermath/transgression rather than romance or date-night glamour.
+
+
+### V252.263
+- Fixed Fiction Studio illustration accounting. A missing/null image price can no longer become `$0` merely because `Number(null)` is zero.
+- Future image events prefer provider-reported cost and otherwise use a provider/model-specific fallback estimate rather than the children's Moonbeam generic zero fallback.
+- Historical zero-priced Asunder image events are repaired at accounting-read time, so existing series/book totals update after deployment without rewriting the immutable usage ledger.
+- Accounting now discloses how many historical image calls are using estimated provider/model pricing.
+
+
+### V252.264
+- Fixed **Regenerate final cover**: the browser had been hard-coded to call the artwork endpoint with `regenerate:false`, so it repeatedly flattened the same saved artwork.
+- Existing Asunder books now call the artwork endpoint with `regenerate:true`; each click makes a genuinely new Venice cover image, then uses the proven Moonbeam browser-canvas flattening method and saves that result back to the book.
+- Each regenerated raw artwork image now gets a unique timestamped storage path so browser/CDN caching cannot serve the previous cover artwork.
