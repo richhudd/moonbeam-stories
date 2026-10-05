@@ -4537,24 +4537,90 @@ body.fiction-reader-open-25250{overflow:hidden}
 @media(max-width:700px){.fiction-asunder-beat-grid-252225{grid-template-columns:1fr}}
 
 
-/* V252.258 — Asunder profile pages must respond to the actual reader-page width,
-   not only the browser viewport. On desktop the book is a two-page spread, so each
-   page can be narrower than the mobile breakpoint even on a wide monitor. */
+/* V252.261 — desktop Asunder profile page fix.
+   Mobile already uses its own long-form renderer. The desktop two-page reader
+   must keep the entire member card on ONE half-page, so never switch that card
+   to the tall mobile/single-column composition. */
 .fiction-reader-asunder-page-252147{container-type:inline-size}
-@container (max-width:680px){
-  .fiction-reader-asunder-page-252147 .fiction-reader-page-inner-25250{padding:8px 10px 12px}
-  .fiction-reader-asunder-page-252147 .asunder-story-number-252147{font-size:2rem;margin:2px 0 8px}
-  .fiction-reader-asunder-page-252147 .asunder-profile-shot-252147{width:100%;max-width:none;box-shadow:none}
-  .fiction-reader-asunder-page-252147 .asunder-profile-brand-252147{grid-template-columns:auto minmax(0,1fr);padding:10px 12px;gap:10px}
-  .fiction-reader-asunder-page-252147 .asunder-profile-verified-head-252147{grid-column:1/-1;text-align:center;white-space:normal}
-  .fiction-reader-asunder-page-252147 .asunder-profile-wordmark-252147{font-size:1.5rem}
-  .fiction-reader-asunder-page-252147 .asunder-profile-brand-252147 small{font-size:.46rem;letter-spacing:.20em}
-  .fiction-reader-asunder-page-252147 .asunder-profile-main-252147{grid-template-columns:1fr;padding:10px}
-  .fiction-reader-asunder-page-252147 .asunder-profile-photo-252147{min-height:0;aspect-ratio:.9}
-  .fiction-reader-asunder-page-252147 .asunder-profile-facts-252147{padding:14px 3px 0}
-  .fiction-reader-asunder-page-252147 .asunder-profile-facts-252147 h2{font-size:2rem}
-  .fiction-reader-asunder-page-252147 .asunder-profile-row-252147{grid-template-columns:22px 112px minmax(0,1fr)}
-  .fiction-reader-asunder-page-252147 .asunder-profile-row-252147>span:last-child{overflow-wrap:break-word;word-break:normal}
-  .fiction-reader-asunder-page-252147 .asunder-profile-tags-252147>div:last-child{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .fiction-reader-asunder-page-252147 .asunder-profile-footer-252147 small{display:none}
+@container (max-width:720px){
+  .fiction-reader-asunder-page-252147 .fiction-reader-page-inner-25250{padding:4px 6px 6px}
+  .fiction-reader-asunder-page-252147 .asunder-story-number-252147{
+    font-size:1.65rem; margin:0 0 6px; line-height:1;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-shot-252147{
+    width:100%; max-width:none; margin:0; box-shadow:none;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-brand-252147{
+    min-height:54px; grid-template-columns:auto minmax(0,1fr) auto;
+    gap:8px; padding:8px 10px;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-mark-252147{font-size:1.45rem}
+  .fiction-reader-asunder-page-252147 .asunder-profile-wordmark-252147{
+    font-size:1.32rem; letter-spacing:.13em;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-brand-252147 small{
+    margin-top:4px; font-size:.36rem; letter-spacing:.16em;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-verified-head-252147{
+    font-size:.43rem; letter-spacing:.18em; padding:6px 7px; white-space:nowrap;
+  }
+
+  .fiction-reader-asunder-page-252147 .asunder-profile-main-252147{
+    display:grid; grid-template-columns:minmax(0,44%) minmax(0,56%);
+    padding:8px 9px 5px; align-items:start;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-photo-252147{
+    min-height:0; height:218px; aspect-ratio:auto; padding:3px;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-photo-252147 img{
+    width:100%; height:100%; object-fit:cover; object-position:center;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-facts-252147{
+    padding:0 0 0 9px; min-width:0;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-facts-252147 h2{
+    font-size:1.45rem; margin:0 0 5px; padding:0 0 5px; line-height:1;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-anglicised-name-252181{
+    margin-top:3px; font-size:.64rem;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-row-252147{
+    grid-template-columns:14px 76px minmax(0,1fr);
+    gap:3px; min-height:19px; font-size:.55rem;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-row-252147 strong{
+    font-size:.39rem; letter-spacing:.10em; line-height:1.1;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-row-252147>span:last-child{
+    font-size:.55rem; line-height:1.08; padding:3px 0 3px 5px;
+    overflow-wrap:normal; word-break:normal;
+  }
+
+  .fiction-reader-asunder-page-252147 .asunder-profile-about-252147,
+  .fiction-reader-asunder-page-252147 .asunder-profile-tags-252147{
+    margin:0 9px 5px; padding:5px 7px;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-section-title-252147{
+    font-size:.46rem; letter-spacing:.18em; padding-bottom:3px; margin-bottom:4px;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-about-252147 p{
+    font-size:.53rem; line-height:1.24; padding:5px 6px;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-tags-252147>div:last-child{
+    grid-template-columns:repeat(4,minmax(0,1fr)); gap:3px;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-tags-252147 span{
+    font-size:.46rem; padding:4px 3px;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-footer-252147{
+    min-height:34px; gap:6px; padding:5px 9px;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-footer-252147>span{font-size:1.05rem}
+  .fiction-reader-asunder-page-252147 .asunder-profile-footer-252147 small{
+    display:block; font-size:.31rem; letter-spacing:.09em;
+  }
+  .fiction-reader-asunder-page-252147 .asunder-profile-footer-252147 b{
+    font-size:.42rem; letter-spacing:.10em; padding:5px 6px;
+  }
 }

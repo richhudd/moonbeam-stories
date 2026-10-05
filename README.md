@@ -3480,3 +3480,7 @@ V252.255 — Fiction Studio series-card accounting repair
 - Asunder cover flattening now uses the exact proven Moonbeam architecture: the browser loads the finished artwork, draws artwork + title + volume + author onto one HTML canvas, exports one raster JPEG, and saves that single flattened image back to the book.
 - Added a dedicated save endpoint for the browser-flattened cover. Saving the cover performs no image-model call.
 - Existing Book 1 cover artwork is reused for the repair, so fixing the typography does not require generating another image.
+
+
+### V252.261
+- Corrected the V252.258 desktop Asunder profile regression. Mobile keeps its working long-form layout; desktop half-pages now use a compact two-column profile composition sized to fit one reader page, with portrait and facts side-by-side instead of pushing all profile metadata below the visible page.
