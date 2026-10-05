@@ -3469,3 +3469,14 @@ V252.255 — Fiction Studio series-card accounting repair
 
 ### V252.258
 - Fixed Asunder member-profile pages inside the desktop two-page reader. The profile layout now responds to the actual page width via a container query, so a narrow desktop half-page uses the same stable single-column composition that already worked on mobile.
+
+
+### V252.259
+- Replaced font-dependent SVG cover typography with deterministic vector glyphs, so title, volume and author are physically rasterised into the final JPEG without relying on server fonts.
+- Regenerate final cover now re-flattens the existing saved artwork locally first, with no new AI image generation or extra image cost, and writes the corrected JPEG back to the current book record.
+
+
+### V252.260
+- Asunder cover flattening now uses the exact proven Moonbeam architecture: the browser loads the finished artwork, draws artwork + title + volume + author onto one HTML canvas, exports one raster JPEG, and saves that single flattened image back to the book.
+- Added a dedicated save endpoint for the browser-flattened cover. Saving the cover performs no image-model call.
+- Existing Book 1 cover artwork is reused for the repair, so fixing the typography does not require generating another image.

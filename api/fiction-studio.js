@@ -1170,10 +1170,57 @@ CANON: age ${safe.adult_age}; background ${safe.nationality_or_background}; face
   }
   throw Object.assign(new Error(`Asunder aftermath cover image edit failed${tried.length?` after trying ${tried.join(', ')}`:''}: ${lastErr?.message||String(lastErr)}`),{status:Number(lastErr?.status)||502});
 };
+const fictionAsunderVectorGlyphs252259={
+  'A':['01110','10001','10001','11111','10001','10001','10001'],
+  'B':['11110','10001','10001','11110','10001','10001','11110'],
+  'C':['01111','10000','10000','10000','10000','10000','01111'],
+  'D':['11110','10001','10001','10001','10001','10001','11110'],
+  'E':['11111','10000','10000','11110','10000','10000','11111'],
+  'F':['11111','10000','10000','11110','10000','10000','10000'],
+  'G':['01111','10000','10000','10111','10001','10001','01111'],
+  'H':['10001','10001','10001','11111','10001','10001','10001'],
+  'I':['11111','00100','00100','00100','00100','00100','11111'],
+  'J':['00111','00010','00010','00010','10010','10010','01100'],
+  'K':['10001','10010','10100','11000','10100','10010','10001'],
+  'L':['10000','10000','10000','10000','10000','10000','11111'],
+  'M':['10001','11011','10101','10101','10001','10001','10001'],
+  'N':['10001','11001','10101','10011','10001','10001','10001'],
+  'O':['01110','10001','10001','10001','10001','10001','01110'],
+  'P':['11110','10001','10001','11110','10000','10000','10000'],
+  'Q':['01110','10001','10001','10001','10101','10010','01101'],
+  'R':['11110','10001','10001','11110','10100','10010','10001'],
+  'S':['01111','10000','10000','01110','00001','00001','11110'],
+  'T':['11111','00100','00100','00100','00100','00100','00100'],
+  'U':['10001','10001','10001','10001','10001','10001','01110'],
+  'V':['10001','10001','10001','10001','10001','01010','00100'],
+  'W':['10001','10001','10001','10101','10101','11011','10001'],
+  'X':['10001','10001','01010','00100','01010','10001','10001'],
+  'Y':['10001','10001','01010','00100','00100','00100','00100'],
+  'Z':['11111','00001','00010','00100','01000','10000','11111'],
+  '0':['01110','10001','10011','10101','11001','10001','01110'],
+  '1':['00100','01100','00100','00100','00100','00100','01110'],
+  '2':['01110','10001','00001','00010','00100','01000','11111'],
+  '3':['11110','00001','00001','01110','00001','00001','11110'],
+  '4':['00010','00110','01010','10010','11111','00010','00010'],
+  '5':['11111','10000','10000','11110','00001','00001','11110'],
+  '6':['01110','10000','10000','11110','10001','10001','01110'],
+  '7':['11111','00001','00010','00100','01000','01000','01000'],
+  '8':['01110','10001','10001','01110','10001','10001','01110'],
+  '9':['01110','10001','10001','01111','00001','00001','01110'],
+  ' ':['00000','00000','00000','00000','00000','00000','00000']
+};
+const fictionAsunderVectorText252259=(value,{centerX=800,top=0,cell=12,gap=12,fill='#f2dfb4'}={})=>{
+  const chars=String(value||'').toUpperCase().split(''),glyphW=5*cell,charW=glyphW+gap,total=Math.max(0,chars.length*charW-gap),left=Math.round(centerX-total/2),rects=[];
+  chars.forEach((ch,i)=>{const rows=fictionAsunderVectorGlyphs252259[ch]||fictionAsunderVectorGlyphs252259[' '];rows.forEach((row,y)=>[...row].forEach((bit,x)=>{if(bit==='1')rects.push(`<rect x="${left+i*charW+x*cell}" y="${top+y*cell}" width="${Math.max(1,cell-2)}" height="${Math.max(1,cell-2)}" rx="${Math.max(1,Math.floor(cell/6))}" fill="${fill}"/>`)}))});
+  return rects.join('');
+};
 const fictionAsunderComposeAftermathCover252202=async({book,art})=>{
   const W=1600,H=2560;
   const bg=await sharp(art).resize(W,H,{fit:'cover',position:'attention'}).toBuffer();
   const vol=`VOLUME ${Math.max(1,Number(book.position)||1)}`;
+  const titleSvg=fictionAsunderVectorText252259('ASUNDER',{centerX:800,top:150,cell:23,gap:25,fill:'#f2dfb4'});
+  const volSvg=fictionAsunderVectorText252259(vol,{centerX:800,top:405,cell:10,gap:12,fill:'#f4ead5'});
+  const authorSvg=fictionAsunderVectorText252259('ANA ROJAS',{centerX:800,top:2375,cell:11,gap:13,fill:'#f4ead5'});
   const svg=Buffer.from(`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="topFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050505" stop-opacity="0.80"/><stop offset="0.68" stop-color="#050505" stop-opacity="0.34"/><stop offset="1" stop-color="#050505" stop-opacity="0"/></linearGradient>
@@ -1182,10 +1229,10 @@ const fictionAsunderComposeAftermathCover252202=async({book,art})=>{
     <rect x="0" y="0" width="1600" height="570" fill="url(#topFade)"/>
     <rect x="0" y="2190" width="1600" height="370" fill="url(#bottomFade)"/>
     <line x1="260" y1="86" x2="1340" y2="86" stroke="#d6b978" stroke-width="2" opacity="0.86"/>
-    <text x="800" y="286" text-anchor="middle" fill="#f2dfb4" font-family="Georgia, 'Times New Roman', serif" font-size="184" letter-spacing="18">ASUNDER</text>
+    ${titleSvg}
     <line x1="360" y1="354" x2="1240" y2="354" stroke="#d6b978" stroke-width="2" opacity="0.82"/>
-    <text x="800" y="448" text-anchor="middle" fill="#f4ead5" font-family="Georgia, 'Times New Roman', serif" font-size="64" letter-spacing="19">${vol}</text>
-    <text x="800" y="2466" text-anchor="middle" fill="#f4ead5" font-family="Georgia, 'Times New Roman', serif" font-size="70" letter-spacing="15">ANA ROJAS</text>
+    ${volSvg}
+    ${authorSvg}
   </svg>`);
   return sharp(bg).composite([{input:svg,left:0,top:0}]).jpeg({quality:94,mozjpeg:true}).toBuffer();
 };
@@ -1203,7 +1250,7 @@ const fictionAsunderGenerateFinalCover252202=async({series,book,chapters})=>{
   const cover=await fictionAsunderComposeAftermathCover252202({book,art});
   const base=`fiction-studio/asunder-covers/${user.id}/${series.id}/${book.id}`,artPath=`${base}/story-1-aftermath.webp`,coverPath=`${base}/cover.jpg`;
   await fictionAsunderStorageUpload252147(artPath,art,'image/webp');await fictionAsunderStorageUpload252147(coverPath,cover,'image/jpeg');
-  return{template_id:fictionAsunderCoverTemplateId252202,render_version:'v252.257',flattened:true,cover_path:coverPath,artwork_path:artPath,story_number:`${Number(book.position)||1}.1`,character_key:profile.character_key,wife_first_name:profile.first_name,canonical_portrait_path:profile.portrait_path,brief,generated_at:new Date().toISOString(),source_final_run_id:String(book.generation_state?.final_manuscript_run_id||book.generation_state?.final_manuscript_source||'draft'),author:'Ana Rojas',volume:Number(book.position)||1,provider:'venice'};
+  return{template_id:fictionAsunderCoverTemplateId252202,render_version:'v252.259-server',flattened:true,cover_path:coverPath,artwork_path:artPath,story_number:`${Number(book.position)||1}.1`,character_key:profile.character_key,wife_first_name:profile.first_name,canonical_portrait_path:profile.portrait_path,brief,generated_at:new Date().toISOString(),source_final_run_id:String(book.generation_state?.final_manuscript_run_id||book.generation_state?.final_manuscript_source||'draft'),author:'Ana Rojas',volume:Number(book.position)||1,provider:'venice'};
 };
 
 const fictionAsunderEnsureLatinName252181=async({profile,bookModel,bookRecord})=>{if(!profile)return profile;const pd={...(profile.profile_data||{})},needs=fictionAsunderHasNonLatinLetters252181(profile.first_name)||fictionAsunderHasNonLatinLetters252181(profile.full_name);if(!needs)return {...profile,profile_data:{...pd,anglicised_first_name:String(pd.anglicised_first_name||profile.first_name||'').trim(),anglicised_full_name:String(pd.anglicised_full_name||profile.full_name||'').trim()}};if(fictionAsunderLatinScriptName252181(pd.anglicised_first_name)&&fictionAsunderLatinScriptName252181(pd.anglicised_full_name))return profile;const schema={type:'object',additionalProperties:false,required:['anglicised_first_name','anglicised_full_name'],properties:{anglicised_first_name:{type:'string'},anglicised_full_name:{type:'string'}}};const prompt=`Romanise this existing fictional character name into standard readable Latin script for English-language prose. Preserve the same cultural name; DO NOT translate it into or substitute an unrelated English name. Use the normal established romanisation convention for the character's language/background where one exists. Return only the requested structured fields. ORIGINAL FIRST NAME: ${profile.first_name} ORIGINAL FULL NAME: ${profile.full_name} BACKGROUND: ${pd.background||''}`;const started=Date.now(),rr=await fictionModelFetch252175({model:bookModel,input:prompt,max_output_tokens:500,text:{format:{type:'json_schema',name:'asunder_name_romanisation',strict:true,schema}}});const raw=await rr.text();let d={};try{d=JSON.parse(raw)}catch{}await meterFiction25243({bookId:bookRecord?.id||null,stage:'book_development',substage:'asunder-name-romanisation',model:bookModel,data:d,startedAt:started,httpStatus:rr.status,ok:rr.ok});if(!rr.ok)throw Object.assign(new Error(d?.error?.message||`Name romanisation returned HTTP ${rr.status}`),{status:502});const z=parseFictionStructured25238(d,'Asunder name romanisation'),first=String(z.anglicised_first_name||'').trim(),full=String(z.anglicised_full_name||'').trim();if(!fictionAsunderLatinScriptName252181(first)||!fictionAsunderLatinScriptName252181(full))throw Object.assign(new Error('Asunder name romanisation did not return a Latin-script form.'),{status:502});const nextPd={...pd,anglicised_first_name:first,anglicised_full_name:full};if(profile.id)await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(profile.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',body:JSON.stringify({profile_data:nextPd,updated_at:new Date().toISOString()})});return {...profile,profile_data:nextPd}};
@@ -2512,8 +2559,38 @@ if(mode==='list-asunder-visual-sets'){
   return res.status(200).json({books:out});
 }
 
+if(mode==='asunder-cover-artwork'){
+  const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
+  const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});
+  if(!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'This cover architecture applies only to the persistent Asunder-format series.'});
+  const existing=book.generation_state?.asunder_cover||{};
+  if(existing.artwork_path&&!body.regenerate)return res.status(200).json({artwork_data_url:await fictionAsunderStorageDataUrl252147(existing.artwork_path),cover_meta:existing,reused:true});
+  if(String(book.status)!=='complete'||book.generation_state?.publication_preflight?.ok!==true)return res.status(409).json({error:'Finish the manuscript and pass publication preflight before generating the final volume cover.'});
+  const finalRunId=String(book.generation_state?.final_manuscript_run_id||'');
+  const chapters=finalRunId?await rest(`developer_fiction_editorial_chapters?select=chapter_number,chapter_title,manuscript&run_id=eq.${encodeURIComponent(finalRunId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`):await rest(`developer_fiction_chapters?select=chapter_number,chapter_title,manuscript&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`);
+  if((chapters||[]).length!==4)return res.status(409).json({error:'Final Asunder cover generation requires the four finished story manuscripts.'});
+  const maps=(book.book_plan?.chapters||[]).slice(0,4),story1Map=maps[0],story1=(chapters||[]).slice().sort((a,b)=>Number(a.chapter_number)-Number(b.chapter_number))[0];
+  const all=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(series.id)}&order=created_at.asc`),profile=(all||[]).find(x=>String(x.character_key)===String(story1Map?.asunder_character_key||''));
+  if(!profile?.portrait_path)return res.status(409).json({error:'Missing canonical profile portrait for the Story 1 wife.'});
+  const brief=await fictionAsunderCoverBrief252202({series,book,story:story1,profile}),portraitBytes=await fictionAsunderStorageBytes252152(profile.portrait_path),art=await fictionAsunderGenerateAftermathImage252202({profile,portraitBytes,brief,seriesId:series.id,bookId:book.id}),base=`fiction-studio/asunder-covers/${user.id}/${series.id}/${book.id}`,artPath=`${base}/story-1-aftermath.webp`;
+  await fictionAsunderStorageUpload252147(artPath,art,'image/webp');
+  const sourceKey=String(book.generation_state?.final_manuscript_run_id||book.generation_state?.final_manuscript_source||'draft'),cover_meta={...existing,template_id:fictionAsunderCoverTemplateId252202,artwork_path:artPath,story_number:`${Number(book.position)||1}.1`,character_key:profile.character_key,wife_first_name:profile.first_name,canonical_portrait_path:profile.portrait_path,brief,source_final_run_id:sourceKey,author:series.pen_name||'Ana Rojas',volume:Number(book.position)||1,provider:'venice'};
+  return res.status(200).json({artwork_data_url:await fictionAsunderStorageDataUrl252147(artPath),cover_meta,reused:false});
+}
+if(mode==='save-asunder-browser-flat-cover'){
+  const bookId=String(body.book_id||'').trim(),dataUrl=String(body.cover_data_url||'');if(!bookId)return res.status(400).json({error:'Book id is required.'});
+  const m=dataUrl.match(/^data:image\/(jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$/);if(!m)return res.status(400).json({error:'A flattened JPEG or WebP cover is required.'});
+  const bytes=Buffer.from(m[2],'base64');if(!bytes.length||bytes.length>15*1024*1024)return res.status(400).json({error:'Flattened cover data is empty or too large.'});
+  const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});
+  const old=book.generation_state?.asunder_cover||{},meta=body.cover_meta&&typeof body.cover_meta==='object'?body.cover_meta:{},coverPath=`fiction-studio/asunder-covers/${user.id}/${series.id}/${book.id}/cover.jpg`;
+  await fictionAsunderStorageUpload252147(coverPath,bytes,'image/jpeg');
+  const now=new Date().toISOString(),cover={...old,...meta,template_id:fictionAsunderCoverTemplateId252202,render_version:'v252.260',flattened:true,flatten_method:'browser-canvas-moonbeam-v1',cover_path:coverPath,generated_at:now,saved_to_book_at:now,author:series.pen_name||meta.author||'Ana Rojas',volume:Number(book.position)||1};
+  const generation_state={...(book.generation_state||{}),asunder_cover:cover};await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({generation_state,updated_at:now})});
+  return res.status(200).json({ok:true,cover,cover_data_url:await fictionAsunderStorageDataUrl252147(coverPath)});
+}
+
 if(mode==='generate-asunder-cover'){
-  const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});if(!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'This cover architecture applies only to the persistent Asunder-format series.'});const finalRunId=String(book.generation_state?.final_manuscript_run_id||''),finalSource=String(book.generation_state?.final_manuscript_source||'');if(String(book.status)!=='complete'||book.generation_state?.publication_preflight?.ok!==true)return res.status(409).json({error:'Finish the manuscript and pass publication preflight before generating the final volume cover.'});const sourceKey=finalRunId||finalSource||'draft';const existing=book.generation_state?.asunder_cover;const existingFresh=existing?.cover_path&&String(existing.source_final_run_id||'')===sourceKey&&String(existing.template_id||'')===String(fictionAsunderCoverTemplateId252202)&&existing.flattened===true&&String(existing.render_version||'')==='v252.257';if(existingFresh&&!body.force){return res.status(200).json({cover:existing,cover_data_url:await fictionAsunderStorageDataUrl252147(existing.cover_path),reused:true})}const chapters=finalRunId?await rest(`developer_fiction_editorial_chapters?select=chapter_number,chapter_title,manuscript&run_id=eq.${encodeURIComponent(finalRunId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`):await rest(`developer_fiction_chapters?select=chapter_number,chapter_title,manuscript&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`);if((chapters||[]).length!==4)return res.status(409).json({error:'Final Asunder cover generation requires the four finished story manuscripts.'});const cover=await fictionAsunderGenerateFinalCover252202({series,book,chapters});const generation_state={...book.generation_state,asunder_cover:cover};await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});return res.status(200).json({cover,cover_data_url:await fictionAsunderStorageDataUrl252147(cover.cover_path),reused:false});
+  const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});if(!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'This cover architecture applies only to the persistent Asunder-format series.'});const finalRunId=String(book.generation_state?.final_manuscript_run_id||''),finalSource=String(book.generation_state?.final_manuscript_source||'');if(String(book.status)!=='complete'||book.generation_state?.publication_preflight?.ok!==true)return res.status(409).json({error:'Finish the manuscript and pass publication preflight before generating the final volume cover.'});const sourceKey=finalRunId||finalSource||'draft';const existing=book.generation_state?.asunder_cover;const existingFresh=existing?.cover_path&&String(existing.source_final_run_id||'')===sourceKey&&String(existing.template_id||'')===String(fictionAsunderCoverTemplateId252202)&&existing.flattened===true&&String(existing.render_version||'')==='v252.259';if(existingFresh&&!body.force){return res.status(200).json({cover:existing,cover_data_url:await fictionAsunderStorageDataUrl252147(existing.cover_path),reused:true})}if(body.force&&existing?.artwork_path){const art=await fictionAsunderStorageBytes252152(existing.artwork_path);const flat=await fictionAsunderComposeAftermathCover252202({book,art});const coverPath=existing.cover_path||`fiction-studio/asunder-covers/${user.id}/${series.id}/${book.id}/cover.jpg`;await fictionAsunderStorageUpload252147(coverPath,flat,'image/jpeg');const cover={...existing,template_id:fictionAsunderCoverTemplateId252202,render_version:'v252.259',flattened:true,flatten_method:'vector-glyphs-v1',cover_path:coverPath,generated_at:new Date().toISOString(),saved_to_book_at:new Date().toISOString(),source_final_run_id:sourceKey};const generation_state={...book.generation_state,asunder_cover:cover};await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});return res.status(200).json({cover,cover_data_url:await fictionAsunderStorageDataUrl252147(coverPath),reused:false,reflattened:true})}const chapters=finalRunId?await rest(`developer_fiction_editorial_chapters?select=chapter_number,chapter_title,manuscript&run_id=eq.${encodeURIComponent(finalRunId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`):await rest(`developer_fiction_chapters?select=chapter_number,chapter_title,manuscript&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`);if((chapters||[]).length!==4)return res.status(409).json({error:'Final Asunder cover generation requires the four finished story manuscripts.'});const cover=await fictionAsunderGenerateFinalCover252202({series,book,chapters});const generation_state={...book.generation_state,asunder_cover:cover};await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});return res.status(200).json({cover,cover_data_url:await fictionAsunderStorageDataUrl252147(cover.cover_path),reused:false});
 }
 if(mode==='usage-summary'){const bookId=String(body.book_id||'').trim()||null,usage=await fictionUsageSummary25243(id,bookId);if(body.compact===true&&usage&&typeof usage==='object'){const compactUsage={...usage};delete compactUsage.events;return res.status(200).json({usage:compactUsage})}return res.status(200).json({usage});}
 // V252.32 — sequential manuscript drafting with authoritative live continuity.
