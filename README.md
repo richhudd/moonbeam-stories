@@ -1,3 +1,26 @@
+## V252.223 — Sol-written standalone prologue for every Asunder volume
+- Every newly generated Asunder volume now gets a short **Sol-written Prologue before Vignette 1**.
+- The first movement briefly explains what the fictional Asunder private-members app/community is and why consenting married adults might use it, so any volume can be read as a standalone entry point.
+- The second movement gives a **volume-specific spoiler-free teaser of the four selected wives in vignette order**, using their saved canonical profiles and approved story premises.
+- The prologue is deliberately non-explicit and compact; it is orientation and anticipation, not a fifth vignette.
+- It is stored at book level in `generation_state.asunder_prologue`, leaving the four-vignette numbering, continuity ledger, cover/profile mapping and word-count machinery unchanged.
+- It is generated once, checkpointed before Vignette 1 begins, and reused thereafter rather than regenerated on every reader open.
+- Desktop and mobile readers now place the prologue after the cover and before the first wife/profile page.
+- Complete review exports include `first-draft/prologue.txt`, and the prologue is prepended to `first-draft/full-manuscript.txt`.
+
+## V252.222 — Asunder ten-beat hybrid Sol/Aion vignette drafting
+- Replaces the normal new-vignette five-chunk all-Aion drafting pattern with a **ten-beat hybrid pipeline**.
+- **Sol always creates the ten-beat map**, regardless of which model was used for high-level Book Development. Every saved beat carries an explicit `writer` assignment: `sol` or `aion`.
+- Beats **1 and 2 must be Sol-written and non-explicit**, establishing real marriage texture and the couple's route into Asunder before pornographic action begins. The planning brief explicitly asks for how the couple met / what drew them together, ordinary marital dynamics, who first raised Asunder, why they signed up, what each thinks the other wants, and private hopes/fears.
+- Sol writes the relationship, psychological, social, anticipatory, connective and aftermath beats. Aion is called only for beats Sol marks as requiring **sustained explicit prose**.
+- The plan must contain at least two Aion beats, but their positions are not fixed; the pipeline explicitly forbids a universal 'first X Sol / last Y Aion' formula beyond the required opening relationship runway.
+- The Asunder erotic drafting overlay no longer pressures the story to activate explicit sex within the first 10% or reach a major encounter by 25–30%. It now prioritises earned buildup first, then sustained/direct explicit delivery once the vignette crosses that threshold.
+- Every one of the ten beats is checkpointed independently with the writer/model that produced it, preserving crash recovery, duplicate-request locks and resume behaviour.
+- The UI now shows the current **beat number and next writer (Sol or Aion)** rather than assuming Aion is writing 5/5 chunks.
+- Sol's post-assembly continuity/anti-AI gate now reviews the ten-beat hybrid draft. Exact-text repair remains protected by the existing erotic shield, so Aion-authored explicit passages cannot be sanitised during cleanup.
+- Backward compatibility: if an older in-progress vignette already contains saved prose in the legacy five-chunk format, it finishes that existing paid checkpoint safely rather than discarding it. New vignette plans use ten beats.
+- Existing stitch/pattern-repair locators now accept beat numbers up to 10. No Supabase schema change is required.
+
 ## V252.221 — portrait-verified distinguishing marks in Asunder prose
 - Asunder manuscript generation no longer treats pre-image `distinguishing_features` as authoritative for small visible identifiers such as freckles, moles/beauty marks, scars, birthmarks, tattoos or piercings.
 - Before drafting with a wife whose portrait has not yet been checked, Luna performs a conservative vision pass over the saved canonical portrait and stores `photo_verified_distinguishing_features` in the existing appearance JSON.
