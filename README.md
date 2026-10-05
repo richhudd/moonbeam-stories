@@ -3501,3 +3501,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - Fixed **Regenerate final cover**: the browser had been hard-coded to call the artwork endpoint with `regenerate:false`, so it repeatedly flattened the same saved artwork.
 - Existing Asunder books now call the artwork endpoint with `regenerate:true`; each click makes a genuinely new Venice cover image, then uses the proven Moonbeam browser-canvas flattening method and saves that result back to the book.
 - Each regenerated raw artwork image now gets a unique timestamped storage path so browser/CDN caching cannot serve the previous cover artwork.
+
+
+### V252.266
+- Reworked Asunder cover prompting to lead with the successful simple visual instruction: close-up face/upper-body aftermath of intense sex.
+- Increased top title-safe zone to 30% so the ASUNDER title can be larger without colliding with the subject.
+- Reinforced solo-wife-only composition, story-faithful outfit, and minimal story-faithful background context.
+- Kept the canonical portrait as the binding identity anchor while shifting visual priority away from generic wide-scene cover logic.
