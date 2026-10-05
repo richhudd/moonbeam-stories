@@ -3568,3 +3568,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - On the first open of Asunder Book 1 after deployment, the app automatically imports that approved JPEG into the existing Fiction Studio cover storage and replaces the previous Book 1 cover.
 - The import is idempotent: once `approved_import_id=chatgpt-approved-cover-2026-10-05-v1` is saved in the book cover metadata, opening the book again does not re-upload it.
 - Other books and series are untouched.
+
+
+## V252.279
+- Fixes the V252.278 approved-cover import bug: the auto-import guard contained the wrong Asunder Book 1 UUID, so it never ran.
+- Uses the correct Book 1 id `513e2b71-4106-4ebd-83a4-36061a53e77f`.
+- Bumps the approved-cover import marker to v2 so the corrected deployment retries the replacement once.
+- The approved cover JPEG asset remains bundled unchanged.

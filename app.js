@@ -3867,10 +3867,10 @@ function openFictionAsunderReplacement252209(b,storyNumber){
 }
 
 
-const fictionAsunderApprovedCoverImportId252278='chatgpt-approved-cover-2026-10-05-v1';
+const fictionAsunderApprovedCoverImportId252278='chatgpt-approved-cover-2026-10-05-v2';
 async function fictionImportApprovedAsunderBook1Cover252278(s,b){
  if(!s||!b)return false;
- if(String(s.id)!=='3d94046f-8162-44d0-b861-d955d8583cbb'||String(b.id)!=='513e2b71-4106-4ebd-b861-d955d8583cbb')return false;
+ if(String(s.id)!=='3d94046f-8162-44d0-b861-d955d8583cbb'||String(b.id)!=='513e2b71-4106-4ebd-83a4-36061a53e77f')return false;
  const current=b?.generation_state?.asunder_cover||{};
  if(String(current.approved_import_id||'')===fictionAsunderApprovedCoverImportId252278)return false;
  const r=await fetch('/assets/asunder-book1-approved-cover-v252278.jpg',{cache:'no-store'});
