@@ -3524,7 +3524,8 @@ V252.255 — Fiction Studio series-card accounting repair
 - Extended the top darkening gradient to support the larger title without losing legibility.
 
 
-### V252.269
-- Simplified the Asunder cover-art prompt down to the exact direct Venice-style instruction requested by the user.
-- Reduced the cover art generation guidance to just: use canonical wife as identity reference, close-up aftermath face, ravaged/exhausted/dishevelled, not smiling, and leave the top 30% clear.
-- Left the enlarged flattened ASUNDER title treatment in place from V252.268.
+### V252.270
+- Fixed the V252.269 regression that removed `fictionAsunderCoverBrief252202`.
+- Rebuilt from the last known-good V252.268 source rather than patching the broken V252.269 tree.
+- The Venice Asunder cover-image prompt is now deliberately minimal and exactly limited to the requested identity/aftermath/top-clearance instruction.
+- Retains the V252.268 near-full-width ASUNDER masthead treatment.
