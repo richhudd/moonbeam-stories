@@ -1,3 +1,9 @@
+## V252.248
+
+- Changed the default Venice erotic image-edit model for Asunder Wife Library erotic generation from `qwen-edit-uncensored` to `firered-image-edit` to test stronger identity consistency.
+- The canonical portrait is still sent as the required Venice image-edit reference.
+- `VENICE_ASUNDER_EROTIC_EDIT_MODEL` still overrides the default if set.
+
 ## V252.245 — collapsed Wife Library cards
 - Wife Library cards now open in a compact state showing only each wife's canonical photo and name.
 - All age/background/city, appearance notes, marriage context, biography, usage history and action buttons are inside an expandable section under the name.
