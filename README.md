@@ -3508,3 +3508,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - Increased top title-safe zone to 30% so the ASUNDER title can be larger without colliding with the subject.
 - Reinforced solo-wife-only composition, story-faithful outfit, and minimal story-faithful background context.
 - Kept the canonical portrait as the binding identity anchor while shifting visual priority away from generic wide-scene cover logic.
+
+
+### V252.267
+- Reworked Asunder cover prompting again to push a much stronger 'completely spent' aftermath look.
+- Added explicit negatives against broad smiles, cheerful portrait energy, balcony-photo mood, and romance/date-night vibes.
+- Clarified that the canonical portrait is identity-only and must not drag the original background/expression into the cover.
+- Increased title-safe top zone slightly to 32% to support the larger ASUNDER title without crowding the subject.
