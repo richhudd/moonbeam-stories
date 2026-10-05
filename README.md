@@ -1,3 +1,18 @@
+## V252.242 — second wife-library image now uses a random erotic solo nude pose
+- The second private Wife Library image is no longer a neutral full-body nude reference pose.
+- It is now generated as a **full-body solo nude image in a random strongly erotic pose**, while still preserving the wife’s identity from the canonical portrait.
+- It remains **one person only**, library-only, and **excluded from book production**.
+- The two-image gallery/lightbox behaviour from V252.241 is unchanged.
+
+## V252.241 — second private wife-library image and swipeable gallery
+- Each newly generated Asunder wife now gets **two stored images**:
+  1. the normal clothed canonical portrait, and
+  2. a second **full-body nude** gallery image generated from the canonical portrait to preserve identity.
+- The second image is stored only on the wife record inside `profile_data.nude_portrait_path`; **no Supabase schema change** is required.
+- The Wife Library grid still shows **only the clothed canonical image**.
+- Clicking the image now opens a **gallery lightbox** with desktop arrows and mobile horizontal swipe.
+- The new nude image is **not used in book production**; it exists only in the Wife Library gallery.
+
 ## V252.240 — ethnicity is now a dropdown in Wife Library generation
 - The Wife Library **Ethnicity** field is now a dropdown menu rather than a free-text box.
 - Options include: White European, Black African, Black Caribbean, East Asian, South Asian, Southeast Asian, Middle Eastern / North African, Latina / Hispanic, Mixed-race, and Mediterranean.

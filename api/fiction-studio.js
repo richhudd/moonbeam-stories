@@ -1058,12 +1058,15 @@ const fictionAsunderGeneratePortrait252147=async({profile,appearance,characterKe
   return{path,prompt};
 };
 
+const fictionAsunderGenerateNudePortrait252241=async({portraitPath,profile,appearance,characterKey,seriesId,bookId=null})=>{const safe=fictionAsunderPortraitSafePayload252151(profile,appearance),asset=await fictionAsunderStorageAsset252241(portraitPath),prompt=`Create ONE photorealistic full-body solo nude image of the SAME fictional ADULT woman shown in the supplied canonical portrait. Preserve her recognisable identity exactly: same face, apparent age, ethnicity/background, hair, eye colour, complexion, body type, height impression, weight impression, bust size and distinctive visible features. This second image exists only as a private Wife Library gallery view, not for book production. Show her alone, head-to-toe, fully visible, nude, and posed in a randomly chosen strongly erotic solo pose in a tasteful private setting with nobody else present. The pose should feel bold, lustful and visually exciting, with clear sexual confidence and provocative body language, while remaining a one-person still image rather than a sex act. HARD COMPOSITION RULE: exactly ONE visible human being in the entire image — this woman and nobody else. No background people, crowds, passers-by, partial bodies, silhouettes, reflections or mirrors containing another person, visible photographer or partner, or any other human figure. Preserve realistic anatomy, natural skin texture and an un-airbrushed human finish. She should remain exceptionally attractive and sexually compelling. No sexual activity with another person, no second person, no visible sex act, no pornographic penetration, no fetish equipment, no text, no logo, no border, and no collage. Full body must fit clearly in frame from head to feet. Canon identity: age ${safe.adult_age}; background ${safe.nationality_or_background||'unspecified'}; face ${safe.face||'natural'}; hair ${safe.hair||'natural'}; eyes ${safe.eyes||'natural'}; complexion ${safe.complexion||'natural'}; figure ${safe.general_figure||'natural adult build'}; height ${safe.height||'unspecified'}; bust size ${safe.bust_size||'unspecified'}; distinguishing features ${safe.distinguishing_features||'none specified'}.`;const fd=new FormData();fd.append('model','gpt-image-2.5-flare');fd.append('prompt',prompt);fd.append('image',new Blob([asset.bytes],{type:asset.mime}),'canonical-profile.'+(asset.mime==='image/png'?'png':asset.mime==='image/jpeg'?'jpg':asset.mime==='image/webp'?'webp':'img'));fd.append('size','1024x1536');fd.append('quality','medium');fd.append('output_format','webp');const startedAt=Date.now(),r=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:fd}),raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}if(!r.ok)throw Object.assign(new Error(d?.error?.message||`Asunder private erotic portrait generation returned HTTP ${r.status}`),{status:502});const b64=String(d?.data?.[0]?.b64_json||'');if(!b64)throw Object.assign(new Error('Asunder private erotic portrait generation returned no image.'),{status:502});const path=`fiction-studio/asunder-profiles/${user.id}/${seriesId}/${characterKey}/nude.webp`;await fictionAsunderStorageUpload252147(path,Buffer.from(b64,'base64'));await Promise.all([logUsage({event_type:'developer_fiction_asunder_profile_image',estimated_cost_gbp:estimateGBP('image'),metadata:{user_id:user.id,series_id:seriesId,book_id:bookId,character_key:characterKey,template_id:fictionAsunderProfileTemplateId252147,provider:'openai',model:'gpt-image-2.5-flare',variant:'erotic_gallery'}}),meterFictionIllustration252151({seriesId,bookId,characterKey,substage:`asunder-profile-erotic:${characterKey}`,startedAt,responseId:d?.id||null,httpStatus:r.status,ok:r.ok,model:'gpt-image-2.5-flare',provider:'openai'})]);return{path,prompt};};
+
 // V252.152 — final Asunder cover architecture. Covers are made only from the finished,
 // human-approved volume. Four rear panels correspond to the four finished stories; the
 // first-story woman appears again as the large foreground head act. All five images are
 // fresh story-grounded transformations of the canonical profile portraits.
 const fictionAsunderCoverTemplateId252152='asunder_volume_cover_v1';
 const fictionAsunderStorageBytes252152=async(path)=>{if(!path)throw Object.assign(new Error('A required Fiction Studio art asset is missing.'),{status:409});const enc=String(path).split('/').map(encodeURIComponent).join('/');const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/fiction-studio-art/${enc}`,{headers:adminHeaders()});if(!r.ok)throw Object.assign(new Error(`Could not load Fiction Studio art asset (${r.status}).`),{status:502});return Buffer.from(await r.arrayBuffer())};
+const fictionAsunderStorageAsset252241=async(path)=>{if(!path)throw Object.assign(new Error('A required Fiction Studio art asset is missing.'),{status:409});const enc=String(path).split('/').map(encodeURIComponent).join('/');const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/fiction-studio-art/${enc}`,{headers:adminHeaders()});if(!r.ok)throw Object.assign(new Error(`Could not load Fiction Studio art asset (${r.status}).`),{status:502});return{bytes:Buffer.from(await r.arrayBuffer()),mime:String(r.headers.get('content-type')||'image/webp')}};
 const fictionAsunderPhotoVerifiedFeatures252221=async(profile)=>{
   const existing=String(profile?.appearance_spec?.photo_verified_distinguishing_features||'').trim();
   if(existing)return existing;
@@ -1727,6 +1730,7 @@ const fictionAsunderWifeLibrarySummary252216=(p)=>({
   full_biography:String(p?.profile_data?.full_biography||''),
   appearance_spec:p?.appearance_spec||{},
   portrait_path:String(p?.portrait_path||''),
+  nude_portrait_path:String(p?.profile_data?.nude_portrait_path||''),
   template_id:String(p?.template_id||fictionAsunderProfileTemplateId252147)
 });
 const fictionAsunderSelectedCast252216=(book)=>Array.isArray(book?.development_state?.asunder_cast)?book.development_state.asunder_cast:[];
@@ -1754,7 +1758,9 @@ if(mode==='list-asunder-wife-library'){
   const wives=[];
   for(const p of(Array.isArray(profiles)?profiles:[])){
     const portrait_url=p.portrait_path?await fictionAsunderStorageSignedUrl252197(p.portrait_path,604800):'';
-    wives.push({...fictionAsunderWifeLibrarySummary252216(p),portrait_url,appearances:appearances.get(String(p.character_key||''))||[],created_at:p.created_at||null,updated_at:p.updated_at||null});
+    const nude_portrait_path=String(p?.profile_data?.nude_portrait_path||'').trim();
+    const nude_portrait_url=nude_portrait_path?await fictionAsunderStorageSignedUrl252197(nude_portrait_path,604800):'';
+    wives.push({...fictionAsunderWifeLibrarySummary252216(p),portrait_url,nude_portrait_url,gallery_urls:[portrait_url,nude_portrait_url].filter(Boolean),appearances:appearances.get(String(p.character_key||''))||[],created_at:p.created_at||null,updated_at:p.updated_at||null});
   }
   return res.status(200).json({wives});
 }
@@ -1850,11 +1856,15 @@ SERIES BIBLE CONTEXT: ${JSON.stringify(series.series_bible||{}).slice(0,20000)}`
     const background=prefs.ethnicity_background||String(z.background||'').trim()||'';
     const profileData={age:Number(z.age)||21,current_city:String(z.current_city||''),background,relationship_status:'Married',husband_summary:String(z.husband_summary||''),member_type:String(z.member_type||'Wife'),member_since:String(z.member_since||''),availability:String(z.availability||''),travel_windows:String(z.travel_windows||''),verification:'Verified Member',bio:String(z.bio||''),tags:['Married','Asunder Wife Library'],full_biography:String(z.full_biography||''),anglicised_first_name:firstName,anglicised_full_name:fullName};
     const characterKey=fictionAsunderCharacterKey252147(fullName);
-    const img=await fictionAsunderGeneratePortrait252147({profile:{first_name:firstName,...profileData},appearance,characterKey,seriesId:id,bookId:null,castContrast:[]});
+    const profileForImages={first_name:firstName,...profileData};
+    const img=await fictionAsunderGeneratePortrait252147({profile:profileForImages,appearance,characterKey,seriesId:id,bookId:null,castContrast:[]});
+    const nude=await fictionAsunderGenerateNudePortrait252241({portraitPath:img.path,profile:profileForImages,appearance,characterKey,seriesId:id,bookId:null});
+    profileData.nude_portrait_path=nude.path;
+    profileData.nude_photo_prompt=nude.prompt;
     const rows=await rest('developer_fiction_asunder_profiles?on_conflict=parent_id,series_id,character_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,character_key:characterKey,full_name:fullName,first_name:firstName,template_id:fictionAsunderProfileTemplateId252147,appearance_spec:appearance,profile_data:profileData,photo_prompt:img.prompt,portrait_path:img.path,updated_at:new Date().toISOString()})});
     const saved=rows?.[0];if(saved){created.push(saved);existing.push(saved)}
   }
-  const out=[];for(const p of created)out.push({...fictionAsunderWifeLibrarySummary252216(p),portrait_url:p.portrait_path?await fictionAsunderStorageSignedUrl252197(p.portrait_path,604800):'',appearances:[]});
+  const out=[];for(const p of created){const portrait_url=p.portrait_path?await fictionAsunderStorageSignedUrl252197(p.portrait_path,604800):'';const nude_portrait_path=String(p?.profile_data?.nude_portrait_path||'').trim();const nude_portrait_url=nude_portrait_path?await fictionAsunderStorageSignedUrl252197(nude_portrait_path,604800):'';out.push({...fictionAsunderWifeLibrarySummary252216(p),portrait_url,nude_portrait_url,gallery_urls:[portrait_url,nude_portrait_url].filter(Boolean),appearances:[]})}
   return res.status(200).json({wives:out});
 }
 
