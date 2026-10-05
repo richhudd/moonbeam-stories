@@ -1,3 +1,17 @@
+## V252.245 — collapsed Wife Library cards
+- Wife Library cards now open in a compact state showing only each wife's canonical photo and name.
+- All age/background/city, appearance notes, marriage context, biography, usage history and action buttons are inside an expandable section under the name.
+- Click the name row/chevron to expand or collapse the card.
+- Casting cards remain expanded so selection controls stay immediately usable.
+- Image rendering/gallery code itself is unchanged from V252.244.
+
+## V252.244 — restore Wife Library image rendering while retaining Venice + Latin-name fixes
+- Restored the Wife Library frontend rendering block to the known-good V252.242 implementation.
+- The canonical image `<img>` markup and gallery-opening code are therefore back to the version that previously displayed correctly.
+- Kept the V252.243 backend changes: both Asunder wife images use Venice and non-Latin names are romanised at library creation.
+- Added native + Latin name display as text-only changes, without changing image source handling.
+- Search matches both native-script and Latin-script names.
+
 ## V252.242 — second wife-library image now uses a random erotic solo nude pose
 - The second private Wife Library image is no longer a neutral full-body nude reference pose.
 - It is now generated as a **full-body solo nude image in a random strongly erotic pose**, while still preserving the wife’s identity from the canonical portrait.
