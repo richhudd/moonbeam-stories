@@ -1011,7 +1011,7 @@ const fictionAsunderVenicePortraitPrompt252199=(safe,castContrast=[],backgroundH
   const clip=(v,n=82)=>String(v||'').replace(/\s+/g,' ').trim().slice(0,n);
   const canon=[`age ${clip(safe.adult_age,12)}`,`background ${clip(safe.nationality_or_background)}`,`face ${clip(safe.face)}`,`hair ${clip(safe.hair)}`,`eyes ${clip(safe.eyes,45)}`,`complexion ${clip(safe.complexion,58)}`,`figure ${clip(safe.general_figure,72)}`,`height ${clip(safe.height,45)}`,`weight ${safe.weight_kg?`${safe.weight_kg} kg`:'unspecified'}`,`bust ${clip(safe.bust_size,60)}`,`outfit ${clip(safe.outfit,80)}`,`features ${clip(safe.distinguishing_features,70)}`].filter(x=>!/(?:undefined|null)\s*$/i.test(x)).join('; ');
   const others=(Array.isArray(castContrast)?castContrast:[]).slice(0,3).map(x=>{const a=x?.appearance||{};return `${clip(x?.first_name,18)}: ${clip(x?.background,32)}, ${clip(a.hair,32)}, ${clip(a.complexion,26)}`}).join(' | ');
-  return fictionVenicePrompt252179(`Create ONE photorealistic personal profile photograph of a fictional ADULT woman. ABSOLUTE PRIORITY: natural human realism, never AI glamour. Real skin texture, facial asymmetry, believable eyes and hair, ordinary phone-camera imperfections and a genuine expression. Never airbrush, plasticise, beautify toward a generic model face or make it look like a fashion campaign. Make it look like a flattering casual phone photo taken by her husband or partner, not a selfie. She should look relaxed, affectionate, stunningly attractive and highly desirable within her own ethnicity/background, age, body type and canonical traits, with a genuine smiling expression. Keep wardrobe variety broad and character-appropriate rather than repetitive: cosy knitwear, formalwear, smart workwear, casualwear, fitted dresses, holiday outfits, seductive but non-explicit looks, bikinis, sarongs or other suitable clothing are all acceptable when they fit her canon and setting. Do not keep defaulting to the same lycra vest or the same simple dress. Expression: ${clip(smileStyle,55)}. No pout, duck-face, kiss-blowing, sultry influencer expression or glamour-model posing. Use this believable setting, but it must be private or visibly empty and completely unoccupied apart from her: ${clip(backgroundHint,120)}. HARD COMPOSITION RULE: exactly ONE visible human being in the entire image — this woman and nobody else. No background people, crowds, passers-by, partial bodies, extra hands/arms/legs, silhouettes, reflections or mirrors containing another person, visible photographer or partner, faces in framed photos/posters/screens, or any other human figure. Every supplied visible canonical trait is mandatory and must be obeyed in the image. Do not ignore, minimise, average out or substitute any specified trait. Height, weight, body type, bust size, hair colour, eye colour and clothing are separate constraints and must all be preserved simultaneously when supplied. A supplied numeric weight is hard canon: render body mass/proportions consistently with that weight in combination with the specified height and body type. If bust size is specified, it must be visibly reflected and must not be flattened, hidden or downplayed by pose, framing or clothing. Canon identity: ${canon}. Preserve her specific face, colouring, age, body type, bust size and proportions exactly as supplied. No explicit sexual act, visible genitals, nudity, porn aesthetic, text, logo, border, collage or second person.${others?` Keep her visually distinct from the other wives by her own identity traits only: ${others}.`:''}`,1500);
+  return fictionVenicePrompt252179(`Create ONE photorealistic personal profile photograph of a fictional ADULT woman. ABSOLUTE PRIORITY: natural human realism, never AI glamour. Real skin texture, facial asymmetry, believable eyes and hair, ordinary phone-camera imperfections and a genuine expression. Never airbrush, plasticise, beautify toward a generic model face or make it look like a fashion campaign. Make it look like a flattering casual phone photo taken by her husband or partner, not a selfie. She should look relaxed, affectionate and naturally attractive, wearing normal stylish clothes or a simple dress rather than lingerie. Expression: ${clip(smileStyle,55)}. No pout, duck-face, kiss-blowing, sultry influencer expression or glamour-model posing. Use this believable varied setting: ${clip(backgroundHint,120)}. HARD COMPOSITION RULE: exactly ONE visible human being in the entire image — this woman and nobody else. No background people, crowds, passers-by, partial bodies, extra hands/arms/legs, silhouettes, reflections or mirrors containing another person, visible photographer or partner, faces in framed photos/posters/screens, or any other human figure. Every supplied visible canonical trait is mandatory and must be obeyed in the image. Canon identity: ${canon}. Preserve her specific face, colouring, age and proportions. No explicit sexual act, visible genitals, nudity, porn aesthetic, text, logo, border, collage or second person.${others?` Keep her visibly distinct from the other women: ${others}.`:''}`,1500);
 };
 const fictionAsunderVenicePortraitPrompt252198=(safe,castContrast=[],photoMode='partner',backgroundHint='')=>{
   const clip=(v,n=82)=>String(v||'').replace(/\s+/g,' ').trim().slice(0,n);
@@ -1766,15 +1766,10 @@ if(mode==='generate-asunder-wife-library'){
   const prefs={
     age:Math.max(21,Math.min(75,Number(rawPrefs.age)||0))||null,
     ethnicity_background:String(rawPrefs.ethnicity_background||'').trim().slice(0,120),
-    breast_size:String(rawPrefs.breast_size||'').trim().slice(0,40),
     hair_color:String(rawPrefs.hair_color||'').trim().slice(0,40),
-    eye_color:String(rawPrefs.eye_color||'').trim().slice(0,40),
-    body_type:String(rawPrefs.body_type||'').trim().slice(0,60),
-    height:String(rawPrefs.height||'').trim().slice(0,60),
-    weight_kg:Math.max(35,Math.min(180,Number(rawPrefs.weight_kg)||0))||null,
-    clothing:String(rawPrefs.clothing||'').trim().slice(0,100)
+    eye_color:String(rawPrefs.eye_color||'').trim().slice(0,40)
   };
-  const prefSummary=[prefs.age?`age ${prefs.age}`:'',prefs.ethnicity_background?`ethnicity/background ${prefs.ethnicity_background}`:'',prefs.breast_size?`breast size ${prefs.breast_size}`:'',prefs.hair_color?`hair colour ${prefs.hair_color}`:'',prefs.eye_color?`eye colour ${prefs.eye_color}`:'',prefs.body_type?`body type ${prefs.body_type}`:'',prefs.height?`height ${prefs.height}`:'',prefs.weight_kg?`weight ${prefs.weight_kg} kg`:'',prefs.clothing?`clothing ${prefs.clothing}`:''].filter(Boolean).join('; ');
+  const prefSummary=[prefs.age?`age ${prefs.age}`:'',prefs.ethnicity_background?`ethnicity ${prefs.ethnicity_background}`:'',prefs.hair_color?`hair colour ${prefs.hair_color}`:'',prefs.eye_color?`eye colour ${prefs.eye_color}`:''].filter(Boolean).join('; ');
   const existing=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
   const created=[];
   for(let ix=0;ix<count;ix++){
@@ -1789,18 +1784,15 @@ if(mode==='generate-asunder-wife-library'){
 RULES:
 - Adult age 21–75 and married.
 - International variety is welcome. Background, current city, profession/life and marriage must cohere.
-- Automatically generated wives are attractive and slim/slender/lean/fine-boned by default. Height may be short, average or tall. However, if the developer has supplied a body-type preference, follow that preference exactly rather than the default tendency.
-- petite means short/small-framed only; it is descriptive, not mandatory.
+- Automatically generated wives should be highly attractive, youthful-looking when appropriate to age, and visually distinctive, but still recognisably real rather than airbrushed AI fashion models.
 - Give a believable husband context in husband_summary. Do not design her sexual vignette yet.
-- Portrait: natural flattering husband/partner-taken phone photograph; genuine warm/toothy/laughing/shy smile; real skin texture; believable everyday or travel setting; no glamour-campaign cloning.
+- Portrait: natural flattering husband/partner-taken phone photograph; genuine warm/toothy/laughing/shy smile; real skin texture; believable everyday or domestic/lifestyle setting; no glamour-campaign cloning.
 - Do not deliberately duplicate an existing library wife. Similarities are allowed because the developer manually curates each volume.
 - naming_profile.character_key MUST be exactly ${key}.
 - OPTIONAL DEVELOPER TRAIT PREFERENCES: only the fields explicitly supplied below are hard requirements. Any unspecified trait must remain free for you to choose creatively.
 - If age is supplied, use that exact age.
-- If ethnicity/background is supplied, make the background, naming profile and overall identity coherent with it.
-- If breast size, hair colour, eye colour, body type, height, weight or clothing are supplied, make the appearance specification and portrait clearly reflect them.
-- Height, weight and body type are independent requirements: do not silently merge or substitute one for another. A supplied numeric weight is hard canon and must be preserved together with the selected height and body type.
-- If clothing is supplied, use that clothing category for the canonical portrait outfit rather than replacing it with another style.
+- If ethnicity is supplied, treat it as a broad ethnicity/background cue rather than a country requirement, and make the overall identity and naming profile coherent with it.
+- If hair colour or eye colour is supplied, make the appearance specification and portrait clearly reflect them.
 DEVELOPER PREFERENCES: ${prefSummary||'None supplied; choose all traits freely.'}
 EXISTING WIFE LIBRARY FOR VARIETY CONTEXT: ${JSON.stringify(existingSummary).slice(0,30000)}
 SERIES BIBLE CONTEXT: ${JSON.stringify(series.series_bible||{}).slice(0,20000)}`;
@@ -1819,7 +1811,7 @@ SERIES BIBLE CONTEXT: ${JSON.stringify(series.series_bible||{}).slice(0,20000)}`
     if(prefs.hair_color)appearance.hair=[`${prefs.hair_color} hair`,String(appearance.hair||'').trim()].filter(Boolean).join('; ');
     if(prefs.eye_color)appearance.eyes=[`${prefs.eye_color} eyes`,String(appearance.eyes||'').trim()].filter(Boolean).join('; ');
     if(prefs.body_type){appearance.figure=[prefs.body_type,String(appearance.figure||'').trim()].filter(Boolean).join('; ');if(/petite/i.test(prefs.body_type))appearance.petite=true;}
-    if(prefs.height)appearance.height_impression=prefs.height;
+    if(prefs.height_cm)appearance.height_impression=`${prefs.height_cm} cm`;
     if(prefs.weight_kg)appearance.weight_kg=prefs.weight_kg;
     if(prefs.clothing)appearance.portrait_outfit=prefs.clothing;
     const fig=String(appearance.figure||'');

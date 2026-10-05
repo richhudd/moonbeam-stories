@@ -1,3 +1,23 @@
+## V252.236 — restore the favourite Asunder wife portrait prompt
+- The default Wife Library portrait route has been restored to the **natural realistic husband/partner-taken phone-photo prompt** that generated wives such as Amanda Souza, Ebba Lindberg, Lauren Kim and Tuva Söderberg.
+- Wife generation now again accepts only four optional controls: **Age**, **Ethnicity**, **Hair colour**, and **Eye colour**.
+- Supplied values for those four controls now **replace** conflicting generated values instead of being appended alongside them.
+- Ethnicity is treated as a **broad ethnicity/background cue**, not a country requirement.
+- The restored portrait prompt keeps the later safety fix that enforces **exactly one visible human being** in the image, so no background people should appear.
+
+## V252.234 — click-to-enlarge Wife Library portraits
+- Wife Library portrait thumbnails are now clickable.
+- Clicking a portrait opens a large lightbox view using the full available browser viewport.
+- The same click-to-enlarge behaviour also works on the full canonical wife profile page and during wife selection/casting.
+- Click outside the enlarged image, press ×, or press Escape to close it.
+- No Supabase SQL changes required.
+
+## V252.233 — exact height in centimetres
+- Replaced the vague Height dropdown with a numeric **Height (cm)** field.
+- Blank still means no preference.
+- A supplied height is stored as exact canonical height (for example `168 cm`) and passed to the wife profile/portrait pipeline as a hard requirement.
+- Height remains independent from weight, body type and bust size.
+
 ## V252.232 — stronger beauty requirement for Asunder wives
 - Asunder wife profile portraits are now explicitly required to be **stunningly attractive / exceptionally attractive** while still remaining recognisably real and individual.
 - The main Venice portrait prompt, the alternate portrait prompt, the fallback portrait prompt and the reference-image portrait prompt now all state that attractiveness must be preserved **within the woman’s own ethnicity/background, age, body type and canonical traits**.
