@@ -1,5 +1,6 @@
 ## V252.251 — Asunder book-first casting flow
 
+- Reverted Asunder cover-image generation to the Venice `firered-image-edit` model explicitly, hard-wiring Story 1 aftermath cover art back to FireRed while retaining the existing large-title flattened cover layout.
 - Wife Library is now management-only; casting is the first step inside the new-book generation page.
 - The book page loads the Wife Library, lets the developer choose exactly four wives in vignette order, and only then reveals Book Development controls.
 - Added immediate click feedback/disable states when continuing and when starting Book Development.
@@ -3554,3 +3555,9 @@ V252.255 — Fiction Studio series-card accounting repair
 - Updated the Asunder cover-image prompt again to allow the wife to look at the camera and permit a faint satisfied smile.
 - Keeps the canonical-wife identity reference, the exhausted / sexually spent / dishevelled aftermath direction, and the instruction to leave the top 30% clear so the subject sits lower in frame.
 - Retains the enlarged near-full-width flattened ASUNDER masthead introduced in V252.273.
+
+
+## V252.275
+- Fixed the Asunder **Download cover JPEG** button for Safari/browser reliability.
+- The button now converts the returned cover data URL into a real Blob URL before triggering the download, rather than trying to download a very large base64 data URL directly.
+- Adds visible download status/error feedback and delays Blob URL cleanup so Safari has time to start the save.

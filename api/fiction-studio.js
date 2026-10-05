@@ -1212,7 +1212,7 @@ const fictionAsunderGenerateAftermathImage252202=async({profile,portraitBytes,br
   const safe=fictionAsunderPortraitSafePayload252151(profile?.profile_data||{},profile?.appearance_spec||{});
   const prompt=`Use the canonical wife image as the identity reference. Create a close up image of this woman's face after extremely intense sex. She should look completely exhausted, sexually spent and dishevelled, with messy hair and slightly sweaty skin. She may be looking at the camera, and a faint satisfied smile is allowed. She should look deeply pleased and drained, not injured, frightened or distressed. Leave the top 30% of the page clear so she sits lower in the frame.`;
   const startedAt=Date.now();
-  const preferredModel=String(process.env.VENICE_ASUNDER_COVER_EDIT_MODEL||process.env.VENICE_ASUNDER_EROTIC_EDIT_MODEL||'firered-image-edit').trim()||'firered-image-edit';
+  const preferredModel='firered-image-edit';
   const tried=[];let lastErr=null;
   for(const model of [...new Set([preferredModel,'firered-image-edit'])]){
     try{
