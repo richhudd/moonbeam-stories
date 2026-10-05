@@ -1193,7 +1193,7 @@ SOLO COVER RULE: the image must contain ONLY the wife. No husband, lover, driver
 
 REFERENCE-USE RULE: the canonical portrait is an identity reference only. Do not copy its original smile, background, balcony/terrace setting, lighting, clothing or casual portrait mood unless those happen to match the story itself.
 
-COVER ZONING: reserve the upper 40% as a calm title-safe zone for a much larger, near-full-width ASUNDER title and the lower 10% as an author-safe zone. Her face must be completely outside the title-safe zone and fully visible. Compose the image so the strongest facial features sit well below the title area, with the head noticeably lower in frame than a normal portrait. Prefer minimal, story-faithful background context rather than a wide scene.
+COVER ZONING: reserve the upper 30% as a calm title-safe zone for a much larger, near-full-width ASUNDER title and the lower 10% as an author-safe zone. Her face must be completely outside the title-safe zone and fully visible. Compose the image so the strongest facial features sit well below the title area, with the head noticeably lower in frame than a normal portrait. Prefer minimal, story-faithful background context rather than a wide scene.
 
 CANONICAL PROFILE FACTS: ${JSON.stringify({first_name:profile?.first_name,profile_data:profile?.profile_data,appearance:safe})}
 STORY 1 PLAN: ${JSON.stringify(map)}
@@ -1210,7 +1210,7 @@ Return the structured brief only.`;
 };
 const fictionAsunderGenerateAftermathImage252202=async({profile,portraitBytes,brief,seriesId,bookId})=>{
   const safe=fictionAsunderPortraitSafePayload252151(profile?.profile_data||{},profile?.appearance_spec||{});
-  const prompt=`Use the canonical wife image as the identity reference. Create a close up image of this woman's face after extremely intense sex. She should look totally exhausted, sexually spent and dishevelled. Her hair should be messy, her skin slightly flushed and sweaty, and she is not smiling. She must not look injured, beaten, bruised or frightened. Leave the top 30% of the page clear.`;
+  const prompt=`Use the canonical wife image as the identity reference. Create a close up image of this woman's face after extremely intense sex. She should look completely exhausted, sexually spent and dishevelled, with messy hair and slightly sweaty skin. She may be looking at the camera, and a faint satisfied smile is allowed. She should look deeply pleased and drained, not injured, frightened or distressed. Leave the top 30% of the page clear so she sits lower in the frame.`;
   const startedAt=Date.now();
   const preferredModel=String(process.env.VENICE_ASUNDER_COVER_EDIT_MODEL||process.env.VENICE_ASUNDER_EROTIC_EDIT_MODEL||'firered-image-edit').trim()||'firered-image-edit';
   const tried=[];let lastErr=null;
@@ -1273,8 +1273,8 @@ const fictionAsunderComposeAftermathCover252202=async({book,art})=>{
   const W=1600,H=2560;
   const bg=await sharp(art).resize(W,H,{fit:'cover',position:'attention'}).toBuffer();
   const vol=`VOLUME ${Math.max(1,Number(book.position)||1)}`;
-  const titleSvg=fictionAsunderVectorText252259('ASUNDER',{centerX:800,top:150,cell:23,gap:25,fill:'#f2dfb4'});
-  const volSvg=fictionAsunderVectorText252259(vol,{centerX:800,top:405,cell:10,gap:12,fill:'#f4ead5'});
+  const titleSvg=fictionAsunderVectorText252259('ASUNDER',{centerX:800,top:145,cell:34,gap:48,fill:'#f2dfb4'});
+  const volSvg=fictionAsunderVectorText252259(vol,{centerX:800,top:435,cell:10,gap:12,fill:'#f4ead5'});
   const authorSvg=fictionAsunderVectorText252259('ANA ROJAS',{centerX:800,top:2375,cell:11,gap:13,fill:'#f4ead5'});
   const svg=Buffer.from(`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -1283,9 +1283,9 @@ const fictionAsunderComposeAftermathCover252202=async({book,art})=>{
     </defs>
     <rect x="0" y="0" width="1600" height="570" fill="url(#topFade)"/>
     <rect x="0" y="2190" width="1600" height="370" fill="url(#bottomFade)"/>
-    <line x1="260" y1="86" x2="1340" y2="86" stroke="#d6b978" stroke-width="2" opacity="0.86"/>
+    <line x1="60" y1="86" x2="1540" y2="86" stroke="#d6b978" stroke-width="2" opacity="0.86"/>
     ${titleSvg}
-    <line x1="360" y1="354" x2="1240" y2="354" stroke="#d6b978" stroke-width="2" opacity="0.82"/>
+    <line x1="250" y1="388" x2="1350" y2="388" stroke="#d6b978" stroke-width="2" opacity="0.82"/>
     ${volSvg}
     ${authorSvg}
   </svg>`);

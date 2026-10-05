@@ -3542,3 +3542,15 @@ V252.255 — Fiction Studio series-card accounting repair
 - Replaced the Asunder cover aftermath prompt wording to remove the word 'ravaged', which was pushing Venice toward injury/assault cues.
 - New prompt now asks for exhausted, sexually spent, dishevelled aftermath, with messy hair, flushed/sweaty skin, and an explicit negative instruction: not injured, beaten, bruised, or frightened.
 - Retains the canonical-wife identity reference rule and the top-30%-clear composition rule.
+
+
+## V252.273
+- Tightened the Asunder cover prompt again: it now uses the simpler exhausted/dishevelled wording, removes the explicit flush instruction, and explicitly tells Venice to leave the top 30% clear so the wife sits lower in frame.
+- Enlarged the flattened ASUNDER masthead so it targets roughly 92.5% of the page width in the browser-flattened cover.
+- Matched the server-side fallback flattening to the same near-full-width masthead treatment so browser and server renders stay visually aligned.
+
+
+## V252.274
+- Updated the Asunder cover-image prompt again to allow the wife to look at the camera and permit a faint satisfied smile.
+- Keeps the canonical-wife identity reference, the exhausted / sexually spent / dishevelled aftermath direction, and the instruction to leave the top 30% clear so the subject sits lower in frame.
+- Retains the enlarged near-full-width flattened ASUNDER masthead introduced in V252.273.

@@ -3949,11 +3949,12 @@ async function fictionFlattenAsunderCoverBrowser252260(b,rawArtDataUrl){
  g.drawImage(img,sx,sy,sw,sh,0,0,W,H);
  const top=g.createLinearGradient(0,0,0,860);top.addColorStop(0,'rgba(5,5,5,.9)');top.addColorStop(.62,'rgba(5,5,5,.42)');top.addColorStop(1,'rgba(5,5,5,0)');g.fillStyle=top;g.fillRect(0,0,W,900);
  const bot=g.createLinearGradient(0,2180,0,H);bot.addColorStop(0,'rgba(5,5,5,0)');bot.addColorStop(.45,'rgba(5,5,5,.38)');bot.addColorStop(1,'rgba(5,5,5,.82)');g.fillStyle=bot;g.fillRect(0,2160,W,400);
+ const fitTitleFont252273=(ctx,text,targetWidth,startSize,minSize)=>{let size=startSize;for(;size>=minSize;size-=2){ctx.font=`400 ${size}px Georgia, "Times New Roman", serif`;if(ctx.measureText(text).width<=targetWidth)break}return size};
  g.textAlign='center';g.textBaseline='middle';g.shadowColor='rgba(0,0,0,.58)';g.shadowBlur=14;
- g.strokeStyle='rgba(214,185,120,.9)';g.lineWidth=2;g.beginPath();g.moveTo(150,94);g.lineTo(1450,94);g.stroke();
- g.fillStyle='#f2dfb4';g.font='400 224px Georgia, "Times New Roman", serif';g.fillText(String(fictionStudioActive25229?.series_name||'ASUNDER').toUpperCase(),W/2,270,1480);
- g.beginPath();g.moveTo(250,372);g.lineTo(1350,372);g.stroke();
- g.fillStyle='#f4ead5';g.font='400 68px Georgia, "Times New Roman", serif';g.fillText(`VOLUME ${Math.max(1,Number(b?.position)||1)}`,W/2,468,1100);
+ g.strokeStyle='rgba(214,185,120,.9)';g.lineWidth=2;g.beginPath();g.moveTo(60,94);g.lineTo(1540,94);g.stroke();
+ const title252273=String(fictionStudioActive25229?.series_name||'ASUNDER').toUpperCase(),titleWidth252273=W*.925;fitTitleFont252273(g,title252273,titleWidth252273,290,180);g.fillStyle='#f2dfb4';g.fillText(title252273,W/2,268,titleWidth252273);
+ g.beginPath();g.moveTo(250,388);g.lineTo(1350,388);g.stroke();
+ g.fillStyle='#f4ead5';g.font='400 68px Georgia, "Times New Roman", serif';g.fillText(`VOLUME ${Math.max(1,Number(b?.position)||1)}`,W/2,484,1100);
  g.font='400 70px Georgia, "Times New Roman", serif';g.fillText(String(fictionStudioActive25229?.pen_name||'Ana Rojas').toUpperCase(),W/2,2465,1280);
  g.shadowBlur=0;
  return c.toDataURL('image/jpeg',.94)
