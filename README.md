@@ -3189,3 +3189,27 @@ V252.200
 - Book Development no longer dies when a prohibited AI-default name slips through.
 - Banned names such as `Cross` are converted to an internal character marker, checkpointed, and passed through the existing backstage demographic naming engine for automatic replacement.
 - No database migration required.
+
+
+## V252.215
+
+- Removed the obsolete fatal `petite: true` gate from Asunder profile generation.
+- Harmonised Asunder planning and profile instructions: automatically generated wives must be slim/slender/lean/fine-boned, but may be short, average-height or tall.
+- `petite` is now descriptive metadata only, not a pass/fail requirement.
+- Manual wife briefs/reference images still override the automatic-wife body-build default for that one slot.
+- Added a deterministic profile-stage normaliser: if a creative model nevertheless returns a broad/stocky/heavy/strong build for an automatic wife, only the build field is normalised to a slim-family description instead of killing Book Development.
+- Removed conflicting replacement-vignette language that previously encouraged broader/stronger automatic body types for visual variation.
+- Updated image/cover prompts to preserve canonical proportions rather than forcing petite proportions.
+- Updated Asunder wording from “younger/young wife” to “adult wife” so older manual wives do not conflict with the fixed-format instructions.
+
+
+## V252.216 — Permanent Asunder Wife Library
+- Added a permanent Wife Library to the Asunder series page.
+- Generate one or four canonical wives at any time with deterministic backstage naming, canonical details and a profile portrait.
+- Wife generation is independent of books; unused wives remain available for future volumes.
+- Library cards show volume/vignette appearance history and a compact summary.
+- New Asunder volumes begin by selecting exactly four Wife Library records in vignette order; Wife 1 is also the cover wife.
+- Book Development receives those four wives as immutable cast input and may not invent/recast them.
+- Removed the active per-book manual-wife UI and hid finished-volume replacement; cast commitment now happens at the start.
+- Existing canonical profiles automatically populate the library.
+- Automatic wife generation uses slim/slender/lean/fine-boned builds with variable height; petite is descriptive only.
