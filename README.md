@@ -3575,3 +3575,14 @@ V252.255 — Fiction Studio series-card accounting repair
 - Uses the correct Book 1 id `513e2b71-4106-4ebd-83a4-36061a53e77f`.
 - Bumps the approved-cover import marker to v2 so the corrected deployment retries the replacement once.
 - The approved cover JPEG asset remains bundled unchanged.
+
+
+## V252.280
+- Removes the generated Asunder prologue stage entirely.
+- Every Asunder volume now uses the same deterministic two-line front matter after the cover and before Vignette 1:
+  “What therefore God hath joined together, let not man put asunder” (Matthew 19:6).
+  You will not find Asunder on the App Store
+- No model call or usage charge is incurred for this front matter.
+- Desktop and mobile readers both place it between the cover and the first wife profile.
+- Review/manuscript exports include it as `front-matter.txt` and at the start of the full manuscript; the old `prologue.txt` export is removed.
+- Existing stored prologue data is ignored by the reader.

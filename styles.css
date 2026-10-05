@@ -4624,3 +4624,25 @@ body.fiction-reader-open-25250{overflow:hidden}
     font-size:.42rem; letter-spacing:.10em; padding:5px 6px;
   }
 }
+
+
+/* V252.280 — deterministic Asunder front matter replaces generated prologue. */
+.fiction-reader-asunder-front-matter-252280 .fiction-reader-page-inner-25250{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+}
+.fiction-reader-asunder-front-matter-inner-252280{
+  width:min(88%,34rem);margin:auto;text-align:center;font-family:Georgia,'Times New Roman',serif;
+}
+.fiction-reader-asunder-front-matter-inner-252280 p{
+  text-indent:0!important;margin:0;
+}
+.fiction-reader-asunder-scripture-252280{
+  font-size:1.08em;line-height:1.65;font-style:italic;
+}
+.fiction-reader-asunder-appstore-252280{
+  margin-top:3.4em!important;font-size:1.12em;line-height:1.5;
+}
+.fiction-reader-asunder-front-matter-mobile-252280{
+  box-sizing:border-box;width:100%;max-width:44rem;min-height:58vh;margin:0 auto;
+  padding:70px 32px;background:#f7f1e6;color:#241f1b;display:flex;align-items:center;justify-content:center;
+}
