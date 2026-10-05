@@ -3440,3 +3440,10 @@ V252.200
 - Running editorial passes are resumed only when model, source and direction match exactly, so stale passes cannot hijack the next vignette.
 - Optional execution-memory extraction is non-blocking; a verified vignette locks even if that auxiliary Sol call fails.
 - Structured-output errors are model-neutral rather than incorrectly labelled Astra.
+
+V252.254 — Asunder finalisation/state recovery
+- Prevent Asunder from falling into the generic whole-book Sol/Luna/Aion second-draft pipeline.
+- Require all four per-vignette Sol stabilisation locks before final report/compilation.
+- Canonical server progress now drives all Asunder status surfaces.
+- Watchdog resumes a saved vignette editorial gate automatically.
+- Current Volume 1 DB state reset safely to Vignette 4 editorial recovery; no story text regenerated.
