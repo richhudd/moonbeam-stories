@@ -1,3 +1,10 @@
+
+## V252.218 — Asunder profile portraits: hard single-person rule
+- All Asunder wife profile portrait prompts now enforce **exactly one visible human being**: the wife herself.
+- The prohibition explicitly covers background people, crowds, passers-by, partial bodies or stray limbs, silhouettes, reflections/mirrors containing another person, a visible photographer/partner, and faces in framed photos, posters or screens.
+- The rule is applied consistently to the normal Venice portrait path, the OpenAI fallback path and the reference-image portrait path.
+- Profile settings must be visually unoccupied apart from the wife; husband/partner-taken framing may describe the photographic feel but must never result in the partner appearing in frame.
+
 ## V252.210 — self-healing Asunder automatic runner
 
 - Fixes the observed failure where an Aion chunk was successfully saved but the browser orchestrator never sent the next chunk.
