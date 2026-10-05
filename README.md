@@ -3484,3 +3484,7 @@ V252.255 — Fiction Studio series-card accounting repair
 
 ### V252.261
 - Corrected the V252.258 desktop Asunder profile regression. Mobile keeps its working long-form layout; desktop half-pages now use a compact two-column profile composition sized to fit one reader page, with portrait and facts side-by-side instead of pushing all profile metadata below the visible page.
+
+
+### V252.262
+- Strengthened the Asunder final-cover artwork prompt. The cover wife must now remain the exact canonical Story 1 woman, the scene must match the story’s actual circumstances and time-of-day, the wife must be the only visible person, and the mood is explicitly aftermath/transgression rather than romance or date-night glamour.
