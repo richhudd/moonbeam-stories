@@ -1,3 +1,24 @@
+## V252.227 — Wife Library four-column desktop grid
+- The Asunder Wife Library now displays **four wife cards per row on desktop**.
+- Portraits and card padding are reduced so more of the library is visible at once without oversized images.
+- Responsive fallbacks use 3 columns on narrower desktop/tablet widths, 2 columns on tablets, and 1 column on small phones.
+- Wife profile detail pages and casting behaviour are unchanged.
+
+## V252.226 — optional per-wife intimacy direction at volume setup
+- The Asunder casting page now shows an **Intimacy direction (optional)** text box beneath each of the four selected wives.
+- The text is stored with that wife’s locked volume-cast entry and passed into Sol’s ten-beat vignette planner.
+- A blank box explicitly means **no developer constraint**: Sol keeps the normal high-intensity Asunder erotic contract, chooses the escalation freely, and Aion invents the explicit material for its assigned beats.
+- Blank therefore never means tame, reduced-intensity, or sex-free.
+- Any supplied direction is vignette-specific and does not alter the wife’s permanent Wife Library canon.
+
+## V252.225 — visible Sol/Aion ten-beat writer map
+- The live Asunder book-generation page now exposes Sol's saved 10-beat plan for every vignette as soon as that vignette has been planned.
+- Every beat shows its **beat number, assigned writer (Sol or Aion), working label/purpose, and live status** (Planned / Writing / Saved).
+- Each vignette summary also lists the Aion-assigned beat numbers at a glance.
+- Completed vignette maps are read from the persisted beat-history archive, so their original assignments remain visible after lock.
+- Future vignettes display **Not planned yet** until Sol has actually created their beat map; no assignments are guessed in advance.
+- This is display-only: it does not alter the V252.224 hybrid drafting, checkpointing, editorial, or recovery logic.
+
 ## V252.224 — sexually charged Sol buildup without premature explicit sex
 - Resolves the remaining conflict between the new 10-beat Sol/Aion pipeline and older Asunder “early/frequent sex” instructions.
 - The hard Asunder contract now distinguishes **early erotic charge** from **early graphic sex**: attraction and anticipation should begin early, but explicit action starts when the relationship/story has earned it.

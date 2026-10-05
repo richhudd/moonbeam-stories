@@ -1730,7 +1730,7 @@ const fictionAsunderSelectedCast252216=(book)=>Array.isArray(book?.development_s
 const fictionAsunderCastInstruction252216=(book)=>{const cast=fictionAsunderSelectedCast252216(book);if(cast.length!==4)return'';return `
 ASUNDER LOCKED WIFE CAST — ABSOLUTE:
 The developer selected these four canonical Wife Library records BEFORE Book Development. They are immutable for this volume. Do not invent, replace, rename, merge, recast or materially alter any principal wife. Their vignette order is locked.
-${cast.map((w,i)=>`- Vignette ${i+1}: ${w.full_name} (public first name: ${w.first_name}); age ${w.age}; city ${w.current_city}; background ${w.background}; marriage ${w.relationship_status}; husband context ${w.husband_summary||'[use canonical biography]'}; canonical physical identity ${JSON.stringify(w.appearance_spec||{})}; canonical biography ${w.full_biography||w.bio||''}; CHARACTER KEY ${w.character_key}.`).join('\n')}
+${cast.map((w,i)=>`- Vignette ${i+1}: ${w.full_name} (public first name: ${w.first_name}); age ${w.age}; city ${w.current_city}; background ${w.background}; marriage ${w.relationship_status}; husband context ${w.husband_summary||'[use canonical biography]'}; canonical physical identity ${JSON.stringify(w.appearance_spec||{})}; canonical biography ${w.full_biography||w.bio||''}; intimacy direction ${String(w.intimacy_direction||'').trim()||'[BLANK = no developer constraint; preserve normal high-intensity Asunder erotic contract and let Sol/Aion invent the erotic specifics freely]'}; CHARACTER KEY ${w.character_key}.`).join('\n')}
 Every story plan must use the wife assigned to that exact vignette number. Return that wife's given name as the title.`};
 
 if(mode==='list-asunder-wife-library'){
@@ -1896,12 +1896,12 @@ if(mode==='start-book-development'||mode==='continue-book-development'){
   if(!String(state.direction||'').trim()&&!String(body.message||'').trim()&&String(seed252116?.direction||'').trim()){state.direction=fictionEnforceAsunderSeed252149(series,String(seed252116.direction),{position:sourceIndex+1});direction=state.direction;state.direction_source=sourceIndex===0?'sol_series_bible_seed':'sol_previous_book_seed';const z=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:{...state},updated_at:new Date().toISOString()})});book=z?.[0]||book;}
 
   if(fictionAsunderSeedIdentity252146(series)){
-    const currentCast=fictionAsunderSelectedCast252216(book),requestedKeys=Array.isArray(body.asunder_cast_character_keys)?body.asunder_cast_character_keys.map(x=>String(x||'').trim()).filter(Boolean):[];
+    const currentCast=fictionAsunderSelectedCast252216(book),requestedKeys=Array.isArray(body.asunder_cast_character_keys)?body.asunder_cast_character_keys.map(x=>String(x||'').trim()).filter(Boolean):[],requestedDirections=Array.isArray(body.asunder_intimacy_directions)?body.asunder_intimacy_directions.slice(0,4).map(x=>String(x||'').trim().slice(0,4000)):[];
     if(!currentCast.length){
       if(requestedKeys.length!==4||new Set(requestedKeys).size!==4)return res.status(409).json({error:'Select exactly four different wives from the Wife Library, in vignette order, before starting this volume.',code:'asunder_cast_required'});
       const profiles=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}`),selected=requestedKeys.map(k=>(profiles||[]).find(p=>String(p.character_key||'')===k));
       if(selected.some(x=>!x))return res.status(409).json({error:'One or more selected Wife Library records could not be found. Refresh the library and choose the cast again.'});
-      const cast=selected.map(fictionAsunderWifeLibrarySummary252216),mergedState={...((book.development_state&&typeof book.development_state==='object')?book.development_state:{}),asunder_cast:cast,asunder_cast_locked_at:new Date().toISOString()};
+      const cast=selected.map((p,i)=>({...fictionAsunderWifeLibrarySummary252216(p),intimacy_direction:String(requestedDirections[i]||'').trim()})),mergedState={...((book.development_state&&typeof book.development_state==='object')?book.development_state:{}),asunder_cast:cast,asunder_cast_locked_at:new Date().toISOString()};
       const z=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:mergedState,updated_at:new Date().toISOString()})});
       book=z?.[0]||{...book,development_state:mergedState};
     }else if(requestedKeys.length&&requestedKeys.join('|')!==currentCast.map(x=>String(x.character_key||'')).join('|'))return res.status(409).json({error:'This volume already has a locked wife cast. The cast cannot be silently changed after commitment.'});
@@ -2661,6 +2661,7 @@ WRITER ASSIGNMENT RULES:
 SERIES BIBLE: ${JSON.stringify(series.series_bible||{})}
 AUTHORITATIVE BOOK PLAN: ${JSON.stringify(book.book_plan||{})}${asunderProfileContext252147}${asunderVolumeMemoryBrief252191}
 STORY TO SPLIT: ${JSON.stringify(target)}
+VIGNETTE-SPECIFIC INTIMACY DIRECTION: ${String(fictionAsunderSelectedCast252216(book)?.[Math.max(0,Number(nextNumber)-1)]?.intimacy_direction||'').trim()||'NONE PROVIDED. This is NOT a request for less erotic material. Use the normal full Asunder intensity: Sol should design the sexual escalation freely and Aion should invent the explicit content appropriate to its assigned beats.'}
 DEVELOPER DIRECTION: ${direction||'Follow the approved story plan.'}
 
 VIGNETTE SEPARATION RULE — NON-NEGOTIABLE: Asunder's four top-level stories are separate vignettes. Do not import scene-level continuity from an earlier vignette. Use prior-vignette memory only as an execution anti-repetition aid, subordinate to the approved Book Plan.`;
