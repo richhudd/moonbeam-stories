@@ -1,3 +1,24 @@
+## V252.221 — portrait-verified distinguishing marks in Asunder prose
+- Asunder manuscript generation no longer treats pre-image `distinguishing_features` as authoritative for small visible identifiers such as freckles, moles/beauty marks, scars, birthmarks, tattoos or piercings.
+- Before drafting with a wife whose portrait has not yet been checked, Luna performs a conservative vision pass over the saved canonical portrait and stores `photo_verified_distinguishing_features` in the existing appearance JSON.
+- If a mark is not clearly visible in the finished portrait, the verified value becomes `none visible` and the story writer is explicitly forbidden from mentioning or implying it, even if the earlier profile-generation notes contained it.
+- For manuscript context, the photo-verified feature list replaces the original distinguishing-mark text. The saved portrait therefore wins whenever text and image disagree.
+- Existing wives are covered automatically the next time they are used; no regeneration of their portraits and no SQL migration is required.
+
+## V252.220 — optional wife-library trait controls
+- The Asunder Wife Library generation panel now includes optional controls for **age, ethnicity/background, breast size, hair colour, eye colour, and body type**.
+- None of these fields is required. You can set just one trait (for example blonde hair) and leave everything else blank.
+- The selected traits apply only to the **next generated wife or batch**.
+- On the server side, any supplied trait is treated as a **hard generation requirement** while all unspecified traits remain free for the engine to choose.
+- These trait controls feed both the canonical profile generation and the portrait-generation path, so chosen traits are saved into the wife’s canon rather than being a temporary cosmetic hint.
+
+## V252.219 — Asunder wardrobe variety for wife profile photos
+- Keeps the existing **husband/partner-taken photo feel** and **warm smiling expression** guidance for Asunder wife profile portraits.
+- Expands the prompt guidance so clothing is deliberately varied and wife-specific instead of drifting back to repetitive lycra vests.
+- Profile-photo wardrobe can now range across cosy knitwear, smart workwear, elegant dresses, refined casualwear, holiday outfits, subtly seductive looks, bikinis, sarongs, and other character-appropriate clothing.
+- The stronger wardrobe-variety guidance has been added to the main canonical profile rules, the standard Venice portrait path, the hotter alternate portrait path, the partner/selfie variant prompts, and the reference-image portrait path.
+- Repetitive defaults such as the same lycra vest, the same simple dress, or the same hotel-bar look are now explicitly discouraged.
+
 
 ## V252.218 — Asunder profile portraits: hard single-person rule
 - All Asunder wife profile portrait prompts now enforce **exactly one visible human being**: the wife herself.
