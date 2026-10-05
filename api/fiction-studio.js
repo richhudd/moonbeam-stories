@@ -1210,7 +1210,7 @@ Return the structured brief only.`;
 };
 const fictionAsunderGenerateAftermathImage252202=async({profile,portraitBytes,brief,seriesId,bookId})=>{
   const safe=fictionAsunderPortraitSafePayload252151(profile?.profile_data||{},profile?.appearance_spec||{});
-  const prompt=`Use the canonical wife image as the identity reference. Create a close up image of this woman's face after extremely intense sex. She should look totally ravaged, exhausted and dishevelled. she is not smiling. Leave the top 30% of the page clear.`;
+  const prompt=`Use the canonical wife image as the identity reference. Create a close up image of this woman's face after extremely intense sex. She should look totally exhausted, sexually spent and dishevelled. Her hair should be messy, her skin slightly flushed and sweaty, and she is not smiling. She must not look injured, beaten, bruised or frightened. Leave the top 30% of the page clear.`;
   const startedAt=Date.now();
   const preferredModel=String(process.env.VENICE_ASUNDER_COVER_EDIT_MODEL||process.env.VENICE_ASUNDER_EROTIC_EDIT_MODEL||'firered-image-edit').trim()||'firered-image-edit';
   const tried=[];let lastErr=null;

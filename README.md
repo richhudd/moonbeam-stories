@@ -3536,3 +3536,9 @@ V252.255 — Fiction Studio series-card accounting repair
 - Added a dedicated compact series-page accounting path, independent of editorial-run reconciliation.
 - Series accounting now reads the full usage ledger directly, preserves historical/deleted-book spend, current surviving-book spend and illustration estimates, and calculates current book totals in one resilient pass.
 - Removed the frontend catch that silently converted accounting request failures into fake zero totals.
+
+
+### V252.272
+- Replaced the Asunder cover aftermath prompt wording to remove the word 'ravaged', which was pushing Venice toward injury/assault cues.
+- New prompt now asks for exhausted, sexually spent, dishevelled aftermath, with messy hair, flushed/sweaty skin, and an explicit negative instruction: not injured, beaten, bruised, or frightened.
+- Retains the canonical-wife identity reference rule and the top-30%-clear composition rule.
