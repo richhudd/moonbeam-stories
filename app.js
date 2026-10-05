@@ -4116,7 +4116,14 @@ async function fictionAutoRunEditorialStage25255(b,stage,model,sourceRunId=null,
  let run=running,d=null;
  if(!run||stage==='developmental'){
   if(st)st.textContent=`${modelLabel} · ${run?'resuming':'starting'} ${isAsunderPass252206?asunderStage252206:label}…`;fictionUpdateJob25265(job,{stage:isAsunderPass252206?asunderStage252206:label,progress:run?'resuming saved checkpoint':'starting'});
-  d=await fictionJobRequest252144(job,{mode:'editorial-start',id:seriesId,book_id:b.id,stage,model,direction:String(direction||''),...(sourceRunId?{source_run_id:sourceRunId}:{})});run=d.run;
+  // V252.252: Asunder editorial gates must never be stranded by a transient/truncated provider response.
+  // Keep retrying the exact persisted operation; the server resumes only a model+source+direction match.
+  let startFailures252252=0;
+  for(;;){
+   try{d=await fictionJobRequest252144(job,{mode:'editorial-start',id:seriesId,book_id:b.id,stage,model,direction:String(direction||''),...(sourceRunId?{source_run_id:sourceRunId}:{})});break}
+   catch(e){const retryable252252=isAsunderPass252206&&(e?.retryable!==false||[408,409,425,429,500,502,503,504].includes(Number(e?.status))||/incomplete|max_output_tokens|empty|malformed|timeout|network|connection|temporar/i.test(String(e?.message||e)));if(!retryable252252)throw e;startFailures252252++;const waitMs252252=Math.min(30000,2500*Math.min(startFailures252252,12));if(st)st.textContent=`${asunderStage252206} · provider response did not complete. Saved vignette is intact; retrying automatically · attempt ${startFailures252252}…`;fictionUpdateJob25265(job,{stage:asunderStage252206,progress:`saved checkpoint intact · automatic retry ${startFailures252252}`});await fictionSleep25240(waitMs252252)}
+  }
+  run=d.run;
   if(!run?.model)throw new Error(`${label} was created without a locked model.`);
   if(run.model!==model)throw new Error(`Safety stop: ${label} was requested with ${modelLabel}, but the server locked ${fictionModelLabel25243(run.model)}.`);
   if(sourceRunId&&run.source_run_id&&run.source_run_id!==sourceRunId)throw new Error(`Safety stop: ${label} was created from the wrong source version.`);

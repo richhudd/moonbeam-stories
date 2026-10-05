@@ -3432,3 +3432,11 @@ V252.200
 ## V252.217
 - Fixed Asunder Wife Library portraits not loading. Supabase Storage signed URLs are now resolved against `/storage/v1`, including already-existing wife portraits and other Asunder signed-image review surfaces.
 
+
+
+## V252.252 — Asunder no-blockage editorial gate
+- Sol per-vignette review now targets all ten beats (not legacy five-chunk locators).
+- Incomplete/max-output/malformed/transient Sol review responses retry automatically from the same persisted checkpoint.
+- Running editorial passes are resumed only when model, source and direction match exactly, so stale passes cannot hijack the next vignette.
+- Optional execution-memory extraction is non-blocking; a verified vignette locks even if that auxiliary Sol call fails.
+- Structured-output errors are model-neutral rather than incorrectly labelled Astra.
