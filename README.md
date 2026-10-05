@@ -1,3 +1,10 @@
+## V252.224 — sexually charged Sol buildup without premature explicit sex
+- Resolves the remaining conflict between the new 10-beat Sol/Aion pipeline and older Asunder “early/frequent sex” instructions.
+- The hard Asunder contract now distinguishes **early erotic charge** from **early graphic sex**: attraction and anticipation should begin early, but explicit action starts when the relationship/story has earned it.
+- Sol beats are no longer allowed to become sexless connective tissue. They should carry strong anticipatory charge through attraction, bodily awareness, clothing, glances, fantasy, messages, jealousy, nervousness, embarrassment, curiosity, power, expectation, charged proximity and aftermath where appropriate.
+- Beats 1–2 remain Sol-written and non-explicit, but are instructed to be erotically alive rather than neutral exposition.
+- The code-enforced seed contract no longer pressures the pipeline to rush graphic sex merely to avoid “sex-neutral setup”.
+
 ## V252.223 — Sol-written standalone prologue for every Asunder volume
 - Every newly generated Asunder volume now gets a short **Sol-written Prologue before Vignette 1**.
 - The first movement briefly explains what the fictional Asunder private-members app/community is and why consenting married adults might use it, so any volume can be read as a standalone entry point.
