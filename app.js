@@ -3947,13 +3947,13 @@ async function fictionFlattenAsunderCoverBrowser252260(b,rawArtDataUrl){
  g.fillStyle='#090909';g.fillRect(0,0,W,H);
  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,scale=Math.max(W/iw,H/ih),sw=W/scale,sh=H/scale,sx=(iw-sw)/2,sy=(ih-sh)/2;
  g.drawImage(img,sx,sy,sw,sh,0,0,W,H);
- const top=g.createLinearGradient(0,0,0,610);top.addColorStop(0,'rgba(5,5,5,.86)');top.addColorStop(.72,'rgba(5,5,5,.34)');top.addColorStop(1,'rgba(5,5,5,0)');g.fillStyle=top;g.fillRect(0,0,W,620);
+ const top=g.createLinearGradient(0,0,0,860);top.addColorStop(0,'rgba(5,5,5,.9)');top.addColorStop(.62,'rgba(5,5,5,.42)');top.addColorStop(1,'rgba(5,5,5,0)');g.fillStyle=top;g.fillRect(0,0,W,900);
  const bot=g.createLinearGradient(0,2180,0,H);bot.addColorStop(0,'rgba(5,5,5,0)');bot.addColorStop(.45,'rgba(5,5,5,.38)');bot.addColorStop(1,'rgba(5,5,5,.82)');g.fillStyle=bot;g.fillRect(0,2160,W,400);
  g.textAlign='center';g.textBaseline='middle';g.shadowColor='rgba(0,0,0,.58)';g.shadowBlur=14;
- g.strokeStyle='rgba(214,185,120,.9)';g.lineWidth=2;g.beginPath();g.moveTo(260,86);g.lineTo(1340,86);g.stroke();
- g.fillStyle='#f2dfb4';g.font='400 184px Georgia, "Times New Roman", serif';g.fillText(String(fictionStudioActive25229?.series_name||'ASUNDER').toUpperCase(),W/2,270,1320);
- g.beginPath();g.moveTo(360,366);g.lineTo(1240,366);g.stroke();
- g.fillStyle='#f4ead5';g.font='400 64px Georgia, "Times New Roman", serif';g.fillText(`VOLUME ${Math.max(1,Number(b?.position)||1)}`,W/2,455,1050);
+ g.strokeStyle='rgba(214,185,120,.9)';g.lineWidth=2;g.beginPath();g.moveTo(150,94);g.lineTo(1450,94);g.stroke();
+ g.fillStyle='#f2dfb4';g.font='400 224px Georgia, "Times New Roman", serif';g.fillText(String(fictionStudioActive25229?.series_name||'ASUNDER').toUpperCase(),W/2,270,1480);
+ g.beginPath();g.moveTo(250,372);g.lineTo(1350,372);g.stroke();
+ g.fillStyle='#f4ead5';g.font='400 68px Georgia, "Times New Roman", serif';g.fillText(`VOLUME ${Math.max(1,Number(b?.position)||1)}`,W/2,468,1100);
  g.font='400 70px Georgia, "Times New Roman", serif';g.fillText(String(fictionStudioActive25229?.pen_name||'Ana Rojas').toUpperCase(),W/2,2465,1280);
  g.shadowBlur=0;
  return c.toDataURL('image/jpeg',.94)

@@ -3515,3 +3515,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - Added explicit negatives against broad smiles, cheerful portrait energy, balcony-photo mood, and romance/date-night vibes.
 - Clarified that the canonical portrait is identity-only and must not drag the original background/expression into the cover.
 - Increased title-safe top zone slightly to 32% to support the larger ASUNDER title without crowding the subject.
+
+
+### V252.268
+- Increased the Asunder cover title-safe zone from 32% to 40% so Venice pushes the subject lower in frame.
+- Strengthened the cover prompt to require the woman's head to sit noticeably lower, leaving room for a near-full-width ASUNDER title.
+- Enlarged the flattened cover title treatment in the browser composer so ASUNDER now spans almost the full page width.
+- Extended the top darkening gradient to support the larger title without losing legibility.

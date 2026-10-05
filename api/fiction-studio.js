@@ -1149,7 +1149,7 @@ SOLO COVER RULE: the image must contain ONLY the wife. No husband, lover, driver
 
 REFERENCE-USE RULE: the canonical portrait is an identity reference only. Do not copy its original smile, background, balcony/terrace setting, lighting, clothing or casual portrait mood unless those happen to match the story itself.
 
-COVER ZONING: reserve the upper 32% as a calm title-safe zone for a larger ASUNDER title and the lower 10% as an author-safe zone. Her face must be completely outside the title-safe zone and fully visible. Compose the image so the strongest facial features sit below the title area. Prefer minimal, story-faithful background context rather than a wide scene.
+COVER ZONING: reserve the upper 40% as a calm title-safe zone for a much larger, near-full-width ASUNDER title and the lower 10% as an author-safe zone. Her face must be completely outside the title-safe zone and fully visible. Compose the image so the strongest facial features sit well below the title area, with the head noticeably lower in frame than a normal portrait. Prefer minimal, story-faithful background context rather than a wide scene.
 
 CANONICAL PROFILE FACTS: ${JSON.stringify({first_name:profile?.first_name,profile_data:profile?.profile_data,appearance:safe})}
 STORY 1 PLAN: ${JSON.stringify(map)}
@@ -1186,7 +1186,7 @@ NON-EXPLICIT AFTERMATH: ${brief.aftermath}. Expression: ${brief.expression}. She
 
 REALISM: natural human skin texture, pores, subtle asymmetry, believable eyes/hair and ordinary photographic imperfection. Stunningly attractive and highly desirable within each woman's own ethnicity/background, age and canon, but never plastic, airbrushed, doll-like, romance-cover generic or AI-glamour generic.
 
-COVER COMPOSITION — HARD RULE: leave the entire TOP 32% visually calm as a title-safe zone for a larger ASUNDER title and volume line, and the BOTTOM 10% relatively calm as an author-safe zone. The woman's face, eyes, nose and mouth must be completely below the top title-safe zone and must remain fully unobscured. Compose as a close-up or medium close-up with the strongest focus on face and upper body. No text, letters, logos, border or collage in the generated art.
+COVER COMPOSITION — HARD RULE: leave the entire TOP 40% visually calm as a title-safe zone for a much larger, near-full-width ASUNDER title and volume line, and the BOTTOM 10% relatively calm as an author-safe zone. The woman's face, eyes, nose and mouth must be completely below the top title-safe zone and must remain fully unobscured. Her head should sit noticeably lower in the frame than in a normal portrait so the title has generous room. Compose as a close-up or medium close-up with the strongest focus on face and upper body. No text, letters, logos, border or collage in the generated art.
 
 CANON: age ${safe.adult_age}; background ${safe.nationality_or_background}; face ${safe.face}; hair ${safe.hair}; eyes ${safe.eyes}; complexion ${safe.complexion}; figure ${safe.general_figure}; features ${safe.distinguishing_features}.`;
   const startedAt=Date.now();
