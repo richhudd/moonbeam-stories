@@ -3213,3 +3213,6 @@ V252.200
 - Removed the active per-book manual-wife UI and hid finished-volume replacement; cast commitment now happens at the start.
 - Existing canonical profiles automatically populate the library.
 - Automatic wife generation uses slim/slender/lean/fine-boned builds with variable height; petite is descriptive only.
+
+## V252.217
+- Fixed Asunder Wife Library portraits not loading. Supabase Storage signed URLs are now resolved against `/storage/v1`, including already-existing wife portraits and other Asunder signed-image review surfaces.
