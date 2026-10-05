@@ -3522,3 +3522,9 @@ V252.255 — Fiction Studio series-card accounting repair
 - Strengthened the cover prompt to require the woman's head to sit noticeably lower, leaving room for a near-full-width ASUNDER title.
 - Enlarged the flattened cover title treatment in the browser composer so ASUNDER now spans almost the full page width.
 - Extended the top darkening gradient to support the larger title without losing legibility.
+
+
+### V252.269
+- Simplified the Asunder cover-art prompt down to the exact direct Venice-style instruction requested by the user.
+- Reduced the cover art generation guidance to just: use canonical wife as identity reference, close-up aftermath face, ravaged/exhausted/dishevelled, not smiling, and leave the top 30% clear.
+- Left the enlarged flattened ASUNDER title treatment in place from V252.268.
