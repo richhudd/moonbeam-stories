@@ -1,3 +1,8 @@
+## V252.249
+
+- Fixed FireRed erotic Wife Library edits by omitting the unsupported `resolution` parameter from Venice `/image/edit` requests.
+- Canonical portrait image reference, FireRed model, aspect ratio, output format and existing gallery workflow are unchanged.
+
 ## V252.248
 
 - Changed the default Venice erotic image-edit model for Asunder Wife Library erotic generation from `qwen-edit-uncensored` to `firered-image-edit` to test stronger identity consistency.
