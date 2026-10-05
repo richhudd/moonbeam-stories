@@ -3454,3 +3454,9 @@ V252.255 — Fiction Studio series-card accounting repair
 - Historical usage attached to deleted/replaced book ids is no longer silently reassigned to a replacement book merely because it occupies the same series position.
 - Legacy next-book seeds are re-attributed only when their original source book still belongs to the current surviving production chain.
 - Added a series-page attribution line separating current surviving-book direct spend from historical/shared spend, while preserving the full series total.
+
+
+## V252.256 patch notes
+- Fixed Asunder reader profile-page layout so the profile photo, name and metadata columns render correctly without vertical letter wrapping.
+- Restored manual regenerate-final-cover control for Asunder books in Fiction Studio X.
+- Final Asunder cover reuse is now versioned, so legacy/unflattened covers are regenerated instead of being silently reused.
