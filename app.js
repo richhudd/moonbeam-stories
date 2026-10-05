@@ -3866,10 +3866,43 @@ function openFictionAsunderReplacement252209(b,storyNumber){
  $('fictionAsunderReplacementClose252209').onclick=()=>wrap.remove();run.onclick=async()=>{const brief=$('fictionAsunderReplacementBrief252209').value.trim();if(!brief&&!imageData){status.innerHTML='<span class="error">Add a brief, a reference image, or both.</span>';return}if(imageData&&!$('fictionAsunderReplacementConfirm252209').checked){status.innerHTML='<span class="error">Confirm that you may use the reference image.</span>';return}if(!confirm(`Replace Vignette ${n} (${wife})?\n\nMoonbeam will first create the new wife, canonical portrait and replacement plan. Only after those are safely saved will the current vignette be archived and detached. The other three vignettes will not be regenerated.`))return;run.disabled=true;status.textContent='Preparing replacement wife, deterministic names, canonical portrait and vignette plan…';try{const d=await fictionStudioRequest25229({mode:'prepare-asunder-vignette-replacement',id:s.id,book_id:b.id,story_number:n,brief,reference_image_data_url:imageData});if(d.book)Object.assign(b,d.book);wrap.remove();await openSavedFictionBook25233(b.id);const st=$('fictionBookHomeStatus25233');if(st)st.textContent=`Vignette ${n} recast as ${d.replacement?.first_name||'the new wife'}. Starting the Sol-planned ten-beat hybrid generation pipeline for this vignette only…`;await startAutomaticFictionPipeline25255(b)}catch(e){run.disabled=false;status.innerHTML=`<span class="error">${escapeHtml(e.message||String(e))}</span>`}};
 }
 
+
+const fictionAsunderApprovedCoverImportId252278='chatgpt-approved-cover-2026-10-05-v1';
+async function fictionImportApprovedAsunderBook1Cover252278(s,b){
+ if(!s||!b)return false;
+ if(String(s.id)!=='3d94046f-8162-44d0-b861-d955d8583cbb'||String(b.id)!=='513e2b71-4106-4ebd-b861-d955d8583cbb')return false;
+ const current=b?.generation_state?.asunder_cover||{};
+ if(String(current.approved_import_id||'')===fictionAsunderApprovedCoverImportId252278)return false;
+ const r=await fetch('/assets/asunder-book1-approved-cover-v252278.jpg',{cache:'no-store'});
+ if(!r.ok)throw new Error(`Approved Book 1 cover asset returned HTTP ${r.status}`);
+ const blob=await r.blob();
+ const dataUrl=await new Promise((resolve,reject)=>{
+   const fr=new FileReader();
+   fr.onload=()=>resolve(String(fr.result||''));
+   fr.onerror=()=>reject(new Error('Could not read the approved Book 1 cover asset.'));
+   fr.readAsDataURL(blob)
+ });
+ const d=await fictionStudioRequest25229({
+   mode:'save-asunder-browser-flat-cover',
+   id:s.id,
+   book_id:b.id,
+   cover_data_url:dataUrl,
+   cover_meta:{
+     ...current,
+     approved_import_id:fictionAsunderApprovedCoverImportId252278,
+     imported_approved_cover:true,
+     provider:'openai-image-edit',
+     source_label:'ChatGPT approved cover 2026-10-05'
+   }
+ });
+ if(d?.cover)b.generation_state={...(b.generation_state||{}),asunder_cover:d.cover};
+ return true;
+}
+
 async function openSavedFictionBook25233(bookId){
  const s=fictionStudioActive25229,b=fictionStudioBooks25231.find(x=>x.id===bookId);if(!s||!b)return;fictionStudioOpenBookId25265=b.id;
  const body=$('fictionStudioBody25229');let statusData=null,usageData={usage:{}},seriesUsage={usage:{}},editorial={runs:[]};
- try{statusData=await fictionStudioRequest25229({mode:'novel-status',id:s.id,book_id:b.id});if(statusData?.book)Object.assign(b,statusData.book)}catch(e){body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionBookHomeBack25233">← Series</button><div class="fiction-editor-card"><h2>${escapeHtml(b.working_title)}</h2><p class="status"><span class="error">Could not read the saved book checkpoint: ${escapeHtml(e.message||String(e))}</span></p></div></div>`;$('fictionBookHomeBack25233').onclick=()=>renderFictionSeries25229(s.id);return}
+ try{statusData=await fictionStudioRequest25229({mode:'novel-status',id:s.id,book_id:b.id});if(statusData?.book)Object.assign(b,statusData.book);await fictionImportApprovedAsunderBook1Cover252278(s,b)}catch(e){body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionBookHomeBack25233">← Series</button><div class="fiction-editor-card"><h2>${escapeHtml(b.working_title)}</h2><p class="status"><span class="error">Could not read the saved book checkpoint or import the approved cover: ${escapeHtml(e.message||String(e))}</span></p></div></div>`;$('fictionBookHomeBack25233').onclick=()=>renderFictionSeries25229(s.id);return}
  if(fictionIsVeniceMirror252155(s)){await renderFictionVeniceMirrorBook252155(s,b,statusData);return}
  try{usageData=await fictionStudioRequest25229({mode:'usage-summary',id:s.id,book_id:b.id,compact:true})}catch{}
  try{seriesUsage=await fictionStudioRequest25229({mode:'usage-summary',id:s.id,compact:true})}catch{}

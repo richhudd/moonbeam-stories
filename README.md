@@ -3561,3 +3561,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - Fixed the Asunder **Download cover JPEG** button for Safari/browser reliability.
 - The button now converts the returned cover data URL into a real Blob URL before triggering the download, rather than trying to download a very large base64 data URL directly.
 - Adds visible download status/error feedback and delays Blob URL cleanup so Safari has time to start the save.
+
+
+## V252.278
+- Bundles the user-approved Book 1 cover image as a static asset.
+- On the first open of Asunder Book 1 after deployment, the app automatically imports that approved JPEG into the existing Fiction Studio cover storage and replaces the previous Book 1 cover.
+- The import is idempotent: once `approved_import_id=chatgpt-approved-cover-2026-10-05-v1` is saved in the book cover metadata, opening the book again does not re-upload it.
+- Other books and series are untouched.
