@@ -1766,13 +1766,46 @@ if(mode==='generate-asunder-wife-library'){
   const prefs={
     age:Math.max(21,Math.min(75,Number(rawPrefs.age)||0))||null,
     ethnicity_background:String(rawPrefs.ethnicity_background||'').trim().slice(0,120),
+    breast_size:String(rawPrefs.breast_size||'').trim().slice(0,40),
     hair_color:String(rawPrefs.hair_color||'').trim().slice(0,40),
     eye_color:String(rawPrefs.eye_color||'').trim().slice(0,40)
   };
-  const prefSummary=[prefs.age?`age ${prefs.age}`:'',prefs.ethnicity_background?`ethnicity ${prefs.ethnicity_background}`:'',prefs.hair_color?`hair colour ${prefs.hair_color}`:'',prefs.eye_color?`eye colour ${prefs.eye_color}`:''].filter(Boolean).join('; ');
+  const prefSummary=[prefs.age?`age ${prefs.age}`:'',prefs.ethnicity_background?`ethnicity ${prefs.ethnicity_background}`:'',prefs.breast_size?`breast size ${prefs.breast_size}`:'',prefs.hair_color?`hair colour ${prefs.hair_color}`:'',prefs.eye_color?`eye colour ${prefs.eye_color}`:''].filter(Boolean).join('; ');
   const existing=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
   const created=[];
+  const portraitOutfitSlots252239=[
+    'soft knitwear with trousers or jeans; no camisole, tank or strappy top',
+    'a crisp blouse or shirt with jeans or tailored trousers; no knit top',
+    'a simple daytime dress with sleeves or substantial straps',
+    'smart tailoring such as a blazer or structured jacket over a plain top with tailored trousers',
+    'a casual T-shirt or sleeved everyday top with jeans',
+    'a light summer dress or skirt-and-top combination',
+    'a fitted long-sleeved top with a skirt or trousers',
+    'a refined evening dress or elegant dinner outfit, still natural rather than red-carpet glamour',
+    'a relaxed holiday/resort outfit such as a linen shirt, sundress or sarong combination',
+    'standard swimwear or a bikini with an optional non-transparent cover-up, only if naturally appropriate',
+    'a character-appropriate work outfit distinct from a generic blouse-and-trousers uniform',
+    'a relaxed home outfit using a different silhouette and neckline from the last several wives'
+  ];
+  const portraitSettingSlots252239=[
+    'living room or sitting room; no kitchen visible',
+    'private balcony or terrace with an empty background',
+    'private garden or courtyard with no other people',
+    'study, reading room or home office; no kitchen visible',
+    'bedroom or dressing area, fully dressed and non-explicit',
+    'hallway, entrance area or stair landing in a home; no kitchen visible',
+    'private poolside or garden seating area with nobody else present',
+    'studio, workshop or creative workroom suited to her life; avoid kitchen unless her profession specifically requires one',
+    'dining room or breakfast nook, but not a kitchen-counter portrait',
+    'hotel room or private hotel balcony while travelling, with no other people visible',
+    'conservatory, window seat or sunroom with natural light',
+    'rooftop terrace or private outdoor seating area with an unidentifiable city background'
+  ];
+  const portraitSlotBase252239=(Array.isArray(existing)?existing.length:0);
   for(let ix=0;ix<count;ix++){
+    const portraitSlotIndex252239=(portraitSlotBase252239+ix)%portraitOutfitSlots252239.length;
+    const portraitOutfitRequirement252239=portraitOutfitSlots252239[portraitSlotIndex252239];
+    const portraitSettingRequirement252239=portraitSettingSlots252239[(portraitSlotBase252239+ix*5)%portraitSettingSlots252239.length];
     const existingSummary=(Array.isArray(existing)?existing:[]).map(p=>({first_name:p.first_name,age:p.profile_data?.age,current_city:p.profile_data?.current_city,background:p.profile_data?.background,husband_summary:p.profile_data?.husband_summary,appearance:p.appearance_spec}));
     const key=`wife_library_${Date.now()}_${ix}_${Math.random().toString(36).slice(2,8)}`;
     const schema={type:'object',additionalProperties:false,required:['naming_profile','age','current_city','background','relationship_status','husband_summary','member_type','member_since','availability','travel_windows','bio','full_biography','appearance'],properties:{
@@ -1787,14 +1820,16 @@ RULES:
 - Automatically generated wives should be highly attractive, youthful-looking when appropriate to age, and visually distinctive, but still recognisably real rather than airbrushed AI fashion models.
 - Give a believable husband context in husband_summary. Do not design her sexual vignette yet.
 - Portrait: natural flattering husband/partner-taken phone photograph; genuine warm/toothy/laughing/shy smile; real skin texture; believable everyday or domestic/lifestyle setting; no glamour-campaign cloning.
+- PORTRAIT VARIETY REQUIREMENT FOR THIS WIFE — HARD: outfit category = ${portraitOutfitRequirement252239}; setting category = ${portraitSettingRequirement252239}. The portrait_outfit and portrait_setting fields must concretely follow these two categories. Do not substitute a kitchen or generic camisole/tank/short-sleeved top when the assigned category says otherwise.
 - Do not deliberately duplicate an existing library wife. Similarities are allowed because the developer manually curates each volume.
 - naming_profile.character_key MUST be exactly ${key}.
 - OPTIONAL DEVELOPER TRAIT PREFERENCES: only the fields explicitly supplied below are hard requirements. Any unspecified trait must remain free for you to choose creatively.
 - If age is supplied, use that exact age.
 - If ethnicity is supplied, treat it as a broad ethnicity/background cue rather than a country requirement, and make the overall identity and naming profile coherent with it.
-- If hair colour or eye colour is supplied, make the appearance specification and portrait clearly reflect them.
+- If breast size, hair colour or eye colour is supplied, make the appearance specification and portrait clearly reflect them.
 DEVELOPER PREFERENCES: ${prefSummary||'None supplied; choose all traits freely.'}
 EXISTING WIFE LIBRARY FOR VARIETY CONTEXT: ${JSON.stringify(existingSummary).slice(0,30000)}
+RECENCY VARIETY RULE: compare portrait_outfit and portrait_setting against the existing wife library above. The new wife must not reuse the same setting type or clothing silhouette as any of the most recent four wives. In particular, do not repeat kitchen portraits, fruit-bowl/counter backgrounds, or camisole/tank/short-sleeved-top-with-dark-trousers looks when they appeared recently.
 SERIES BIBLE CONTEXT: ${JSON.stringify(series.series_bible||{}).slice(0,20000)}`;
     const started=Date.now(),rr=await fictionModelFetch252175({model:'gpt-6-luna',input:prompt,max_output_tokens:6500,text:{format:{type:'json_schema',name:'asunder_wife_library_candidate',strict:true,schema}}}),raw=await rr.text();let d={};try{d=JSON.parse(raw)}catch{};
     await meterFiction25243({seriesId:id,bookId:null,stage:'wife_library',substage:'generate-wife',model:'gpt-6-luna',data:d,startedAt:started,httpStatus:rr.status,ok:rr.ok});
@@ -1808,15 +1843,11 @@ SERIES BIBLE CONTEXT: ${JSON.stringify(series.series_bible||{}).slice(0,20000)}`
     const firstName=fullName.split(/\s+/)[0]||fullName,appearance={...(z.appearance||{})};
     if(prefs.age)z.age=prefs.age;
     if(prefs.breast_size)appearance.bust_size=prefs.breast_size;
-    if(prefs.hair_color)appearance.hair=[`${prefs.hair_color} hair`,String(appearance.hair||'').trim()].filter(Boolean).join('; ');
-    if(prefs.eye_color)appearance.eyes=[`${prefs.eye_color} eyes`,String(appearance.eyes||'').trim()].filter(Boolean).join('; ');
-    if(prefs.body_type){appearance.figure=[prefs.body_type,String(appearance.figure||'').trim()].filter(Boolean).join('; ');if(/petite/i.test(prefs.body_type))appearance.petite=true;}
-    if(prefs.height_cm)appearance.height_impression=`${prefs.height_cm} cm`;
-    if(prefs.weight_kg)appearance.weight_kg=prefs.weight_kg;
-    if(prefs.clothing)appearance.portrait_outfit=prefs.clothing;
+    if(prefs.hair_color)appearance.hair=`${prefs.hair_color} hair`;
+    if(prefs.eye_color)appearance.eyes=`${prefs.eye_color} eyes`;
     const fig=String(appearance.figure||'');
-    if(!prefs.body_type&&(!/\b(slim|slender|lean|fine[- ]?boned|narrow|delicate|lightly built)\b/i.test(fig)||/\b(stocky|heavy[- ]?set|thickset|strongly built|broad[- ]?(?:built|shouldered)|physically imposing)\b/i.test(fig)))appearance.figure='Slim, slender and fine-boned, with a light/narrow frame and natural feminine proportions.';
-    const background=String(z.background||'').trim()||prefs.ethnicity_background||'';
+    if((!/\b(slim|slender|lean|fine[- ]?boned|narrow|delicate|lightly built)\b/i.test(fig)||/\b(stocky|heavy[- ]?set|thickset|strongly built|broad[- ]?(?:built|shouldered)|physically imposing)\b/i.test(fig)))appearance.figure='Slim, slender and fine-boned, with a light/narrow frame and natural feminine proportions.';
+    const background=prefs.ethnicity_background||String(z.background||'').trim()||'';
     const profileData={age:Number(z.age)||21,current_city:String(z.current_city||''),background,relationship_status:'Married',husband_summary:String(z.husband_summary||''),member_type:String(z.member_type||'Wife'),member_since:String(z.member_since||''),availability:String(z.availability||''),travel_windows:String(z.travel_windows||''),verification:'Verified Member',bio:String(z.bio||''),tags:['Married','Asunder Wife Library'],full_biography:String(z.full_biography||''),anglicised_first_name:firstName,anglicised_full_name:fullName};
     const characterKey=fictionAsunderCharacterKey252147(fullName);
     const img=await fictionAsunderGeneratePortrait252147({profile:{first_name:firstName,...profileData},appearance,characterKey,seriesId:id,bookId:null,castContrast:[]});

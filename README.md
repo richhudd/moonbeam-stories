@@ -1,3 +1,31 @@
+## V252.240 — ethnicity is now a dropdown in Wife Library generation
+- The Wife Library **Ethnicity** field is now a dropdown menu rather than a free-text box.
+- Options include: White European, Black African, Black Caribbean, East Asian, South Asian, Southeast Asian, Middle Eastern / North African, Latina / Hispanic, Mixed-race, and Mediterranean.
+- Leaving it on **No preference** keeps ethnicity unconstrained.
+- No backend or Supabase changes were needed because the selected dropdown value is still passed through as the same `ethnicity_background` preference string.
+
+## V252.239 — hard variety for Asunder wife portrait clothing and settings
+- Added a deterministic portrait-variety layer for Wife Library generation so consecutive wives cannot keep collapsing into the same kitchen/background and similar top/trouser combinations.
+- Each generated wife is assigned a rotating **outfit category** and **setting category** before Luna designs the detailed canonical profile.
+- The new wife must also avoid reusing the setting type or clothing silhouette of the most recent four library wives.
+- Explicit anti-repeat language now blocks recurring **kitchen / fruit-bowl / counter** compositions and recurring **camisole/tank/short-sleeved top + dark trousers** looks when they appeared recently.
+- The favourite natural realistic partner-taken phone-photo prompt is unchanged.
+- The slim/slender default, optional Age/Ethnicity/Breast size/Hair/Eyes controls, and one-person-only safeguard are unchanged.
+
+## V252.238 — fix Wife Library image enlargement
+- Replaced the delegated click handler with a direct click handler on each Wife Library portrait and full-profile portrait.
+- Clicking a portrait now opens a fresh full-screen lightbox above the Fiction Studio UI.
+- The lightbox uses the maximum browser z-index and removes itself cleanly when closed.
+- Close by clicking outside the image, pressing ×, or pressing Escape.
+- Added a visible `Click to enlarge` title on portrait images.
+
+## V252.237 — add breast size back to Asunder wife generation
+- The Wife Library generation controls now include **Breast size** again alongside **Age**, **Ethnicity**, **Hair colour**, and **Eye colour**.
+- A selected breast size is passed through as a hard generation preference and set directly on the wife’s canonical appearance before portrait generation.
+- Supplied hair colour and eye colour now replace conflicting generated values rather than being appended alongside them.
+- The broad slim/slender default remains in force.
+- The favourite natural realistic partner-taken portrait prompt remains the default, with the one-person-only safeguard intact.
+
 ## V252.236 — restore the favourite Asunder wife portrait prompt
 - The default Wife Library portrait route has been restored to the **natural realistic husband/partner-taken phone-photo prompt** that generated wives such as Amanda Souza, Ebba Lindberg, Lauren Kim and Tuva Söderberg.
 - Wife generation now again accepts only four optional controls: **Age**, **Ethnicity**, **Hair colour**, and **Eye colour**.
