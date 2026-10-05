@@ -3447,3 +3447,10 @@ V252.254 — Asunder finalisation/state recovery
 - Canonical server progress now drives all Asunder status surfaces.
 - Watchdog resumes a saved vignette editorial gate automatically.
 - Current Volume 1 DB state reset safely to Vignette 4 editorial recovery; no story text regenerated.
+
+V252.255 — Fiction Studio series-card accounting repair
+- Series headline remains lifetime series spend, including deleted/restarted attempts and shared series work.
+- Current surviving book cards now show only their own attributable production spend; undeveloped books remain at $0 until they incur direct usage.
+- Historical usage attached to deleted/replaced book ids is no longer silently reassigned to a replacement book merely because it occupies the same series position.
+- Legacy next-book seeds are re-attributed only when their original source book still belongs to the current surviving production chain.
+- Added a series-page attribution line separating current surviving-book direct spend from historical/shared spend, while preserving the full series total.
