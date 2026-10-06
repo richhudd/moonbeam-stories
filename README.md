@@ -257,6 +257,11 @@
 - For manuscript context, the photo-verified feature list replaces the original distinguishing-mark text. The saved portrait therefore wins whenever text and image disagree.
 - Existing wives are covered automatically the next time they are used; no regeneration of their portraits and no SQL migration is required.
 
+## V252.304 — face-preserving Woman Library visual edits
+- Editing a Woman Library visual canon field (age, ethnicity/background, nationality, hair colour, eye colour or bust size) now uses the existing canonical portrait as the identity anchor instead of doing a fresh from-scratch regeneration.
+- The edit pipeline uses image-edit generation where possible, so the updated portrait stays much closer to the same woman’s face while still respecting the new canon.
+- Canonical visual validation still runs after the edit, with one retry if the result fails the age / hair / eyes / bust / complexion check.
+
 ## V252.220 — optional wife-library trait controls
 - The Asunder Wife Library generation panel now includes optional controls for **age, ethnicity/background, breast size, hair colour, eye colour, and body type**.
 - None of these fields is required. You can set just one trait (for example blonde hair) and leave everything else blank.
