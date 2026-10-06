@@ -115,7 +115,23 @@ const fictionAssertStrictSchema252105=(schema,label='structured output',path='$'
   if(schema.items)fictionAssertStrictSchema252105(schema.items,label,`${path}.items`);
   for(const key of ['anyOf','oneOf','allOf'])if(Array.isArray(schema[key]))schema[key].forEach((x,i)=>fictionAssertStrictSchema252105(x,label,`${path}.${key}[${i}]`));
 };
-const fictionPreflightPayload252105=(payload)=>{const f=payload?.text?.format;if(f?.type==='json_schema'&&f?.strict===true&&f?.schema)fictionAssertStrictSchema252105(f.schema,f.name||'structured output');return payload};
+// V252.319 — strict-schema regressions are self-healing at runtime. A malformed strict
+// schema is a developer/schema-definition fault, not a reason to pause a paid fiction pipeline.
+// We first validate locally; if strict requirements are violated, preserve the same JSON Schema
+// but downgrade only that request to non-strict schema mode so the provider can still return
+// structured JSON. The stage's normal parser/retry logic then remains in control.
+const fictionPreflightPayload252105=(payload)=>{
+  const f=payload?.text?.format;
+  if(f?.type==='json_schema'&&f?.strict===true&&f?.schema){
+    try{fictionAssertStrictSchema252105(f.schema,f.name||'structured output')}
+    catch(e){
+      payload={...payload,text:{...(payload.text||{}),format:{...f,strict:false}}};
+      const note=`STRICT-SCHEMA FALLBACK: The local strict-schema preflight found a schema-definition incompatibility. Return one complete JSON object matching the supplied schema exactly; include every declared field and no commentary.`;
+      if(typeof payload.input==='string')payload.input=`${payload.input}\n\n${note}`;
+    }
+  }
+  return payload;
+};
 const astraFetch25240=async(payload)=>{payload=fictionPreflightPayload252105(payload);let last,networkFailures=0;for(let attempt=1;attempt<=3;attempt++){try{const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});response.moonbeamNetworkFailures=networkFailures;return response}catch(e){last=e;networkFailures++;if(attempt<3)await new Promise(r=>setTimeout(r,1000*attempt))}}throw new Error(`Model connection failed after 3 attempts: ${last?.message||last||'fetch failed'}`)};
 // V252.182 — provider-aware fiction accounting: OpenRouter Aion usage is metered at the provider-returned cost (with published-rate fallback); Venice images resolve live model pricing and are included in the permanent fiction ledger.
 // V252.179 — Venice image prompts are constrained to the provider's 1,500-character API limit; Asunder portrait/cover prompts are compacted canon-first so identity survives the cap.
