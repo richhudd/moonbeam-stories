@@ -3655,3 +3655,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - Asunder 2.0 Woman Library: Age and Relationship status now support No preference and randomise independently for each generated woman when left blank.
 - Asunder 2.0 removes the breast-size selector from the Woman Library UI; bust remains randomly generated backstage.
 - Asunder 2.0 hard casting canon strengthened: every principal woman is thin/slender and exceptionally, breathtakingly, jaw-droppingly beautiful in portrait generation and story-planning continuity, without inferring personality or sexual preferences from appearance.
+
+## V252.294
+- Asunder 2.0 `Generate 4 women` now runs as four independent saved generation jobs instead of one long blocking request, so completed women appear immediately and survive a later failure/timeout.
+- Each woman gets an individual retry; partial success is preserved in the Woman Library.
+- `No preference` age is now assigned independently in backend code (21–75) rather than relying on the model, eliminating the repeated age-21 fallback.
+- `No preference` relationship status and ethnicity are also independently randomized per woman before model generation; hair/eyes remain independently generated coherently with identity unless explicitly selected.
+- V2 generated records now retain the chosen ethnicity/background alongside locked nationality/name/age/relationship status for continuity.
