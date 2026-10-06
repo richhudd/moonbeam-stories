@@ -3273,7 +3273,26 @@ if(mode==='novel-status'||mode==='export-novel'){
   }
   let usage=null,usageEvents=[],editorial=[];if(mode==='export-novel'){usage=await fictionUsageSummary25243(id,bookId);usageEvents=await rest(`developer_fiction_usage_events?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=created_at.asc`);const runs=await rest(`developer_fiction_editorial_runs?select=*&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=created_at.asc`);for(const run of(runs||[])){const [ec,cl]=await Promise.all([rest(`developer_fiction_editorial_chapters?select=chapter_number,chapter_title,manuscript,continuity_snapshot&run_id=eq.${encodeURIComponent(run.id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`),rest(`developer_fiction_editorial_continuity?select=*&run_id=eq.${encodeURIComponent(run.id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`)]);editorial.push({...run,chapters:ec||[],continuity:cl?.[0]||null})}}
   let publication_check=null;if(mode==='export-novel'){const proofRuns=(editorial||[]).filter(r=>r.stage==='proof'&&r.status==='completed'),latestProof=proofRuns.slice(-1)[0],finalRunId=String(book.generation_state?.final_manuscript_run_id||''),finalRun=finalRunId?(editorial||[]).find(r=>String(r.id)===finalRunId):null,finalRows=finalRun?.chapters?.length?finalRun.chapters:(latestProof?.chapters?.length?latestProof.chapters:chapterRows);publication_check=book.generation_state?.publication_preflight||fictionPublicationCheck25260(finalRows,book.book_plan?.target_words||0)}
-  if(mode==='novel-status'&&body.compact===true){const compactBook={id:book.id,series_id:book.series_id,position:book.position,working_title:book.working_title,status:book.status,development_state:{phase:book.development_state?.phase||null,next_batch_start:book.development_state?.next_batch_start||null},book_plan:{chapters:Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters.map((c,i)=>({number:Number(c?.number||c?.chapter_number||i+1)})):[]},generation_state:{publication_preflight:book.generation_state?.publication_preflight||null,asunder_auto_pipeline:book.generation_state?.asunder_auto_pipeline||null},manuscript_model:book.manuscript_model||null,development_model:book.development_model||null};return res.status(200).json({book:compactBook,progress})}
+  if(mode==='novel-status'&&body.compact===true){
+    // V252.320 — the Book page must always receive the live Asunder writer map itself,
+    // not merely a headline/progress summary. Keep this compact by stripping prose while
+    // preserving beat number, writer, label, purpose, saved count and in-flight beat.
+    const compactCurrentChunk252320=asunderChunk252183?{
+      story_number:Number(asunderChunk252183.story_number)||0,
+      sections:Array.isArray(asunderChunk252183.sections)?asunderChunk252183.sections.map(liveSection252253):[],
+      chunks:Array.from({length:Array.isArray(asunderChunk252183.chunks)?asunderChunk252183.chunks.length:0},(_,i)=>({section_number:i+1})),
+      saved_sections:Array.isArray(asunderChunk252183.chunks)?asunderChunk252183.chunks.length:0,
+      in_flight:asunderChunk252183.in_flight||null,
+      last_saved_at:asunderChunk252183.last_saved_at||null
+    }:null;
+    const compactHistory252320=asunderHistory252253.map(h=>({
+      story_number:Number(h?.story_number)||0,
+      sections:Array.isArray(h?.sections)?h.sections.map(liveSection252253):[],
+      chunks:Array.from({length:Array.isArray(h?.chunks)?h.chunks.length:0},(_,i)=>({section_number:i+1}))
+    })).filter(h=>h.story_number>0);
+    const compactBook={id:book.id,series_id:book.series_id,position:book.position,working_title:book.working_title,status:book.status,development_state:{phase:book.development_state?.phase||null,next_batch_start:book.development_state?.next_batch_start||null},book_plan:{chapters:Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters.map((c,i)=>({number:Number(c?.number||c?.chapter_number||i+1),title:String(c?.title||'')})):[]},generation_state:{publication_preflight:book.generation_state?.publication_preflight||null,asunder_auto_pipeline:book.generation_state?.asunder_auto_pipeline||null,asunder_chunk_draft:compactCurrentChunk252320,asunder_chunk_history:compactHistory252320,asunder_stabilized_stories:asunderStabilized252190},manuscript_model:book.manuscript_model||null,development_model:book.development_model||null};
+    return res.status(200).json({book:compactBook,progress})
+  }
   return res.status(200).json({series,book,chapters:chapterRows,progress,continuity:ledgers?.[0]||{ledger:{},through_chapter:0},usage,usage_events:usageEvents,editorial,publication_check});
 }
 if(mode==='draft-rebalance'){
