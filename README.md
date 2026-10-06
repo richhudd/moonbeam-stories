@@ -3623,3 +3623,12 @@ V252.255 — Fiction Studio series-card accounting repair
 - V252.280 removed the old generated-prologue block, but that block also contained the `book_id` validation and database lookup used by `generate-chapter`. Removing it accidentally left the drafting branch referring to `book` before it existed.
 - Restores the book lookup at the start of `generate-chapter` without restoring the old generated-prologue machinery.
 - Retains the V252.283 early-Aion planning rules and the 3-attempt 0/10 planning guard.
+
+## V252.289 — Asunder 2.0 Character Lock pipeline
+- Woman Library creation now locks nationality backstage alongside canonical name, age and relationship status.
+- Book creation order for Asunder 2.0 is now: select four women -> develop and lock full characters -> optional intervention direction -> Book Development -> 12-beat Sol/Aion production.
+- Intervention prompts are not available to the character-generation call and cannot shape the locked personality retroactively.
+- Locked character packets include city, profession, social world, personality, habits, humour, strengths, insecurities, contradictions, relationship context, life history and baseline Asunder self-report/observations.
+- Single / unattached canon explicitly blocks invention of an existing spouse or romantic partner.
+- Backstage deterministic naming, live location checks, profession discovery/research and collision validation remain in the production path; location/profession research now receives the locked character packets directly.
+- Asunder 2.0 Member Records and vignette planning now consume the locked character packets as authoritative canon.
