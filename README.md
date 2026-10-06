@@ -1,3 +1,12 @@
+## V252.302 — per-field Woman Library fact editing
+- Adds an **Edit facts** control to every Asunder 2.0 Woman Library card.
+- Each assigned canonical field has its own compact **Edit ▾** dropdown: age, ethnicity/background, nationality, relationship status, hair colour, eye colour, and bust size.
+- Visual fact edits automatically regenerate and revalidate the canonical portrait so the saved image remains consistent with canon.
+- Nationality choices are constrained by the current ethnicity/background; changing ethnicity automatically replaces an incompatible nationality with a compatible one.
+- Canonical edits are blocked once a woman has been cast into a volume, preventing retrospective continuity corruption.
+- Four-woman batch generation no longer pre-randomises age and relationship independently in the browser; the V252.301 coherent backend pairing logic now controls both single and batch generation.
+- No SQL migration is required.
+
 ## V252.301 — coherent age / relationship sampling in Wife Library
 - Random Wife/ Woman Library generation no longer samples age and relationship category independently.
 - A deterministic backend compatibility table now selects them as one coherent demographic pair before the model is called.

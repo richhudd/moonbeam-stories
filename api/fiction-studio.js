@@ -1940,6 +1940,8 @@ const fictionAsunderWifeLibrarySummary252216=(p)=>({
   anglicised_full_name:String(p?.profile_data?.anglicised_full_name||''),
   age:Number(p?.profile_data?.age)||null,
   nationality:String(p?.profile_data?.nationality||''),
+  country:String(p?.profile_data?.country||''),
+  ethnicity_background:String(p?.profile_data?.ethnicity_background||p?.profile_data?.background||''),
   current_city:String(p?.profile_data?.current_city||''),
   background:String(p?.profile_data?.background||''),
   relationship_status:String(p?.profile_data?.relationship_status||''),
@@ -1988,6 +1990,64 @@ if(mode==='list-asunder-wife-library'){
   }
   wives.sort((a,b)=>{const au=(a.appearances||[]).length?1:0,bu=(b.appearances||[]).length?1:0;return au-bu||String(b.created_at||'').localeCompare(String(a.created_at||''))});
   return res.status(200).json({wives});
+}
+
+if(mode==='edit-asunder-wife-library-field'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Woman Library editing is available only for Asunder in Fiction Studio X.'});
+  const key=String(body.character_key||'').trim(),field=String(body.field||'').trim(),rawValue=String(body.value??'').trim();
+  if(!key||!field)return res.status(400).json({error:'Woman and field are required.'});
+  const rows=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`),p=rows?.[0];
+  if(!p)return res.status(404).json({error:'That Woman Library record could not be found.'});
+  const books=await rest(`developer_fiction_books?select=id,book_plan,development_state&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}`);
+  const locked=(Array.isArray(books)?books:[]).some(b=>{
+    const cast=Array.isArray(b?.development_state?.asunder_cast)?b.development_state.asunder_cast:[];
+    const stories=Array.isArray(b?.book_plan?.chapters)?b.book_plan.chapters:[];
+    return cast.some(x=>String(x?.character_key||'')===key)||stories.some(x=>String(x?.asunder_character_key||'')===key);
+  });
+  if(locked)return res.status(409).json({error:'This woman is already locked to a volume. Canonical facts cannot be edited after casting because that would break existing story continuity.'});
+  const relationshipTypes=['Wife','Girlfriend','Sugar baby','Long-term mistress','Financially supported companion','Student supported by older partner','Independent woman dating a wealthy older man','Woman attached to a married man','Single / unattached'];
+  const ethnicityChoices=['White European','Black African','Black Caribbean','East Asian','South Asian','Southeast Asian','Middle Eastern / North African','Latina / Hispanic','Mixed-race','Mediterranean'];
+  const nationalityPools={
+    'White European':[{country:'France',nationality:'French'},{country:'Germany',nationality:'German'},{country:'Netherlands',nationality:'Dutch'},{country:'Sweden',nationality:'Swedish'},{country:'Norway',nationality:'Norwegian'},{country:'Denmark',nationality:'Danish'},{country:'Iceland',nationality:'Icelandic'},{country:'Ireland',nationality:'Irish'},{country:'Poland',nationality:'Polish'},{country:'Czech Republic',nationality:'Czech'},{country:'Austria',nationality:'Austrian'},{country:'Belgium',nationality:'Belgian'}],
+    'Black African':[{country:'Senegal',nationality:'Senegalese'},{country:'Ghana',nationality:'Ghanaian'},{country:'Nigeria',nationality:'Nigerian'},{country:'Kenya',nationality:'Kenyan'},{country:'Ethiopia',nationality:'Ethiopian'},{country:'Uganda',nationality:'Ugandan'},{country:'Rwanda',nationality:'Rwandan'},{country:'Cameroon',nationality:'Cameroonian'},{country:'Tanzania',nationality:'Tanzanian'}],
+    'Black Caribbean':[{country:'Jamaica',nationality:'Jamaican'},{country:'Barbados',nationality:'Barbadian'},{country:'Trinidad and Tobago',nationality:'Trinidadian'},{country:'The Bahamas',nationality:'Bahamian'},{country:'Grenada',nationality:'Grenadian'},{country:'Saint Lucia',nationality:'Saint Lucian'}],
+    'East Asian':[{country:'Japan',nationality:'Japanese'},{country:'South Korea',nationality:'South Korean'},{country:'China',nationality:'Chinese'},{country:'Taiwan',nationality:'Taiwanese'}],
+    'South Asian':[{country:'India',nationality:'Indian'},{country:'Pakistan',nationality:'Pakistani'},{country:'Bangladesh',nationality:'Bangladeshi'},{country:'Sri Lanka',nationality:'Sri Lankan'},{country:'Nepal',nationality:'Nepali'}],
+    'Southeast Asian':[{country:'Philippines',nationality:'Filipina'},{country:'Vietnam',nationality:'Vietnamese'},{country:'Thailand',nationality:'Thai'},{country:'Indonesia',nationality:'Indonesian'},{country:'Malaysia',nationality:'Malaysian'},{country:'Singapore',nationality:'Singaporean'}],
+    'Middle Eastern / North African':[{country:'Morocco',nationality:'Moroccan'},{country:'Algeria',nationality:'Algerian'},{country:'Tunisia',nationality:'Tunisian'},{country:'Egypt',nationality:'Egyptian'},{country:'Lebanon',nationality:'Lebanese'},{country:'Jordan',nationality:'Jordanian'},{country:'Iran',nationality:'Iranian'},{country:'Turkey',nationality:'Turkish'}],
+    'Latina / Hispanic':[{country:'Mexico',nationality:'Mexican'},{country:'Colombia',nationality:'Colombian'},{country:'Argentina',nationality:'Argentinian'},{country:'Chile',nationality:'Chilean'},{country:'Peru',nationality:'Peruvian'},{country:'Uruguay',nationality:'Uruguayan'},{country:'Costa Rica',nationality:'Costa Rican'},{country:'Dominican Republic',nationality:'Dominican'}],
+    'Mixed-race':[{country:'United Kingdom',nationality:'British'},{country:'Canada',nationality:'Canadian'},{country:'Brazil',nationality:'Brazilian'},{country:'South Africa',nationality:'South African'},{country:'New Zealand',nationality:'New Zealander'},{country:'United States',nationality:'American'}],
+    'Mediterranean':[{country:'Italy',nationality:'Italian'},{country:'Greece',nationality:'Greek'},{country:'Spain',nationality:'Spanish'},{country:'Portugal',nationality:'Portuguese'},{country:'Croatia',nationality:'Croatian'},{country:'Cyprus',nationality:'Cypriot'},{country:'Malta',nationality:'Maltese'}]
+  };
+  const hairChoices=['Black','Dark brown','Brown','Light brown','Blonde','Red','Auburn','Grey or silver'],eyeChoices=['Brown','Hazel','Blue','Green','Grey','Black'],bustChoices=['A-cup','B-cup','C-cup','D-cup','DD-cup','E-cup or fuller'];
+  const profileData={...(p.profile_data||{})},appearance={...(p.appearance_spec||{})};
+  let visualChange=false,notice='';
+  if(field==='age'){
+    const age=Number(rawValue);if(!Number.isInteger(age)||age<21||age>75)return res.status(400).json({error:'Age must be between 21 and 75.'});profileData.age=age;visualChange=true;
+  }else if(field==='relationship_status'){
+    if(!relationshipTypes.includes(rawValue))return res.status(400).json({error:'Unsupported relationship status.'});profileData.relationship_status=rawValue;
+  }else if(field==='ethnicity_background'){
+    if(!ethnicityChoices.includes(rawValue))return res.status(400).json({error:'Unsupported ethnicity/background.'});profileData.ethnicity_background=rawValue;profileData.background=rawValue;const pool=nationalityPools[rawValue]||[];let match=pool.find(x=>x.nationality===profileData.nationality);if(!match){match=pool[Math.floor(Math.random()*pool.length)];if(match){profileData.nationality=match.nationality;profileData.country=match.country;notice=`Nationality adjusted to ${match.nationality} to remain coherent with ${rawValue}.`;}}visualChange=true;
+  }else if(field==='nationality'){
+    const ethnicity=String(profileData.ethnicity_background||profileData.background||'').trim();const pool=nationalityPools[ethnicity]||[];const match=pool.find(x=>x.nationality===rawValue);if(!match)return res.status(400).json({error:'That nationality is not available for the woman’s current ethnicity/background. Edit ethnicity first if you want a different nationality group.'});profileData.nationality=match.nationality;profileData.country=match.country;visualChange=true;
+  }else if(field==='hair_color'){
+    if(!hairChoices.includes(rawValue))return res.status(400).json({error:'Unsupported hair colour.'});appearance.hair=`${rawValue} hair`;visualChange=true;
+  }else if(field==='eye_color'){
+    if(!eyeChoices.includes(rawValue))return res.status(400).json({error:'Unsupported eye colour.'});appearance.eyes=`${rawValue} eyes`;visualChange=true;
+  }else if(field==='bust_size'){
+    if(!bustChoices.includes(rawValue))return res.status(400).json({error:'Unsupported bust size.'});appearance.bust_size=rawValue;visualChange=true;
+  }else return res.status(400).json({error:'That canonical field is not editable here.'});
+  delete profileData.photo_verified_visual_identity;
+  let portraitPath=p.portrait_path,photoPrompt=p.photo_prompt;
+  if(visualChange){
+    const ethnicity=String(profileData.ethnicity_background||profileData.background||'').trim(),nationality=String(profileData.nationality||'').trim(),country=String(profileData.country||'').trim();
+    const profileForImage={first_name:p.first_name,age:Number(profileData.age)||21,background:[ethnicity,nationality+(country?` (${country})`:'')].filter(Boolean).join('; ')};
+    const img=await fictionAsunderGeneratePortrait252147({profile:profileForImage,appearance,characterKey:key,seriesId:id,bookId:null,castContrast:[],asunder2:fictionAsunder2Identity252286(series)});portraitPath=img.path;photoPrompt=img.prompt;
+  }
+  const savedRows=await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(p.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({profile_data:profileData,appearance_spec:appearance,portrait_path:portraitPath,photo_prompt:photoPrompt,updated_at:new Date().toISOString()})}),saved=savedRows?.[0];
+  if(!saved)return res.status(502).json({error:'The canonical edit could not be saved.'});
+  const portrait_url=saved.portrait_path?await fictionAsunderStorageSignedUrl252197(saved.portrait_path,604800):'';
+  return res.status(200).json({wife:{...fictionAsunderWifeLibrarySummary252216(saved),portrait_url,nude_portrait_url:'',gallery_urls:[portrait_url].filter(Boolean),appearances:[]},portrait_regenerated:visualChange,notice});
 }
 
 if(mode==='generate-asunder-wife-library'){
