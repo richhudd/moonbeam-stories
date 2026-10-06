@@ -1,3 +1,10 @@
+## V252.297 — remove Asunder portrait clothing steering
+- Removes the hardcoded Wife/ Woman Library wardrobe rotation and all garment-menu examples from canonical Asunder portrait generation.
+- Removes legacy lycra/camisole/tank/dress/swimwear/etc. positive and negative wardrobe steering from the canonical portrait and alternate portrait-regeneration prompt paths.
+- `portrait_outfit` is no longer treated as canonical input to profile image generation or cast-distinctness scoring; newly generated library women do not carry a generated portrait outfit into the image prompt.
+- Portrait generation remains governed by identity canon (age, background/nationality context, face, hair, eyes, complexion, figure, bust and other non-clothing identity traits) plus the existing setting/composition/safety rules.
+- Story-derived cover continuity is left intact; this change removes wardrobe bias from canonical cast portraits rather than erasing clothing facts that are actually established by a finished manuscript.
+
 # V252.291 — Asunder 2.0 bias/formula firewall
 
 - Split Asunder 2.0 downstream planning from legacy Asunder husband/marriage prompts.
