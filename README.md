@@ -3662,3 +3662,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - `No preference` age is now assigned independently in backend code (21–75) rather than relying on the model, eliminating the repeated age-21 fallback.
 - `No preference` relationship status and ethnicity are also independently randomized per woman before model generation; hair/eyes remain independently generated coherently with identity unless explicitly selected.
 - V2 generated records now retain the chosen ethnicity/background alongside locked nationality/name/age/relationship status for continuity.
+
+## V252.295
+- Asunder 2.0 nationality selection is now deterministic backstage from ethnicity-compatible country/nationality pools rather than delegated to the model.
+- The locked country is forced into the naming profile before backstage naming so canonical name and nationality stay coherent.
+- Woman Library records now persist both `ethnicity_background` and `country` alongside nationality.
+- Portrait generation receives ethnicity + nationality + country context together.
+- Portrait continuity validation now checks supplied complexion/coloring in addition to age and bust size; it does not infer ethnicity/nationality from the image.
