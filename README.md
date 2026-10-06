@@ -3731,3 +3731,21 @@ V252.255 — Fiction Studio series-card accounting repair
 - Woman Library records now persist both `ethnicity_background` and `country` alongside nationality.
 - Portrait generation receives ethnicity + nationality + country context together.
 - Portrait continuity validation now checks supplied complexion/coloring in addition to age and bust size; it does not infer ethnicity/nationality from the image.
+
+## V252.311 — Asunder 2.0 persistent case engine
+- Locks a backstage psychological map with each woman's first Character Packet before intervention direction is available.
+- Reuses that locked character/psychological canon on later appearances; legacy packets are upgraded once before a new intervention is supplied.
+- Adds a mandatory Sol intervention-hypothesis checkpoint: developer intervention is binding, predicted psychological outcome is not.
+- Adds a mandatory post-vignette Sol outcome assessment against the original hypothesis and actual finished prose.
+- Appends a deterministic internal Asunder machine transmission to each finished Asunder 2.0 vignette.
+- Stores persistent per-woman case history/status in the existing profile JSON; no SQL migration required.
+- Woman Library now groups Untried first, then live case states, with Closed last; returning women carry their prior case history forward.
+
+## V252.312 — Asunder 2.0 linked two-woman operations
+- Each of the four vignette slots still has one primary Woman Library subject, with an optional second library woman for a linked operation.
+- Character Lock now locks every unique primary/linked subject before any intervention direction is accepted.
+- Sol creates separate psychological hypotheses/objectives for both women and assigns explicit operation roles/knowledge scope; every linked operation must have at least one woman knowingly participating in the Asunder-engineered operation.
+- One shared developer intervention can serve both cases, but post-vignette Sol assessment is separate for each woman and updates both persistent case histories/statuses independently.
+- Linked vignette titles use both canonical given names joined by ` & `.
+- The reader opening page shows both canonical portraits and separate member records under a linked-operation wrapper.
+- Linked appearances count as real Woman Library usage and lock canonical editing just like primary appearances.
