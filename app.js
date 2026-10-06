@@ -3069,7 +3069,14 @@ function fictionAsunderProductionSnapshot252206(book){
  const jobText=`${job?.stage||''} ${job?.progress||''}`,serverAuthoritative=Array.isArray(progress.saved_numbers)||Array.isArray(progress.asunder_stabilized_stories)||Array.isArray(progress.asunder_history_plans)||!!chunk;
  // A durable server checkpoint outranks stale browser-side job text. In particular, once a vignette has
  // all planned beats saved, never let an old local "Beat N" label drag the live display backwards.
- if(!activeVignette&&serverAuthoritative){for(let n=1;n<=planned;n++){if(saved.has(n)&&!locked.has(n)){activeVignette=n;break}}}
+ if(!activeVignette&&serverAuthoritative){
+  // V252.321 — durable server state decides the active vignette before any browser job text.
+  // First prefer a saved-but-not-yet-locked vignette (editorial gate); otherwise the first
+  // unlocked vignette is the current/next production target. Stale local job labels may never
+  // drag the tracker back to an already locked vignette.
+  for(let n=1;n<=planned;n++){if(saved.has(n)&&!locked.has(n)){activeVignette=n;break}}
+  if(!activeVignette)for(let n=1;n<=planned;n++){if(!locked.has(n)){activeVignette=n;break}}
+ }
  if(!activeVignette){const jm=jobText.match(/(?:Story|Vignette)\s+(\d+)/i);if(jm)activeVignette=Number(jm[1])}
  if(!activeVignette){const activeRun=runs.filter(r=>r.status==='running').slice(-1)[0];activeVignette=fictionAsunderRunVignette252206(activeRun)}
  if(!activeVignette){for(let n=1;n<=planned;n++){if(!locked.has(n)){activeVignette=n;break}}}
@@ -4408,7 +4415,13 @@ async function runAutomaticFictionPipeline25255(b){
    if(await fictionAutoPauseCheck25255(b,'draft')){fictionFinishJob25265(job,'paused','Paused after saved checkpoint');return}
    const status=await fictionJobRequest252144(job,{mode:'novel-status',id:seriesId,book_id:b.id,compact:true}),p=status.progress||{};
    const done=Number(p.saved_count||0),total=Number(p.planned_count||0),next=Number(p.next_chapter||0);
-   fictionUpdateJob25265(job,{stage:'First draft',progress:`${done} of ${total} chapters saved${next?` · writing ${next}`:''}${p.trajectory?.materially_behind?` · ${Number(p.trajectory.behind_pct||0).toFixed(1)}% behind target trajectory`:''}`});
+   if(fictionAsunderSeriesIdentity252149(series)){
+    const lockedCount252321=Array.isArray(p.asunder_stabilized_stories)?p.asunder_stabilized_stories.length:0,chunk252321=p.asunder_chunk||null;
+    const asunderProgress252321=chunk252321
+      ? `Vignette ${Number(chunk252321.story_number)||next||1} · ${Number(chunk252321.saved_sections||0)} of ${Number(chunk252321.planned_sections||fictionAsunderBeatCount252286())} beats saved${chunk252321.next_section?` · beat ${Number(chunk252321.next_section)} next`:''}`
+      : `${lockedCount252321} of 4 vignettes locked${next?` · preparing Vignette ${next}`:''}`;
+    fictionUpdateJob25265(job,{stage:'Asunder production',progress:asunderProgress252321});
+   }else fictionUpdateJob25265(job,{stage:'First draft',progress:`${done} of ${total} chapters saved${next?` · writing ${next}`:''}${p.trajectory?.materially_behind?` · ${Number(p.trajectory.behind_pct||0).toFixed(1)}% behind target trajectory`:''}`});
    if(fictionAsunderSeriesIdentity252149(series)){const stabilized252190=new Set((p.asunder_stabilized_stories||[]).map(Number)),pending252190=(p.saved_numbers||[]).map(Number).sort((a,b)=>a-b).find(n=>!stabilized252190.has(n));if(pending252190){const z=await fictionStabilizeAsunderStory252190(b,pending252190,seriesId,job);if(!z){fictionFinishJob25265(job,'paused',`Story ${pending252190} stitch gate paused`);return}continue}}
    if(p.complete===true)break;
    if(p.rebalance_needed){const tr=p.trajectory||{};if(st)st.textContent=`${fictionStudioNamespace252134==='fiction_x'?'Hybrid Sol/Aion':fictionModelLabel25243(cfg.models.manuscript||'gpt-6-luna')} · First draft · ${done}/${total} saved · ${Number(tr.behind_pct||0).toFixed(1)}% behind trajectory · deepening remaining chapter architecture…`;fictionUpdateJob25265(job,{stage:'First draft architecture correction',progress:`checkpoint ${Math.round(Number(p.rebalance_checkpoint||0)*100)}% · deepening remaining chapters`});await fictionJobRequest252144(job,{mode:'draft-rebalance',id:seriesId,book_id:b.id});void refreshFictionLiveUsage25243(b,seriesId);continue}
