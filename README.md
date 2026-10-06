@@ -3596,3 +3596,23 @@ V252.255 — Fiction Studio series-card accounting repair
 - Library cards/full profiles display **Relationship** rather than assuming **Marriage**.
 - Book-planning continuity now says **principal woman / canonical relationship / relationship-partner context** so non-wife selections are not silently rewritten as wives.
 - All romantic/sexual/supporting partners remain explicitly adult 21+.
+
+
+## V252.282 — immediate Wife Library usage status
+- Adds a prominent **USED / UNUSED** badge directly on every Wife Library portrait.
+- Used women show a compact appearance reference such as `V1·1` beside their name when choosing the four characters for a new volume.
+- The same status is visible while cards are collapsed, so the developer no longer has to expand/scroll to the bottom of a biography to discover prior use.
+- Selected vignette slots also say whether the chosen woman is unused or list her prior volume/vignette appearances.
+- Full profiles now show the usage badge beside the character name.
+- The existing detailed appearance history remains available lower down for full context.
+
+
+## V252.283 — Asunder early-Aion + stuck-planner fix
+- Removes the obsolete hard rule that forced Beats 1 and 2 to be Sol/non-explicit.
+- Aion may now own Beat 1 or Beat 2 when the approved story architecture warrants an immediate or in-medias-res erotic opening.
+- The planner now treats the first ~10% as a commercial erotic-momentum checkpoint rather than a fixed scene formula.
+- Psychological/marriage material is explicitly allowed to be revealed after an early erotic opening rather than always being front-loaded.
+- Keeps the requirement for at least two Aion beats across the ten-beat vignette.
+- Reduces the Sol ten-beat planner output budget from 8000 to 5000 tokens because the structured ten-beat plan does not require a large prose response, reducing latency/time-out risk.
+- Fixes the automatic pipeline's 0/10 infinite retry loop: if no ten-beat plan exists and planning fails three consecutive times, the pipeline now pauses and surfaces the real provider/server error instead of retrying forever.
+- Once a beat plan exists, recoverable beat-writing failures continue to retry from the saved checkpoint as before.
