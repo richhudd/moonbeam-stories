@@ -1220,6 +1220,7 @@ const fictionAsunderGenerateNudePortrait252241=async({portraitPath,profile,appea
 const fictionAsunderCoverTemplateId252152='asunder_volume_cover_v1';
 const fictionAsunderStorageBytes252152=async(path)=>{if(!path)throw Object.assign(new Error('A required Fiction Studio art asset is missing.'),{status:409});const enc=String(path).split('/').map(encodeURIComponent).join('/');const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/fiction-studio-art/${enc}`,{headers:adminHeaders()});if(!r.ok)throw Object.assign(new Error(`Could not load Fiction Studio art asset (${r.status}).`),{status:502});return Buffer.from(await r.arrayBuffer())};
 const fictionAsunderStorageAsset252241=async(path)=>{if(!path)throw Object.assign(new Error('A required Fiction Studio art asset is missing.'),{status:409});const enc=String(path).split('/').map(encodeURIComponent).join('/');const r=await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/fiction-studio-art/${enc}`,{headers:adminHeaders()});if(!r.ok)throw Object.assign(new Error(`Could not load Fiction Studio art asset (${r.status}).`),{status:502});return{bytes:Buffer.from(await r.arrayBuffer()),mime:String(r.headers.get('content-type')||'image/webp')}};
+const fictionAsunderPrepareVisualUndo252305=async({record,seriesId})=>{const cleanProfileData={...((record&&record.profile_data)||{})};delete cleanProfileData.last_visual_edit_undo;const snapshot={archived_at:new Date().toISOString(),full_name:String(record?.full_name||''),first_name:String(record?.first_name||''),profile_data:cleanProfileData,appearance_spec:{...((record&&record.appearance_spec)||{})},photo_prompt:String(record?.photo_prompt||'')};const livePath=String(record?.portrait_path||'').trim();if(!livePath)return snapshot;const asset=await fictionAsunderStorageAsset252241(livePath),mime=String(asset.mime||'image/webp').toLowerCase(),ext=mime.includes('png')?'png':mime.includes('jpeg')||mime.includes('jpg')?'jpg':'webp',archivePath=`fiction-studio/asunder-profiles/${user.id}/${seriesId}/${String(record?.character_key||'unknown')}/undo/portrait-${Date.now()}.${ext}`;await fictionAsunderStorageUpload252147(archivePath,asset.bytes,asset.mime||'image/webp');return{...snapshot,archive_path:archivePath,archive_mime:asset.mime||'image/webp'};};
 const fictionAsunderPhotoVerifiedVisualIdentity252298=async(profile)=>{
   const existing=profile?.appearance_spec?.photo_verified_visual_identity;
   if(existing&&typeof existing==='object'&&String(existing.visual_summary||'').trim()&&String(existing.verified_from_portrait_path||'')===String(profile?.portrait_path||''))return existing;
@@ -1958,6 +1959,7 @@ const fictionAsunderWifeLibrarySummary252216=(p)=>({
   appearance_spec:p?.appearance_spec||{},
   portrait_path:String(p?.portrait_path||''),
   nude_portrait_path:String(p?.profile_data?.nude_portrait_path||''),
+  can_undo_visual_edit:!!p?.profile_data?.last_visual_edit_undo,
   template_id:String(p?.template_id||fictionAsunderProfileTemplateId252147)
 });
 const fictionAsunderSelectedCast252216=(book)=>Array.isArray(book?.development_state?.asunder_cast)?book.development_state.asunder_cast:[];
@@ -2075,6 +2077,7 @@ Build the naming_profile so a culturally and generationally plausible name can b
   delete profileData.photo_verified_visual_identity;
   let portraitPath=p.portrait_path,photoPrompt=p.photo_prompt;
   if(visualChange){
+    profileData.last_visual_edit_undo=await fictionAsunderPrepareVisualUndo252305({record:p,seriesId:id});
     const ethnicity=String(profileData.ethnicity_background||profileData.background||'').trim(),nationality=String(profileData.nationality||'').trim(),country=String(profileData.country||'').trim();
     const profileForImage={first_name:canonicalName.first_name,age:Number(profileData.age)||21,background:[ethnicity,nationality+(country?` (${country})`:'')].filter(Boolean).join('; ')};
     const useIdentityEdit=!!String(p.portrait_path||'').trim();
@@ -2083,11 +2086,31 @@ Build the naming_profile so a culturally and generationally plausible name can b
       : await fictionAsunderGeneratePortrait252147({profile:profileForImage,appearance,characterKey:key,seriesId:id,bookId:null,castContrast:[],asunder2:fictionAsunder2Identity252286(series)});
     portraitPath=img.path;photoPrompt=img.prompt;
     if(useIdentityEdit)notice=[notice,'Canonical portrait updated from the existing portrait so her face stays as consistent as possible.'].filter(Boolean).join(' ');
+    notice=[notice,'Undo last visual edit is now available for this woman.'].filter(Boolean).join(' ');
   }
   const savedRows=await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(p.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({full_name:canonicalName.full_name,first_name:canonicalName.first_name,profile_data:profileData,appearance_spec:appearance,portrait_path:portraitPath,photo_prompt:photoPrompt,updated_at:new Date().toISOString()})}),saved=savedRows?.[0];
   if(!saved)return res.status(502).json({error:'The canonical edit could not be saved.'});
   const portrait_url=saved.portrait_path?await fictionAsunderStorageSignedUrl252197(saved.portrait_path,604800):'';
   return res.status(200).json({wife:{...fictionAsunderWifeLibrarySummary252216(saved),portrait_url,nude_portrait_url:'',gallery_urls:[portrait_url].filter(Boolean),appearances:[]},portrait_regenerated:visualChange,notice});
+}
+
+if(mode==='undo-asunder-wife-library-visual-edit'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Woman Library undo is available only for Asunder in Fiction Studio X.'});
+  const key=String(body.character_key||'').trim();
+  if(!key)return res.status(400).json({error:'Woman is required.'});
+  const rows=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`),p=rows?.[0];
+  if(!p)return res.status(404).json({error:'That Woman Library record could not be found.'});
+  const books=await rest(`developer_fiction_books?select=id,book_plan,development_state&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}`);
+  const locked=(Array.isArray(books)?books:[]).some(b=>{const cast=Array.isArray(b?.development_state?.asunder_cast)?b.development_state.asunder_cast:[];const stories=Array.isArray(b?.book_plan?.chapters)?b.book_plan.chapters:[];return cast.some(x=>String(x?.character_key||'')===key)||stories.some(x=>String(x?.asunder_character_key||'')===key);});
+  if(locked)return res.status(409).json({error:'This woman is already locked to a volume. The last visual edit cannot be undone after casting because that would break continuity.'});
+  const undo=p?.profile_data?.last_visual_edit_undo;
+  if(!undo||!String(undo.archive_path||'').trim())return res.status(409).json({error:'There is no saved previous visual state to restore for this woman.'});
+  const restoredProfileData={...((undo&&undo.profile_data)||{})};delete restoredProfileData.last_visual_edit_undo;delete restoredProfileData.photo_verified_visual_identity;
+  const restoredAppearance={...((undo&&undo.appearance_spec)||{})};
+  const savedRows=await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(p.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({full_name:String(undo.full_name||p.full_name||''),first_name:String(undo.first_name||p.first_name||''),profile_data:restoredProfileData,appearance_spec:restoredAppearance,portrait_path:String(undo.archive_path||p.portrait_path||''),photo_prompt:String(undo.photo_prompt||''),updated_at:new Date().toISOString()})}),saved=savedRows?.[0];
+  if(!saved)return res.status(502).json({error:'The previous visual state could not be restored.'});
+  const portrait_url=saved.portrait_path?await fictionAsunderStorageSignedUrl252197(saved.portrait_path,604800):'',nude_url=saved.profile_data?.nude_portrait_path?await fictionAsunderStorageSignedUrl252197(saved.profile_data.nude_portrait_path,604800):'';
+  return res.status(200).json({wife:{...fictionAsunderWifeLibrarySummary252216(saved),portrait_url,nude_portrait_url:nude_url,gallery_urls:[portrait_url,nude_url].filter(Boolean),appearances:[]},notice:'Previous visual state restored.'});
 }
 
 if(mode==='generate-asunder-wife-library'){

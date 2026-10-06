@@ -1,3 +1,8 @@
+## V252.305 — in-place Woman Library fact edits
+- Saving a canonical fact updates only the currently open woman profile and the existing in-memory library record.
+- The Woman Library is not re-fetched or re-rendered after each individual save.
+- When a portrait changes, the open portrait is cache-busted so the replacement appears immediately.
+
 ## V252.303 — Woman Library name follows nationality/background edits
 - Canonical names are now treated as dependent on the woman’s demographic naming context rather than as an unrelated frozen field.
 - Editing **ethnicity/background** or **nationality** before casting rebuilds the backstage naming metadata from the edited country/nationality/background, then the deterministic naming engine selects a culturally coherent replacement name.
