@@ -1,3 +1,11 @@
+## V252.303 — Woman Library name follows nationality/background edits
+- Canonical names are now treated as dependent on the woman’s demographic naming context rather than as an unrelated frozen field.
+- Editing **ethnicity/background** or **nationality** before casting rebuilds the backstage naming metadata from the edited country/nationality/background, then the deterministic naming engine selects a culturally coherent replacement name.
+- Creative models still do not choose the proper name: Luna supplies demographic naming metadata only; the existing backstage name-pool machinery selects the actual name.
+- Romanised/anglicised name forms are refreshed with the canonical name, while the stable Woman Library character key is preserved so the record itself remains the same woman.
+- The canonical portrait is regenerated from the edited demographic/visual canon as before.
+- No SQL migration is required.
+
 ## V252.302 — per-field Woman Library fact editing
 - Adds an **Edit facts** control to every Asunder 2.0 Woman Library card.
 - Each assigned canonical field has its own compact **Edit ▾** dropdown: age, ethnicity/background, nationality, relationship status, hair colour, eye colour, and bust size.

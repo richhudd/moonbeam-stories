@@ -2021,15 +2021,43 @@ if(mode==='edit-asunder-wife-library-field'){
   };
   const hairChoices=['Black','Dark brown','Brown','Light brown','Blonde','Red','Auburn','Grey or silver'],eyeChoices=['Brown','Hazel','Blue','Green','Grey','Black'],bustChoices=['A-cup','B-cup','C-cup','D-cup','DD-cup','E-cup or fuller'];
   const profileData={...(p.profile_data||{})},appearance={...(p.appearance_spec||{})};
-  let visualChange=false,notice='';
+  const regenerateCanonicalName252303=async()=>{
+    const ethnicity=String(profileData.ethnicity_background||profileData.background||'').trim(),nationality=String(profileData.nationality||'').trim(),country=String(profileData.country||'').trim(),age=Math.max(21,Number(profileData.age)||21),relationship=String(profileData.relationship_status||'').trim();
+    if(!country||!nationality)throw Object.assign(new Error('A country and nationality must be established before the canonical name can be regenerated.'),{status:409});
+    const schema={type:'object',additionalProperties:false,required:['naming_profile'],properties:{naming_profile:fictionNameProfileSchema252104}};
+    const prompt=`Create ONLY demographic naming metadata for one fictional adult woman. Do NOT propose, write or suggest any proper name. The deterministic backstage naming engine will choose the name from demographic candidate pools.
+
+BINDING FACTS:
+- character_key must be exactly ${key}
+- age is exactly ${age}
+- approximate birth year should therefore be ${2026-age}
+- sex/gender context: woman
+- ethnicity/background context: ${ethnicity||'unspecified'}
+- nationality: ${nationality}
+- country/region for naming must be exactly ${country}
+- relationship status: ${relationship||'unspecified'}
+
+Build the naming_profile so a culturally and generationally plausible name can be selected without inventing migration, religion, class, adoption or marriage-name history. Use the naming system appropriate to the stated country/cultural context. Return only the requested JSON.`;
+    const started=Date.now(),rr=await fictionModelFetch252175({model:'gpt-6-luna',input:prompt,max_output_tokens:1800,text:{format:{type:'json_schema',name:'asunder_woman_rename_profile',strict:true,schema}}}),raw=await rr.text();let d={};try{d=JSON.parse(raw)}catch{}
+    await meterFiction25243({seriesId:id,bookId:null,stage:'wife_library',substage:'edit-wife-name-profile',model:'gpt-6-luna',data:d,startedAt:started,httpStatus:rr.status,ok:rr.ok});
+    if(!rr.ok)throw Object.assign(new Error(d?.error?.message||`Canonical name metadata returned HTTP ${rr.status}`),{status:502});
+    const z=parseFictionStructured25238(d,'Woman Library canonical rename metadata'),np={...(z.naming_profile||{}),character_key:key,country_region:country,approximate_birth_year:2026-age,sex_or_gender_context:'woman'};
+    const allProfiles=await rest(`developer_fiction_asunder_profiles?select=full_name,character_key&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}`);
+    const holder={wife:{name:`[[CHAR:${key}]]`,naming_profile:np}};
+    await fictionAssignCharacterNames252104({container:holder,characters:[holder.wife],canonCharacters:(Array.isArray(allProfiles)?allProfiles:[]).filter(x=>String(x.character_key||'')!==key).map(x=>({name:x.full_name})),bookId:null,label:'Woman Library canonical rename'});
+    const fullName=String(holder.wife.name||'').trim();if(!fullName||fullName.includes('[[CHAR:'))throw Object.assign(new Error('Backstage naming did not produce a usable canonical name.'),{status:502});
+    const forms=await fictionAsunderResolveNameForms252243({fullName,background:ethnicity,bookId:null,model:'gpt-6-luna'}),firstName=String(forms.first_name||'').trim()||fictionAsunderFirstName252147(fullName);
+    return{full_name:fullName,first_name:firstName,anglicised_first_name:String(forms.anglicised_first_name||firstName).trim()||firstName,anglicised_full_name:String(forms.anglicised_full_name||fullName).trim()||fullName};
+  };
+  let visualChange=false,nameContextChange=false,notice='';
   if(field==='age'){
     const age=Number(rawValue);if(!Number.isInteger(age)||age<21||age>75)return res.status(400).json({error:'Age must be between 21 and 75.'});profileData.age=age;visualChange=true;
   }else if(field==='relationship_status'){
     if(!relationshipTypes.includes(rawValue))return res.status(400).json({error:'Unsupported relationship status.'});profileData.relationship_status=rawValue;
   }else if(field==='ethnicity_background'){
-    if(!ethnicityChoices.includes(rawValue))return res.status(400).json({error:'Unsupported ethnicity/background.'});profileData.ethnicity_background=rawValue;profileData.background=rawValue;const pool=nationalityPools[rawValue]||[];let match=pool.find(x=>x.nationality===profileData.nationality);if(!match){match=pool[Math.floor(Math.random()*pool.length)];if(match){profileData.nationality=match.nationality;profileData.country=match.country;notice=`Nationality adjusted to ${match.nationality} to remain coherent with ${rawValue}.`;}}visualChange=true;
+    if(!ethnicityChoices.includes(rawValue))return res.status(400).json({error:'Unsupported ethnicity/background.'});profileData.ethnicity_background=rawValue;profileData.background=rawValue;nameContextChange=true;const pool=nationalityPools[rawValue]||[];let match=pool.find(x=>x.nationality===profileData.nationality);if(!match){match=pool[Math.floor(Math.random()*pool.length)];if(match){profileData.nationality=match.nationality;profileData.country=match.country;notice=`Nationality adjusted to ${match.nationality} to remain coherent with ${rawValue}.`;}}visualChange=true;
   }else if(field==='nationality'){
-    const ethnicity=String(profileData.ethnicity_background||profileData.background||'').trim();const pool=nationalityPools[ethnicity]||[];const match=pool.find(x=>x.nationality===rawValue);if(!match)return res.status(400).json({error:'That nationality is not available for the woman’s current ethnicity/background. Edit ethnicity first if you want a different nationality group.'});profileData.nationality=match.nationality;profileData.country=match.country;visualChange=true;
+    const ethnicity=String(profileData.ethnicity_background||profileData.background||'').trim();const pool=nationalityPools[ethnicity]||[];const match=pool.find(x=>x.nationality===rawValue);if(!match)return res.status(400).json({error:'That nationality is not available for the woman’s current ethnicity/background. Edit ethnicity first if you want a different nationality group.'});profileData.nationality=match.nationality;profileData.country=match.country;nameContextChange=true;visualChange=true;
   }else if(field==='hair_color'){
     if(!hairChoices.includes(rawValue))return res.status(400).json({error:'Unsupported hair colour.'});appearance.hair=`${rawValue} hair`;visualChange=true;
   }else if(field==='eye_color'){
@@ -2037,14 +2065,16 @@ if(mode==='edit-asunder-wife-library-field'){
   }else if(field==='bust_size'){
     if(!bustChoices.includes(rawValue))return res.status(400).json({error:'Unsupported bust size.'});appearance.bust_size=rawValue;visualChange=true;
   }else return res.status(400).json({error:'That canonical field is not editable here.'});
+  let canonicalName={full_name:p.full_name,first_name:p.first_name,anglicised_first_name:String(profileData.anglicised_first_name||p.first_name||''),anglicised_full_name:String(profileData.anglicised_full_name||p.full_name||'')};
+  if(nameContextChange){canonicalName=await regenerateCanonicalName252303();profileData.anglicised_first_name=canonicalName.anglicised_first_name;profileData.anglicised_full_name=canonicalName.anglicised_full_name;notice=[notice,`Canonical name adjusted to ${canonicalName.full_name} so it remains coherent with the edited nationality/background.`].filter(Boolean).join(' ');}
   delete profileData.photo_verified_visual_identity;
   let portraitPath=p.portrait_path,photoPrompt=p.photo_prompt;
   if(visualChange){
     const ethnicity=String(profileData.ethnicity_background||profileData.background||'').trim(),nationality=String(profileData.nationality||'').trim(),country=String(profileData.country||'').trim();
-    const profileForImage={first_name:p.first_name,age:Number(profileData.age)||21,background:[ethnicity,nationality+(country?` (${country})`:'')].filter(Boolean).join('; ')};
+    const profileForImage={first_name:canonicalName.first_name,age:Number(profileData.age)||21,background:[ethnicity,nationality+(country?` (${country})`:'')].filter(Boolean).join('; ')};
     const img=await fictionAsunderGeneratePortrait252147({profile:profileForImage,appearance,characterKey:key,seriesId:id,bookId:null,castContrast:[],asunder2:fictionAsunder2Identity252286(series)});portraitPath=img.path;photoPrompt=img.prompt;
   }
-  const savedRows=await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(p.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({profile_data:profileData,appearance_spec:appearance,portrait_path:portraitPath,photo_prompt:photoPrompt,updated_at:new Date().toISOString()})}),saved=savedRows?.[0];
+  const savedRows=await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(p.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({full_name:canonicalName.full_name,first_name:canonicalName.first_name,profile_data:profileData,appearance_spec:appearance,portrait_path:portraitPath,photo_prompt:photoPrompt,updated_at:new Date().toISOString()})}),saved=savedRows?.[0];
   if(!saved)return res.status(502).json({error:'The canonical edit could not be saved.'});
   const portrait_url=saved.portrait_path?await fictionAsunderStorageSignedUrl252197(saved.portrait_path,604800):'';
   return res.status(200).json({wife:{...fictionAsunderWifeLibrarySummary252216(saved),portrait_url,nude_portrait_url:'',gallery_urls:[portrait_url].filter(Boolean),appearances:[]},portrait_regenerated:visualChange,notice});
