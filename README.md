@@ -1,3 +1,8 @@
+## V252.307 — Asunder 2.0 casting portrait safety cleanup
+- Woman Library portrait generation now uses a neutral general-audience portrait prompt in Asunder 2.0.
+- Removed adult-erotica wording from the casting-image request path while preserving age, identity, hair, eyes, complexion, slender build, beauty and canonical upper-body proportions.
+- Both Venice and OpenAI fallback use the same neutral casting prompt, avoiding the previous safety rejection when a provider fallback occurred.
+
 ## V252.305 — in-place Woman Library fact edits
 - Saving a canonical fact updates only the currently open woman profile and the existing in-memory library record.
 - The Woman Library is not re-fetched or re-rendered after each individual save.
