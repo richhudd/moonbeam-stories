@@ -3586,3 +3586,13 @@ V252.255 — Fiction Studio series-card accounting repair
 - Desktop and mobile readers both place it between the cover and the first wife profile.
 - Review/manuscript exports include it as `front-matter.txt` and at the start of the full manuscript; the old `prologue.txt` export is removed.
 - Existing stored prologue data is ignored by the reader.
+
+
+## V252.281 — Asunder relationship-type selection
+- Adds a **Relationship** dropdown to Wife Library generation.
+- Supported selections: Wife, Girlfriend, Sugar baby, Long-term mistress, Financially supported companion, Student supported by older partner, Independent woman dating a wealthy older man, Woman attached to a married man, and Single / unattached.
+- Leaving Relationship blank lets Luna choose among those categories rather than forcing every new library woman to be married.
+- The legacy `husband_summary` storage field is retained for compatibility but now functions as generic relationship/partner context; new records also save `relationship_summary`.
+- Library cards/full profiles display **Relationship** rather than assuming **Marriage**.
+- Book-planning continuity now says **principal woman / canonical relationship / relationship-partner context** so non-wife selections are not silently rewritten as wives.
+- All romantic/sexual/supporting partners remain explicitly adult 21+.

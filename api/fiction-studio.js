@@ -1843,7 +1843,8 @@ const fictionAsunderWifeLibrarySummary252216=(p)=>({
   current_city:String(p?.profile_data?.current_city||''),
   background:String(p?.profile_data?.background||''),
   relationship_status:String(p?.profile_data?.relationship_status||''),
-  husband_summary:String(p?.profile_data?.husband_summary||''),
+  relationship_summary:String(p?.profile_data?.relationship_summary||p?.profile_data?.husband_summary||''),
+  husband_summary:String(p?.profile_data?.husband_summary||p?.profile_data?.relationship_summary||''),
   member_type:String(p?.profile_data?.member_type||''),
   bio:String(p?.profile_data?.bio||''),
   full_biography:String(p?.profile_data?.full_biography||''),
@@ -1888,14 +1889,17 @@ if(mode==='generate-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library generation is available only for Asunder in Fiction Studio X.'});
   const count=Math.max(1,Math.min(4,Number(body.count)||1));
   const rawPrefs=body.preferences&&typeof body.preferences==='object'?body.preferences:{};
+  const allowedRelationshipTypes252281=new Set(['Wife','Girlfriend','Sugar baby','Long-term mistress','Financially supported companion','Student supported by older partner','Independent woman dating a wealthy older man','Woman attached to a married man','Single / unattached']);
+  const requestedRelationship252281=String(rawPrefs.relationship_type||'').trim();
   const prefs={
+    relationship_type:allowedRelationshipTypes252281.has(requestedRelationship252281)?requestedRelationship252281:'',
     age:Math.max(21,Math.min(75,Number(rawPrefs.age)||0))||null,
     ethnicity_background:String(rawPrefs.ethnicity_background||'').trim().slice(0,120),
     breast_size:String(rawPrefs.breast_size||'').trim().slice(0,40),
     hair_color:String(rawPrefs.hair_color||'').trim().slice(0,40),
     eye_color:String(rawPrefs.eye_color||'').trim().slice(0,40)
   };
-  const prefSummary=[prefs.age?`age ${prefs.age}`:'',prefs.ethnicity_background?`ethnicity ${prefs.ethnicity_background}`:'',prefs.breast_size?`breast size ${prefs.breast_size}`:'',prefs.hair_color?`hair colour ${prefs.hair_color}`:'',prefs.eye_color?`eye colour ${prefs.eye_color}`:''].filter(Boolean).join('; ');
+  const prefSummary=[prefs.relationship_type?`relationship ${prefs.relationship_type}`:'',prefs.age?`age ${prefs.age}`:'',prefs.ethnicity_background?`ethnicity ${prefs.ethnicity_background}`:'',prefs.breast_size?`breast size ${prefs.breast_size}`:'',prefs.hair_color?`hair colour ${prefs.hair_color}`:'',prefs.eye_color?`eye colour ${prefs.eye_color}`:''].filter(Boolean).join('; ');
   const existing=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
   const created=[];
   const portraitOutfitSlots252239=[
@@ -1931,7 +1935,7 @@ if(mode==='generate-asunder-wife-library'){
     const portraitSlotIndex252239=(portraitSlotBase252239+ix)%portraitOutfitSlots252239.length;
     const portraitOutfitRequirement252239=portraitOutfitSlots252239[portraitSlotIndex252239];
     const portraitSettingRequirement252239=portraitSettingSlots252239[(portraitSlotBase252239+ix*5)%portraitSettingSlots252239.length];
-    const existingSummary=(Array.isArray(existing)?existing:[]).map(p=>({first_name:p.first_name,age:p.profile_data?.age,current_city:p.profile_data?.current_city,background:p.profile_data?.background,husband_summary:p.profile_data?.husband_summary,appearance:p.appearance_spec}));
+    const existingSummary=(Array.isArray(existing)?existing:[]).map(p=>({first_name:p.first_name,age:p.profile_data?.age,current_city:p.profile_data?.current_city,background:p.profile_data?.background,relationship_status:p.profile_data?.relationship_status,relationship_summary:p.profile_data?.relationship_summary||p.profile_data?.husband_summary,appearance:p.appearance_spec}));
     const key=`wife_library_${Date.now()}_${ix}_${Math.random().toString(36).slice(2,8)}`;
     const schema={type:'object',additionalProperties:false,required:['naming_profile','age','current_city','background','relationship_status','husband_summary','member_type','member_since','availability','travel_windows','bio','full_biography','appearance'],properties:{
       naming_profile:fictionNameProfileSchema252104,age:{type:'integer',minimum:21,maximum:75},
@@ -1940,15 +1944,18 @@ if(mode==='generate-asunder-wife-library'){
     }};
     const prompt=`Create ONE new canonical wife for the permanent Asunder Wife Library. This is CAST CREATION, not a story plan. Do NOT choose any proper name yourself. Return demographic naming_profile metadata only; the deterministic backstage naming engine will choose her culturally and generationally plausible name.
 RULES:
-- Adult age 21–75 and married.
-- International variety is welcome. Background, current city, profession/life and marriage must cohere.
-- Automatically generated wives should be highly attractive, youthful-looking when appropriate to age, and visually distinctive, but still recognisably real rather than airbrushed AI fashion models.
-- Give a believable husband context in husband_summary. Do not design her sexual vignette yet.
+- Adult age 21–75. Every person described in any romantic, sexual or financially supported relationship must also be an adult 21+.
+- RELATIONSHIP CATEGORY: if the developer supplied one, use it exactly. Otherwise choose freely from: Wife; Girlfriend; Sugar baby; Long-term mistress; Financially supported companion; Student supported by older partner; Independent woman dating a wealthy older man; Woman attached to a married man; Single / unattached. Do not silently convert every woman into a wife.
+- International variety is welcome. Background, current city, profession/life and relationship circumstances must cohere.
+- Automatically generated women should be highly attractive, youthful-looking when appropriate to age, and visually distinctive, but still recognisably real rather than airbrushed AI fashion models.
+- relationship_status must clearly state the selected relationship category. member_type should be a concise matching Asunder member label.
+- The legacy JSON field husband_summary is now the RELATIONSHIP/PARTNER CONTEXT field: describe the husband, boyfriend, older partner, married lover, financial supporter, or independent/single context as appropriate. For Single / unattached, explain that she is joining independently rather than inventing a partner. Do not design her sexual vignette yet.
 - Portrait: natural flattering husband/partner-taken phone photograph; genuine warm/toothy/laughing/shy smile; real skin texture; believable everyday or domestic/lifestyle setting; no glamour-campaign cloning.
 - PORTRAIT VARIETY REQUIREMENT FOR THIS WIFE — HARD: outfit category = ${portraitOutfitRequirement252239}; setting category = ${portraitSettingRequirement252239}. The portrait_outfit and portrait_setting fields must concretely follow these two categories. Do not substitute a kitchen or generic camisole/tank/short-sleeved top when the assigned category says otherwise.
 - Do not deliberately duplicate an existing library wife. Similarities are allowed because the developer manually curates each volume.
 - naming_profile.character_key MUST be exactly ${key}.
 - OPTIONAL DEVELOPER TRAIT PREFERENCES: only the fields explicitly supplied below are hard requirements. Any unspecified trait must remain free for you to choose creatively.
+- If relationship is supplied, use that exact relationship category and make relationship_status, member_type, husband_summary and biography agree with it.
 - If age is supplied, use that exact age.
 - If ethnicity is supplied, treat it as a broad ethnicity/background cue rather than a country requirement, and make the overall identity and naming profile coherent with it.
 - If breast size, hair colour or eye colour is supplied, make the appearance specification and portrait clearly reflect them.
@@ -1974,7 +1981,9 @@ SERIES BIBLE CONTEXT: ${JSON.stringify(series.series_bible||{}).slice(0,20000)}`
     const fig=String(appearance.figure||'');
     if((!/\b(slim|slender|lean|fine[- ]?boned|narrow|delicate|lightly built)\b/i.test(fig)||/\b(stocky|heavy[- ]?set|thickset|strongly built|broad[- ]?(?:built|shouldered)|physically imposing)\b/i.test(fig)))appearance.figure='Slim, slender and fine-boned, with a light/narrow frame and natural feminine proportions.';
     const background=prefs.ethnicity_background||String(z.background||'').trim()||'';
-    const profileData={age:Number(z.age)||21,current_city:String(z.current_city||''),background,relationship_status:'Married',husband_summary:String(z.husband_summary||''),member_type:String(z.member_type||'Wife'),member_since:String(z.member_since||''),availability:String(z.availability||''),travel_windows:String(z.travel_windows||''),verification:'Verified Member',bio:String(z.bio||''),tags:['Married','Asunder Wife Library'],full_biography:String(z.full_biography||''),anglicised_first_name:String(nameForms.anglicised_first_name||firstName).trim()||firstName,anglicised_full_name:String(nameForms.anglicised_full_name||fullName).trim()||fullName};
+    const resolvedRelationship252281=prefs.relationship_type||String(z.relationship_status||'').trim()||'Wife';
+    const relationshipSummary252281=String(z.husband_summary||'').trim();
+    const profileData={age:Number(z.age)||21,current_city:String(z.current_city||''),background,relationship_status:resolvedRelationship252281,relationship_summary:relationshipSummary252281,husband_summary:relationshipSummary252281,member_type:String(z.member_type||resolvedRelationship252281),member_since:String(z.member_since||''),availability:String(z.availability||''),travel_windows:String(z.travel_windows||''),verification:'Verified Member',bio:String(z.bio||''),tags:[resolvedRelationship252281,'Asunder Wife Library'],full_biography:String(z.full_biography||''),anglicised_first_name:String(nameForms.anglicised_first_name||firstName).trim()||firstName,anglicised_full_name:String(nameForms.anglicised_full_name||fullName).trim()||fullName};
     const characterKey=fictionAsunderCharacterKey252147(fullName);
     const profileForImages={first_name:firstName,...profileData};
     const img=await fictionAsunderGeneratePortrait252147({profile:profileForImages,appearance,characterKey,seriesId:id,bookId:null,castContrast:[]});
@@ -2190,7 +2199,7 @@ if(mode==='start-book-development'||mode==='continue-book-development'){
   // V252.35: never trust batch numbering blindly. Accept exactly one chapter for every
   // requested number and nothing outside the requested range. Invalid Astra output is
   // rejected without advancing the persisted checkpoint, so Resume safely retries it.
-  const batch=Array.isArray(parsed.chapters)?parsed.chapters:[];if(fixedAnthology252142){const volume=Math.max(1,Number(book.position)||sourceIndex+1),cast252216=fictionAsunderSelectedCast252216(book);if(cast252216.length!==4)return res.status(409).json({error:'This Asunder volume has no locked four-wife cast. Return to the Wife Library selection step.'});for(const c of batch){const ord=Number(c?.number)||0;if(ord>=1&&ord<=4){const wife=cast252216[ord-1];c.title=`${volume}.${ord} — ${wife.first_name}`;c.asunder_character_key=wife.character_key;c.asunder_profile_id=wife.id||null;c.asunder_template_id=wife.template_id||fictionAsunderProfileTemplateId252147;c.asunder_first_name=wife.first_name;c.continuity=`LOCKED PRINCIPAL WIFE: ${wife.full_name}, age ${wife.age}, ${wife.current_city}, ${wife.background}. Canonical marriage: ${wife.relationship_status}. Husband context: ${wife.husband_summary||'See canonical biography.'} Canonical appearance: ${JSON.stringify(wife.appearance_spec||{})}. `+String(c.continuity||'')}}}
+  const batch=Array.isArray(parsed.chapters)?parsed.chapters:[];if(fixedAnthology252142){const volume=Math.max(1,Number(book.position)||sourceIndex+1),cast252216=fictionAsunderSelectedCast252216(book);if(cast252216.length!==4)return res.status(409).json({error:'This Asunder volume has no locked four-wife cast. Return to the Wife Library selection step.'});for(const c of batch){const ord=Number(c?.number)||0;if(ord>=1&&ord<=4){const wife=cast252216[ord-1];c.title=`${volume}.${ord} — ${wife.first_name}`;c.asunder_character_key=wife.character_key;c.asunder_profile_id=wife.id||null;c.asunder_template_id=wife.template_id||fictionAsunderProfileTemplateId252147;c.asunder_first_name=wife.first_name;c.continuity=`LOCKED PRINCIPAL WOMAN: ${wife.full_name}, age ${wife.age}, ${wife.current_city}, ${wife.background}. Canonical relationship: ${wife.relationship_status||wife.member_type||'See canonical biography.'}. Relationship/partner context: ${wife.relationship_summary||wife.husband_summary||'See canonical biography.'} Canonical appearance: ${JSON.stringify(wife.appearance_spec||{})}. `+String(c.continuity||'')}}}
   const byNumber=new Map();
   for(const c of batch){
     const n=Number(c?.number);
