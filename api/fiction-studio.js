@@ -2783,7 +2783,10 @@ REMAINING CHAPTER PLAN: ${JSON.stringify(remaining)}`;
   const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});return res.status(200).json({skipped:false,trajectory,directions,book:rows?.[0]||{...book,generation_state}});
 }
 if(mode==='generate-chapter'){
-  // V252.280 — Asunder uses deterministic two-line front matter. No generated prologue stage.
+  // V252.284 — restore the book lookup that was accidentally removed when the old generated-prologue block was deleted in V252.280.
+  const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
+  const books=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`),book=books?.[0];if(!book)return res.status(404).json({error:'Fiction book not found.'});
+  // Asunder uses deterministic two-line front matter. No generated prologue stage.
   const planChapters=Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters:[];if(!planChapters.length)return res.status(400).json({error:'Save an approved Book Plan before drafting chapters.'});
   let manuscriptModel=fictionStudioSection252134==='fiction_x'?fictionXAionModel252166:fictionModel25243(book.manuscript_model||body.model||'gpt-6-luna').id;if(!book.manuscript_model){const z=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({manuscript_model:manuscriptModel,updated_at:new Date().toISOString()})});book.manuscript_model=z?.[0]?.manuscript_model||manuscriptModel}
   const existing=await rest(`developer_fiction_chapters?select=*&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`);

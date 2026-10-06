@@ -3616,3 +3616,10 @@ V252.255 — Fiction Studio series-card accounting repair
 - Reduces the Sol ten-beat planner output budget from 8000 to 5000 tokens because the structured ten-beat plan does not require a large prose response, reducing latency/time-out risk.
 - Fixes the automatic pipeline's 0/10 infinite retry loop: if no ten-beat plan exists and planning fails three consecutive times, the pipeline now pauses and surfaces the real provider/server error instead of retrying forever.
 - Once a beat plan exists, recoverable beat-writing failures continue to retry from the saved checkpoint as before.
+
+
+## V252.284 — Story drafting `book is not defined` fix
+- Fixes the immediate Volume 2 drafting failure shown as `book is not defined`.
+- V252.280 removed the old generated-prologue block, but that block also contained the `book_id` validation and database lookup used by `generate-chapter`. Removing it accidentally left the drafting branch referring to `book` before it existed.
+- Restores the book lookup at the start of `generate-chapter` without restoring the old generated-prologue machinery.
+- Retains the V252.283 early-Aion planning rules and the 3-attempt 0/10 planning guard.
