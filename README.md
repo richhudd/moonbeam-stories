@@ -1,3 +1,20 @@
+# V252.291 — Asunder 2.0 bias/formula firewall
+
+- Split Asunder 2.0 downstream planning from legacy Asunder husband/marriage prompts.
+- Removed V1 canonical-profile rules from V2 manuscript context; V2 now receives only Woman Library canon + locked Character Packet + photo-verified visible traits.
+- Added a hard V2 bias firewall: no default husband, age gap, older-man dynamic, facilitator, jealousy, secrecy, domination/submission, travel, messaging, group configuration, second encounter, debrief, empowerment/revelation/growth arc or other stock mechanism.
+- Removed legacy younger-female / older-male cast-pool prompting from V2 architecture.
+- V2 character architecture now uses human_architecture / erotic_architecture / intervention_architecture rather than forcing a volume-wide relationship arc.
+- V2 structural architecture now uses vignette structural notes rather than requiring conventional major-turning-point symmetry.
+- 12 beats are explicitly production/checkpoint chunks, not twelve dramatic stages. `human_focus` replaces mandatory `relationship_focus`.
+- Two-or-more Aion chunks remain a coverage safeguard for sustained explicit material, but are explicitly NOT two encounters; contiguous Aion chunks may form one continuous sequence.
+- Fixed V2 beat word targeting to divide by 12 rather than 10.
+- Added explicit no-age-gap-preference rule.
+- Variation ledger is diagnostic only; underused categories are not targets and must not drive story choice.
+- Neutralised partner/husband assumptions in V2 portrait continuity and shared casual-photo wording.
+- Removed `petite` as a required V2 Woman Library appearance field.
+- Disabled legacy Asunder visual/profile experiment path where it could contaminate Asunder 2.0.
+
 ## V252.251 — Asunder book-first casting flow
 
 - Reverted Asunder cover-image generation to the Venice `firered-image-edit` model explicitly, hard-wiring Story 1 aftermath cover art back to FireRed while retaining the existing large-title flattened cover layout.
