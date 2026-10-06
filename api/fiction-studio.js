@@ -776,7 +776,19 @@ const fictionProfessionDiscovery252106=async({material,existing=null,bookId=null
   const startedAt=Date.now(),rr=await fictionModelFetch252175({model,input:prompt,max_output_tokens:1800,text:{format:{type:'json_schema',name:'fiction_profession_role_discovery_staged',strict:true,schema}}});
   const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}await meterFiction25243({bookId,stage:'profession_research',substage:String(label).slice(0,120),model,data,startedAt,httpStatus:rr.status,ok:rr.ok});
   if(!rr.ok)throw Object.assign(new Error(`Profession role discovery failed: ${data?.error?.message||`HTTP ${rr.status}`}`),{status:502});
-  const parsed=parseFictionStructured25238(data,'profession role discovery');return Array.isArray(parsed?.roles)?parsed.roles.slice(0,3):[];
+  try{
+    const parsed=parseFictionStructured25238(data,'profession role discovery');
+    return Array.isArray(parsed?.roles)?parsed.roles.slice(0,3):[];
+  }catch(firstError){
+    // V252.317 — malformed/empty/refused 200 responses are model-shape failures, not pipeline failures.
+    // Retry once with a smaller request; if the second 200 response is still unusable, continue
+    // conservatively with no extra profession roles rather than pausing the whole book.
+    const retryPrompt=`Identify at most three professions/roles ALREADY PRESENT in this fiction that require factual practice grounding. Do not invent anything. Return only valid JSON matching the schema. MATERIAL: ${JSON.stringify(material)} EXISTING: ${JSON.stringify(existing||null)}`;
+    const rs=Date.now(),rr2=await fictionModelFetch252175({model,input:retryPrompt,max_output_tokens:900,text:{format:{type:'json_schema',name:'fiction_profession_role_discovery_staged_retry',strict:true,schema}}});
+    const raw2=await rr2.text();let data2={};try{data2=JSON.parse(raw2)}catch{}await meterFiction25243({bookId,stage:'profession_research',substage:`${String(label).slice(0,106)} retry`,model,data:data2,startedAt:rs,httpStatus:rr2.status,ok:rr2.ok});
+    if(!rr2.ok)throw Object.assign(new Error(`Profession role discovery retry failed: ${data2?.error?.message||`HTTP ${rr2.status}`}`),{status:502});
+    try{const parsed2=parseFictionStructured25238(data2,'profession role discovery retry');return Array.isArray(parsed2?.roles)?parsed2.roles.slice(0,3):[]}catch{return []}
+  }
 };
 // V252.107 — generous per-call output budget plus graceful conservative fallback after compact retry.
 const fictionProfessionRole252106=async({role,material,existing=null,bookId=null,label='profession role',compact=false})=>{
@@ -787,14 +799,16 @@ const fictionProfessionRole252106=async({role,material,existing=null,bookId=null
   const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}await meterFiction25243({bookId,stage:'profession_research',substage:String(label).slice(0,120),model,data,startedAt,httpStatus:rr.status,ok:rr.ok});
   if(!rr.ok)throw Object.assign(new Error(`Live profession research failed: ${data?.error?.message||`HTTP ${rr.status}`}`),{status:502});
   const reason=String(data?.incomplete_details?.reason||'').toLowerCase();
-  if(data?.status==='incomplete'&&reason.includes('max_output_tokens')&&!compact)return {needs_compact_retry:true};
-  if(data?.status==='incomplete'&&compact){return {pack:{profession_or_role:String(role?.profession_or_role||'').slice(0,100),jurisdiction_or_system:String(role?.jurisdiction_or_system||'').slice(0,120),centrality:['central','recurring','book_specific'].includes(role?.centrality)?role.centrality:'book_specific',must_respect:[],cannot_do:[],workflow_constraints:[],terminology_needed:[],collaboration_boundaries:[],corrections_required:[],source_urls:[],research_warning:`Live professional-practice research could not complete after the compact retry (${reason||'incomplete response'}). Keep this role generic and do not invent powers, access, procedures or technical detail until research succeeds.`}};}
-  if(data?.status==='incomplete')throw Object.assign(new Error(`Profession/practice research remained incomplete (${reason||'incomplete response'}). Retry/resume to continue.`),{status:502});
-  try{return {pack:parseFictionStructured25238(data,'profession/practice role pack')}}catch(e){
-    const msg=String(e?.message||'').toLowerCase(),recoverable=msg.includes('malformed profession/practice role pack structured output')||msg.includes('empty profession/practice role pack response');
-    if(!recoverable)throw e;
+  const conservativePack=(why)=>({profession_or_role:String(role?.profession_or_role||'').slice(0,100),jurisdiction_or_system:String(role?.jurisdiction_or_system||'').slice(0,120),centrality:['central','recurring','book_specific'].includes(role?.centrality)?role.centrality:'book_specific',must_respect:[],cannot_do:[],workflow_constraints:[],terminology_needed:[],collaboration_boundaries:[],corrections_required:[],source_urls:[],research_warning:`Live professional-practice research could not produce a usable structured pack after automatic retry (${String(why||'unusable response').slice(0,180)}). Keep this role generic and do not invent powers, access, procedures or technical detail.`});
+  // V252.317 — ANY successful-HTTP but unusable model response gets one automatic compact retry.
+  // A second unusable 200 response degrades safely to a conservative pack; it never pauses the book.
+  if(data?.status==='incomplete'){
     if(!compact)return {needs_compact_retry:true};
-    return {pack:{profession_or_role:String(role?.profession_or_role||'').slice(0,100),jurisdiction_or_system:String(role?.jurisdiction_or_system||'').slice(0,120),centrality:['central','recurring','book_specific'].includes(role?.centrality)?role.centrality:'book_specific',must_respect:[],cannot_do:[],workflow_constraints:[],terminology_needed:[],collaboration_boundaries:[],corrections_required:[],source_urls:[],research_warning:'Live professional-practice research returned malformed structured output twice. Keep this role generic and do not invent powers, access, procedures or technical detail until research succeeds.'}};
+    return {pack:conservativePack(reason||'incomplete response')};
+  }
+  try{return {pack:parseFictionStructured25238(data,'profession/practice role pack')}}catch(e){
+    if(!compact)return {needs_compact_retry:true};
+    return {pack:conservativePack(String(e?.message||'malformed structured output'))};
   }
 };
 const fictionAssembleProfessionPack252106=(roles)=>{const r=Array.isArray(roles)?roles:[],uniq=a=>[...new Set(a.filter(Boolean))];return {research_scope:r.length?`Reactive practice constraints for ${r.map(x=>x.profession_or_role).join(', ')}.`:'No central/recurring specialised or legally constrained profession required additional research.',roles:r,cross_role_boundaries:uniq(r.flatMap(x=>x.collaboration_boundaries||[])).slice(0,8),corrections_required:uniq(r.flatMap(x=>x.corrections_required||[])).slice(0,8),research_warnings:uniq(r.map(x=>x.research_warning||'')).slice(0,8),source_urls:uniq(r.flatMap(x=>x.source_urls||[])).slice(0,18)}};
