@@ -4252,10 +4252,13 @@ function fictionBookDevelopmentProgress252119(book,label){
  ];
  const order=architectureSteps.map(x=>x[0]),idx=order.indexOf(phase);
  if(phase==='chapters'||phase==='plan_collision'||phase==='complete'){
-  const savedThrough=Math.max(0,next-1),end=count?Math.min(count,next+3):next+3;
-  if(phase==='chapters')return `✓ Novel architecture complete · ${savedThrough?`✓ Chapters 1–${savedThrough} saved · `:''}${label} is planning chapters ${next}–${end}${count?` of ${count}`:''}…`;
-  if(phase==='plan_collision')return fictionFixedFourAnthologyUI252142()?'✓ Volume architecture complete · ✓ All 4 story plans saved · Running final validation…':`✓ Novel architecture complete · ✓ All ${count||plan.chapters?.length||0} chapter plans saved · Running final validation…`;
-  return fictionFixedFourAnthologyUI252142()?'✓ Book Development complete · 4 stories planned.':`✓ Book Development complete · ${count||plan.chapters?.length||0} chapters planned.`;
+  const savedThrough=Math.max(0,next-1),end=count?Math.min(count,next+3):next+3,isAsunder=fictionAsunderSeriesIdentity252149(fictionStudioActive25229);
+  if(phase==='chapters'){
+   if(isAsunder)return `✓ Volume architecture complete · ${savedThrough?`✓ Vignette plans 1–${savedThrough} saved · `:''}${label} is planning vignette plans ${next}–${end}${count?` of ${count}`:''}… · Each vignette gets its separate ${fictionAsunderBeatCount252286()}-beat Sol/Aion map during generation.`;
+   return `✓ Novel architecture complete · ${savedThrough?`✓ Chapters 1–${savedThrough} saved · `:''}${label} is planning chapters ${next}–${end}${count?` of ${count}`:''}…`;
+  }
+  if(phase==='plan_collision')return isAsunder?'✓ Volume architecture complete · ✓ All 4 vignette plans saved · Running final validation…':fictionFixedFourAnthologyUI252142()?'✓ Volume architecture complete · ✓ All 4 story plans saved · Running final validation…':`✓ Novel architecture complete · ✓ All ${count||plan.chapters?.length||0} chapter plans saved · Running final validation…`;
+  return isAsunder?'✓ Book Development complete · 4 vignette plans saved. Beat maps are created vignette-by-vignette during generation.':fictionFixedFourAnthologyUI252142()?'✓ Book Development complete · 4 stories planned.':`✓ Book Development complete · ${count||plan.chapters?.length||0} chapters planned.`;
  }
  if(idx>=0){
   const done=architectureSteps.slice(0,idx).map(x=>`✓ ${x[1]}`);
