@@ -1,3 +1,18 @@
+## V252.301 — coherent age / relationship sampling in Wife Library
+- Random Wife/ Woman Library generation no longer samples age and relationship category independently.
+- A deterministic backend compatibility table now selects them as one coherent demographic pair before the model is called.
+- If only age is manually supplied, the relationship is chosen from categories compatible with that age; if only relationship is supplied, age is sampled from that category’s normal range.
+- If both are manually supplied, both remain authoritative.
+- This prevents implausible random pairings such as a 62-year-old being generated as a student supported by an older partner while preserving broad adult variety.
+
+## V252.300 — dialogue/narration prompt consolidation
+- Consolidates scene-delivery guidance into the existing `fictionCreativeCharter25291` instead of stacking a new dialogue-ratio prompt on top of older instructions.
+- The selected point of view is now explicitly the default narrative fabric; narration, action, perception, interior response, summary, silence and dialogue share the work according to the needs of the scene.
+- Dialogue is no longer positively foregrounded as a preferred mechanism in the erotica/Asunder drafting overlays. Legacy references that encouraged dialogue as a route to psychology, variation or sexual intensity have been removed or neutralised.
+- Removes the old erotica-specific banter/dialogue mini-rule from the genre-preservation overlay; Luna's style warning now refers neutrally to over-polished exchanges rather than privileging dialogue as a category.
+- Standalone comparison/test prompts have been cleaned so they control exposition without separately steering dialogue frequency.
+- Editorial diagnostics can still identify bad or synthetic dialogue when it is actually present; those review checks are not drafting instructions and remain intact.
+
 ## V252.298 — canonical image facts + actual-portrait prose continuity
 - Asunder 2.0 nationality is selected only from the explicit country/nationality pool attached to the chosen ethnicity/background bucket; unrecognised ethnicity values are rejected rather than silently falling back to another bucket.
 - Canonical ethnicity/background + nationality context, exact age, hair, eyes, complexion, bust and figure are all passed to canonical portrait generation together as binding facts.
