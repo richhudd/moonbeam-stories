@@ -3649,3 +3649,9 @@ V252.255 — Fiction Studio series-card accounting repair
 - Single / unattached canon explicitly blocks invention of an existing spouse or romantic partner.
 - Backstage deterministic naming, live location checks, profession discovery/research and collision validation remain in the production path; location/profession research now receives the locked character packets directly.
 - Asunder 2.0 Member Records and vignette planning now consume the locked character packets as authoritative canon.
+
+
+## V252.293
+- Asunder 2.0 Woman Library: Age and Relationship status now support No preference and randomise independently for each generated woman when left blank.
+- Asunder 2.0 removes the breast-size selector from the Woman Library UI; bust remains randomly generated backstage.
+- Asunder 2.0 hard casting canon strengthened: every principal woman is thin/slender and exceptionally, breathtakingly, jaw-droppingly beautiful in portrait generation and story-planning continuity, without inferring personality or sexual preferences from appearance.
