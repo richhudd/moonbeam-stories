@@ -1,3 +1,11 @@
+## V252.298 — canonical image facts + actual-portrait prose continuity
+- Asunder 2.0 nationality is selected only from the explicit country/nationality pool attached to the chosen ethnicity/background bucket; unrecognised ethnicity values are rejected rather than silently falling back to another bucket.
+- Canonical ethnicity/background + nationality context, exact age, hair, eyes, complexion, bust and figure are all passed to canonical portrait generation together as binding facts.
+- Portrait acceptance is fail-closed: age, hair, eyes, complexion and bust must pass the visual continuity check; if the validator is unavailable/unreadable, the portrait is not silently accepted.
+- Before manuscript drafting, Moonbeam now inspects the ACTUAL saved portrait and stores a photo-verified visual identity (hair, eyes, complexion, build, bust impression and visible distinguishing marks). Exact age is never inferred from the image; it always comes from profile canon.
+- Story drafting receives that actual-image-derived visual identity. Exact age/nationality/ethnicity/relationship remain canonical facts. The portrait-analysis pass is forbidden from estimating age; it contributes only visible appearance facts from the saved portrait rather than the old image prompt or pre-image description if there is any discrepancy.
+- No SQL migration is required; the photo-verified visual identity is stored inside the existing appearance_spec JSONB.
+
 ## V252.297 — remove Asunder portrait clothing steering
 - Removes the hardcoded Wife/ Woman Library wardrobe rotation and all garment-menu examples from canonical Asunder portrait generation.
 - Removes legacy lycra/camisole/tank/dress/swimwear/etc. positive and negative wardrobe steering from the canonical portrait and alternate portrait-regeneration prompt paths.
