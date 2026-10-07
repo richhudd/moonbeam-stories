@@ -1612,9 +1612,11 @@ if(mode==='create'){
   const rows=await rest('developer_fiction_series',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,pen_name:penName,series_name:seriesName,idea,status:'development',development_model:fictionModel25243(body.model).id,language_locale:languageLocale,studio_section:fictionStudioSection252134})});
   return res.status(200).json({series:rows?.[0]||null});
 }
+const fictionCanonicalBible252336=(sr)=>String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object'?sr.canonical_bible:(sr?.series_bible||{});
+const fictionUseCanonicalBible252336=(sr)=>{if(String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object')return {...sr,series_bible:sr.canonical_bible};return sr};
 const id=String(body.id||'').trim();if(!id)return res.status(400).json({error:'Fiction series id is required.'});
 const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);let series=found?.[0];
-if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=await fictionRetrofitAsunder252142(series);
+if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=fictionUseCanonicalBible252336(await fictionRetrofitAsunder252142(fictionUseCanonicalBible252336(series)));
 // V252.154 — Venice Lab reads the current series/book plan, but writes nothing back to Moonbeam.
 if(mode==='venice-test-context'){
   const books=await rest(`developer_fiction_books?select=id,position,working_title,book_plan,development_state&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=position.asc`);
