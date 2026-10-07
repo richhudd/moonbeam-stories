@@ -1625,7 +1625,7 @@ if(mode==='asunder-bible-save'){
   return res.status(200).json({series_id:row.series_id,bible:row.bible||{},updated_at:row.updated_at});
 }
 const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);let series=found?.[0];
-if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=await fictionRetrofitAsunder252142(series);
+if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=await fictionRetrofitAsunder252142(series);if(String(series.id||'')===fictionCurrentAsunderSeriesId252340){const isolatedBibleRows252341=await rest(`developer_fiction_asunder_bibles?select=bible&series_id=eq.${encodeURIComponent(series.id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);const isolatedBible252341=isolatedBibleRows252341?.[0]?.bible;if(isolatedBible252341&&typeof isolatedBible252341==='object'&&!Array.isArray(isolatedBible252341))series={...series,series_bible:isolatedBible252341}}
 // V252.154 — Venice Lab reads the current series/book plan, but writes nothing back to Moonbeam.
 if(mode==='venice-test-context'){
   const books=await rest(`developer_fiction_books?select=id,position,working_title,book_plan,development_state&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=position.asc`);
