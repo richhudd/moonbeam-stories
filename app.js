@@ -3071,7 +3071,10 @@ async function fictionRestoreXAfterRefresh252321(){
    renderFictionSeries25229(saved.series_id);
    if(saved.book_id){
     await refreshFictionBooks252462();
-    if(fictionStudioBooks25231.some(x=>String(x.id)===String(saved.book_id)))await openSavedFictionBook25233(saved.book_id);
+    if(fictionStudioBooks25231.some(x=>String(x.id)===String(saved.book_id))){
+      if(fictionAsunder3Identity252323(fictionStudioActive25229))await openFictionAsunder3Book252323(saved.book_id);
+      else await openSavedFictionBook25233(saved.book_id);
+    }
    }
   }
   return true
@@ -3459,8 +3462,9 @@ async function renderFictionAsunder3Series252323(s){
    fictionStudioRequest25229({mode:'usage-summary',id:s.id,compact:true}).catch(()=>({usage:{}})),
    ...books.map(b=>fictionStudioRequest25229({mode:'novel-status',id:s.id,book_id:b.id,compact:true}).catch(()=>null))
   ]);
-  for(let i=0;i<books.length;i++)if(statuses[i]?.book)Object.assign(books[i],statuses[i].book);
-  const cards=books.length?books.sort((a,b)=>Number(a.position||0)-Number(b.position||0)).map((b,i)=>{const p=fictionAsunder3Progress252323(b,statuses[i]),hasText=Number(statuses[i]?.progress?.saved_count||0)>0||p.saved>0||p.locked>0;return `<button class="fiction-series-card fiction-series-dashboard-card-25274" type="button" data-asunder3-book="${escapeHtml(b.id)}"><span>VOLUME ${Number(b.position)||i+1}</span><strong>${escapeHtml(b.working_title||`Asunder 3.0: Volume ${i+1}`)}</strong><small>${escapeHtml(p.active?`Vignette ${p.active}${p.beat?` · beat ${p.beat}`:''}`:p.state)}${hasText?' · reader available':''}</small></button>`}).join(''):`<div class="fiction-empty"><strong>No volumes yet.</strong><p>Production will be created and managed from the ChatGPT conversation. Nothing needs to be entered here.</p></div>`;
+  const statusById=new Map();for(let i=0;i<books.length;i++){if(statuses[i]?.book)Object.assign(books[i],statuses[i].book);statusById.set(String(books[i].id),statuses[i])}
+  const ordered=books.slice().sort((a,b)=>Number(a.position||0)-Number(b.position||0));
+  const cards=ordered.length?ordered.map((b,i)=>{const z=statusById.get(String(b.id)),p=fictionAsunder3Progress252323(b,z),hasText=Number(z?.progress?.saved_count||0)>0||p.saved>0||p.locked>0;return `<button class="fiction-series-card fiction-series-dashboard-card-25274" type="button" data-asunder3-book="${escapeHtml(b.id)}"><span>VOLUME ${Number(b.position)||i+1}</span><strong>${escapeHtml(b.working_title||`Asunder 3.0: Volume ${i+1}`)}</strong><small>${escapeHtml(p.active?`Vignette ${p.active}${p.beat?` · beat ${p.beat}`:''}`:p.state)}${hasText?' · reader available':''}</small></button>`}).join(''):`<div class="fiction-empty"><strong>No volumes yet.</strong><p>Production will be created and managed from the ChatGPT conversation. Nothing needs to be entered here.</p></div>`;
   body.innerHTML=`<div class="fiction-studio-toolbar"><div><span class="fiction-studio-kicker">CHATGPT-DIRECTED · READ-ONLY PRODUCTION VIEW</span><h2>Asunder 3.0</h2><p>This workspace is your reader, navigation, progress display and live API accounting. Creative instructions are given in ChatGPT.</p></div><button class="secondary" id="fictionAsunder3Refresh252323" type="button">Refresh</button></div>${fictionAsunder3AccountingHtml252323(usage?.usage||{},'Series')}<div class="fiction-series-grid fiction-series-dashboard-grid-25274">${cards}</div>`;
   $('fictionAsunder3Refresh252323').onclick=()=>renderFictionAsunder3Series252323(s);
   body.querySelectorAll('[data-asunder3-book]').forEach(el=>el.onclick=()=>openFictionAsunder3Book252323(el.dataset.asunder3Book));
