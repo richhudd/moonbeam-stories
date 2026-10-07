@@ -1613,14 +1613,6 @@ if(mode==='list'){
   }
   return res.status(200).json({series:out});
 }
-if(mode==='create-asunder3'){
-  const existing=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&studio_section=eq.fiction_x&or=(series_name.eq.Asunder%203.0,autopilot_state->>version.eq.asunder_3_0)&limit=1`);
-  if(existing?.[0])return res.status(200).json({series:existing[0],created:false});
-  const rows=await rest('developer_fiction_series',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,pen_name:'Ana Rojas',series_name:'Asunder 3.0',idea:'ChatGPT-directed four-vignette Asunder production series.',series_bible:{},status:'development',development_model:'gpt-5.6-sol',language_locale:'en-GB',studio_section:'fiction_x',autopilot_state:{version:'asunder_3_0'}})});
-  const sr=rows?.[0];if(!sr)return res.status(500).json({error:'Could not create Asunder 3.0.'});
-  await rest('developer_fiction_asunder_bibles',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({series_id:sr.id,parent_id:user.id,bible:{}})});
-  return res.status(200).json({series:sr,created:true});
-}
 if(mode==='create'){
   const penName=String(body.pen_name||'').trim(),seriesName=String(body.series_name||'').trim(),idea=String(body.idea||'').trim(),languageLocale=fictionLocale25280(body.language_locale,'en-GB');
   if(!penName||!seriesName||!idea)return res.status(400).json({error:'Pen name, series name and Series Brief are required.'});
