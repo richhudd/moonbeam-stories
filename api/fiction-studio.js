@@ -1015,7 +1015,7 @@ const fictionAsunder2FormatIdentity252286='asunder_intervention_anthology_identi
 const fictionAsunderLegacyIdentity252286=(seriesRecord)=>String(seriesRecord?.series_bible?.series_format_identity||'')===fictionAsunderFormatIdentity252143;
 const fictionAsunder2Identity252286=(seriesRecord)=>{const b=seriesRecord?.series_bible||{},name=String(seriesRecord?.series_name||b.series_title||'').trim().toLowerCase();return String(b.series_format_identity||'')===fictionAsunder2FormatIdentity252286||name==='asunder 2.0'};
 const fictionAsunder3Identity252323=(seriesRecord)=>String(seriesRecord?.series_name||'').trim().toLowerCase()==='asunder 3.0'||String(seriesRecord?.autopilot_state?.version||'')==='asunder_3_0';
-const fictionAsunderSeedIdentity252146=(seriesRecord)=>fictionAsunderLegacyIdentity252286(seriesRecord)||fictionAsunder2Identity252286(seriesRecord)||fictionAsunder3Identity252323(seriesRecord);
+const fictionAsunderSeedIdentity252146=(seriesRecord)=>fictionAsunderLegacyIdentity252286(seriesRecord)||fictionAsunder2Identity252286(seriesRecord);
 const fictionAsunderBeatCount252286=(seriesRecord)=>fictionAsunder2Identity252286(seriesRecord)?12:10;
 const fictionAsunderCurrentHotwifeDoctrine252330=(seriesRecord)=>fictionAsunder3Identity252323(seriesRecord)?`
 ASUNDER 3.0 — AUTHORITATIVE HOT-WIFE / TABOO CONTRACT:
