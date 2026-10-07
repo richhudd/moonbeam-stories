@@ -1014,7 +1014,6 @@ const fictionAsunderFormatIdentity252143='asunder_fixed_four_story_identity_v1';
 const fictionAsunder2FormatIdentity252286='asunder_intervention_anthology_identity_v2';
 const fictionAsunderLegacyIdentity252286=(seriesRecord)=>String(seriesRecord?.series_bible?.series_format_identity||'')===fictionAsunderFormatIdentity252143;
 const fictionAsunder2Identity252286=(seriesRecord)=>{const b=seriesRecord?.series_bible||{},name=String(seriesRecord?.series_name||b.series_title||'').trim().toLowerCase();return String(b.series_format_identity||'')===fictionAsunder2FormatIdentity252286||name==='asunder 2.0'};
-const fictionAsunder3Identity252323=(seriesRecord)=>String(seriesRecord?.series_name||'').trim().toLowerCase()==='asunder 3.0'||String(seriesRecord?.autopilot_state?.version||'')==='asunder_3_0';
 const fictionAsunderSeedIdentity252146=(seriesRecord)=>fictionAsunderLegacyIdentity252286(seriesRecord)||fictionAsunder2Identity252286(seriesRecord);
 const fictionAsunderBeatCount252286=(seriesRecord)=>fictionAsunderSeedIdentity252146(seriesRecord)?12:10;
 const fictionAsunderCurrentHotwifeDoctrine252330=(seriesRecord)=>(fictionAsunderLegacyIdentity252286(seriesRecord)&&!fictionAsunder2Identity252286(seriesRecord))?`
@@ -2148,63 +2147,6 @@ Every story plan must use the wife assigned to that exact vignette number. Retur
 
 
 
-if(mode==='list-asunder3-vignettes'){
-  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignettes are available only inside Asunder 3.0.'});
-  const rows=await rest(`developer_fiction_vignettes?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
-  const out=[];
-  for(const v of(Array.isArray(rows)?rows:[])){
-    const beats=await rest(`developer_fiction_vignette_beats?select=beat_number,label,writer,status,manuscript,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&vignette_id=eq.${encodeURIComponent(v.id)}&order=beat_number.asc`);
-    const saved=(Array.isArray(beats)?beats:[]).filter(b=>String(b.status||'')==='completed'||String(b.manuscript||'').trim()).length;
-    out.push({...v,progress:{saved_beats:saved,beat_total:Number(v.planned_beats)||12,detail:String(v.status||'').replace(/_/g,' ')},word_count:String(v.manuscript||'').trim().split(/\s+/).filter(Boolean).length});
-  }
-  return res.status(200).json({vignettes:out});
-}
-if(mode==='read-asunder3-vignette'||mode==='get-asunder3-vignette'){
-  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignettes are available only inside Asunder 3.0.'});
-  const vignetteId=String(body.vignette_id||'').trim();if(!vignetteId)return res.status(400).json({error:'Vignette id is required.'});
-  const rows=await rest(`developer_fiction_vignettes?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&id=eq.${encodeURIComponent(vignetteId)}&limit=1`);
-  const vignette=rows?.[0];if(!vignette)return res.status(404).json({error:'Vignette not found.'});
-  const beats=await rest(`developer_fiction_vignette_beats?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&vignette_id=eq.${encodeURIComponent(vignetteId)}&order=beat_number.asc`);
-  const beatRows=Array.isArray(beats)?beats:[],saved=beatRows.filter(b=>String(b.status||'')==='completed'||String(b.manuscript||'').trim()).length;
-  const manuscript=String(vignette.manuscript||'').trim()||beatRows.map(b=>String(b.manuscript||'').trim()).filter(Boolean).join('\n\n');
-  const segments=beatRows.map(b=>({beat:Number(b.beat_number)||0,label:String(b.label||''),writer:String(b.writer||''),status:String(b.status||''),text:String(b.manuscript||'')}));
-  return res.status(200).json({vignette:{...vignette,manuscript,segments,progress:{saved_beats:saved,beat_total:Number(vignette.planned_beats)||12,detail:String(vignette.status||'').replace(/_/g,' ')},word_count:manuscript.split(/\s+/).filter(Boolean).length},beats:beatRows});
-}
-
-if(mode==='list-asunder3-woman-library'){
-  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 Woman Library is available only inside Asunder 3.0.'});
-  const profiles=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
-  const women=[];
-  for(const p of(Array.isArray(profiles)?profiles:[])){
-    const portrait_url=p.portrait_path?await fictionAsunderStorageSignedUrl252197(p.portrait_path,604800):'';
-    const nudePath=String(p?.profile_data?.nude_portrait_path||'').trim();
-    const nude_portrait_url=nudePath?await fictionAsunderStorageSignedUrl252197(nudePath,604800):'';
-    women.push({
-      id:p.id,character_key:p.character_key,full_name:p.full_name,first_name:p.first_name,
-      age:Number(p?.profile_data?.age)||null,
-      nationality:String(p?.profile_data?.nationality||''),
-      background:String(p?.profile_data?.background||p?.profile_data?.ethnicity_background||''),
-      current_city:String(p?.profile_data?.current_city||''),
-      relationship_status:String(p?.profile_data?.relationship_status||''),
-      bio:String(p?.profile_data?.full_biography||p?.profile_data?.bio||''),
-      import_origin:String(p?.profile_data?.asunder3_import_origin||''),
-      appearance_spec:p.appearance_spec||{},portrait_url,nude_portrait_url
-    });
-  }
-  return res.status(200).json({women,count:women.length});
-}
-
-
-if(mode==='delete-asunder3-woman'){
-  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 Woman Library deletion is available only inside Asunder 3.0.'});
-  const characterKey=String(body.character_key||'').trim();
-  if(!characterKey)return res.status(400).json({error:'Woman character key is required.'});
-  const rows=await rest(`developer_fiction_asunder_profiles?select=id,full_name,character_key&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(characterKey)}&limit=1`);
-  const row=rows?.[0];if(!row)return res.status(404).json({error:'That Asunder 3.0 woman could not be found.'});
-  await rest(`developer_fiction_asunder_profiles?parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(characterKey)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
-  return res.status(200).json({ok:true,deleted_character_key:characterKey,deleted_name:row.full_name||''});
-}
-
 if(mode==='list-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library is available only for Asunder in Fiction Studio X.'});
   const [profiles,books]=await Promise.all([
@@ -2352,8 +2294,8 @@ if(mode==='generate-asunder-wife-library'){
   const count=Math.max(1,Math.min(4,Number(body.count)||1));
   const rawPrefs=body.preferences&&typeof body.preferences==='object'?body.preferences:{};
   const asunder2v252286=fictionAsunder2Identity252286(series);
-  const allowedRelationshipTypes252281=fictionAsunder3Identity252323(series)?new Set(['Wife']):new Set(['Wife','Girlfriend','Sugar baby','Long-term mistress','Financially supported companion','Student supported by older partner','Independent woman dating a wealthy older man','Woman attached to a married man','Single / unattached']);
-  const requestedRelationship252281=fictionAsunder3Identity252323(series)?'Wife':String(rawPrefs.relationship_type||'').trim();
+  const allowedRelationshipTypes252281=new Set(['Wife','Girlfriend','Sugar baby','Long-term mistress','Financially supported companion','Student supported by older partner','Independent woman dating a wealthy older man','Woman attached to a married man','Single / unattached']);
+  const requestedRelationship252281=String(rawPrefs.relationship_type||'').trim();
   const prefs={
     relationship_type:allowedRelationshipTypes252281.has(requestedRelationship252281)?requestedRelationship252281:'',
     age:Math.max(21,Math.min(75,Number(rawPrefs.age)||0))||null,
