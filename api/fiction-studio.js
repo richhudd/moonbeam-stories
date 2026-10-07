@@ -2100,6 +2100,17 @@ if(mode==='list-asunder3-woman-library'){
   return res.status(200).json({women,count:women.length});
 }
 
+
+if(mode==='delete-asunder3-woman'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 Woman Library deletion is available only inside Asunder 3.0.'});
+  const characterKey=String(body.character_key||'').trim();
+  if(!characterKey)return res.status(400).json({error:'Woman character key is required.'});
+  const rows=await rest(`developer_fiction_asunder_profiles?select=id,full_name,character_key&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(characterKey)}&limit=1`);
+  const row=rows?.[0];if(!row)return res.status(404).json({error:'That Asunder 3.0 woman could not be found.'});
+  await rest(`developer_fiction_asunder_profiles?parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(characterKey)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  return res.status(200).json({ok:true,deleted_character_key:characterKey,deleted_name:row.full_name||''});
+}
+
 if(mode==='list-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library is available only for Asunder in Fiction Studio X.'});
   const [profiles,books]=await Promise.all([
