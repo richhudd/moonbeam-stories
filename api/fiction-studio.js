@@ -2545,7 +2545,7 @@ if(mode==='start-book-development'||mode==='continue-book-development'){
   if(fictionAsunder2Identity252286(series)){const bible252313=fictionAsunder2Bible252313(series.series_bible);if(JSON.stringify(bible252313)!==JSON.stringify(series.series_bible||{})){await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({series_bible:bible252313,updated_at:new Date().toISOString()})});series={...series,series_bible:bible252313};}}
   if(!series.bible_reviewed_at&&!fictionAsunder2Identity252286(series))return res.status(409).json({error:'Review and approve the Series Bible cast and proposed book titles before Book Development.'});
   const proposed=Array.isArray(series.series_bible?.proposed_books)?series.series_bible.proposed_books:[];
-  const sourceIndex=Math.max(0,Number(body.source_index)||0),source=proposed[sourceIndex]||{working_title:String(body.working_title||'').trim()||`${series.series_name||'Asunder 2.0'}: Volume ${sourceIndex+1}`,premise:String(body.premise||'').trim()||'Four selected Woman Library members receive character-specific Asunder interventions within one anthology volume.'};
+  const sourceIndex=Math.max(0,Number(body.source_index)||0),rawSource252327=proposed[sourceIndex]||{working_title:String(body.working_title||'').trim()||`${series.series_name||'Asunder 2.0'}: Volume ${sourceIndex+1}`,premise:String(body.premise||'').trim()||'Four selected Woman Library members receive character-specific Asunder interventions within one anthology volume.'},source=(fictionAsunderLegacyIdentity252286(series)&&!fictionAsunder2Identity252286(series))?{...rawSource252327,working_title:`Test ${sourceIndex+1}`} : rawSource252327;
   let book=null;
   if(body.book_id){const br=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(String(body.book_id))}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);book=br?.[0]||null}
   if(!book){
@@ -2561,7 +2561,7 @@ if(mode==='start-book-development'||mode==='continue-book-development'){
       const existingState=(book.development_state&&typeof book.development_state==='object')?book.development_state:{};
       const existingHasPlanning=Object.keys(existingPlan).length>0||(existingState.phase&&existingState.phase!=='architecture')||!!existingState.asunder_character_lock_at;
       if(!existingHasPlanning&&source&&typeof source==='object'){
-        const freshTitle=String(source.working_title||book.working_title||`Book ${position}`).trim();
+        const freshTitle=(fictionAsunderLegacyIdentity252286(series)&&!fictionAsunder2Identity252286(series))?`Test ${position}`:String(source.working_title||book.working_title||`Book ${position}`).trim();
         const freshPremise=String(source.premise||book.premise||'').trim();
         const refreshed=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({working_title:freshTitle,premise:freshPremise,development_state:{phase:'architecture',next_batch_start:1,direction:String(body.message||'')},status:'planning',updated_at:new Date().toISOString()})});
         book=refreshed?.[0]||{...book,working_title:freshTitle,premise:freshPremise};
@@ -2589,7 +2589,7 @@ if(mode==='start-book-development'||mode==='continue-book-development'){
       const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({book_plan:repairedPlan,development_state:adoptedState,status:complete?'planned':book.status,updated_at:new Date().toISOString()})});
       book=rows?.[0]||{...book,development_state:adoptedState};
     }else{
-      const workingTitle=String(body.working_title||source.working_title||`Book ${position}`).trim(),premise=String(body.premise||source.premise||'').trim();if(!premise)return res.status(400).json({error:'A proposed book premise is required.'});
+      const workingTitle=(fictionAsunderLegacyIdentity252286(series)&&!fictionAsunder2Identity252286(series))?`Test ${position}`:String(body.working_title||source.working_title||`Book ${position}`).trim(),premise=String(body.premise||source.premise||'').trim();if(!premise)return res.status(400).json({error:'A proposed book premise is required.'});
       const rows=await rest('developer_fiction_books',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,position,working_title:workingTitle,premise,book_plan:{},status:'planning',development_model:fictionModel25243(body.model).id,development_state:{phase:'architecture',next_batch_start:1,direction:String(body.message||'')}})});book=rows?.[0]
     }
   }
