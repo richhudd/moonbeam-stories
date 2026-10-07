@@ -1921,7 +1921,6 @@ if(mode==='save-series-memory'){
   const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({series_memory:memory,updated_at:new Date().toISOString()})});series.series_memory=rows?.[0]?.series_memory||memory;return res.status(200).json({series:rows?.[0]||{...series,series_memory:memory}});
 }
 if(mode==='save-bible'){
-  if(String(series.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb')return res.status(410).json({error:'Legacy Bible editing is disabled for Asunder.'});
   let bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
   // Manual Bible editing is literal for current Asunder: never rewrite the user's JSON on save.
   // Runtime production invariants (four vignettes, twelve beats, hybrid writers, first-draft lock)
@@ -1960,7 +1959,6 @@ ${fictionFixedAnthologyInstruction252142(series,1)}${fictionAsunderSeedHeatContr
 };
 if(mode==='seed-first-book-direction')return res.status(410).json({error:'Automatic book seed generation has been retired. Use the manual Book Development direction box instead.'});
 if(mode==='approve-bible-review'){
-  if(String(series.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb')return res.status(410).json({error:'Legacy Bible approval is disabled for Asunder.'});
   let bible=body.series_bible&&typeof body.series_bible==='object'?body.series_bible:null;if(!bible)return res.status(400).json({error:'A structured Series Bible is required.'});
   // Manual Bible approval is literal for current Asunder too. Never re-stamp or rehydrate an older Bible.
   if(fictionFixedFourAnthology252142(series)&&!fictionAsunderLegacyIdentity252286(series)){bible=fictionStampFixedAnthologyBible252286(series,bible)}
