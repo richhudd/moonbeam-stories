@@ -93,8 +93,11 @@ if(mode==='x-lock'){
 const fictionXPresented252322=body.x_access||fictionXCookieToken252322();
 if(fictionStudioSection252134==='fiction_x'&&!fictionXValid252134(fictionXPresented252322))return res.status(401).json({error:'Fiction Studio X is locked. Unlock it again from Fiction Studio.'});
 const fictionStudioSectionFilter252134=encodeURIComponent(fictionStudioSection252134);
-const FICTION_TABLES_25269=new Set(['developer_fiction_series','developer_fiction_books','developer_fiction_chapters','developer_fiction_continuity','developer_fiction_editorial_runs','developer_fiction_editorial_chapters','developer_fiction_editorial_continuity','developer_fiction_usage_events','developer_fiction_asunder_profiles']);
-    const rest=async(path,options={})=>{const table=String(path||'').split('?')[0].split('/')[0];if(!FICTION_TABLES_25269.has(table))throw new Error('Fiction Studio storage boundary blocked a non-fiction table.');const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Fiction Studio storage returned HTTP ${r.status}`),{status:r.status});return data};
+// V252.324 — Fiction Studio storage boundary is namespace-based rather than a brittle
+// per-table list. Any future Fiction Studio table must live under developer_fiction_*;
+// Moonbeam children's/app tables remain unreachable through this helper.
+const fictionTableAllowed252324=(table)=>/^developer_fiction_[a-z0-9_]+$/i.test(String(table||''));
+    const rest=async(path,options={})=>{const table=String(path||'').split('?')[0].split('/')[0];if(!fictionTableAllowed252324(table))throw new Error(`Fiction Studio storage boundary blocked table “${table||'[empty]'}”.`);const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Fiction Studio storage returned HTTP ${r.status}`),{status:r.status});return data};
 
 // V252.167 — Asunder deterministic creative contract updated to defer harder kink/group intensity to the approved Series Bible while preserving all fixed-format and visual machinery.
 // V252.166 — Fiction Studio X creative engine. Normal Fiction Studio continues to use the
