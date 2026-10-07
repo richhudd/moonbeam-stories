@@ -2174,7 +2174,7 @@ if(mode==='list-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library is available only for Asunder in Fiction Studio X.'});
   const [profiles,books]=await Promise.all([
     rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc`),
-    rest(`developer_fiction_books?select=id,position,working_title,status,book_plan&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=position.asc`)
+    Promise.resolve([])
   ]);
   const appearances=new Map();
   for(const b of(Array.isArray(books)?books:[])){
@@ -2191,7 +2191,7 @@ if(mode==='list-asunder-wife-library'){
     const nude_portrait_path=String(p?.profile_data?.nude_portrait_path||'').trim();
     const nude_portrait_url=nude_portrait_path?await fictionAsunderStorageSignedUrl252197(nude_portrait_path,604800):'';
     const app=appearances.get(String(p.character_key||''))||[],summary=fictionAsunderWifeLibrarySummary252216(p);
-    wives.push({...summary,asunder_status:summary.asunder_status||(app.length?'unassessed':'untried'),portrait_url,nude_portrait_url,gallery_urls:[portrait_url,nude_portrait_url].filter(Boolean),appearances:app,created_at:p.created_at||null,updated_at:p.updated_at||null});
+    wives.push({...summary,asunder_status:'untried',asunder_case_history:[],portrait_url,nude_portrait_url,gallery_urls:[portrait_url,nude_portrait_url].filter(Boolean),appearances:[],created_at:p.created_at||null,updated_at:p.updated_at||null});
   }
   const caseOrder252311={untried:0,open:1,partial:2,emergent:3,retain:4,unassessed:5,closed:9};
   wives.sort((a,b)=>(caseOrder252311[String(a.asunder_status||'untried').toLowerCase()]??5)-(caseOrder252311[String(b.asunder_status||'untried').toLowerCase()]??5)||String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')));
