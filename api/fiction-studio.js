@@ -1555,7 +1555,7 @@ if(mode==='series-dashboard'){
     rest(`developer_fiction_editorial_runs?select=id,series_id,book_id,stage,status,created_at,completed_at&parent_id=eq.${u}&order=created_at.asc`),
     rest(`developer_fiction_chapters?select=book_id,chapter_number&parent_id=eq.${u}`)
   ]);
-  const normalisedSeries=[];for(const sr of(Array.isArray(seriesRows)?seriesRows:[]))normalisedSeries.push(String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object'?{...sr,series_bible:sr.canonical_bible}:await fictionRetrofitAsunder252142(sr));
+  const normalisedSeries=[];for(const sr of(Array.isArray(seriesRows)?seriesRows:[]))normalisedSeries.push(await fictionRetrofitAsunder252142(sr));
   const books=Array.isArray(bookRows)?bookRows:[],runs=Array.isArray(runRows)?runRows:[],chapters=Array.isArray(chapterRows)?chapterRows:[];
   const countByBook=new Map();for(const c of chapters)countByBook.set(c.book_id,(countByBook.get(c.book_id)||0)+1);
   const runsByBook=new Map();for(const r of runs){if(!runsByBook.has(r.book_id))runsByBook.set(r.book_id,[]);runsByBook.get(r.book_id).push(r)}
@@ -1603,14 +1603,7 @@ if(mode==='venice-models'){
 }
 if(mode==='list'){
   const rows=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&studio_section=eq.${fictionStudioSectionFilter252134}&order=updated_at.desc`),out=[];
-  for(const sr of(Array.isArray(rows)?rows:[])){
-    // Current Asunder has one authoritative Bible. Never run legacy retrofit over it on library load.
-    if(String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object'){
-      out.push({...sr,series_bible:sr.canonical_bible});
-    }else{
-      out.push(await fictionRetrofitAsunder252142(sr));
-    }
-  }
+  for(const sr of(Array.isArray(rows)?rows:[]))out.push(await fictionRetrofitAsunder252142(sr));
   return res.status(200).json({series:out});
 }
 if(mode==='create'){
@@ -1619,8 +1612,6 @@ if(mode==='create'){
   const rows=await rest('developer_fiction_series',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,pen_name:penName,series_name:seriesName,idea,status:'development',development_model:fictionModel25243(body.model).id,language_locale:languageLocale,studio_section:fictionStudioSection252134})});
   return res.status(200).json({series:rows?.[0]||null});
 }
-const fictionCanonicalBible252336=(sr)=>String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object'?sr.canonical_bible:(sr?.series_bible||{});
-const fictionUseCanonicalBible252336=(sr)=>{if(String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object')return {...sr,series_bible:sr.canonical_bible};return sr};
 const id=String(body.id||'').trim();if(!id)return res.status(400).json({error:'Fiction series id is required.'});
 if(mode==='asunder-bible-get'){
   const rows=await rest(`developer_fiction_asunder_bibles?select=series_id,bible,updated_at&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
@@ -1634,7 +1625,7 @@ if(mode==='asunder-bible-save'){
   return res.status(200).json({series_id:row.series_id,bible:row.bible||{},updated_at:row.updated_at});
 }
 const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);let series=found?.[0];
-if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=fictionUseCanonicalBible252336(await fictionRetrofitAsunder252142(fictionUseCanonicalBible252336(series)));
+if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=await fictionRetrofitAsunder252142(series);
 // V252.154 — Venice Lab reads the current series/book plan, but writes nothing back to Moonbeam.
 if(mode==='venice-test-context'){
   const books=await rest(`developer_fiction_books?select=id,position,working_title,book_plan,development_state&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&order=position.asc`);
