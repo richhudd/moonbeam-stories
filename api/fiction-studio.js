@@ -1908,7 +1908,11 @@ if(mode==='save-bible'){
   const existingBooksForReview25281=await rest(`developer_fiction_books?select=id&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
   const currentAuto252170=(series.autopilot_state&&typeof series.autopilot_state==='object')?series.autopilot_state:{};const priorDev252170=currentAuto252170.series_development;const manualAuto252170=priorDev252170&&priorDev252170.status==='running'?{...currentAuto252170,series_development:{...priorDev252170,status:'superseded',stage:'superseded',progress:'Superseded by manually saved Series Bible.',updated_at:new Date().toISOString(),last_error:null}}:currentAuto252170;const patch25281={series_bible:bible,status:'development',autopilot_state:manualAuto252170,updated_at:new Date().toISOString()};if(!(existingBooksForReview25281||[]).length)patch25281.bible_reviewed_at=null;
   const rows=await rest(`developer_fiction_series?id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(patch25281)});
-  return res.status(200).json({series:rows?.[0]||null});
+  const verifyRows252333=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`),verified252333=verifyRows252333?.[0]||null;
+  const canonical252333=(v)=>JSON.stringify(v&&typeof v==='object'?v:{},Object.keys(v&&typeof v==='object'?v:{}).sort());
+  if(!verified252333||canonical252333(verified252333.series_bible)!==canonical252333(bible))return res.status(409).json({error:'Series Bible save could not be verified. The editor has not been replaced with stale data; please retry.',code:'bible_save_verification_failed'});
+  series=verified252333;
+  return res.status(200).json({series:verified252333,verified:true});
 }
 // V252.124 — Book 1 gets the same Sol-authored Development handoff as every later book.
 // For Book 1 the source is the approved Series Bible, regardless of which selectable model developed
