@@ -1452,7 +1452,7 @@ async function checkInstagramDeveloperAccess({force=false}={}){
    if(currentUser?.id!==userId)return false;
    instagramDeveloperAccess=r.ok;
    instagramDeveloperAccessState=r.ok?'granted':((r.status===401||r.status===403)?'denied':'unknown');
-   if(r.ok){mountInstagramEndButton();mountInstagramDemoChildButton();refreshCoverSubtitle();await loadDeveloperSeriesLibrary()}
+   if(r.ok){mountInstagramEndButton();mountInstagramDemoChildButton();refreshCoverSubtitle();await loadDeveloperSeriesLibrary();await fictionRestoreXAfterRefresh252321()}
    return r.ok;
   }catch(error){
    if(currentUser?.id===userId){instagramDeveloperAccess=false;instagramDeveloperAccessState='unknown'}
@@ -3024,7 +3024,7 @@ let fictionStudioBooks25231=[];
 function fictionStorageScope25269(){return currentUser?.id||'signed-out'}
 function fictionScopedKey25269(base,bookId){return `${base}:${fictionStorageScope25269()}:${bookId}`}
 function purgeLegacyFictionStorage25269(){try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i)||'';if(/^moonbeam-fiction-(?:auto-pipeline-v25255|reedit-v25264):/.test(k)&&!k.includes(`:${fictionStorageScope25269()}:`))localStorage.removeItem(k)}}catch{}}
-function resetFictionStudioClientState25269(){fictionStudioSeries25229=[];fictionStudioActive25229=null;fictionStudioBooks25231=[];fictionStudioOpenBookId25265=null;try{fictionBackgroundJobs25265.clear()}catch{};purgeLegacyFictionStorage25269()}
+function resetFictionStudioClientState25269(){fictionStudioSeries25229=[];fictionStudioActive25229=null;fictionStudioBooks25231=[];fictionStudioOpenBookId25265=null;fictionXRestoreAttempt252321=false;try{fictionBackgroundJobs25265.clear()}catch{};purgeLegacyFictionStorage25269()}
 let fictionStudioChapters25232=[];
 const fictionEditorialModelChoice25249=new Map();
 const fictionAutoPipeline25255Paused=new Set();
@@ -3035,6 +3035,49 @@ const fictionBackgroundJobs25265=new Map();
 let fictionStudioNamespace252134='fiction';
 let fictionStudioXAccess252134='';
 let fictionStudioOpenBookId25265=null;
+// V252.321 — keep a successful Fiction Studio X unlock for the lifetime of this browser tab.
+// sessionStorage survives refresh/deployment reloads but disappears when the tab/session ends.
+// The server-issued X token remains account-bound and expires after two hours.
+let fictionXRestoreAttempt252321=false;
+function fictionXSessionKey252321(){return `moonbeam-fiction-x-session-v252321:${currentUser?.id||'signed-out'}`}
+function fictionReadXSession252321(){
+ try{
+  const x=JSON.parse(sessionStorage.getItem(fictionXSessionKey252321())||'null');
+  if(!x||x.user_id!==currentUser?.id||!x.x_access)return null;
+  const expiry=Number(String(x.x_access).split('.')[0])||0;
+  if(!expiry||expiry<=Date.now()){sessionStorage.removeItem(fictionXSessionKey252321());return null}
+  return x
+ }catch{return null}
+}
+function fictionPersistXSession252321(patch={}){
+ if(!currentUser||fictionStudioNamespace252134!=='fiction_x'||!fictionStudioXAccess252134)return;
+ const prior=fictionReadXSession252321()||{};
+ try{sessionStorage.setItem(fictionXSessionKey252321(),JSON.stringify({...prior,...patch,user_id:currentUser.id,x_access:fictionStudioXAccess252134,saved_at:new Date().toISOString()}))}catch{}
+}
+function fictionClearXSession252321(){try{sessionStorage.removeItem(fictionXSessionKey252321())}catch{}}
+async function fictionRestoreXAfterRefresh252321(){
+ if(fictionXRestoreAttempt252321||location.hash!=='#back-room'||!currentUser||!instagramDeveloperAccess)return false;
+ const saved=fictionReadXSession252321();if(!saved)return false;
+ fictionXRestoreAttempt252321=true;
+ try{
+  fictionStudioNamespace252134='fiction_x';fictionStudioXAccess252134=String(saved.x_access||'');
+  ensureFictionStudio25229().classList.remove('hidden');document.body.classList.add('fiction-studio-open');updateFictionStudioChrome252134();
+  await loadFictionStudio25229();
+  if(saved.series_id&&fictionStudioSeries25229.some(x=>String(x.id)===String(saved.series_id))){
+   renderFictionSeries25229(saved.series_id);
+   if(saved.book_id){
+    await refreshFictionBooks252462();
+    if(fictionStudioBooks25231.some(x=>String(x.id)===String(saved.book_id)))await openSavedFictionBook25233(saved.book_id);
+   }
+  }
+  return true
+ }catch(e){
+  // Expired/invalid server token: forget only the transient X session and leave Back Room available.
+  fictionClearXSession252321();fictionStudioXAccess252134='';fictionStudioNamespace252134='fiction';fictionStudioSeries25229=[];fictionStudioActive25229=null;
+  ensureFictionStudio25229().classList.remove('hidden');updateFictionStudioChrome252134();try{await loadFictionStudio25229()}catch{}
+  return false
+ }
+}
 function fictionJobKey25265(kind,bookId){return `${kind}:${bookId}`}
 function fictionRunningJobForBook25265(bookId){return [...fictionBackgroundJobs25265.values()].find(j=>j.book_id===bookId&&j.status==='running')||null}
 function fictionLatestJobForBook25271(bookId){return [...fictionBackgroundJobs25265.values()].filter(j=>j.book_id===bookId).sort((a,b)=>String(b.finished_at||b.started_at||'').localeCompare(String(a.finished_at||a.started_at||'')))[0]||null}
@@ -3233,7 +3276,7 @@ function mountFictionStudioEntry25229(){
  const desktop=document.querySelector('.app-desktop-nav'),mobile=$('appMobileMenu');
  const ensure=(parent,id)=>{if(!parent||$(id))return;const b=document.createElement('button');b.id=id;b.type='button';b.textContent='Back Room';b.onclick=openFictionStudio25229;parent.appendChild(b)};
  if(instagramDeveloperAccess){ensure(desktop,'fictionStudioNav25229');ensure(mobile,'fictionStudioMobileNav25229')}
- else{$('fictionStudioNav25229')?.remove();$('fictionStudioMobileNav25229')?.remove();closeFictionStudio25229()}
+ else{$('fictionStudioNav25229')?.remove();$('fictionStudioMobileNav25229')?.remove();closeFictionStudio25229(true)}
 }
 async function fictionStudioRequest25229(payload,lockedContext=null){
  if(!instagramDeveloperAccess||!currentUser)throw new Error('Developer access only.');let token=await currentAccessToken();if(!token)token=await refreshAccessToken();if(!token)throw new Error('Your developer session has expired.');
@@ -3243,7 +3286,7 @@ async function fictionStudioRequest25229(payload,lockedContext=null){
 }
 function fictionJobRequest252144(job,payload){return fictionStudioRequest25229(payload,{studio_section:job?.studio_section||fictionStudioNamespace252134,x_access:job?.x_access||''})}
 function ensureFictionStudio25229(){
- let el=$('fictionStudio25229');if(el)return el;el=document.createElement('section');el.id='fictionStudio25229';el.className='fiction-studio-25229 hidden';el.innerHTML=`<div class="fiction-studio-shell"><header class="fiction-studio-head"><div><span class="fiction-studio-kicker">PRIVATE DEVELOPER WORKSPACE</span><h1 id="fictionStudioTitle252134">Fiction Studio</h1><p id="fictionStudioDesc252134">Full-length commercial fiction development · isolated from Moonbeam story generation</p></div><div class="fiction-studio-head-actions-252134"><button class="fiction-x-lock-252134" id="fictionStudioXLock252134" type="button" title="Open private studio" aria-label="Open private studio">🔒</button><button class="secondary" id="fictionStudioClose25229" type="button">Return to Moonbeam</button></div></header><div id="fictionStudioBody25229"></div></div>`;document.body.appendChild(el);$('fictionStudioClose25229').onclick=closeFictionStudio25229;$('fictionStudioXLock252134').onclick=toggleFictionStudioX252134;return el
+ let el=$('fictionStudio25229');if(el)return el;el=document.createElement('section');el.id='fictionStudio25229';el.className='fiction-studio-25229 hidden';el.innerHTML=`<div class="fiction-studio-shell"><header class="fiction-studio-head"><div><span class="fiction-studio-kicker">PRIVATE DEVELOPER WORKSPACE</span><h1 id="fictionStudioTitle252134">Fiction Studio</h1><p id="fictionStudioDesc252134">Full-length commercial fiction development · isolated from Moonbeam story generation</p></div><div class="fiction-studio-head-actions-252134"><button class="fiction-x-lock-252134" id="fictionStudioXLock252134" type="button" title="Open private studio" aria-label="Open private studio">🔒</button><button class="secondary" id="fictionStudioClose25229" type="button">Return to Moonbeam</button></div></header><div id="fictionStudioBody25229"></div></div>`;document.body.appendChild(el);$('fictionStudioClose25229').onclick=()=>closeFictionStudio25229();$('fictionStudioXLock252134').onclick=toggleFictionStudioX252134;return el
 }
 function updateFictionStudioChrome252134(){
  const title=$('fictionStudioTitle252134'),desc=$('fictionStudioDesc252134'),lock=$('fictionStudioXLock252134');if(!title||!lock)return;
@@ -3251,14 +3294,14 @@ function updateFictionStudioChrome252134(){
 }
 function closeFictionStudioXPrompt252134(){document.getElementById('fictionStudioXPrompt252134')?.remove()}
 function openFictionStudioXPrompt252134(){
- closeFictionStudioXPrompt252134();const wrap=document.createElement('div');wrap.id='fictionStudioXPrompt252134';wrap.className='fiction-x-modal-252134';wrap.innerHTML=`<div class="fiction-x-dialog-252134" role="dialog" aria-modal="true" aria-labelledby="fictionXTitle252134"><div class="fiction-rename-head-25252"><div><span class="fiction-studio-kicker">PRIVATE ACCESS</span><h3 id="fictionXTitle252134">Unlock private studio</h3></div><button class="secondary" id="fictionXCancel252134" type="button">Cancel</button></div><label><span>Password</span><input id="fictionXPassword252134" type="password" autocomplete="current-password"></label><div class="fiction-actions"><button class="primary" id="fictionXUnlock252134" type="button">Unlock</button><span class="status" id="fictionXStatus252134"></span></div></div>`;document.body.appendChild(wrap);$('fictionXCancel252134').onclick=closeFictionStudioXPrompt252134;wrap.onclick=e=>{if(e.target===wrap)closeFictionStudioXPrompt252134()};const input=$('fictionXPassword252134'),btn=$('fictionXUnlock252134'),st=$('fictionXStatus252134');const go=async()=>{const password=input.value;if(!password)return;btn.disabled=true;st.textContent='Checking…';try{let token=await currentAccessToken();if(!token)token=await refreshAccessToken();if(!token)throw new Error('Your developer session has expired.');const r=await fetch('/api/fiction-studio',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({mode:'x-unlock',studio_section:'fiction_x',password})});const raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(d?.error||`Unlock returned HTTP ${r.status}`);fictionStudioXAccess252134=String(d.x_access||'');if(!fictionStudioXAccess252134)throw new Error('Private studio unlock did not return an access token.');fictionStudioNamespace252134='fiction_x';fictionStudioSeries25229=[];fictionStudioActive25229=null;closeFictionStudioXPrompt252134();updateFictionStudioChrome252134();await loadFictionStudio25229()}catch(e){st.innerHTML=`<span class="error">${escapeHtml(e.message||String(e))}</span>`;btn.disabled=false}};btn.onclick=go;input.onkeydown=e=>{if(e.key==='Enter')go()};setTimeout(()=>input.focus(),0)
+ closeFictionStudioXPrompt252134();const wrap=document.createElement('div');wrap.id='fictionStudioXPrompt252134';wrap.className='fiction-x-modal-252134';wrap.innerHTML=`<div class="fiction-x-dialog-252134" role="dialog" aria-modal="true" aria-labelledby="fictionXTitle252134"><div class="fiction-rename-head-25252"><div><span class="fiction-studio-kicker">PRIVATE ACCESS</span><h3 id="fictionXTitle252134">Unlock private studio</h3></div><button class="secondary" id="fictionXCancel252134" type="button">Cancel</button></div><label><span>Password</span><input id="fictionXPassword252134" type="password" autocomplete="current-password"></label><div class="fiction-actions"><button class="primary" id="fictionXUnlock252134" type="button">Unlock</button><span class="status" id="fictionXStatus252134"></span></div></div>`;document.body.appendChild(wrap);$('fictionXCancel252134').onclick=closeFictionStudioXPrompt252134;wrap.onclick=e=>{if(e.target===wrap)closeFictionStudioXPrompt252134()};const input=$('fictionXPassword252134'),btn=$('fictionXUnlock252134'),st=$('fictionXStatus252134');const go=async()=>{const password=input.value;if(!password)return;btn.disabled=true;st.textContent='Checking…';try{let token=await currentAccessToken();if(!token)token=await refreshAccessToken();if(!token)throw new Error('Your developer session has expired.');const r=await fetch('/api/fiction-studio',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({mode:'x-unlock',studio_section:'fiction_x',password})});const raw=await r.text();let d={};try{d=JSON.parse(raw)}catch{}if(!r.ok)throw new Error(d?.error||`Unlock returned HTTP ${r.status}`);fictionStudioXAccess252134=String(d.x_access||'');if(!fictionStudioXAccess252134)throw new Error('Private studio unlock did not return an access token.');fictionStudioNamespace252134='fiction_x';fictionStudioSeries25229=[];fictionStudioActive25229=null;fictionPersistXSession252321({view:'library',series_id:null,book_id:null});closeFictionStudioXPrompt252134();updateFictionStudioChrome252134();await loadFictionStudio25229()}catch(e){st.innerHTML=`<span class="error">${escapeHtml(e.message||String(e))}</span>`;btn.disabled=false}};btn.onclick=go;input.onkeydown=e=>{if(e.key==='Enter')go()};setTimeout(()=>input.focus(),0)
 }
 async function toggleFictionStudioX252134(){
  if(fictionStudioNamespace252134==='fiction_x'){
   // V252.146 — leaving the visible X workspace always locks re-entry immediately.
   // Any already-running X job keeps the private access token captured on its own
   // immutable job context, so relocking the UI does not interrupt background work.
-  fictionStudioXAccess252134='';fictionStudioNamespace252134='fiction';fictionStudioSeries25229=[];fictionStudioActive25229=null;updateFictionStudioChrome252134();await loadFictionStudio25229();return
+  fictionClearXSession252321();fictionStudioXAccess252134='';fictionStudioNamespace252134='fiction';fictionStudioSeries25229=[];fictionStudioActive25229=null;updateFictionStudioChrome252134();await loadFictionStudio25229();return
  }
  // Never reuse a retained interactive token for re-entry. Opening X from the normal
  // studio always requires a fresh password unlock, even while an X job is running.
@@ -3267,7 +3310,7 @@ async function toggleFictionStudioX252134(){
 async function openFictionStudio25229(){
  if(!instagramDeveloperAccess)return;ensureFictionStudio25229().classList.remove('hidden');updateFictionStudioChrome252134();document.body.classList.add('fiction-studio-open');history.replaceState(null,'',location.pathname+location.search+'#back-room');await loadFictionStudio25229()
 }
-function closeFictionStudio25229(){const el=$('fictionStudio25229');if(el)el.classList.add('hidden');closeFictionStudioXPrompt252134();fictionStudioXAccess252134='';fictionStudioNamespace252134='fiction';fictionStudioSeries25229=[];fictionStudioActive25229=null;document.body.classList.remove('fiction-studio-open');if(location.hash==='#back-room')history.replaceState(null,'',location.pathname+location.search)}
+function closeFictionStudio25229(preserveRefreshSession=false){const el=$('fictionStudio25229');if(el)el.classList.add('hidden');closeFictionStudioXPrompt252134();if(!preserveRefreshSession)fictionClearXSession252321();fictionStudioXAccess252134='';fictionStudioNamespace252134='fiction';fictionStudioSeries25229=[];fictionStudioActive25229=null;document.body.classList.remove('fiction-studio-open');if(location.hash==='#back-room')history.replaceState(null,'',location.pathname+location.search)}
 let fictionLegacyOrphanAudit25273=null;
 async function loadFictionStudio25229(){const body=$('fictionStudioBody25229');if(!body)return;body.innerHTML='<p class="fiction-studio-loading">Opening private library…</p>';try{const [data,audit]=await Promise.all([fictionStudioRequest25229({mode:'list'}),fictionStudioNamespace252134==='fiction'?fictionStudioRequest25229({mode:'legacy-orphan-audit'}).catch(()=>null):Promise.resolve(null)]);fictionStudioSeries25229=data.series||[];fictionLegacyOrphanAudit25273=audit;renderFictionStudioLibrary25229()}catch(e){body.innerHTML=`<p class="status"><span class="error">${escapeHtml(e.message||String(e))}</span></p>`}}
 function fictionLegacyPurgeHtml25273(){const n=Number(fictionLegacyOrphanAudit25273?.total||0);if(!n)return `<div class="fiction-legacy-clean-25279"><span>Deleted-fiction cleanup: clear</span><button class="link-button" id="fictionLegacyRecheck25279" type="button">Check again</button><span class="status" id="fictionLegacyPurgeStatus25273"></span></div>`;return `<div class="fiction-usage-card"><h3>Deleted-fiction cleanup</h3><p class="muted">Found <strong>${n}</strong> orphaned Fiction Studio record${n===1?'':'s'} left by deletions made before the thorough purge system.</p><div class="fiction-actions"><button class="secondary" id="fictionLegacyPurge25273" type="button">Purge legacy deleted traces</button><button class="secondary" id="fictionLegacyRecheck25279" type="button">Check again</button><span class="status" id="fictionLegacyPurgeStatus25273"></span></div></div>`}
@@ -3389,7 +3432,7 @@ function openFictionBibleReview25281(){
 }
 
 function renderFictionSeries25229(id){
- fictionStudioOpenBookId25265=null;const s=fictionStudioSeries25229.find(x=>x.id===id);if(!s)return renderFictionStudioLibrary25229();fictionStudioActive25229=s;const isVeniceMirror252157=fictionIsVeniceMirror252155(s),has=Object.keys(s.series_bible||{}).length>0,reviewNeeded=fictionBibleReviewNeeded25281(s),body=$('fictionStudioBody25229');const rawProposed252286=Array.isArray(s.series_bible?.proposed_books)?s.series_bible.proposed_books:[],maxExisting252286=Math.max(0,...fictionStudioBooks25231.filter(x=>String(x.series_id||s.id)===String(s.id)).map(x=>Number(x.position)||0)),proposed=fictionAsunder2Identity252286(s)&&!rawProposed252286.length?Array.from({length:Math.max(1,maxExisting252286+1)},(_,i)=>({working_title:`${s.series_name}: Volume ${i+1}`,premise:'Four selected Woman Library members receive distinct Asunder interventions within one anthology volume.'})):rawProposed252286;const seriesPipe252106=fictionSeriesPipeline252106(s),seriesPipeRunning252106=seriesPipe252106?.status==='running';
+ fictionStudioOpenBookId25265=null;const s=fictionStudioSeries25229.find(x=>x.id===id);if(!s)return renderFictionStudioLibrary25229();fictionStudioActive25229=s;if(fictionStudioNamespace252134==='fiction_x')fictionPersistXSession252321({view:'series',series_id:s.id,book_id:null});const isVeniceMirror252157=fictionIsVeniceMirror252155(s),has=Object.keys(s.series_bible||{}).length>0,reviewNeeded=fictionBibleReviewNeeded25281(s),body=$('fictionStudioBody25229');const rawProposed252286=Array.isArray(s.series_bible?.proposed_books)?s.series_bible.proposed_books:[],maxExisting252286=Math.max(0,...fictionStudioBooks25231.filter(x=>String(x.series_id||s.id)===String(s.id)).map(x=>Number(x.position)||0)),proposed=fictionAsunder2Identity252286(s)&&!rawProposed252286.length?Array.from({length:Math.max(1,maxExisting252286+1)},(_,i)=>({working_title:`${s.series_name}: Volume ${i+1}`,premise:'Four selected Woman Library members receive distinct Asunder interventions within one anthology volume.'})):rawProposed252286;const seriesPipe252106=fictionSeriesPipeline252106(s),seriesPipeRunning252106=seriesPipe252106?.status==='running';
  const validationWarning252133=has?fictionSeriesValidationWarningHtml252133(s):'';
  const reviewPanel=has&&reviewNeeded?`<div class="fiction-bible-review-gate-25281"><div><span class="fiction-studio-kicker">REQUIRED BEFORE BOOK DEVELOPMENT</span><h3>Review character names & proposed book titles</h3><p>The selected Series Development model has finished the working Series Bible. Approve or rename the core cast and initial book titles now, before any Book Plan is created.</p></div><button class="primary" id="fictionBibleReviewOpen25281" type="button">Review cast & titles</button></div>`:'';
  const booksHtml=has&&proposed.length?`<div class="fiction-book-development-25231"><h3>Books</h3><p class="muted">${reviewNeeded?'Book Development is locked until the cast/title checkpoint is approved.':'Current production stage for every book in this series.'}</p><div class="fiction-series-grid">${proposed.map((b,i)=>reviewNeeded?`<div class="fiction-series-card fiction-book-locked-25281"><span>BOOK ${i+1}</span><strong>${escapeHtml(b.working_title||`Book ${i+1}`)}</strong><small>Locked · review cast & titles first</small></div>`:`<button class="fiction-series-card" type="button" data-fiction-book-index="${i}"><span>BOOK ${i+1}</span><strong>${escapeHtml(b.working_title||`Book ${i+1}`)}${isVeniceMirror252157?'':` <em data-fiction-book-cost class="fiction-inline-cost-252127">· calculating…</em>`}</strong><small data-fiction-book-status>Loading status…</small><small data-fiction-senior-summary class="fiction-senior-summary-252100"></small></button>`).join('')}</div></div>`:'';
@@ -4006,7 +4049,7 @@ async function fictionImportApprovedAsunderBook1Cover252278(s,b){
 }
 
 async function openSavedFictionBook25233(bookId){
- const s=fictionStudioActive25229,b=fictionStudioBooks25231.find(x=>x.id===bookId);if(!s||!b)return;fictionStudioOpenBookId25265=b.id;
+ const s=fictionStudioActive25229,b=fictionStudioBooks25231.find(x=>x.id===bookId);if(!s||!b)return;fictionStudioOpenBookId25265=b.id;if(fictionStudioNamespace252134==='fiction_x')fictionPersistXSession252321({view:'book',series_id:s.id,book_id:b.id});
  const body=$('fictionStudioBody25229');let statusData=null,usageData={usage:{}},seriesUsage={usage:{}},editorial={runs:[]};
  try{statusData=await fictionStudioRequest25229({mode:'novel-status',id:s.id,book_id:b.id});if(statusData?.book)Object.assign(b,statusData.book);await fictionImportApprovedAsunderBook1Cover252278(s,b)}catch(e){body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionBookHomeBack25233">← Series</button><div class="fiction-editor-card"><h2>${escapeHtml(b.working_title)}</h2><p class="status"><span class="error">Could not read the saved book checkpoint or import the approved cover: ${escapeHtml(e.message||String(e))}</span></p></div></div>`;$('fictionBookHomeBack25233').onclick=()=>renderFictionSeries25229(s.id);return}
  if(fictionIsVeniceMirror252155(s)){await renderFictionVeniceMirrorBook252155(s,b,statusData);return}
