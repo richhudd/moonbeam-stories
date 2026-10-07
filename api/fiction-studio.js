@@ -571,7 +571,7 @@ const fictionBibleCastPrompt252139=(bible)=>{const c=fictionBibleCastContext2521
 CANONICAL CAST INTERPRETATION:
 - Established recurring cast may be stored in either characters or core_characters. Treat both as canonical.
 - For Asunder V1, the locked Wife Library supplies the principal women. Do not use legacy younger-female or older-male reservoirs as preferred casting templates.
-- Supporting partners should arise from the selected wife, premise and story logic. Existing canonical supporting characters may recur when genuinely appropriate, but no age, wealth, gender or status configuration is preferred by default.
+- Supporting partners should arise from the selected wife, premise and story logic. Paying suitors who gain premium access to wives are deliberately curated and should normally be affluent/established enough to plausibly belong to Asunder's expensive network. Beyond that economic qualification, do not default their age, gender, profession, personality, nationality or sexual dynamic. Existing canonical supporting characters may recur when genuinely appropriate.
 - Do not force every established character into the book.
 AVAILABLE ESTABLISHED CAST: ${JSON.stringify(c.established)}
 `;};
