@@ -1603,7 +1603,14 @@ if(mode==='venice-models'){
 }
 if(mode==='list'){
   const rows=await rest(`developer_fiction_series?select=*&parent_id=eq.${encodeURIComponent(user.id)}&studio_section=eq.${fictionStudioSectionFilter252134}&order=updated_at.desc`),out=[];
-  for(const sr of(Array.isArray(rows)?rows:[]))out.push(await fictionRetrofitAsunder252142(sr));
+  for(const sr of(Array.isArray(rows)?rows:[])){
+    // Current Asunder has one authoritative Bible. Never run legacy retrofit over it on library load.
+    if(String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object'){
+      out.push({...sr,series_bible:sr.canonical_bible});
+    }else{
+      out.push(await fictionRetrofitAsunder252142(sr));
+    }
+  }
   return res.status(200).json({series:out});
 }
 if(mode==='create'){
