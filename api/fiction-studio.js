@@ -1622,6 +1622,17 @@ if(mode==='create'){
 const fictionCanonicalBible252336=(sr)=>String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object'?sr.canonical_bible:(sr?.series_bible||{});
 const fictionUseCanonicalBible252336=(sr)=>{if(String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object')return {...sr,series_bible:sr.canonical_bible};return sr};
 const id=String(body.id||'').trim();if(!id)return res.status(400).json({error:'Fiction series id is required.'});
+if(mode==='asunder-bible-get'){
+  const rows=await rest(`developer_fiction_asunder_bibles?select=series_id,bible,updated_at&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
+  const row=rows?.[0];if(!row)return res.status(404).json({error:'Asunder Bible not found.'});
+  return res.status(200).json({series_id:row.series_id,bible:row.bible||{},updated_at:row.updated_at});
+}
+if(mode==='asunder-bible-save'){
+  const bible=body.bible&&typeof body.bible==='object'&&!Array.isArray(body.bible)?body.bible:null;if(!bible)return res.status(400).json({error:'A structured Asunder Bible is required.'});
+  const rows=await rest(`developer_fiction_asunder_bibles?series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({bible,updated_at:new Date().toISOString()})});
+  const row=rows?.[0];if(!row)return res.status(404).json({error:'Asunder Bible not found.'});
+  return res.status(200).json({series_id:row.series_id,bible:row.bible||{},updated_at:row.updated_at});
+}
 const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);let series=found?.[0];
 if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=fictionUseCanonicalBible252336(await fictionRetrofitAsunder252142(fictionUseCanonicalBible252336(series)));
 // V252.154 — Venice Lab reads the current series/book plan, but writes nothing back to Moonbeam.
