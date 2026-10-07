@@ -2077,6 +2077,20 @@ ${cast.map((w,i)=>`- Vignette ${i+1}: ${w.full_name} (public first name: ${w.fir
 Every story plan must use the wife assigned to that exact vignette number. Return that wife's given name as the title.`};
 
 
+
+if(mode==='list-asunder3-vignettes'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignette tracking is available only inside Asunder 3.0.'});
+  const rows=await rest(`developer_fiction_asunder3_vignettes?select=id,woman_character_key,title,status,plan,progress,word_count,locked_at,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
+  return res.status(200).json({vignettes:Array.isArray(rows)?rows:[]});
+}
+if(mode==='read-asunder3-vignette'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignette reader is available only inside Asunder 3.0.'});
+  const vignetteId=String(body.vignette_id||'').trim();if(!vignetteId)return res.status(400).json({error:'Vignette id is required.'});
+  const rows=await rest(`developer_fiction_asunder3_vignettes?select=*&id=eq.${encodeURIComponent(vignetteId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&limit=1`);
+  const vignette=rows?.[0];if(!vignette)return res.status(404).json({error:'Vignette not found.'});
+  return res.status(200).json({vignette});
+}
+
 if(mode==='list-asunder3-woman-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 Woman Library is available only inside Asunder 3.0.'});
   const profiles=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
