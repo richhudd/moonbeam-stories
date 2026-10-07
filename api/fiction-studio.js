@@ -2490,6 +2490,22 @@ if(mode==='generate-asunder-wife-erotic-variant'){
   return res.status(200).json({wife:{...fictionAsunderWifeLibrarySummary252216(saved),portrait_url,nude_portrait_url,gallery_urls:[portrait_url,nude_portrait_url].filter(Boolean)}});
 }
 
+if(mode==='upload-asunder-wife-portrait'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Portrait upload is available only for the Asunder library in Fiction Studio X.'});
+  const key=String(body.character_key||'').trim(),dataUrl=String(body.image_data_url||'').trim();
+  if(!key||!dataUrl)return res.status(400).json({error:'Woman and portrait image are required.'});
+  const match=dataUrl.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/i);
+  if(!match)return res.status(400).json({error:'Portrait must be a PNG, JPEG or WebP image.'});
+  const bytes=Buffer.from(match[2],'base64');if(!bytes.length||bytes.length>8*1024*1024)return res.status(400).json({error:'Portrait must be smaller than 8 MB.'});
+  const rows=await rest(`developer_fiction_asunder_profiles?select=id,character_key,portrait_path&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`),p=rows?.[0];
+  if(!p)return res.status(404).json({error:'That Asunder library record could not be found.'});
+  const ext=match[1].toLowerCase()==='image/png'?'png':match[1].toLowerCase()==='image/webp'?'webp':'jpg',path=`fiction-studio/asunder-profiles/${user.id}/${id}/${key}/portrait.${ext}`;
+  await fictionAsunderStorageUpload252147(path,bytes,match[1].toLowerCase());
+  await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(p.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({portrait_path:path,updated_at:new Date().toISOString()})});
+  const portrait_url=await fictionAsunderStorageSignedUrl252197(path,604800);
+  return res.status(200).json({ok:true,character_key:key,portrait_path:path,portrait_url});
+}
+
 if(mode==='delete-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library is available only for Asunder in Fiction Studio X.'});
   const key=String(body.character_key||'').trim();if(!key)return res.status(400).json({error:'Wife character key is required.'});
