@@ -2104,36 +2104,26 @@ Every story plan must use the wife assigned to that exact vignette number. Retur
 
 
 if(mode==='list-asunder3-vignettes'){
-  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignette tracking is available only inside Asunder 3.0.'});
-  const rows=await rest(`developer_fiction_asunder3_vignettes?select=id,woman_character_key,title,status,plan,progress,word_count,locked_at,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
-  return res.status(200).json({vignettes:Array.isArray(rows)?rows:[]});
-}
-if(mode==='read-asunder3-vignette'){
-  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignette reader is available only inside Asunder 3.0.'});
-  const vignetteId=String(body.vignette_id||'').trim();if(!vignetteId)return res.status(400).json({error:'Vignette id is required.'});
-  const rows=await rest(`developer_fiction_asunder3_vignettes?select=*&id=eq.${encodeURIComponent(vignetteId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&limit=1`);
-  const vignette=rows?.[0];if(!vignette)return res.status(404).json({error:'Vignette not found.'});
-  return res.status(200).json({vignette});
-}
-
-
-if(mode==='list-asunder3-vignettes'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignettes are available only inside Asunder 3.0.'});
   const rows=await rest(`developer_fiction_vignettes?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
   const out=[];
   for(const v of(Array.isArray(rows)?rows:[])){
-    const beats=await rest(`developer_fiction_vignette_beats?select=beat_number,label,writer,status,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&vignette_id=eq.${encodeURIComponent(v.id)}&order=beat_number.asc`);
-    out.push({...v,beats:Array.isArray(beats)?beats:[]});
+    const beats=await rest(`developer_fiction_vignette_beats?select=beat_number,label,writer,status,manuscript,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&vignette_id=eq.${encodeURIComponent(v.id)}&order=beat_number.asc`);
+    const saved=(Array.isArray(beats)?beats:[]).filter(b=>String(b.status||'')==='completed'||String(b.manuscript||'').trim()).length;
+    out.push({...v,progress:{saved_beats:saved,beat_total:Number(v.planned_beats)||12,detail:String(v.status||'').replace(/_/g,' ')},word_count:String(v.manuscript||'').trim().split(/\s+/).filter(Boolean).length});
   }
   return res.status(200).json({vignettes:out});
 }
-if(mode==='get-asunder3-vignette'){
+if(mode==='read-asunder3-vignette'||mode==='get-asunder3-vignette'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignettes are available only inside Asunder 3.0.'});
   const vignetteId=String(body.vignette_id||'').trim();if(!vignetteId)return res.status(400).json({error:'Vignette id is required.'});
   const rows=await rest(`developer_fiction_vignettes?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&id=eq.${encodeURIComponent(vignetteId)}&limit=1`);
   const vignette=rows?.[0];if(!vignette)return res.status(404).json({error:'Vignette not found.'});
   const beats=await rest(`developer_fiction_vignette_beats?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&vignette_id=eq.${encodeURIComponent(vignetteId)}&order=beat_number.asc`);
-  return res.status(200).json({vignette,beats:Array.isArray(beats)?beats:[]});
+  const beatRows=Array.isArray(beats)?beats:[],saved=beatRows.filter(b=>String(b.status||'')==='completed'||String(b.manuscript||'').trim()).length;
+  const manuscript=String(vignette.manuscript||'').trim()||beatRows.map(b=>String(b.manuscript||'').trim()).filter(Boolean).join('\n\n');
+  const segments=beatRows.map(b=>({beat:Number(b.beat_number)||0,label:String(b.label||''),writer:String(b.writer||''),status:String(b.status||''),text:String(b.manuscript||'')}));
+  return res.status(200).json({vignette:{...vignette,manuscript,segments,progress:{saved_beats:saved,beat_total:Number(vignette.planned_beats)||12,detail:String(vignette.status||'').replace(/_/g,' ')},word_count:manuscript.split(/\s+/).filter(Boolean).length},beats:beatRows});
 }
 
 if(mode==='list-asunder3-woman-library'){
