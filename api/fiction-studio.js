@@ -1013,6 +1013,7 @@ const fictionAsunderFormatIdentity252143='asunder_fixed_four_story_identity_v1';
 const fictionAsunder2FormatIdentity252286='asunder_intervention_anthology_identity_v2';
 const fictionAsunderLegacyIdentity252286=(seriesRecord)=>String(seriesRecord?.series_bible?.series_format_identity||'')===fictionAsunderFormatIdentity252143;
 const fictionAsunder2Identity252286=(seriesRecord)=>{const b=seriesRecord?.series_bible||{},name=String(seriesRecord?.series_name||b.series_title||'').trim().toLowerCase();return String(b.series_format_identity||'')===fictionAsunder2FormatIdentity252286||name==='asunder 2.0'};
+const fictionAsunder3Identity252323=(seriesRecord)=>String(seriesRecord?.series_name||'').trim().toLowerCase()==='asunder 3.0'||String(seriesRecord?.autopilot_state?.version||'')==='asunder_3_0';
 const fictionAsunderSeedIdentity252146=(seriesRecord)=>fictionAsunderLegacyIdentity252286(seriesRecord)||fictionAsunder2Identity252286(seriesRecord);
 const fictionAsunderBeatCount252286=(seriesRecord)=>fictionAsunder2Identity252286(seriesRecord)?12:10;
 const fictionAsunder2BiasFirewall252291=(seriesRecord)=>fictionAsunder2Identity252286(seriesRecord)?`
@@ -2074,6 +2075,30 @@ ASUNDER LOCKED WIFE CAST — ABSOLUTE:
 The developer selected these four canonical Wife Library records BEFORE Book Development. They are immutable for this volume. Do not invent, replace, rename, merge, recast or materially alter any principal wife. Their vignette order is locked.
 ${cast.map((w,i)=>`- Vignette ${i+1}: ${w.full_name} (public first name: ${w.first_name}); age ${w.age}; city ${w.current_city}; background ${w.background}; marriage ${w.relationship_status}; husband context ${w.husband_summary||'[use canonical biography]'}; canonical physical identity ${JSON.stringify(w.appearance_spec||{})}; canonical biography ${w.full_biography||w.bio||''}; intimacy direction ${String(w.intimacy_direction||'').trim()||'[BLANK = no developer constraint; preserve normal high-intensity Asunder erotic contract and let Sol/Aion invent the erotic specifics freely]'}; CHARACTER KEY ${w.character_key}.`).join('\n')}
 Every story plan must use the wife assigned to that exact vignette number. Return that wife's given name as the title.`};
+
+
+if(mode==='list-asunder3-woman-library'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 Woman Library is available only inside Asunder 3.0.'});
+  const profiles=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
+  const women=[];
+  for(const p of(Array.isArray(profiles)?profiles:[])){
+    const portrait_url=p.portrait_path?await fictionAsunderStorageSignedUrl252197(p.portrait_path,604800):'';
+    const nudePath=String(p?.profile_data?.nude_portrait_path||'').trim();
+    const nude_portrait_url=nudePath?await fictionAsunderStorageSignedUrl252197(nudePath,604800):'';
+    women.push({
+      id:p.id,character_key:p.character_key,full_name:p.full_name,first_name:p.first_name,
+      age:Number(p?.profile_data?.age)||null,
+      nationality:String(p?.profile_data?.nationality||''),
+      background:String(p?.profile_data?.background||p?.profile_data?.ethnicity_background||''),
+      current_city:String(p?.profile_data?.current_city||''),
+      relationship_status:String(p?.profile_data?.relationship_status||''),
+      bio:String(p?.profile_data?.full_biography||p?.profile_data?.bio||''),
+      import_origin:String(p?.profile_data?.asunder3_import_origin||''),
+      appearance_spec:p.appearance_spec||{},portrait_url,nude_portrait_url
+    });
+  }
+  return res.status(200).json({women,count:women.length});
+}
 
 if(mode==='list-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library is available only for Asunder in Fiction Studio X.'});
