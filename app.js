@@ -3163,7 +3163,7 @@ function fictionAsunderBeatPlanHtml252225(book,n){
  return `<details class="fiction-asunder-beat-plan-252225" open><summary><strong>Sol's ${fictionAsunderBeatCount252286()}-beat writer map</strong> · Aion: ${aion.length?aion.join(', '):'none'}</summary><div class="fiction-asunder-beat-grid-252225">${beats}</div></details>`;
 }
 function fictionAsunderTrackerHtml252206(book){
- const s=fictionAsunderProductionSnapshot252206(book),job=s.job,current=s.rows.find(x=>x.n===s.activeVignette),state=job?.status==='paused'?'PAUSED':job?.status==='running'?'RUNNING':book?.status==='complete'?'COMPLETE':'READY';
+ const s=fictionAsunderProductionSnapshot252206(book),job=s.job,current=s.rows.find(x=>x.n===s.activeVignette),state=job?.status==='paused'?'PAUSED':job?.status==='running'?'RUNNING':book?.status==='first_draft_locked'?'FIRST DRAFT LOCKED':book?.status==='complete'?'COMPLETE':'READY';
  const currentLine=current?`Vignette ${current.n} · ${current.name} — ${current.state}${current.detail?` · ${current.detail}`:''}`:`${s.lockedCount} of ${s.planned} vignettes locked`;
  const serverCurrent=book?._live_progress&&current?`${current.state}${current.detail?` · ${current.detail}`:''}`:'';
  return `<div class="fiction-asunder-tracker-252206"><p><strong>${escapeHtml(state)} · ${escapeHtml(currentLine)}</strong></p><p class="muted">Volume progress: ${s.lockedCount} of ${s.planned} vignettes locked${job?.status==='running'?' · pipeline is actively working':''}${job?.status==='paused'?' · pipeline is paused':''}.</p><div class="fiction-asunder-vignette-list-252206">${s.rows.map(x=>`<div class="fiction-asunder-vignette-row-252206"><strong>Vignette ${x.n} · ${escapeHtml(x.name)}</strong><span>${escapeHtml(x.state)}</span>${x.detail?`<small>${escapeHtml(x.detail)}</small>`:''}${fictionAsunderBeatPlanHtml252225(book,x.n)}</div>`).join('')}</div>${(serverCurrent||job)?`<p class="fiction-boundary"><strong>Current activity:</strong> ${escapeHtml(serverCurrent||(job?.stage||'Working'))}${!serverCurrent&&job?.progress?` · ${escapeHtml(job.progress)}`:''}</p>`:''}</div>`;
@@ -3173,7 +3173,7 @@ function fictionAsunderTopSummary252206(book){const p=book?._live_progress||book
 function fictionLivePipelineState25296(book){
  if(!book)return {state:'ready',headline:'READY',detail:'No active pipeline job.'};
  const isAsunder252206=fictionStudioNamespace252134==='fiction_x'&&fictionAsunderSeriesIdentity252149(fictionStudioActive25229);
- if(isAsunder252206){const job=fictionRunningJobForBook25265(book.id)||fictionLatestJobForBook25271(book.id),top=fictionAsunderTopSummary252206(book),state=job?fictionJobStateClass25271(job.status):(book?.status==='complete'?'complete':'ready');return {state,headline:top.headline,detail:top.detail}}
+ if(isAsunder252206){const job=fictionRunningJobForBook25265(book.id)||fictionLatestJobForBook25271(book.id),top=fictionAsunderTopSummary252206(book),state=job?fictionJobStateClass25271(job.status):(['complete','first_draft_locked'].includes(String(book?.status||''))?'complete':'ready');return {state,headline:top.headline,detail:top.detail}}
  const job=fictionRunningJobForBook25265(book.id)||fictionLatestJobForBook25271(book.id);
  if(job){const state=fictionJobStateClass25271(job.status),headline=`${fictionJobStateLabel25271(job.status)} · ${job.stage||'Working'}`;return {state,headline,detail:job.progress||((job.status==='completed')?'Latest pipeline job completed.':'Waiting for the next saved checkpoint.')}}
  const cfg=fictionAutoPipelineConfig25255(book.id);
