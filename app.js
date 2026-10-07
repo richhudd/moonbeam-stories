@@ -3099,7 +3099,7 @@ function fictionActiveJobsHtml25265(){const jobs=[...fictionBackgroundJobs25265.
 function fictionRefreshJobsPanel25265(){const el=$('fictionActiveJobs25265');if(!el)return;const tmp=document.createElement('div');tmp.innerHTML=fictionActiveJobsHtml25265();el.replaceWith(tmp.firstElementChild);fictionBindJobsPanel25265()}
 // V252.206 — Asunder uses Volume > Vignette > Chunk terminology everywhere on the live Book screen.
 // Generic Fiction Studio "chapter" counters are deliberately not used for Asunder because its workflow is sequential:
-// draft one vignette through Sol's beat-mapped hybrid plan, edit/lock it, then begin the next vignette.
+// draft one vignette through the hybrid beat plan, stitch/lock the first draft, then begin the next vignette.
 function fictionAsunderVignetteName252206(book,n){
  const c=(Array.isArray(book?.book_plan?.chapters)?book.book_plan.chapters:[]).find(x=>Number(x?.number||x?.chapter_number)===Number(n));
  const raw=String(c?.title||`Vignette ${n}`).trim();return raw.replace(/^\d+\.\d+\s*[—–-]\s*/, '').trim()||`Vignette ${n}`;
@@ -3131,17 +3131,17 @@ function fictionAsunderProductionSnapshot252206(book){
  const rows=[];
  for(let n=1;n<=planned;n++){
   const name=fictionAsunderVignetteName252206(book,n);let state='Waiting',detail='';
-  if(locked.has(n)){state='LOCKED ✓';detail='Sol gate complete'}
+  if(locked.has(n)){state='LOCKED ✓';detail='Stitched first draft locked'}
   else if(activeVignette===n){
-   if(chunk&&Number(chunk.story_number)===n){const savedChunks=Number(chunk.saved_sections||0),totalChunks=Number(chunk.planned_sections||10)||10;state=savedChunks>=totalChunks?'Draft assembled':'DRAFTING';detail=savedChunks>=totalChunks?'Waiting for Sol vignette review':`${savedChunks} of ${totalChunks} beats safely saved${savedChunks<totalChunks?` · Beat ${Math.min(totalChunks,savedChunks+1)} ${chunk?.in_flight?'working':'next'}`:''}`}
-   else if(saved.has(n)&&serverAuthoritative){state='SOL REVIEW / EDITING';detail=`All ${fictionAsunderBeatCount252286()} beats are safely saved; Sol editorial stabilisation is the current gate`}
+   if(chunk&&Number(chunk.story_number)===n){const savedChunks=Number(chunk.saved_sections||0),totalChunks=Number(chunk.planned_sections||10)||10;state=savedChunks>=totalChunks?'LOCKING':'DRAFTING';detail=savedChunks>=totalChunks?'Stitched first draft is being locked directly':`${savedChunks} of ${totalChunks} beats safely saved${savedChunks<totalChunks?` · Beat ${Math.min(totalChunks,savedChunks+1)} ${chunk?.in_flight?'working':'next'}`:''}`}
+   else if(saved.has(n)&&serverAuthoritative){state='LOCKING';detail=`All ${fictionAsunderBeatCount252286()} beats are safely saved; no editorial gate`}
    else if(/final micro-patch/i.test(jobText)){state='SOL MICRO-PATCH';detail='Final narrow repair before lock'}
    else if(/verification/i.test(jobText)){state='SOL VERIFICATION';detail=job?.progress||'Checking targeted repair'}
    else if(/repair|revision/i.test(jobText)){state='SOL REPAIR';detail=job?.progress||'Targeted vignette repair in progress'}
    else if(/Sol.*audit|stitch audit|review/i.test(jobText)){state='SOL REVIEW';detail=job?.progress||'Reviewing completed vignette'}
-   else if(saved.has(n)){state='EDITING';detail='Draft saved; editorial gate in progress'}
+   else if(saved.has(n)){state='LOCKING';detail='Draft saved; committing stitched first draft'}
    else {state=job?.status==='paused'?'PAUSED':'WORKING';detail=job?.progress||'Preparing this vignette'}
-  } else if(saved.has(n)){state='DRAFT SAVED';detail='Awaiting/inside vignette editorial gate'}
+  } else if(saved.has(n)){state='DRAFT SAVED';detail='Stitched first draft saved'}
   rows.push({n,name,state,detail});
  }
  return {planned,lockedCount:locked.size,activeVignette,chunk,job,rows};
@@ -3261,10 +3261,6 @@ function fictionArmPipelineWatchdog252210(b,seriesId){
    // Draft watchdog scope is intentionally conservative. It restarts only when there is an unfinished
    // story/chunk checkpoint (or drafting has not yet begun), never while a completed vignette is waiting
    // on an editorial lock gate.
-   const stabilized=new Set((p.asunder_stabilized_stories||[]).map(Number)),saved=(p.saved_numbers||[]).map(Number),pendingEditorial=saved.some(n=>!stabilized.has(n));
-   if(pendingEditorial){
-    const visible=fictionStudioOpenBookId25265===b.id,st=visible?$('fictionBookHomeStatus25233'):null;if(st)st.textContent='Automatic watchdog found a completed vignette waiting at the Sol editorial gate. Resuming from the saved server checkpoint…';await runAutomaticFictionPipeline25255(b);return
-   }
    if(p.complete!==true&&(hasDraftCheckpoint||Number(p.next_chapter||0)>0)){
     const visible=fictionStudioOpenBookId25265===b.id,st=visible?$('fictionBookHomeStatus25233'):null;
     if(st)st.textContent=`Automatic watchdog recovered a stalled drafting loop. Resuming from the last saved checkpoint${chunk?` (${savedMini}/${Number(chunk?.planned_sections||10)} beats saved)`:''}…`;
@@ -4567,7 +4563,6 @@ async function runAutomaticFictionPipeline25255(b){
       : `${lockedCount252321} of 4 vignettes locked${next?` · preparing Vignette ${next}`:''}`;
     fictionUpdateJob25265(job,{stage:'Asunder production',progress:asunderProgress252321});
    }else fictionUpdateJob25265(job,{stage:'First draft',progress:`${done} of ${total} chapters saved${next?` · writing ${next}`:''}${p.trajectory?.materially_behind?` · ${Number(p.trajectory.behind_pct||0).toFixed(1)}% behind target trajectory`:''}`});
-   if(fictionAsunderSeriesIdentity252149(series)){const stabilized252190=new Set((p.asunder_stabilized_stories||[]).map(Number)),pending252190=(p.saved_numbers||[]).map(Number).sort((a,b)=>a-b).find(n=>!stabilized252190.has(n));if(pending252190){const z=await fictionStabilizeAsunderStory252190(b,pending252190,seriesId,job);if(!z){fictionFinishJob25265(job,'paused',`Story ${pending252190} stitch gate paused`);return}continue}}
    if(p.complete===true)break;
    if(p.rebalance_needed){const tr=p.trajectory||{};if(st)st.textContent=`${fictionStudioNamespace252134==='fiction_x'?'Hybrid Sol/Aion':fictionModelLabel25243(cfg.models.manuscript||'gpt-6-luna')} · First draft · ${done}/${total} saved · ${Number(tr.behind_pct||0).toFixed(1)}% behind trajectory · deepening remaining chapter architecture…`;fictionUpdateJob25265(job,{stage:'First draft architecture correction',progress:`checkpoint ${Math.round(Number(p.rebalance_checkpoint||0)*100)}% · deepening remaining chapters`});await fictionJobRequest252144(job,{mode:'draft-rebalance',id:seriesId,book_id:b.id});void refreshFictionLiveUsage25243(b,seriesId);continue}
    if(!next)throw new Error('Novel progress is inconsistent: no next planned chapter was identified.');
@@ -4596,20 +4591,17 @@ async function runAutomaticFictionPipeline25255(b){
    throw new Error(`${e.message||e} ${fictionFixedFourAnthologyUI252142()?'Story':'Chapter'} ${next} was not saved after 3 transient-error retries.`)}
   }
   if(await fictionAutoPauseCheck25255(b,'draft')){fictionFinishJob25265(job,'paused','Paused after first draft');return}
-  // V252.192 — Asunder in Fiction Studio X finishes automatically after the four per-story stitch gates.
-  // There is no whole-book line/style rewrite, proof rewrite or human sign-off. Sol produces one compact
-  // final report outside the reader; deterministic preflight then locks the draft and the cover is generated automatically.
+  // Asunder 1.0 Fiction X stops at the stitched first draft. No Sol review, repair,
+  // verification or final report runs inside Fiction X. External review/editing is performed later
+  // directly against the stored draft.
   const isAsunderAutoFinish252192=fictionAsunderSeriesIdentity252149(series);
   if(isAsunderAutoFinish252192){
-   const gate252254=await fictionJobRequest252144(job,{mode:'novel-status',id:seriesId,book_id:b.id,compact:true}),locked252254=new Set((gate252254?.progress?.asunder_stabilized_stories||[]).map(Number));if(![1,2,3,4].every(n=>locked252254.has(n))){const pending252254=[1,2,3,4].find(n=>!locked252254.has(n));throw new Error(`Asunder finalisation refused to run because Vignette ${pending252254||'?'} is not locked. The automatic pipeline will resume its Sol vignette gate instead of falling into the generic novel pipeline.`)}
-   if(st)st.textContent='All four vignettes are stitch-verified and locked. Sol is preparing the final whole-volume report…';fictionUpdateJob25265(job,{stage:'Sol final report',progress:'ratings + brief finished-volume summary'});
-   const finalReportDirection252192='[SOL_ASUNDER_FINAL_REPORT] Review the four finished Asunder vignettes as one completed volume. Return only the compact final developer report: deterministic word count, brief volume summary, /10 ratings for overall quality, style/prose, erotic delivery, character distinctiveness, variation/anti-repetition, continuity/coherence and commercial/read-through potential, genuine remaining concerns if any, and one short finished-book verdict. This report is advisory and outside the reader. Do not request, suggest or trigger another rewrite.';
-   const finalReport252192=await fictionAutoRunEditorialStage25255(b,'developmental','gpt-6-sol',null,seriesId,job,finalReportDirection252192);if(!finalReport252192){fictionFinishJob25265(job,'paused','Sol final report paused');return}
-   if(st)st.textContent='Sol report complete. Running deterministic preflight and compiling the finished illustrated volume…';fictionUpdateJob25265(job,{stage:'Compile finished book',progress:'preflight + cover + illustrated reader'});
-   const fin252192=await fictionJobRequest252144(job,{mode:'finalize-asunder-automatic',id:seriesId,book_id:b.id,report_run_id:finalReport252192.id});if(fin252192?.book)Object.assign(b,fin252192.book);if(!fin252192?.ok)throw new Error((fin252192?.report?.blockers||[]).join(' · ')||'Finished-book compilation did not pass deterministic preflight.');
-   try{await seedFollowingBook252116(b,seriesId)}catch(e){console.warn('V252.192 next-book seed did not complete',e)}
-   cfg.active=false;cfg.paused=false;cfg.awaiting_human_review=false;cfg.human_candidate_run_id=null;cfg.human_report_run_id=null;cfg.completed_at=new Date().toISOString();saveFictionAutoPipelineState25255(b.id,cfg);fictionPersistAutoIntent252210(b,seriesId,false,false);fictionDisarmPipelineWatchdog252210(b.id);
-   if(st)st.textContent='Finished book compiled — cover, profile illustrations and Sol final report are ready.';fictionFinishJob25265(job,'completed','Finished illustrated book + Sol final report');
+   const gate252326=await fictionJobRequest252144(job,{mode:'novel-status',id:seriesId,book_id:b.id,compact:true});
+   const locked252326=new Set((gate252326?.progress?.asunder_stabilized_stories||[]).map(Number));
+   if(![1,2,3,4].every(n=>locked252326.has(n)))throw new Error('Asunder first-draft lock is incomplete; resuming from the last saved vignette checkpoint.');
+   cfg.active=false;cfg.paused=false;cfg.awaiting_human_review=true;cfg.completed_at=new Date().toISOString();saveFictionAutoPipelineState25255(b.id,cfg);fictionPersistAutoIntent252210(b,seriesId,false,false);fictionDisarmPipelineWatchdog252210(b.id);
+   if(st)st.textContent='First draft stitched and locked — Fiction X has stopped. Ready for external continuity and anti-AI review.';
+   fictionFinishJob25265(job,'completed','Stitched first draft locked · ready for external review');
    if(fictionStudioOpenBookId25265===b.id)await openSavedFictionBook25233(b.id);else fictionRefreshVisiblePipelineStatus25296();return
   }
   // Shared non-Asunder Fiction Studio production pipeline remains unchanged.
