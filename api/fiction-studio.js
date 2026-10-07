@@ -1012,7 +1012,8 @@ if(mode==='legacy-orphan-purge'){
 // The one-time retrofit is name-gated, then a durable Bible marker keeps the format attached to that same series even if it is renamed later.
 const fictionAsunderFormatIdentity252143='asunder_fixed_four_story_identity_v1';
 const fictionAsunder2FormatIdentity252286='asunder_intervention_anthology_identity_v2';
-const fictionAsunderLegacyIdentity252286=(seriesRecord)=>String(seriesRecord?.series_bible?.series_format_identity||'')===fictionAsunderFormatIdentity252143;
+const fictionCurrentAsunderSeriesId252340='3d94046f-8162-44d0-b861-d955d8583cbb';
+const fictionAsunderLegacyIdentity252286=(seriesRecord)=>String(seriesRecord?.id||'')===fictionCurrentAsunderSeriesId252340;
 const fictionAsunder2Identity252286=(seriesRecord)=>{const b=seriesRecord?.series_bible||{},name=String(seriesRecord?.series_name||b.series_title||'').trim().toLowerCase();return String(b.series_format_identity||'')===fictionAsunder2FormatIdentity252286||name==='asunder 2.0'};
 const fictionAsunderSeedIdentity252146=(seriesRecord)=>fictionAsunderLegacyIdentity252286(seriesRecord)||fictionAsunder2Identity252286(seriesRecord);
 const fictionAsunderBeatCount252286=(seriesRecord)=>fictionAsunderSeedIdentity252146(seriesRecord)?12:10;
