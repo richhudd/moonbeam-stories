@@ -3035,33 +3035,37 @@ const fictionBackgroundJobs25265=new Map();
 let fictionStudioNamespace252134='fiction';
 let fictionStudioXAccess252134='';
 let fictionStudioOpenBookId25265=null;
-// V252.321 — keep a successful Fiction Studio X unlock for the lifetime of this browser tab.
-// sessionStorage survives refresh/deployment reloads but disappears when the tab/session ends.
-// The server-issued X token remains account-bound and expires after two hours.
+// V252.322 — durable Fiction Studio X refresh restoration.
+// Only the harmless navigation target is kept in localStorage; the X grant itself lives in an
+// HttpOnly server cookie. This survives deployment/full reloads without storing the X password
+// or access token in JavaScript-readable persistent storage.
 let fictionXRestoreAttempt252321=false;
-function fictionXSessionKey252321(){return `moonbeam-fiction-x-session-v252321:${currentUser?.id||'signed-out'}`}
+function fictionXSessionKey252321(){return `moonbeam-fiction-x-return-v252322:${currentUser?.id||'signed-out'}`}
 function fictionReadXSession252321(){
  try{
-  const x=JSON.parse(sessionStorage.getItem(fictionXSessionKey252321())||'null');
-  if(!x||x.user_id!==currentUser?.id||!x.x_access)return null;
-  const expiry=Number(String(x.x_access).split('.')[0])||0;
-  if(!expiry||expiry<=Date.now()){sessionStorage.removeItem(fictionXSessionKey252321());return null}
+  const x=JSON.parse(localStorage.getItem(fictionXSessionKey252321())||'null');
+  if(!x||x.user_id!==currentUser?.id||x.active!==true)return null;
+  if(Number(x.expires_at||0)<=Date.now()){localStorage.removeItem(fictionXSessionKey252321());return null}
   return x
  }catch{return null}
 }
 function fictionPersistXSession252321(patch={}){
  if(!currentUser||fictionStudioNamespace252134!=='fiction_x'||!fictionStudioXAccess252134)return;
  const prior=fictionReadXSession252321()||{};
- try{sessionStorage.setItem(fictionXSessionKey252321(),JSON.stringify({...prior,...patch,user_id:currentUser.id,x_access:fictionStudioXAccess252134,saved_at:new Date().toISOString()}))}catch{}
+ try{localStorage.setItem(fictionXSessionKey252321(),JSON.stringify({...prior,...patch,active:true,user_id:currentUser.id,expires_at:Date.now()+2*60*60*1000,saved_at:new Date().toISOString()}))}catch{}
 }
-function fictionClearXSession252321(){try{sessionStorage.removeItem(fictionXSessionKey252321())}catch{}}
+function fictionClearXSession252321(){try{localStorage.removeItem(fictionXSessionKey252321())}catch{}}
 async function fictionRestoreXAfterRefresh252321(){
- if(fictionXRestoreAttempt252321||location.hash!=='#back-room'||!currentUser||!instagramDeveloperAccess)return false;
+ if(fictionXRestoreAttempt252321||!currentUser||!instagramDeveloperAccess)return false;
  const saved=fictionReadXSession252321();if(!saved)return false;
  fictionXRestoreAttempt252321=true;
  try{
-  fictionStudioNamespace252134='fiction_x';fictionStudioXAccess252134=String(saved.x_access||'');
-  ensureFictionStudio25229().classList.remove('hidden');document.body.classList.add('fiction-studio-open');updateFictionStudioChrome252134();
+  const d=await fictionStudioRequest25229({mode:'x-resume'},{studio_section:'fiction_x',x_access:''});
+  const grant=String(d?.x_access||'');if(!grant)throw new Error('Fiction Studio X refresh grant was not returned.');
+  fictionStudioNamespace252134='fiction_x';fictionStudioXAccess252134=grant;
+  ensureFictionStudio25229().classList.remove('hidden');document.body.classList.add('fiction-studio-open');
+  history.replaceState(null,'',location.pathname+location.search+'#back-room');updateFictionStudioChrome252134();
+  fictionPersistXSession252321(saved);
   await loadFictionStudio25229();
   if(saved.series_id&&fictionStudioSeries25229.some(x=>String(x.id)===String(saved.series_id))){
    renderFictionSeries25229(saved.series_id);
@@ -3072,9 +3076,7 @@ async function fictionRestoreXAfterRefresh252321(){
   }
   return true
  }catch(e){
-  // Expired/invalid server token: forget only the transient X session and leave Back Room available.
   fictionClearXSession252321();fictionStudioXAccess252134='';fictionStudioNamespace252134='fiction';fictionStudioSeries25229=[];fictionStudioActive25229=null;
-  ensureFictionStudio25229().classList.remove('hidden');updateFictionStudioChrome252134();try{await loadFictionStudio25229()}catch{}
   return false
  }
 }
@@ -3281,7 +3283,7 @@ function mountFictionStudioEntry25229(){
 async function fictionStudioRequest25229(payload,lockedContext=null){
  if(!instagramDeveloperAccess||!currentUser)throw new Error('Developer access only.');let token=await currentAccessToken();if(!token)token=await refreshAccessToken();if(!token)throw new Error('Your developer session has expired.');
  const studioSection=lockedContext?.studio_section||fictionStudioNamespace252134,xAccess=lockedContext?.x_access??(studioSection==='fiction_x'?fictionStudioXAccess252134:'');
- const req={...(payload||{}),studio_section:studioSection};if(studioSection==='fiction_x'){if(!xAccess&&req.mode!=='x-unlock')throw new Error('Fiction Studio X is locked.');req.x_access=xAccess}
+ const req={...(payload||{}),studio_section:studioSection};if(studioSection==='fiction_x'){const gateMode=['x-unlock','x-resume','x-lock'].includes(String(req.mode||''));if(!xAccess&&!gateMode)throw new Error('Fiction Studio X is locked.');if(xAccess)req.x_access=xAccess}
  const r=await fetch('/api/fiction-studio',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify(req)});const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}if(!r.ok){const err=new Error(data?.error||`Fiction Studio returned HTTP ${r.status}`);err.status=r.status;err.code=data?.code||'';err.retryable=typeof data?.retryable==='boolean'?data.retryable:null;err.details=data;throw err}return data
 }
 function fictionJobRequest252144(job,payload){return fictionStudioRequest25229(payload,{studio_section:job?.studio_section||fictionStudioNamespace252134,x_access:job?.x_access||''})}
@@ -3298,9 +3300,8 @@ function openFictionStudioXPrompt252134(){
 }
 async function toggleFictionStudioX252134(){
  if(fictionStudioNamespace252134==='fiction_x'){
-  // V252.146 — leaving the visible X workspace always locks re-entry immediately.
-  // Any already-running X job keeps the private access token captured on its own
-  // immutable job context, so relocking the UI does not interrupt background work.
+  // Explicitly locking X clears both the browser return marker and the server HttpOnly grant.
+  try{await fictionStudioRequest25229({mode:'x-lock'},{studio_section:'fiction_x',x_access:fictionStudioXAccess252134})}catch{}
   fictionClearXSession252321();fictionStudioXAccess252134='';fictionStudioNamespace252134='fiction';fictionStudioSeries25229=[];fictionStudioActive25229=null;updateFictionStudioChrome252134();await loadFictionStudio25229();return
  }
  // Never reuse a retained interactive token for re-entry. Opening X from the normal
