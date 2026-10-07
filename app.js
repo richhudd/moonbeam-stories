@@ -3429,6 +3429,17 @@ function openFictionBibleReview25281(){
 }
 
 
+function fictionAsunderSeriesIdentity252149(seriesRecord){
+ const name=String(seriesRecord?.series_name||'').trim().toLowerCase();
+ const identity=String(seriesRecord?.series_bible?.series_identity||seriesRecord?.series_bible?.identity||seriesRecord?.autopilot_state?.series_identity||'').trim().toLowerCase();
+ return name==='asunder'||name==='asunder 2.0'||identity.includes('asunder');
+}
+function fictionAsunder2Identity252286(seriesRecord){
+ const name=String(seriesRecord?.series_name||'').trim().toLowerCase();
+ const identity=String(seriesRecord?.series_bible?.series_identity||seriesRecord?.series_bible?.identity||seriesRecord?.autopilot_state?.series_identity||'').trim().toLowerCase();
+ return name==='asunder 2.0'||identity==='asunder_intervention_anthology_identity_v2';
+}
+
 function fictionAsunder3Identity252323(seriesRecord){return String(seriesRecord?.series_name||'').trim().toLowerCase()==='asunder 3.0'||String(seriesRecord?.autopilot_state?.version||'')==='asunder_3_0'}
 let fictionAsunder3Poll252323=null;
 function fictionStopAsunder3Poll252323(){if(fictionAsunder3Poll252323){clearTimeout(fictionAsunder3Poll252323);fictionAsunder3Poll252323=null}}
