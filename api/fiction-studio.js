@@ -1624,6 +1624,16 @@ if(mode==='asunder-bible-save'){
   const row=rows?.[0];if(!row)return res.status(404).json({error:'Asunder Bible not found.'});
   return res.status(200).json({series_id:row.series_id,bible:row.bible||{},updated_at:row.updated_at});
 }
+if(mode==='asunder-bible-replace-v2'){
+  const bible=body.bible&&typeof body.bible==='object'&&!Array.isArray(body.bible)?body.bible:null;if(!bible)return res.status(400).json({error:'A structured Asunder Bible is required.'});
+  const sid=String(id||'');if(sid!==fictionCurrentAsunderSeriesId252340)return res.status(400).json({error:'This Bible endpoint is reserved for the current Asunder series.'});
+  const now=new Date().toISOString();
+  const rows=await rest(`developer_fiction_asunder_bibles?series_id=eq.${encodeURIComponent(sid)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({bible,updated_at:now})});
+  const saved=rows?.[0];if(!saved)return res.status(404).json({error:'Current Asunder Bible row not found.'});
+  const verifyRows=await rest(`developer_fiction_asunder_bibles?select=series_id,bible,updated_at&series_id=eq.${encodeURIComponent(sid)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
+  const verified=verifyRows?.[0];if(!verified||JSON.stringify(verified.bible)!==JSON.stringify(bible))return res.status(409).json({error:'Asunder Bible replacement did not verify.'});
+  return res.status(200).json({series_id:sid,bible:verified.bible,updated_at:verified.updated_at,verified:true});
+}
 const found=await rest(`developer_fiction_series?select=*&id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);let series=found?.[0];
 if(!series)return res.status(404).json({error:'Fiction series not found.'});if(String(series.studio_section||'fiction')!==fictionStudioSection252134)return res.status(404).json({error:'Fiction series not found in this studio.'});series=await fictionRetrofitAsunder252142(series);if(String(series.id||'')===fictionCurrentAsunderSeriesId252340){const isolatedBibleRows252341=await rest(`developer_fiction_asunder_bibles?select=bible&series_id=eq.${encodeURIComponent(series.id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);const isolatedBible252341=isolatedBibleRows252341?.[0]?.bible;if(isolatedBible252341&&typeof isolatedBible252341==='object'&&!Array.isArray(isolatedBible252341))series={...series,series_bible:isolatedBible252341}}
 // V252.154 — Venice Lab reads the current series/book plan, but writes nothing back to Moonbeam.
