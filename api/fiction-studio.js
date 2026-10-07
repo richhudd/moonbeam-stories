@@ -50,6 +50,13 @@ const fictionXPassword252134=String(process.env.FICTION_STUDIO_X_PASSWORD||'');
 const fictionXSign252134=(value)=>crypto.createHmac('sha256',String(SECRET_KEY||'moonbeam-fiction-x')).update(value).digest('hex');
 const fictionXIssue252134=()=>{const expiry=Date.now()+2*60*60*1000,base=`${user.id}|${expiry}`;return `${expiry}.${fictionXSign252134(base)}`};
 const fictionXValid252134=(token)=>{try{const [expiryRaw,sig]=String(token||'').split('.'),expiry=Number(expiryRaw);if(!Number.isFinite(expiry)||expiry<Date.now()||expiry>Date.now()+3*60*60*1000||!sig)return false;const expected=fictionXSign252134(`${user.id}|${expiry}`),a=Buffer.from(sig),b=Buffer.from(expected);return a.length===b.length&&crypto.timingSafeEqual(a,b)}catch{return false}};
+// V252.322 — durable refresh unlock. Keep the X grant in an HttpOnly same-site cookie so a
+// deployment/full-page reload can resume X without exposing the password or relying on Safari
+// sessionStorage. The cookie contains only the same short-lived signed grant already used by X.
+const fictionXCookieName252322='moonbeam_fiction_x';
+const fictionXCookieToken252322=()=>{try{const raw=String(req.headers.cookie||'');for(const part of raw.split(';')){const [k,...rest]=part.trim().split('=');if(k===fictionXCookieName252322)return decodeURIComponent(rest.join('='))}return ''}catch{return ''}};
+const fictionXSetCookie252322=(token)=>res.setHeader('Set-Cookie',`${fictionXCookieName252322}=${encodeURIComponent(token)}; Max-Age=7200; Path=/; HttpOnly; Secure; SameSite=Lax`);
+const fictionXClearCookie252322=()=>res.setHeader('Set-Cookie',`${fictionXCookieName252322}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`);
 // V252.135 — persistent server-side brute-force protection for Fiction Studio X.
 // Five consecutive wrong passwords lock this developer identity for 15 minutes. The state
 // lives in Supabase so serverless cold starts cannot reset the counter.
@@ -70,9 +77,21 @@ if(mode==='x-unlock'){
     await fictionXLockWrite252135(attempts,null);const remaining=5-attempts;return res.status(401).json({error:`Incorrect password. ${remaining} attempt${remaining===1?'':'s'} remaining before a 15-minute lock.`,attempts_remaining:remaining});
   }
   await fictionXLockClear252135();
-  return res.status(200).json({ok:true,x_access:fictionXIssue252134()});
+  const grant=fictionXIssue252134();fictionXSetCookie252322(grant);
+  return res.status(200).json({ok:true,x_access:grant});
 }
-if(fictionStudioSection252134==='fiction_x'&&!fictionXValid252134(body.x_access))return res.status(401).json({error:'Fiction Studio X is locked. Unlock it again from Fiction Studio.'});
+if(mode==='x-resume'){
+  const prior=fictionXCookieToken252322();
+  if(!fictionXValid252134(prior))return res.status(401).json({error:'Fiction Studio X refresh session has expired.'});
+  const grant=fictionXIssue252134();fictionXSetCookie252322(grant);
+  return res.status(200).json({ok:true,x_access:grant});
+}
+if(mode==='x-lock'){
+  fictionXClearCookie252322();
+  return res.status(200).json({ok:true});
+}
+const fictionXPresented252322=body.x_access||fictionXCookieToken252322();
+if(fictionStudioSection252134==='fiction_x'&&!fictionXValid252134(fictionXPresented252322))return res.status(401).json({error:'Fiction Studio X is locked. Unlock it again from Fiction Studio.'});
 const fictionStudioSectionFilter252134=encodeURIComponent(fictionStudioSection252134);
 const FICTION_TABLES_25269=new Set(['developer_fiction_series','developer_fiction_books','developer_fiction_chapters','developer_fiction_continuity','developer_fiction_editorial_runs','developer_fiction_editorial_chapters','developer_fiction_editorial_continuity','developer_fiction_usage_events','developer_fiction_asunder_profiles']);
     const rest=async(path,options={})=>{const table=String(path||'').split('?')[0].split('/')[0];if(!FICTION_TABLES_25269.has(table))throw new Error('Fiction Studio storage boundary blocked a non-fiction table.');const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:adminHeaders({'Content-Type':'application/json',...(options.headers||{})})});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch{}if(!r.ok)throw Object.assign(new Error(data?.message||data?.error||`Fiction Studio storage returned HTTP ${r.status}`),{status:r.status});return data};
