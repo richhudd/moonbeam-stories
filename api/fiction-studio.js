@@ -1555,7 +1555,7 @@ if(mode==='series-dashboard'){
     rest(`developer_fiction_editorial_runs?select=id,series_id,book_id,stage,status,created_at,completed_at&parent_id=eq.${u}&order=created_at.asc`),
     rest(`developer_fiction_chapters?select=book_id,chapter_number&parent_id=eq.${u}`)
   ]);
-  const normalisedSeries=[];for(const sr of(Array.isArray(seriesRows)?seriesRows:[]))normalisedSeries.push(await fictionRetrofitAsunder252142(sr));
+  const normalisedSeries=[];for(const sr of(Array.isArray(seriesRows)?seriesRows:[]))normalisedSeries.push(String(sr?.id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb'&&sr?.canonical_bible&&typeof sr.canonical_bible==='object'?{...sr,series_bible:sr.canonical_bible}:await fictionRetrofitAsunder252142(sr));
   const books=Array.isArray(bookRows)?bookRows:[],runs=Array.isArray(runRows)?runRows:[],chapters=Array.isArray(chapterRows)?chapterRows:[];
   const countByBook=new Map();for(const c of chapters)countByBook.set(c.book_id,(countByBook.get(c.book_id)||0)+1);
   const runsByBook=new Map();for(const r of runs){if(!runsByBook.has(r.book_id))runsByBook.set(r.book_id,[]);runsByBook.get(r.book_id).push(r)}
