@@ -2094,6 +2094,26 @@ if(mode==='read-asunder3-vignette'){
   return res.status(200).json({vignette});
 }
 
+
+if(mode==='list-asunder3-vignettes'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignettes are available only inside Asunder 3.0.'});
+  const rows=await rest(`developer_fiction_vignettes?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
+  const out=[];
+  for(const v of(Array.isArray(rows)?rows:[])){
+    const beats=await rest(`developer_fiction_vignette_beats?select=beat_number,label,writer,status,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&vignette_id=eq.${encodeURIComponent(v.id)}&order=beat_number.asc`);
+    out.push({...v,beats:Array.isArray(beats)?beats:[]});
+  }
+  return res.status(200).json({vignettes:out});
+}
+if(mode==='get-asunder3-vignette'){
+  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 vignettes are available only inside Asunder 3.0.'});
+  const vignetteId=String(body.vignette_id||'').trim();if(!vignetteId)return res.status(400).json({error:'Vignette id is required.'});
+  const rows=await rest(`developer_fiction_vignettes?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&id=eq.${encodeURIComponent(vignetteId)}&limit=1`);
+  const vignette=rows?.[0];if(!vignette)return res.status(404).json({error:'Vignette not found.'});
+  const beats=await rest(`developer_fiction_vignette_beats?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&vignette_id=eq.${encodeURIComponent(vignetteId)}&order=beat_number.asc`);
+  return res.status(200).json({vignette,beats:Array.isArray(beats)?beats:[]});
+}
+
 if(mode==='list-asunder3-woman-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunder3Identity252323(series))return res.status(400).json({error:'Asunder 3.0 Woman Library is available only inside Asunder 3.0.'});
   const profiles=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
