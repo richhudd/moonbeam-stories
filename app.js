@@ -3443,7 +3443,7 @@ function fictionAsunderBeatCount252286(seriesRecord=fictionStudioActive25229){
  return fictionAsunderSeriesIdentity252149(seriesRecord)?12:10;
 }
 
-function fictionAsunder3Identity252323(seriesRecord){return String(seriesRecord?.series_name||'').trim().toLowerCase()==='asunder 3.0'||String(seriesRecord?.autopilot_state?.version||'')==='asunder_3_0'}
+function fictionAsunder3Identity252323(seriesRecord){const name=String(seriesRecord?.series_name||'').trim().toLowerCase();if(name==='asunder')return false;return name==='asunder 3.0'}
 let fictionAsunder3Poll252323=null;
 function fictionStopAsunder3Poll252323(){if(fictionAsunder3Poll252323){clearTimeout(fictionAsunder3Poll252323);fictionAsunder3Poll252323=null}}
 function fictionAsunder3Progress252323(book,statusData=null){
