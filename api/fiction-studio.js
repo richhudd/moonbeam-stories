@@ -2301,8 +2301,8 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
    if(mode==='asunder-aion-volume-plan'){
     const state=productionBook.generation_state||{};
     const plans={...(state.aion_volume_plans||{}),[productionStoryNumber]:{plan,character_key:key,direction,research,created_at:new Date().toISOString(),cost_usd:totalCost,attempts}};
-    const updated=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(productionBook.id)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_plans:plans},updated_at:new Date().toISOString()})});
-    if(!updated?.length)return res.status(502).json({error:'Aion plan generated but volume checkpoint could not be saved. Do not retry generation until inspected.',cost_usd:totalCost});
+    const updated=await leaseRpc('fiction_aion_save_checkpoint',{p_book:productionBook.id,p_operation:leaseOperation,p_token:leaseToken,p_story:productionStoryNumber,p_beat:0,p_payload:plans[productionStoryNumber]});
+    if(!updated)return res.status(502).json({error:'Aion plan generated but volume checkpoint could not be saved. Do not retry generation until inspected.',cost_usd:totalCost});
     return res.status(200).json({plan,story_number:productionStoryNumber,saved:true,model:rr.model,usage:rr.usage,cost_usd:totalCost,attempts});
    }
    return res.status(200).json({plan,model:rr.model,usage:rr.usage,cost_usd:totalCost,attempts});
@@ -2326,8 +2326,8 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
     const state=latest.generation_state||{},saved=Array.isArray(state.aion_volume_beats?.[productionStoryNumber])?state.aion_volume_beats[productionStoryNumber]:[];
     if(saved.length!==number-1||state.aion_volume_locked?.[productionStoryNumber])return res.status(409).json({error:'Checkpoint changed while Aion was writing. Beat returned for manual recovery; no overwrite performed.',text:prose,cost_usd:totalCost+Number(rr.cost_usd||0)});
     const cost=totalCost+Number(rr.cost_usd||0),next={...(state.aion_volume_beats||{}),[productionStoryNumber]:[...saved,{number,text:prose,cost_usd:cost,saved_at:new Date().toISOString()}]};
-    const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_beats:next},updated_at:new Date().toISOString()})});
-    if(!rows?.length)return res.status(502).json({error:'Aion wrote the beat but automatic checkpoint saving failed. Preserve returned text.',text:prose,cost_usd:cost});
+    const rows=await leaseRpc('fiction_aion_save_checkpoint',{p_book:bookId,p_operation:leaseOperation,p_token:leaseToken,p_story:productionStoryNumber,p_beat:number,p_payload:next[productionStoryNumber][next[productionStoryNumber].length-1]});
+    if(!rows)return res.status(502).json({error:'Aion wrote the beat but automatic checkpoint saving failed. Preserve returned text.',text:prose,cost_usd:cost});
     return res.status(200).json({story_number:productionStoryNumber,beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:cost,saved:true,completed:next[productionStoryNumber].length});
    }
    return res.status(200).json({beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:totalCost+Number(rr.cost_usd||0)});
