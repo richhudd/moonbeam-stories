@@ -2216,11 +2216,11 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   if(!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series required.'});
   const bookId=String(body.book_id||'').trim();
   productionStoryNumber=Number(body.story_number);
-  if(!bookId||!Number.isInteger(productionStoryNumber)||productionStoryNumber<1||productionStoryNumber>4)return res.status(400).json({error:'Volume and story number 1–4 required.'});
+  if(!bookId||!Number.isInteger(productionStoryNumber)||productionStoryNumber<1||productionStoryNumber>10)return res.status(400).json({error:'Volume and story number 1–10 required.'});
   productionBook=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];
   if(!productionBook)return res.status(404).json({error:'Volume not found.'});
   const cast=productionBook.development_state?.asunder_cast;
-  if(!Array.isArray(cast)||cast.length!==4)return res.status(409).json({error:'Four-wife cast must be selected before planning.'});
+  if(!Array.isArray(cast)||cast.length!==fictionAionVolumeCount252510(productionBook)||productionStoryNumber>fictionAionVolumeCount252510(productionBook))return res.status(409).json({error:'Complete volume cast required before planning.'});
   const wife=cast[productionStoryNumber-1];
   key=String(wife?.character_key||'').trim();direction=String(wife?.intimacy_direction||'').trim().slice(0,12000);
   if(!key||!direction)return res.status(409).json({error:'This wife requires a canonical profile and manual direction.'});
@@ -3683,6 +3683,7 @@ REMAINING CHAPTER PLAN: ${JSON.stringify(remaining)}`;
 // Asunder Aion volume transplant, stage 1: zero-spend production readiness gate.
 // This endpoint is intentionally read-only. It never starts legacy Sol/Luna stages.
 // Aion-only volume sequencing: each vignette must be fully locked before the next starts.
+const fictionAionVolumeCount252510=book=>Number(book?.development_state?.aion_volume_vignette_count)===10?10:4;
 if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder Fiction X series required.'});
  const bookId=String(body.book_id||'').trim();
@@ -3690,7 +3691,8 @@ if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence
  const url=`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`;
  const book=(await rest(url))?.[0];if(!book)return res.status(404).json({error:'Volume not found.'});
  const state=book.generation_state||{},locked=state.aion_volume_locked||{};
- const next=[1,2,3,4].find(n=>!locked[n])||null;
+ const volumeCount=fictionAionVolumeCount252510(book);
+ const next=Array.from({length:volumeCount},(_,i)=>i+1).find(n=>!locked[n])||null;
  if(mode==='asunder-aion-volume-sequence')return res.status(200).json({next_story:next,completed:next===null,locked_stories:Object.keys(locked).filter(n=>locked[n]).map(Number).sort((a,b)=>a-b),next_step:next===null?'assemble_volume':!state.aion_volume_plans?.[next]?'plan':(state.aion_volume_beats?.[next]?.length||0)<12?'write':'stitch_and_lock'});
  const n=Number(body.story_number);
  if(!Number.isInteger(n)||n!==next)return res.status(409).json({error:'Only the next unlocked vignette may be stitched and locked.'});
@@ -3701,7 +3703,7 @@ if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence
  const newLocked={...locked,[n]:true};
  const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_stitched:stitched,aion_volume_locked:newLocked},updated_at:new Date().toISOString()})});
  if(!rows?.length)return res.status(502).json({error:'Unable to persist stitched vignette.'});
- return res.status(200).json({story_number:n,locked:true,word_count:stitched[n].word_count,next_story:n<4?n+1:null});
+ return res.status(200).json({story_number:n,locked:true,word_count:stitched[n].word_count,next_story:n<volumeCount?n+1:null});
 }
 // Deterministic, resumable assembly: only locked source text is published, never regenerated.
 if(mode==='asunder-aion-volume-assemble'){
@@ -3798,7 +3800,8 @@ if(mode==='asunder-aion-volume-preflight'){
  const cast=Array.isArray(book.development_state?.asunder_cast)?book.development_state.asunder_cast:[];
  const chapters=Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters:[];
  const stories=[];
- for(let n=1;n<=4;n++){
+ const volumeCount=fictionAionVolumeCount252510(book);
+ for(let n=1;n<=volumeCount;n++){
   const wife=cast[n-1]||{};
   const key=String(wife.character_key||'').trim();
   const direction=String(wife.intimacy_direction||'').trim();
@@ -3806,13 +3809,13 @@ if(mode==='asunder-aion-volume-preflight'){
   const errors=[];
   if(!key)errors.push('Canonical wife not selected');
   if(!direction)errors.push('Individual vignette direction required');
-  if(key&&!matching.length)errors.push('No planned chapters assigned to this wife');
+  if(volumeCount===4&&key&&!matching.length)errors.push('No planned chapters assigned to this wife');
   stories.push({number:n,character_key:key,direction,direction_present:!!direction,planned_chapters:matching.length,ready:!errors.length,errors});
  }
  const errors=[];
- if(cast.length!==4)errors.push('Exactly four canonical wives required');
+ if(cast.length!==volumeCount)errors.push('Exactly '+volumeCount+' canonical wives required');
  if(!stories.every(x=>x.ready))errors.push('One or more vignettes are missing a wife, individual direction or chapter assignment');
- return res.status(200).json({ready:!errors.length,book_id:bookId,series_id:id,engine:'aion_only_twelve_beats',concept_stage:false,editorial_stage:false,stories,errors,read_only:true});
+ return res.status(200).json({ready:!errors.length,book_id:bookId,series_id:id,engine:'aion_only_twelve_beats',concept_stage:false,editorial_stage:false,stories,errors,read_only:true,volume_count:volumeCount});
 }
 if(mode==='generate-chapter'){
   // V252.284 — restore the book lookup that was accidentally removed when the old generated-prologue block was deleted in V252.280.
