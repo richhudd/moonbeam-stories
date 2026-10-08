@@ -3760,6 +3760,35 @@ if(mode==='asunder-aion-volume-progress'||mode==='asunder-aion-volume-save-beat'
   try{await leaseCall('fiction_aion_release_lease',{p_book:bookId,p_operation:operation,p_token:token})}catch(e){console.error('Manual checkpoint lease release failed',e)}
  }
 }
+// Stage 2: read-only or draft-only cast persistence. No model calls.
+if(mode==='asunder-ten-cast-draft'){
+ if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series required.'});
+ const position=Number(body.position);
+ if(!Number.isInteger(position)||position<1)return res.status(400).json({error:'Valid volume position required.'});
+ const url=`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&position=eq.${position}&limit=1`;
+ let book=(await rest(url))?.[0]||null;
+ const count=Number(book?.development_state?.aion_volume_vignette_count||((book?.development_state?.asunder_cast?.length===4)?4:10));
+ if(count!==10)return res.status(409).json({error:'Existing four-vignette volumes retain their original cast.'});
+ if(body.action==='load')return res.status(200).json({book_id:book?.id||null,count:10,cast:Array.isArray(book?.development_state?.asunder_cast)?book.development_state.asunder_cast:[]});
+ const keys=Array.isArray(body.character_keys)?body.character_keys.map(x=>String(x||'').trim()):[];
+ const directions=Array.isArray(body.directions)?body.directions.map(x=>String(x||'').trim().slice(0,4000)):[];
+ if(keys.length!==10||new Set(keys).size!==10||directions.length!==10||directions.some(x=>!x))return res.status(400).json({error:'Select ten distinct wives and provide a direction for each.'});
+ if(book&&(book.generation_state?.aion_volume_plans||Object.keys(book.book_plan||{}).length))return res.status(409).json({error:'Volume development has already begun. Cast cannot be overwritten.'});
+ const profiles=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}`);
+ const selected=keys.map(k=>(profiles||[]).find(p=>String(p.character_key||'')===k));
+ if(selected.some(x=>!x))return res.status(409).json({error:'Wife Library changed. Reload and select again.'});
+ const cast=selected.map((p,i)=>({...fictionAsunderWifeLibrarySummary252216(p),intimacy_direction:directions[i]}));
+ const state={...(book?.development_state||{}),aion_volume_vignette_count:10,asunder_cast:cast,asunder_cast_locked_at:new Date().toISOString(),phase:'cast_draft'};
+ if(book){
+  const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:state,updated_at:new Date().toISOString()})});
+  book=rows?.[0];
+ }else{
+  const rows=await rest('developer_fiction_books',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,position,working_title:`Asunder: Volume ${position}`,premise:'Ten individually directed Asunder vignettes.',book_plan:{},status:'planning',development_model:'gpt-6-luna',development_state:state})});
+  book=rows?.[0];
+ }
+ if(!book)return res.status(502).json({error:'Could not persist ten-wife cast.'});
+ return res.status(200).json({saved:true,book_id:book.id,count:10,cast});
+}
 if(mode==='asunder-aion-volume-preflight'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series in Fiction X required.'});
  const bookId=String(body.book_id||'').trim();
