@@ -3633,6 +3633,26 @@ REMAINING CHAPTER PLAN: ${JSON.stringify(remaining)}`;
 }
 // Asunder Aion volume transplant, stage 1: zero-spend production readiness gate.
 // This endpoint is intentionally read-only. It never starts legacy Sol/Luna stages.
+// Stage 3: production checkpoint inspection and deterministic beat persistence.
+// Generation itself is deliberately not enabled until the writer route is wired safely.
+if(mode==='asunder-aion-volume-progress'||mode==='asunder-aion-volume-save-beat'){
+ if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder Fiction X series required.'});
+ const bookId=String(body.book_id||'').trim(),storyNumber=Number(body.story_number);
+ if(!bookId||!Number.isInteger(storyNumber)||storyNumber<1||storyNumber>4)return res.status(400).json({error:'Volume and story number 1–4 required.'});
+ const url=`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`;
+ const book=(await rest(url))?.[0];if(!book)return res.status(404).json({error:'Volume not found.'});
+ const state=book.generation_state||{},entry=state.aion_volume_plans?.[storyNumber];
+ if(!entry?.plan||!Array.isArray(entry.plan.beats)||entry.plan.beats.length!==12)return res.status(409).json({error:'A saved twelve-beat production plan is required.'});
+ const beats=Array.isArray(state.aion_volume_beats?.[storyNumber])?state.aion_volume_beats[storyNumber]:[];
+ if(mode==='asunder-aion-volume-progress')return res.status(200).json({story_number:storyNumber,planned:12,completed:beats.length,next_beat:beats.length<12?beats.length+1:null,beats,complete:beats.length===12});
+ const number=Number(body.beat_number),prose=String(body.text||'').trim();
+ if(!Number.isInteger(number)||number!==beats.length+1||number>12)return res.status(409).json({error:'Beat checkpoint must be saved sequentially; refresh progress before retrying.'});
+ if(prose.length<120)return res.status(400).json({error:'Narrative beat is empty or too short.'});
+ const updatedBeats={...(state.aion_volume_beats||{}),[storyNumber]:[...beats,{number,text:prose,cost_usd:Math.max(0,Number(body.cost_usd)||0),saved_at:new Date().toISOString()}]};
+ const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_beats:updatedBeats},updated_at:new Date().toISOString()})});
+ if(!rows?.length)return res.status(502).json({error:'Checkpoint could not be saved.'});
+ return res.status(200).json({story_number:storyNumber,beat_number:number,completed:updatedBeats[storyNumber].length,saved:true});
+}
 if(mode==='asunder-aion-volume-preflight'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series in Fiction X required.'});
  const bookId=String(body.book_id||'').trim();
