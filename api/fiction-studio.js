@@ -2391,11 +2391,13 @@ if(mode==='list-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library is available only for Asunder in Fiction Studio X.'});
   const [profiles,books]=await Promise.all([
     rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc`),
-    Promise.resolve([])
+    rest(`developer_fiction_books?select=id,position,working_title,status,book_plan,development_state&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}`)
   ]);
   const appearances=new Map();
   for(const b of(Array.isArray(books)?books:[])){
     const stories=Array.isArray(b?.book_plan?.chapters)?b.book_plan.chapters:[];
+    const cast=Array.isArray(b?.development_state?.asunder_cast)?b.development_state.asunder_cast:[];
+    for(let i=0;i<cast.length;i++){const key=String(cast[i]?.character_key||'');if(!key)continue;const row={book_id:b.id,volume:Number(b.position)||null,book_title:String(b.working_title||''),vignette:i+1,status:String(b.status||''),summary:'Selected for this volume'};if(!appearances.has(key))appearances.set(key,[]);appearances.get(key).push(row)}
     for(let i=0;i<stories.length;i++){
       const st=stories[i]||{},keys=[String(st.asunder_character_key||''),String(st.asunder_linked_character_key||'')].filter(Boolean);if(!keys.length)continue;
       const row={book_id:b.id,volume:Number(b.position)||null,book_title:String(b.working_title||''),vignette:Number(st.number||i+1)||i+1,status:String(b.status||''),linked_operation:keys.length===2,linked_subject_keys:keys,summary:String(st.relationship_shift||st.purpose||st.events||'').replace(/\s+/g,' ').trim().slice(0,500)};
@@ -2408,7 +2410,7 @@ if(mode==='list-asunder-wife-library'){
     const nude_portrait_path=String(p?.profile_data?.nude_portrait_path||'').trim();
     const nude_portrait_url=nude_portrait_path?await fictionAsunderStorageSignedUrl252197(nude_portrait_path,604800):'';
     const app=appearances.get(String(p.character_key||''))||[],summary=fictionAsunderWifeLibrarySummary252216(p);
-    wives.push({...summary,asunder_status:'untried',asunder_case_history:[],portrait_url,nude_portrait_url,gallery_urls:[...(await Promise.all((summary.portrait_gallery_paths||[]).map(path=>fictionAsunderStorageSignedUrl252197(path,604800)))),nude_portrait_url].filter(Boolean),appearances:[],created_at:p.created_at||null,updated_at:p.updated_at||null});
+    wives.push({...summary,asunder_status:'untried',asunder_case_history:[],portrait_url,nude_portrait_url,gallery_urls:[...(await Promise.all((summary.portrait_gallery_paths||[]).map(path=>fictionAsunderStorageSignedUrl252197(path,604800)))),nude_portrait_url].filter(Boolean),appearances:app.filter((row,i,arr)=>arr.findIndex(x=>x.book_id===row.book_id&&x.vignette===row.vignette)===i),created_at:p.created_at||null,updated_at:p.updated_at||null});
   }
   const caseOrder252311={untried:0,open:1,partial:2,emergent:3,retain:4,unassessed:5,closed:9};
   wives.sort((a,b)=>(caseOrder252311[String(a.asunder_status||'untried').toLowerCase()]??5)-(caseOrder252311[String(b.asunder_status||'untried').toLowerCase()]??5)||String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')));
