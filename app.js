@@ -3450,7 +3450,8 @@ async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
  try{
   const pre=await request({mode:'asunder-aion-volume-preflight',book_id:book});
   if(!pre.ready)throw new Error('Volume is not ready: '+(pre.errors||[]).join('; '));
-  for(let n=1;n<=4;n++){
+  const volumeCount=Number(pre.volume_count)===10?10:4;
+  for(let n=1;n<=volumeCount;n++){
    if(fictionAionVolumeRunner252500.stopped.has(key))return {paused:true,story_number:n};
    let sequence=await request({mode:'asunder-aion-volume-sequence',book_id:book});
    if(sequence.completed){onProgress({phase:'assembling'});return await request({mode:'asunder-aion-volume-assemble',book_id:book});}
