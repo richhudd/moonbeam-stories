@@ -2234,7 +2234,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
    const saved=Array.isArray(state.aion_volume_beats?.[productionStoryNumber])?state.aion_volume_beats[productionStoryNumber]:[];
    if(Number(body.beat_number)!==saved.length+1||saved.length>=12)return res.status(409).json({error:'Beat is not next in sequence. Refresh production progress.'});
    body.plan=entry.plan;
-   body.prior_text=saved.map(b=>String(b.text||'')).join('\\n\\n');
+   body.prior_text=saved.map(b=>String(b.text||'')).join('\n\n');
   }
  }
  if(!key)return res.status(400).json({error:'Select a canonical wife.'});
@@ -3673,7 +3673,7 @@ if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence
  if(!Number.isInteger(n)||n!==next)return res.status(409).json({error:'Only the next unlocked vignette may be stitched and locked.'});
  const entry=state.aion_volume_plans?.[n],beats=state.aion_volume_beats?.[n];
  if(!entry?.plan||!Array.isArray(beats)||beats.length!==12||beats.some((b,i)=>Number(b.number)!==i+1||String(b.text||'').trim().length<120))return res.status(409).json({error:'All twelve complete sequential narrative beats are required.'});
- const text=beats.map(b=>String(b.text).trim()).join('\\n\\n');
+ const text=beats.map(b=>String(b.text).trim()).join('\n\n');
  const stitched={...(state.aion_volume_stitched||{}),[n]:{text,character_key:entry.character_key,title:String(entry.plan.title||'').trim(),locked_at:new Date().toISOString(),word_count:text.trim().split(/\\s+/).length}};
  const newLocked={...locked,[n]:true};
  const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_stitched:stitched,aion_volume_locked:newLocked},updated_at:new Date().toISOString()})});
