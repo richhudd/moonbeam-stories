@@ -2374,6 +2374,17 @@ if(mode==='preview-asunder-legacy-profile'||mode==='accept-asunder-legacy-profil
  if(!updated?.length)return res.status(409).json({error:'Profile changed since preview. Refresh and retry.'});
  return res.status(200).json({ok:true,profile:fictionAsunderWifeLibrarySummary252216(updated[0])});
 }
+if(mode==='set-asunder-wife-primary-photo'){
+ const key=String(body.character_key||'').trim(),chosen=String(body.portrait_path||'').trim();
+ if(!key||!chosen)return res.status(400).json({error:'Photo and wife required.'});
+ const rows=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`);
+ const p=rows?.[0];if(!p)return res.status(404).json({error:'Wife not found.'});
+ const paths=[p.portrait_path,...(Array.isArray(p.profile_data?.portrait_gallery_paths)?p.profile_data.portrait_gallery_paths:[])].filter(Boolean);
+ if(!paths.includes(chosen))return res.status(400).json({error:'Photo is not in this wife’s gallery.'});
+ const updated=await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(p.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({portrait_path:chosen,profile_data:{...p.profile_data,portrait_gallery_paths:[...new Set(paths)],profile_photo_path:chosen},updated_at:new Date().toISOString()})});
+ if(!updated?.[0])return res.status(502).json({error:'Photo update failed.'});
+ return res.status(200).json({ok:true,portrait_path:chosen,portrait_url:await fictionAsunderStorageSignedUrl252197(chosen,604800)});
+}
 if(mode==='list-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library is available only for Asunder in Fiction Studio X.'});
   const [profiles,books]=await Promise.all([
