@@ -3106,7 +3106,7 @@ function fictionAsunderVignetteName252206(book,n){
 function fictionAsunderRunVignette252206(run){
  const d=String(run?.direction||'');const m=d.match(/\[(?:SOL_ASUNDER_STITCH_AUDIT_STORY|ASUNDER_STITCH_STORY):(\d+)\]/);return m?Number(m[1]):0;
 }
-function fictionIsTenAionVolume252625(book){return Number(book?.development_state?.aion_volume_vignette_count)===10;}
+function fictionIsTenAionVolume252625(book){const d=book?.development_state||{},g=book?.generation_state||{};return Number(d.aion_volume_vignette_count)===10||Array.isArray(d.asunder_cast)&&d.asunder_cast.length===10||Number(g.aion_volume_vignette_count)===10||Number(book?.position)===5&&String(book?.series_id||'')==='3d94046f-8162-44d0-b861-d955d8583cbb';}
 function fictionTenAionTrackerHtml252625(book){
  const gs=book?.generation_state||{},cast=book?.development_state?.asunder_cast||[],plans=gs.aion_volume_plans||{},beats=gs.aion_volume_beats||{},locked=gs.aion_volume_locked||{};
  const count=Array.from({length:10},(_,i)=>i+1).filter(n=>!!locked[n]).length;
