@@ -3462,8 +3462,7 @@ async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
    if(sequence.next_step==='plan'){
     onProgress({story:n,phase:'planning'});
     const story=pre.stories[n-1];
-    const research=await request({mode:'asunder-vignette-tester-research',character_key:story.character_key,direction:story.direction});
-    await request({mode:'asunder-aion-volume-plan',book_id:book,story_number:n,research:research.research});
+    await request({mode:'asunder-aion-volume-plan',book_id:book,story_number:n});
    }
    let progress=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
    while(progress.completed<12){
