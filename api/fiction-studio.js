@@ -3,6 +3,7 @@ const {verifyMoonbeamUser}=require('../_credits');
 const crypto=require('crypto');
 const sharp=require('sharp');
 
+function fictionAionVolumeCount252510(book){return Number(book?.development_state?.aion_volume_vignette_count)===10?10:4;}
 module.exports = async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -3683,7 +3684,6 @@ REMAINING CHAPTER PLAN: ${JSON.stringify(remaining)}`;
 // Asunder Aion volume transplant, stage 1: zero-spend production readiness gate.
 // This endpoint is intentionally read-only. It never starts legacy Sol/Luna stages.
 // Aion-only volume sequencing: each vignette must be fully locked before the next starts.
-const fictionAionVolumeCount252510=book=>Number(book?.development_state?.aion_volume_vignette_count)===10?10:4;
 if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder Fiction X series required.'});
  const bookId=String(body.book_id||'').trim();
