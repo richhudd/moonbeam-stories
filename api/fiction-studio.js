@@ -2223,6 +2223,9 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   const wife=cast[productionStoryNumber-1];
   key=String(wife?.character_key||'').trim();direction=String(wife?.intimacy_direction||'').trim().slice(0,12000);
   if(!key||!direction)return res.status(409).json({error:'This wife requires a canonical profile and manual direction.'});
+  const preceding=productionBook.generation_state?.aion_volume_locked||{};
+  if(productionStoryNumber>1&&!preceding[productionStoryNumber-1])return res.status(409).json({error:'Finish, stitch and lock the preceding vignette before starting this one.'});
+  if(preceding[productionStoryNumber])return res.status(409).json({error:'This vignette is already locked.'});
   if(mode==='asunder-aion-volume-plan'&&productionBook.generation_state?.aion_volume_plans?.[productionStoryNumber])return res.status(409).json({error:'This story already has a saved Aion plan. Reuse the checkpoint.'});
   if(mode==='asunder-aion-volume-write-beat'){
    const state=productionBook.generation_state||{},entry=state.aion_volume_plans?.[productionStoryNumber];
@@ -3646,6 +3649,27 @@ REMAINING CHAPTER PLAN: ${JSON.stringify(remaining)}`;
 }
 // Asunder Aion volume transplant, stage 1: zero-spend production readiness gate.
 // This endpoint is intentionally read-only. It never starts legacy Sol/Luna stages.
+// Aion-only volume sequencing: each vignette must be fully locked before the next starts.
+if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence'){
+ if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder Fiction X series required.'});
+ const bookId=String(body.book_id||'').trim();
+ if(!bookId)return res.status(400).json({error:'Volume id required.'});
+ const url=`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`;
+ const book=(await rest(url))?.[0];if(!book)return res.status(404).json({error:'Volume not found.'});
+ const state=book.generation_state||{},locked=state.aion_volume_locked||{};
+ const next=[1,2,3,4].find(n=>!locked[n])||null;
+ if(mode==='asunder-aion-volume-sequence')return res.status(200).json({next_story:next,completed:next===null,locked_stories:Object.keys(locked).filter(n=>locked[n]).map(Number).sort((a,b)=>a-b),next_step:next===null?'assemble_volume':!state.aion_volume_plans?.[next]?'plan':(state.aion_volume_beats?.[next]?.length||0)<12?'write':'stitch_and_lock'});
+ const n=Number(body.story_number);
+ if(!Number.isInteger(n)||n!==next)return res.status(409).json({error:'Only the next unlocked vignette may be stitched and locked.'});
+ const entry=state.aion_volume_plans?.[n],beats=state.aion_volume_beats?.[n];
+ if(!entry?.plan||!Array.isArray(beats)||beats.length!==12||beats.some((b,i)=>Number(b.number)!==i+1||String(b.text||'').trim().length<120))return res.status(409).json({error:'All twelve complete sequential narrative beats are required.'});
+ const text=beats.map(b=>String(b.text).trim()).join('\\n\\n');
+ const stitched={...(state.aion_volume_stitched||{}),[n]:{text,character_key:entry.character_key,title:String(entry.plan.title||'').trim(),locked_at:new Date().toISOString(),word_count:text.trim().split(/\\s+/).length}};
+ const newLocked={...locked,[n]:true};
+ const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_stitched:stitched,aion_volume_locked:newLocked},updated_at:new Date().toISOString()})});
+ if(!rows?.length)return res.status(502).json({error:'Unable to persist stitched vignette.'});
+ return res.status(200).json({story_number:n,locked:true,word_count:stitched[n].word_count,next_story:n<4?n+1:null});
+}
 // Stage 3: production checkpoint inspection and deterministic beat persistence.
 // Generation itself is deliberately not enabled until the writer route is wired safely.
 if(mode==='asunder-aion-volume-progress'||mode==='asunder-aion-volume-save-beat'){
@@ -3656,6 +3680,8 @@ if(mode==='asunder-aion-volume-progress'||mode==='asunder-aion-volume-save-beat'
  const book=(await rest(url))?.[0];if(!book)return res.status(404).json({error:'Volume not found.'});
  const state=book.generation_state||{},entry=state.aion_volume_plans?.[storyNumber];
  if(!entry?.plan||!Array.isArray(entry.plan.beats)||entry.plan.beats.length!==12)return res.status(409).json({error:'A saved twelve-beat production plan is required.'});
+ if(storyNumber>1&&!state.aion_volume_locked?.[storyNumber-1])return res.status(409).json({error:'Previous vignette must be locked first.'});
+ if(state.aion_volume_locked?.[storyNumber]&&mode==='asunder-aion-volume-save-beat')return res.status(409).json({error:'Locked vignette cannot be modified.'});
  const beats=Array.isArray(state.aion_volume_beats?.[storyNumber])?state.aion_volume_beats[storyNumber]:[];
  if(mode==='asunder-aion-volume-progress')return res.status(200).json({story_number:storyNumber,planned:12,completed:beats.length,next_beat:beats.length<12?beats.length+1:null,beats,complete:beats.length===12});
  const number=Number(body.beat_number),prose=String(body.text||'').trim();
