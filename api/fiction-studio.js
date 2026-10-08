@@ -1833,6 +1833,7 @@ const updateSeriesMemoryFromBook25259=async(book,finalRun)=>{
   if(!chapters?.length)return memory;
   if(fictionAsunderSeedIdentity252146(series)){
     const compact=normaliseAsunderCompactMemory252150(series.series_memory);
+    if(fictionAsunderLegacyIdentity252286(series)&&!fictionAsunder2Identity252286(series)&&Number(book.position||0)<=Number(compact.reset_cutoff_book||0))return compact;
     if(Number(compact.last_updated_book||0)>Number(book.position||0))return compact;
     const profiles=await rest(`developer_fiction_asunder_profiles?select=character_key,full_name,first_name,appearance_spec,profile_data&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.asc`);
     const knownWomen=new Map((compact.women||[]).map(w=>[String(w.character_key||''),w]));
@@ -1863,7 +1864,7 @@ const updateSeriesMemoryFromBook25259=async(book,finalRun)=>{
 };
 const ensureSeriesMemoryThrough25259=async(maxPosition)=>{
   const books=await rest(`developer_fiction_books?select=*&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&position=lte.${Math.max(0,Number(maxPosition)||0)}&order=position.asc`);let memory=fictionAsunderSeedIdentity252146(series)?normaliseAsunderCompactMemory252150(series.series_memory):normaliseSeriesMemory25259(series.series_memory);
-  for(const b of books||[]){if(Number(b.position||0)<=Number(memory.last_updated_book||0))continue;let finalRun=null;if(fictionAsunderSeedIdentity252146(series)){const rid=String(b?.generation_state?.final_manuscript_run_id||b?.generation_state?.human_approved_run_id||'');if(rid)finalRun=(await rest(`developer_fiction_editorial_runs?select=*&id=eq.${encodeURIComponent(rid)}&book_id=eq.${encodeURIComponent(b.id)}&status=eq.completed&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0]||null}if(!finalRun){const runs=await rest(`developer_fiction_editorial_runs?select=*&book_id=eq.${encodeURIComponent(b.id)}&stage=eq.proof&status=eq.completed&parent_id=eq.${encodeURIComponent(user.id)}&order=completed_at.desc&limit=1`);finalRun=runs?.[0]||null}if(!finalRun)break;memory=await updateSeriesMemoryFromBook25259(b,finalRun)}
+  for(const b of books||[]){if(fictionAsunderLegacyIdentity252286(series)&&!fictionAsunder2Identity252286(series)&&Number(b.position||0)<=Number(memory.reset_cutoff_book||0))continue;if(Number(b.position||0)<=Number(memory.last_updated_book||0))continue;let finalRun=null;if(fictionAsunderSeedIdentity252146(series)){const rid=String(b?.generation_state?.final_manuscript_run_id||b?.generation_state?.human_approved_run_id||'');if(rid)finalRun=(await rest(`developer_fiction_editorial_runs?select=*&id=eq.${encodeURIComponent(rid)}&book_id=eq.${encodeURIComponent(b.id)}&status=eq.completed&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0]||null}if(!finalRun){const runs=await rest(`developer_fiction_editorial_runs?select=*&book_id=eq.${encodeURIComponent(b.id)}&stage=eq.proof&status=eq.completed&parent_id=eq.${encodeURIComponent(user.id)}&order=completed_at.desc&limit=1`);finalRun=runs?.[0]||null}if(!finalRun)break;memory=await updateSeriesMemoryFromBook25259(b,finalRun)}
   return memory;
 };
 const selectSeriesContext25259=async(book,memory)=>{
