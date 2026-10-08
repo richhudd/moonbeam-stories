@@ -2207,9 +2207,24 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  if(!updated?.length)return res.status(409).json({error:'Concurrent checkpoint update; reload saved test.'});
  return res.status(200).json({test:updated[0]});
 }
-if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-concept'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'){
+if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-concept'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'||mode==='asunder-aion-volume-plan'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Vignette Tester is available only inside Asunder in Fiction X.'});
- const key=String(body.character_key||'').trim(),direction=String(body.direction||'').trim().slice(0,12000);
+ let key=String(body.character_key||'').trim(),direction=String(body.direction||'').trim().slice(0,12000);
+ let productionBook=null,productionStoryNumber=0;
+ if(mode==='asunder-aion-volume-plan'){
+  if(!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series required.'});
+  const bookId=String(body.book_id||'').trim();
+  productionStoryNumber=Number(body.story_number);
+  if(!bookId||!Number.isInteger(productionStoryNumber)||productionStoryNumber<1||productionStoryNumber>4)return res.status(400).json({error:'Volume and story number 1–4 required.'});
+  productionBook=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];
+  if(!productionBook)return res.status(404).json({error:'Volume not found.'});
+  const cast=productionBook.development_state?.asunder_cast;
+  if(!Array.isArray(cast)||cast.length!==4)return res.status(409).json({error:'Four-wife cast must be selected before planning.'});
+  const wife=cast[productionStoryNumber-1];
+  key=String(wife?.character_key||'').trim();direction=String(wife?.intimacy_direction||'').trim().slice(0,12000);
+  if(!key||!direction)return res.status(409).json({error:'This wife requires a canonical profile and manual direction.'});
+  if(productionBook.generation_state?.aion_volume_plans?.[productionStoryNumber])return res.status(409).json({error:'This story already has a saved Aion plan. Reuse the checkpoint.'});
+ }
  if(!key)return res.status(400).json({error:'Select a canonical wife.'});
  const rows=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`);
  const wife=rows?.[0];if(!wife)return res.status(404).json({error:'Selected wife not found in this Asunder library.'});
@@ -2246,7 +2261,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   }
   return res.status(502).json({error:'Concept development failed: '+lastError,cost_usd:totalCost,attempts});
  }
- if(mode==='asunder-vignette-tester-plan'){
+ if(mode==='asunder-vignette-tester-plan'||mode==='asunder-aion-volume-plan'){
   if(!direction)return res.status(400).json({error:'Provide a vignette direction before planning.'});
   const schema={type:'object',additionalProperties:false,required:['title','premise','signature_element','beats'],properties:{
    title:{type:'string'},premise:{type:'string'},signature_element:{type:'string'},
@@ -2263,6 +2278,13 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
    let plan=null;
    try{plan=fictionXStripJson252166(rr.text,'Vignette Tester plan')}catch(e){lastError='Aion returned invalid JSON (finish reason: '+(rr.finish_reason||'unknown')+', characters: '+rr.text.length+')';continue;}
    if(!valid(plan)){lastError='Aion returned an incomplete or incorrectly numbered twelve-beat plan';continue;}
+   if(mode==='asunder-aion-volume-plan'){
+    const state=productionBook.generation_state||{};
+    const plans={...(state.aion_volume_plans||{}),[productionStoryNumber]:{plan,character_key:key,direction,created_at:new Date().toISOString(),cost_usd:totalCost,attempts}};
+    const updated=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(productionBook.id)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_plans:plans},updated_at:new Date().toISOString()})});
+    if(!updated?.length)return res.status(502).json({error:'Aion plan generated but volume checkpoint could not be saved. Do not retry generation until inspected.',cost_usd:totalCost});
+    return res.status(200).json({plan,story_number:productionStoryNumber,saved:true,model:rr.model,usage:rr.usage,cost_usd:totalCost,attempts});
+   }
    return res.status(200).json({plan,model:rr.model,usage:rr.usage,cost_usd:totalCost,attempts});
   }
   return res.status(502).json({error:lastError+'. Planning failed after '+attempts+' attempts. Saved research and beats remain intact; resume the same test to retry.',cost_usd:totalCost,attempts});
