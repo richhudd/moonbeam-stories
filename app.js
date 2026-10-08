@@ -3438,6 +3438,65 @@ function fictionAsunder2Identity252286(seriesRecord){
  const identity=String(seriesRecord?.series_bible?.series_identity||seriesRecord?.series_bible?.identity||seriesRecord?.autopilot_state?.series_identity||'').trim().toLowerCase();
  return name==='asunder 2.0'||identity==='asunder_intervention_anthology_identity_v2';
 }
+// Aion production volume runner. Strictly sequential: plan, write 12, stitch, lock, repeat.
+// Called only by explicit user action; never starts automatically on page load.
+const fictionAionVolumeRunner252500={running:new Set(),stopped:new Set()};
+async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
+ const id=String(seriesId||''),book=String(bookId||''),key=id+':'+book;
+ if(!id||!book)throw new Error('Series and volume are required.');
+ if(fictionAionVolumeRunner252500.running.has(key))throw new Error('This volume is already running in this tab.');
+ fictionAionVolumeRunner252500.stopped.delete(key);fictionAionVolumeRunner252500.running.add(key);
+ const request=payload=>fictionStudioRequest25229({id,...payload},{studio_section:'fiction_x'});
+ try{
+  const pre=await request({mode:'asunder-aion-volume-preflight',book_id:book});
+  if(!pre.ready)throw new Error('Volume is not ready: '+(pre.errors||[]).join('; '));
+  for(let n=1;n<=4;n++){
+   if(fictionAionVolumeRunner252500.stopped.has(key))return {paused:true,story_number:n};
+   let sequence=await request({mode:'asunder-aion-volume-sequence',book_id:book});
+   if(sequence.completed)return {complete:true};
+   if(sequence.next_story!==n){
+    if(sequence.next_story>n)continue;
+    throw new Error('Sequential lock mismatch: expected vignette '+n+', next '+sequence.next_story);
+   }
+   if(sequence.next_step==='plan'){
+    onProgress({story:n,phase:'planning'});
+    await request({mode:'asunder-aion-volume-plan',book_id:book,story_number:n,research:{sources:[{url:'https://www.openstreetmap.org/',supports:'Basic geography reference'}],name_candidates:[],name_checks:[],setting_facts:[],cultural_facts:[],uncertainties:[]}});
+   }
+   let progress=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
+   while(progress.completed<12){
+    if(fictionAionVolumeRunner252500.stopped.has(key))return {paused:true,story_number:n,completed_beats:progress.completed};
+    const beat=progress.next_beat;
+    onProgress({story:n,phase:'writing',beat});
+    let lastError;
+    for(let attempt=1;attempt<=3;attempt++){
+     try{
+      await request({mode:'asunder-aion-volume-write-beat',book_id:book,story_number:n,beat_number:beat});
+      lastError=null;break;
+     }catch(e){
+      lastError=e;
+      const check=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
+      if(check.completed>=beat){lastError=null;break;}
+      if(!/timeout|network|fetch|502|503|504|429|temporar/i.test(String(e.message||e))||attempt===3)break;
+     }
+    }
+    if(lastError)throw lastError;
+    const next=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
+    if(next.completed<=progress.completed)throw new Error('Beat did not advance its durable checkpoint.');
+    progress=next;
+   }
+   onProgress({story:n,phase:'stitching'});
+   await request({mode:'asunder-aion-volume-lock-story',book_id:book,story_number:n});
+   onProgress({story:n,phase:'locked'});
+  }
+  return {complete:true,assembly_pending:true};
+ }finally{
+  fictionAionVolumeRunner252500.running.delete(key);
+  fictionAionVolumeRunner252500.stopped.delete(key);
+ }
+}
+function stopFictionAionVolume252500(seriesId,bookId){
+ fictionAionVolumeRunner252500.stopped.add(String(seriesId)+':'+String(bookId));
+}
 function fictionAsunderBeatCount252286(seriesRecord=fictionStudioActive25229){
  return fictionAsunderSeriesIdentity252149(seriesRecord)?12:10;
 }
