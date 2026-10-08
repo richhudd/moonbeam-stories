@@ -3937,13 +3937,13 @@ async function openFictionBookDevelopment25231(sourceIndex){
  }
  if(fictionAsunderSeriesIdentity252149(s)&&!fictionAsunder2Identity252286(s)){
   const position=sourceIndex+1,request=payload=>fictionStudioRequest25229({id:s.id,mode:'asunder-ten-cast-draft',position,...payload},{studio_section:'fiction_x'});
-  let selected=[],existingFour=false,savedBookId='';
+  let selected=[],existingFour=false,savedBookId='',castDirty=false;
   body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionTenBack" type="button">← Series Bible</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">VOLUME ${position} · TEN-WIFE CAST</span><h2>Choose ten wives and their individual directions</h2><p>Each direction is mandatory. This stage saves the cast only; paid generation is disabled until the ten-vignette pipeline is ready.</p><div id="fictionTenSlots"></div><div class="fiction-actions"><button class="primary" id="fictionTenSave" type="button" disabled>Save ten-wife cast</button><button id="fictionTenStart" type="button" disabled>Start / Resume Aion</button><button id="fictionTenStop" type="button" disabled>Pause after current request</button><span class="status" id="fictionTenStatus">Loading…</span></div><div id="fictionTenGrid" class="fiction-wife-grid-252216"></div></div></div>`;
   $('fictionTenBack').onclick=()=>renderFictionSeries25229(s.id);
   const start=$('fictionTenStart'),stop=$('fictionTenStop'),status=$('fictionTenStatus');
-  const updateStart=()=>{if(start)start.disabled=!savedBookId||existingFour||selected.length!==10;};
+  const updateStart=()=>{if(start)start.disabled=!savedBookId||existingFour||castDirty||selected.length!==10||selected.some(w=>!String(w.intimacy_direction||'').trim());};
   start.onclick=async()=>{
-   if(!savedBookId||selected.length!==10)return;
+   if(!savedBookId||castDirty||selected.length!==10||selected.some(w=>!String(w.intimacy_direction||'').trim()))return;
    start.disabled=true;stop.disabled=false;
    try{
     const result=await runFictionAionVolume252500(s.id,savedBookId,progress=>{
@@ -3958,13 +3958,13 @@ async function openFictionBookDevelopment25231(sourceIndex){
   const render=()=>{
    const slots=$('fictionTenSlots'),grid=$('fictionTenGrid'),save=$('fictionTenSave');
    if(slots)slots.innerHTML=Array.from({length:10},(_,i)=>{const w=selected[i];return `<div class="fiction-cast-slot-252216"><strong>Vignette ${i+1}${i===0?' · cover wife':''}</strong>${w?`<span>${escapeHtml(fictionWifeLibraryFirst252244(w))}</span><label class="fiction-message"><span>Mandatory vignette direction</span><textarea rows="3" data-ten-direction="${i}" placeholder="Describe the required direction for this vignette.">${escapeHtml(w.intimacy_direction||'')}</textarea></label>`:'<span class="muted">Select a wife below</span>'}</div>`}).join('');
-   slots?.querySelectorAll('[data-ten-direction]').forEach(el=>el.oninput=()=>{const i=Number(el.dataset.tenDirection);if(selected[i])selected[i].intimacy_direction=String(el.value||'').slice(0,4000);if(save)save.disabled=selected.length!==10||selected.some(w=>!String(w.intimacy_direction||'').trim())});
+   slots?.querySelectorAll('[data-ten-direction]').forEach(el=>el.oninput=()=>{const i=Number(el.dataset.tenDirection);if(selected[i])selected[i].intimacy_direction=String(el.value||'').slice(0,4000);castDirty=true;updateStart();if(save)save.disabled=selected.length!==10||selected.some(w=>!String(w.intimacy_direction||'').trim())});
    if(grid)grid.innerHTML=fictionWifeLibraryCache252216.map(w=>fictionWifeCard252216(w,{selectable:true,selectedIndex:selected.findIndex(x=>x.character_key===w.character_key)})).join('');
-   grid?.querySelectorAll('[data-wife-select]').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.wifeSelect,at=selected.findIndex(w=>w.character_key===key);if(at>=0)selected.splice(at,1);else if(selected.length<10){const w=fictionWifeLibraryCache252216.find(x=>x.character_key===key);if(w)selected.push({...w,intimacy_direction:''})}render()});
+   grid?.querySelectorAll('[data-wife-select]').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.wifeSelect,at=selected.findIndex(w=>w.character_key===key);if(at>=0)selected.splice(at,1);else if(selected.length<10){const w=fictionWifeLibraryCache252216.find(x=>x.character_key===key);if(w)selected.push({...w,intimacy_direction:''})}castDirty=true;render()});
    if(save)save.disabled=selected.length!==10||selected.some(w=>!String(w.intimacy_direction||'').trim())||existingFour;
    updateStart();
   };
-  $('fictionTenSave').onclick=async()=>{const btn=$('fictionTenSave'),status=$('fictionTenStatus');btn.disabled=true;status.textContent='Saving cast…';try{const saved=await request({action:'save',character_keys:selected.map(w=>w.character_key),directions:selected.map(w=>w.intimacy_direction)});if(saved.saved){savedBookId=String(saved.book_id||'');status.textContent='Ten-wife cast saved.';updateStart();fictionAsunderCastSelection252216.set(sourceIndex,selected)}}catch(e){status.textContent=String(e?.message||e)}finally{render()}};
+  $('fictionTenSave').onclick=async()=>{const btn=$('fictionTenSave'),status=$('fictionTenStatus');btn.disabled=true;status.textContent='Saving cast…';try{const saved=await request({action:'save',character_keys:selected.map(w=>w.character_key),directions:selected.map(w=>w.intimacy_direction)});if(saved.saved){savedBookId=String(saved.book_id||'');castDirty=false;status.textContent='Ten-wife cast saved.';updateStart();fictionAsunderCastSelection252216.set(sourceIndex,selected)}}catch(e){status.textContent=String(e?.message||e)}finally{render()}};
   try{
    const [loaded,library]=await Promise.all([request({action:'load'}),fictionLoadWifeLibrary252216(true)]);
    savedBookId=String(loaded.book_id||'');
