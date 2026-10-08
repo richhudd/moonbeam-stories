@@ -4297,7 +4297,7 @@ async function openSavedFictionBook25233(bookId){
    const update=async()=>{
     try{
      const seq=await fictionStudioRequest25229({mode:'asunder-aion-volume-sequence',id:s.id,book_id:b.id});
-     if(!fictionAionVolumeRunner252500.running.has(key))status.textContent=seq.completed?'All four vignettes locked · final volume assembly pending.':'Next: Vignette '+seq.next_story+' · '+seq.next_step.replace(/_/g,' ');
+     if(!fictionAionVolumeRunner252500.running.has(key))status.textContent=seq.completed?'All four vignettes locked · select Start / Resume to verify final assembly.':'Next: Vignette '+seq.next_story+' · '+seq.next_step.replace(/_/g,' ');
     }catch(e){status.textContent='Unable to read Aion checkpoint: '+String(e.message||e)}
    };
    run.onclick=async()=>{
