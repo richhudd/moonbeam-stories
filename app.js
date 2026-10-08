@@ -3470,10 +3470,9 @@ async function openFictionAsunderVignetteTester252500(){
     const savedResearch=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'research',research:rr.research});
     test=savedResearch.test;
    }
-   if(!test.plan&&!test.concept){status.textContent='Aion: developing story concept…';let rr;try{rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-concept',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research});}catch(e){try{const failed=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'error',error:'Concept: '+String(e.message||e),cost_usd:Number(e.details?.cost_usd)||0,attempts:Number(e.details?.attempts)||1});test=failed.test;}catch{}throw e;}const savedConcept=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'concept',concept:rr.concept,cost_usd:rr.cost_usd});test=savedConcept.test;}
    if(!test.plan){
     status.textContent='Aion: planning twelve beats…';
-    let rr;try{rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research,concept:test.concept});}catch(e){try{const failed=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'error',error:'Planning: '+String(e.message||e),cost_usd:Number(e.details?.cost_usd)||0,attempts:Number(e.details?.attempts)||1});test=failed.test;}catch{}throw e;}
+    let rr;try{rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research});}catch(e){try{const failed=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'error',error:'Planning: '+String(e.message||e),cost_usd:Number(e.details?.cost_usd)||0,attempts:Number(e.details?.attempts)||1});test=failed.test;}catch{}throw e;}
     const savedPlan=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'plan',plan:rr.plan,cost_usd:rr.cost_usd,attempts:rr.attempts});
     test=savedPlan.test;
    }
