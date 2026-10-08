@@ -3747,10 +3747,18 @@ if(mode==='asunder-aion-volume-progress'||mode==='asunder-aion-volume-save-beat'
  const number=Number(body.beat_number),prose=String(body.text||'').trim();
  if(!Number.isInteger(number)||number!==beats.length+1||number>12)return res.status(409).json({error:'Beat checkpoint must be saved sequentially; refresh progress before retrying.'});
  if(prose.length<120)return res.status(400).json({error:'Narrative beat is empty or too short.'});
- const updatedBeats={...(state.aion_volume_beats||{}),[storyNumber]:[...beats,{number,text:prose,cost_usd:Math.max(0,Number(body.cost_usd)||0),saved_at:new Date().toISOString()}]};
- const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_beats:updatedBeats},updated_at:new Date().toISOString()})});
- if(!rows?.length)return res.status(502).json({error:'Checkpoint could not be saved.'});
- return res.status(200).json({story_number:storyNumber,beat_number:number,completed:updatedBeats[storyNumber].length,saved:true});
+ const operation='beat:'+storyNumber+':'+number,token=crypto.randomUUID();
+ const leaseCall=async(name,payload)=>{const response=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify(payload)});if(!response.ok)throw new Error('Atomic checkpoint service unavailable ('+response.status+')');return await response.json();};
+ const acquired=await leaseCall('fiction_aion_claim_lease',{p_book:bookId,p_operation:operation,p_token:token,p_seconds:300});
+ if(acquired!==true)return res.status(409).json({error:'This beat is being generated or saved elsewhere. Reload progress before retrying.'});
+ try{
+  const payload={number,text:prose,cost_usd:Math.max(0,Number(body.cost_usd)||0),saved_at:new Date().toISOString()};
+  const saved=await leaseCall('fiction_aion_save_checkpoint',{p_book:bookId,p_operation:operation,p_token:token,p_story:storyNumber,p_beat:number,p_payload:payload});
+  if(saved!==true)return res.status(409).json({error:'Beat checkpoint changed or already exists. Reload progress; no overwrite performed.'});
+  return res.status(200).json({story_number:storyNumber,beat_number:number,completed:number,saved:true});
+ }finally{
+  try{await leaseCall('fiction_aion_release_lease',{p_book:bookId,p_operation:operation,p_token:token})}catch(e){console.error('Manual checkpoint lease release failed',e)}
+ }
 }
 if(mode==='asunder-aion-volume-preflight'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series in Fiction X required.'});
