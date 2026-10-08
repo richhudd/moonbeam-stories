@@ -3446,7 +3446,7 @@ function fictionAsunderBeatCount252286(seriesRecord=fictionStudioActive25229){
 async function openFictionAsunderVignetteTester252500(){
  const series=fictionStudioActive25229,body=$('fictionStudioBody25229');
  if(!series||!body||fictionStudioNamespace252134!=='fiction_x'||!fictionAsunderSeriesIdentity252149(series))return;
- body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionVignetteTesterBack252500" type="button">← ${escapeHtml(series.series_name)}</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">ASUNDER · EXPERIMENT</span><h2>Vignette Tester</h2><p class="muted">Aion plans and writes all twelve beats. No creative OpenAI calls, rewrites or editorial passes. The normal Asunder pipeline is unchanged.</p><label class="fiction-message"><span>Canonical wife</span><select id="fictionVignetteTesterWife252500"><option value="">Loading wife library…</option></select></label><label class="fiction-message"><span>Individual vignette direction</span><textarea id="fictionVignetteTesterDirection252500" rows="7" placeholder="Your direction is binding but need not be the ending."></textarea></label><div class="fiction-actions"><button class="primary" id="fictionVignetteTesterGenerate252500" type="button" disabled>Generate vignette (unsaved test)</button><button class="secondary" id="fictionVignetteTesterLibrary252500" type="button">Open Wife Library</button></div><p class="status" id="fictionVignetteTesterStatus252500">Stage 2: Aion-only first draft. NOT SAVED until Stage 3.</p><div id="fictionVignetteTesterOutput252500" class="fiction-editor-subcard" style="white-space:pre-wrap"></div></div></div>`;
+ body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionVignetteTesterBack252500" type="button">← ${escapeHtml(series.series_name)}</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">ASUNDER · EXPERIMENT</span><h2>Vignette Tester</h2><p class="muted">OpenAI first researches names and facts; Aion then plans and writes all twelve beats. No creative OpenAI calls, rewrites or editorial passes. The normal Asunder pipeline is unchanged.</p><label class="fiction-message"><span>Canonical wife</span><select id="fictionVignetteTesterWife252500"><option value="">Loading wife library…</option></select></label><label class="fiction-message"><span>Individual vignette direction</span><textarea id="fictionVignetteTesterDirection252500" rows="7" placeholder="Your direction is binding but need not be the ending."></textarea></label><div class="fiction-actions"><button class="primary" id="fictionVignetteTesterGenerate252500" type="button" disabled>Generate vignette (unsaved test)</button><button class="secondary" id="fictionVignetteTesterLibrary252500" type="button">Open Wife Library</button></div><p class="status" id="fictionVignetteTesterStatus252500">Stage 2: Aion-only first draft. NOT SAVED until Stage 3.</p><div id="fictionVignetteTesterOutput252500" class="fiction-editor-subcard" style="white-space:pre-wrap"></div></div></div>`;
  $('fictionVignetteTesterBack252500').onclick=()=>renderFictionSeries25229(series.id);
  $('fictionVignetteTesterLibrary252500').onclick=()=>openFictionWifeLibrary252216();
  const generate=$('fictionVignetteTesterGenerate252500'),status=$('fictionVignetteTesterStatus252500'),output=$('fictionVignetteTesterOutput252500');
@@ -3455,13 +3455,16 @@ async function openFictionAsunderVignetteTester252500(){
   if(!character_key){status.textContent='Select a wife first.';return}
   generate.disabled=true;
   try{
-   status.textContent='Aion: developing vignette and twelve-beat plan…';
-   const planned=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key,direction});
+   status.textContent='OpenAI: researching names, locations and factual constraints…';
+   const researched=await fictionStudioRequest25229({mode:'asunder-vignette-tester-research',id:series.id,character_key,direction});
+   const research=researched.research;
+   status.textContent='Backstage facts ready · Aion: developing twelve-beat plan…';
+   const planned=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key,direction,research});
    const plan=planned.plan;let textParts=[],cost=Number(planned.cost_usd)||0;
    output.textContent='TITLE: '+String(plan.title||'Untitled')+'\n\nPLAN: '+String(plan.premise||'')+'\n\n';
    for(let n=1;n<=12;n++){
     status.textContent='Aion: writing beat '+n+' of 12 · unsaved test · API spend $'+cost.toFixed(3);
-    const beat=await fictionStudioRequest25229({mode:'asunder-vignette-tester-beat',id:series.id,character_key,direction,plan,beat_number:n,prior_text:textParts.join('\n\n')});
+    const beat=await fictionStudioRequest25229({mode:'asunder-vignette-tester-beat',id:series.id,character_key,direction,research,plan,beat_number:n,prior_text:textParts.join('\n\n')});
     textParts.push(String(beat.text||''));cost+=Number(beat.cost_usd)||0;
     output.textContent='TITLE: '+String(plan.title||'Untitled')+'\n\n'+textParts.join('\n\n');
    }
