@@ -2155,7 +2155,7 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Asunder Vignette Tester only.'});
  const table='developer_fiction_vignette_tests',testId=String(body.test_id||'').trim();
  if(mode==='asunder-vignette-test-list'){
-  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
+  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,research_cost_usd,planning_cost_usd,writing_cost_usd,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
   return res.status(200).json({tests:rows||[]});
  }
  if(mode==='asunder-vignette-test-create'){
@@ -2187,7 +2187,12 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
   const beatText=String(body.text||'').trim();if(!beatText)return res.status(400).json({error:'Empty beat cannot be saved.'});
   payload.beats=[...current,{number,text:beatText}];payload.status=number===12?'complete':'writing';
  }else return res.status(400).json({error:'Unknown checkpoint phase.'});
- const extraCost=Number(body.cost_usd)||0;if(extraCost<0||extraCost>100)return res.status(400).json({error:'Invalid stage cost.'});
+ const extraCost=Number(body.cost_usd)||0;if(!Number.isFinite(extraCost)||extraCost<0||extraCost>100)return res.status(400).json({error:'Invalid stage cost.'});
+ const costField=phase==='research'?'research_cost_usd':phase==='plan'?'planning_cost_usd':'writing_cost_usd';
+ const stageName=phase==='research'?'OpenAI backstage research':phase==='plan'?'Aion planning':'Aion beat '+Number(body.beat_number);
+ payload[costField]=Number(existing[costField]||0)+extraCost;
+ const accounting=Array.isArray(existing.accounting)?existing.accounting:[];
+ payload.accounting=[...accounting,{stage:stageName,model:phase==='research'?'gpt-6-luna':fictionXAionModel252166,cost_usd:extraCost,pricing_basis:String(body.pricing_basis||'provider reported / estimated'),recorded_at:new Date().toISOString()}];
  payload.cost_usd=Number(existing.cost_usd||0)+extraCost;payload.updated_at=new Date().toISOString();
  const updated=await rest(`${table}?id=eq.${encodeURIComponent(testId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&updated_at=eq.${encodeURIComponent(existing.updated_at)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
  if(!updated?.length)return res.status(409).json({error:'Concurrent checkpoint update; reload saved test.'});
@@ -2210,7 +2215,8 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-pl
   if(!rr.ok)return res.status(502).json({error:'Backstage research failed: '+String(data?.error?.message||rr.status)});
   const packet=parseFictionStructured25238(data,'Vignette Tester backstage facts');
   if(!Array.isArray(packet.sources)||!packet.sources.length)return res.status(502).json({error:'Backstage research returned no verifiable sources. Aion planning blocked.'});
-  return res.status(200).json({research:packet,model:'gpt-6-luna',usage:data.usage||null,research_cost_recorded_in_series_ledger:true});
+  const researchCost=fictionCost25243(fictionUsage25243(data),fictionModel25243('gpt-6-luna')).usd;
+  return res.status(200).json({research:packet,model:'gpt-6-luna',usage:data.usage||null,cost_usd:researchCost,pricing_basis:'estimated from reported tokens',research_cost_recorded_in_series_ledger:true});
  }
  const research=body.research;
  if(!research||!Array.isArray(research.sources)||!research.sources.length||!Array.isArray(research.name_candidates))return res.status(400).json({error:'Complete backstage naming and facts research before Aion planning or writing.'});
