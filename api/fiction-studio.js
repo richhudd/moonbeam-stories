@@ -2207,11 +2207,11 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  if(!updated?.length)return res.status(409).json({error:'Concurrent checkpoint update; reload saved test.'});
  return res.status(200).json({test:updated[0]});
 }
-if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-concept'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'||mode==='asunder-aion-volume-plan'){
+if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-concept'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'||mode==='asunder-aion-volume-plan'||mode==='asunder-aion-volume-write-beat'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Vignette Tester is available only inside Asunder in Fiction X.'});
  let key=String(body.character_key||'').trim(),direction=String(body.direction||'').trim().slice(0,12000);
  let productionBook=null,productionStoryNumber=0;
- if(mode==='asunder-aion-volume-plan'){
+ if(mode==='asunder-aion-volume-plan'||mode==='asunder-aion-volume-write-beat'){
   if(!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series required.'});
   const bookId=String(body.book_id||'').trim();
   productionStoryNumber=Number(body.story_number);
@@ -2223,7 +2223,16 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   const wife=cast[productionStoryNumber-1];
   key=String(wife?.character_key||'').trim();direction=String(wife?.intimacy_direction||'').trim().slice(0,12000);
   if(!key||!direction)return res.status(409).json({error:'This wife requires a canonical profile and manual direction.'});
-  if(productionBook.generation_state?.aion_volume_plans?.[productionStoryNumber])return res.status(409).json({error:'This story already has a saved Aion plan. Reuse the checkpoint.'});
+  if(mode==='asunder-aion-volume-plan'&&productionBook.generation_state?.aion_volume_plans?.[productionStoryNumber])return res.status(409).json({error:'This story already has a saved Aion plan. Reuse the checkpoint.'});
+  if(mode==='asunder-aion-volume-write-beat'){
+   const state=productionBook.generation_state||{},entry=state.aion_volume_plans?.[productionStoryNumber];
+   if(!entry?.plan||!Array.isArray(entry.plan.beats)||entry.plan.beats.length!==12)return res.status(409).json({error:'Production twelve-beat plan missing.'});
+   if(entry.character_key!==key||entry.direction!==direction)return res.status(409).json({error:'Wife or direction changed after planning. Reconcile before writing.'});
+   const saved=Array.isArray(state.aion_volume_beats?.[productionStoryNumber])?state.aion_volume_beats[productionStoryNumber]:[];
+   if(Number(body.beat_number)!==saved.length+1||saved.length>=12)return res.status(409).json({error:'Beat is not next in sequence. Refresh production progress.'});
+   body.plan=entry.plan;
+   body.prior_text=saved.map(b=>String(b.text||'')).join('\\n\\n');
+  }
  }
  if(!key)return res.status(400).json({error:'Select a canonical wife.'});
  const rows=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`);
@@ -2289,6 +2298,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   }
   return res.status(502).json({error:lastError+'. Planning failed after '+attempts+' attempts. Saved research and beats remain intact; resume the same test to retry.',cost_usd:totalCost,attempts});
  }
+ if(mode==='asunder-aion-volume-write-beat'&&!productionBook)return res.status(409).json({error:'Production volume not loaded.'});
  const plan=body.plan,number=Number(body.beat_number);
  if(!plan||!Array.isArray(plan.beats)||plan.beats.length!==12||!Number.isInteger(number)||number<1||number>12)return res.status(400).json({error:'Valid twelve-beat plan and beat number (1–12) required.'});
  const prior=String(body.prior_text||'').slice(-26000);
@@ -2297,7 +2307,10 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
  const rr=await fictionXAionCall252166({system:'You are Aion, the sole prose writer for this Asunder vignette. Write only the requested first-draft narrative beat. Do not review, rewrite, or critique. Never include analysis, self-review, checklists, notes, or commentary about the writing.',prompt:base+`\nAPPROVED VIGNETTE PLAN: ${JSON.stringify(plan).slice(0,28000)}\nWRITE BEAT NUMBER: ${number}\nPREVIOUSLY WRITTEN TEXT (continuity reference; do not repeat):\n${prior}\nWrite this beat as immersive continuous fiction, not an outline. Respect the complete story arc and canonical wife. Give the people distinctive voices and behaviour; let their interactions complicate expectations rather than simply advancing a sequence of actions. Vary rhythm naturally through concrete observation, dialogue, reactions, small disruptions and changes in emotional temperature where appropriate. Do not pad with introspection or explain what gestures, objects or emotions mean. Write with prose discipline: favour specific observation over interpretive commentary; after a revealing action or line of dialogue, trust the reader and move on. Avoid the recurrent 'not X, but Y' correction pattern, anthropomorphising the room or silence, and repeating size, gaze, stillness or other already-established traits. Allow unimportant moments to remain unimportant. Keep dialogue occasionally evasive, funny, interrupted or awkward rather than perfectly responsive. Make each beat earn its length; compress setup and aftermath when the scene has already landed. Preserve the plan's character-specific signature element without underlining its symbolism or borrowing a motif from earlier tests. Avoid repetitive descriptions, staged exchanges, continuous escalation, mechanical beat execution and overly tidy symbolic closure. Never introduce consent conversations, permission requests, check-ins, safety speeches, negotiated boundaries, reassurances or administrative explanation. Do not reintroduce another creative model, writer-role assignments or an editorial pass. Maintain continuity without repeating previous text. Do not add headings, prefaces or notes.\nBEAT INSTRUCTIONS: ${String(plan.beats[number-1].instructions||'')}\nOUTPUT RULE: Narrative fiction only. No self-assessment, quality checks, or commentary. ${attempt>1?'Your previous output contained non-fiction editorial text or was incomplete; start the beat afresh.':''}`,max_tokens:8500,temperature:.55});
   const prose=String(rr.text||'').trim();
   const editorialLeak=/(?:^|\n)\s*(?:[-*]\s*)?(?:let me (?:review|check|assess|evaluate|adjust)|(?:prose quality|against the constraints|check (?:the|my) (?:prose|ending|constraints))|(?:\d+[.)]\s*[✓✔]|[-*]\s*(?:UK English|No formulaic|Avoid ['“]not X)))/im.test(prose) || /(?:^|\n)\s*---\s*\n\s*Let me /im.test(prose);
-  if(!editorialLeak && prose.length>=120)return res.status(200).json({beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:totalCost+Number(rr.cost_usd||0)});
+  if(!editorialLeak && prose.length>=120){
+   if(mode==='asunder-aion-volume-write-beat')return res.status(200).json({story_number:productionStoryNumber,beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:totalCost+Number(rr.cost_usd||0),checkpoint_required:true});
+   return res.status(200).json({beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:totalCost+Number(rr.cost_usd||0)});
+  }
   totalCost+=Number(rr.cost_usd)||0;
   lastFailure=editorialLeak?'Aion included editorial self-review':'Aion returned an empty or incomplete narrative';
  }
