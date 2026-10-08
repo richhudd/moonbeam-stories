@@ -3446,9 +3446,47 @@ function fictionAsunderBeatCount252286(seriesRecord=fictionStudioActive25229){
 async function openFictionAsunderVignetteTester252500(){
  const series=fictionStudioActive25229,body=$('fictionStudioBody25229');
  if(!series||!body||fictionStudioNamespace252134!=='fiction_x'||!fictionAsunderSeriesIdentity252149(series))return;
- body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionVignetteTesterBack252500" type="button">← ${escapeHtml(series.series_name)}</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">ASUNDER · EXPERIMENT</span><h2>Vignette Tester</h2><p class="muted">One vignette at a time. Aion alone will plan the story, plan all twelve beats and write the first draft. OpenAI may perform factual and naming research only. No rewrites or editorial passes. The normal Asunder book pipeline is unchanged.</p><label class="fiction-message"><span>Canonical wife</span><select id="fictionVignetteTesterWife252500"><option value="">Loading wife library…</option></select></label><label class="fiction-message"><span>Individual vignette direction</span><textarea id="fictionVignetteTesterDirection252500" rows="7" placeholder="Your direction is binding but need not be the ending."></textarea></label><div class="fiction-actions"><button class="primary" id="fictionVignetteTesterGenerate252500" type="button" disabled>Generate vignette · available after Stage 2</button><button class="secondary" id="fictionVignetteTesterLibrary252500" type="button">Open Wife Library</button></div><p class="status" id="fictionVignetteTesterStatus252500">Stage 1: interface only. No model calls or database changes.</p></div></div>`;
+ body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionVignetteTesterBack252500" type="button">← ${escapeHtml(series.series_name)}</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">ASUNDER · EXPERIMENT</span><h2>Vignette Tester</h2><p class="muted">One vignette at a time. Aion alone will plan the story, plan all twelve beats and write the first draft. OpenAI may perform factual and naming research only. No rewrites or editorial passes. The normal Asunder book pipeline is unchanged.</p><label class="fiction-message"><span>Canonical wife</span><select id="fictionVignetteTesterWife252500"><option value="">Loading wife library…</option></select></label><label class="fiction-message"><span>Individual vignette direction</span><textarea id="fictionVignetteTesterDirection252500" rows="7" placeholder="Your direction is binding but need not be the ending."></textarea></label><div class="fiction-actions"><button class="primary" id="fictionVignetteTesterGenerate252500" type="button" disabled>Generate vignette (unsaved test)</button><button class="secondary" id="fictionVignetteTesterLibrary252500" type="button">Open Wife Library</button></div><p class="status" id="fictionVignetteTesterStatus252500">Stage 2: Aion-only first draft. Results are NOT saved yet; keep this page open until Stage 3 adds persistence.</p><div id="fictionVignetteTesterOutput252500" class="fiction-editor-subcard" style="white-space:pre-wrap"></div></div></div>`;
  $('fictionVignetteTesterBack252500').onclick=()=>renderFictionSeries25229(series.id);
  $('fictionVignetteTesterLibrary252500').onclick=()=>openFictionWifeLibrary252216();
+ const generate=$('fictionVignetteTesterGenerate252500'),status=$('fictionVignetteTesterStatus252500'),output=$('fictionVignetteTesterOutput252500');
+ generate.onclick=async()=>{
+  const character_key=$('fictionVignetteTesterWife252500').value,direction=$('fictionVignetteTesterDirection252500').value;
+  if(!character_key){status.textContent='Select a wife first.';return}
+  generate.disabled=true;
+  try{
+   status.textContent='Aion: developing vignette and twelve-beat plan…';
+   const planned=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key,direction});
+   const plan=planned.plan;let textParts=[],cost=Number(planned.cost_usd)||0;
+   output.textContent='TITLE: '+String(plan.title||'Untitled')+'\\n\\nPLAN: '+String(plan.premise||'')+'\\n\\n';
+   for(let n=1;n<=12;n++){
+    status.textContent='Aion: writing beat '+n+' of 12 · unsaved test · estimated API spend 
+ try{
+  const wives=await fictionLoadWifeLibrary252216(true);
+  if(fictionStudioActive25229?.id!==series.id||!$('fictionVignetteTesterWife252500'))return;
+  const select=$('fictionVignetteTesterWife252500');
+  select.innerHTML='<option value="">Select a wife…</option>'+wives.map(w=>`<option value="${escapeHtml(String(w.character_key||''))}">${escapeHtml(fictionWifeLibraryName252244(w))}</option>`).join('');
+  $('fictionVignetteTesterStatus252500').textContent=`Stage 2 ready · ${wives.length} profiles. Unsaved test: keep this page open until completion.`; $('fictionVignetteTesterGenerate252500').disabled=false;
+ }catch(e){const status=$('fictionVignetteTesterStatus252500');if(status)status.textContent='Could not load wife library: '+String(e.message||e)}
+}
++cost.toFixed(3);
+    const beat=await fictionStudioRequest25229({mode:'asunder-vignette-tester-beat',id:series.id,character_key,direction,plan,beat_number:n,prior_text:textParts.join('\\n\\n')});
+    textParts.push(String(beat.text||''));cost+=Number(beat.cost_usd)||0;
+    output.textContent='TITLE: '+String(plan.title||'Untitled')+'\\n\\n'+textParts.join('\\n\\n');
+   }
+   status.textContent='First draft complete · 12/12 beats · estimated API spend 
+ try{
+  const wives=await fictionLoadWifeLibrary252216(true);
+  if(fictionStudioActive25229?.id!==series.id||!$('fictionVignetteTesterWife252500'))return;
+  const select=$('fictionVignetteTesterWife252500');
+  select.innerHTML='<option value="">Select a wife…</option>'+wives.map(w=>`<option value="${escapeHtml(String(w.character_key||''))}">${escapeHtml(fictionWifeLibraryName252244(w))}</option>`).join('');
+  $('fictionVignetteTesterStatus252500').textContent=`Stage 1 ready · ${wives.length} library profiles available. Generation is not yet connected.`;
+ }catch(e){const status=$('fictionVignetteTesterStatus252500');if(status)status.textContent='Could not load wife library: '+String(e.message||e)}
+}
++cost.toFixed(3)+' · NOT SAVED (Stage 3 pending). Copy the text before leaving.';
+  }catch(e){status.textContent='Stopped: '+String(e.message||e)+'. Completed text remains visible but is NOT SAVED.'}
+  finally{generate.disabled=false}
+ };
  try{
   const wives=await fictionLoadWifeLibrary252216(true);
   if(fictionStudioActive25229?.id!==series.id||!$('fictionVignetteTesterWife252500'))return;
