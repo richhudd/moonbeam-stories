@@ -3446,17 +3446,22 @@ function fictionAsunderBeatCount252286(seriesRecord=fictionStudioActive25229){
 async function openFictionAsunderVignetteTester252500(){
  const series=fictionStudioActive25229,body=$('fictionStudioBody25229');
  if(!series||!body||fictionStudioNamespace252134!=='fiction_x'||!fictionAsunderSeriesIdentity252149(series))return;
- body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionVignetteTesterBack252500" type="button">← ${escapeHtml(series.series_name)}</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">ASUNDER · EXPERIMENT</span><h2>Vignette Tester</h2><p class="muted">OpenAI first researches names and facts; Aion then plans and writes all twelve beats. No creative OpenAI calls, rewrites or editorial passes. The normal Asunder pipeline is unchanged.</p><label class="fiction-message"><span>Canonical wife</span><select id="fictionVignetteTesterWife252500"><option value="">Loading wife library…</option></select></label><label class="fiction-message"><span>Individual vignette direction</span><textarea id="fictionVignetteTesterDirection252500" rows="7" placeholder="Your direction is binding but need not be the ending."></textarea></label><div class="fiction-actions"><button class="primary" id="fictionVignetteTesterGenerate252500" type="button" disabled>Generate vignette</button><button class="secondary" id="fictionVignetteTesterLibrary252500" type="button">Open Wife Library</button></div><p class="status" id="fictionVignetteTesterStatus252500">Saved after each stage and beat. The most recent incomplete test resumes when this page opens.</p><div id="fictionVignetteTesterSaved252500" class="fiction-editor-subcard"></div><div id="fictionVignetteTesterOutput252500" class="fiction-editor-subcard" style="white-space:pre-wrap"></div></div></div>`;
+ body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionVignetteTesterBack252500" type="button">← ${escapeHtml(series.series_name)}</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">ASUNDER · EXPERIMENT</span><h2>Vignette Library</h2><p class="muted">Each generated vignette gets its own permanent entry immediately. Select an entry to read it or continue an unfinished draft.</p><p class="muted">OpenAI first researches names and facts; Aion then plans and writes all twelve beats. No creative OpenAI calls, rewrites or editorial passes. The normal Asunder pipeline is unchanged.</p><label class="fiction-message"><span>Canonical wife</span><select id="fictionVignetteTesterWife252500"><option value="">Loading wife library…</option></select></label><label class="fiction-message"><span>Individual vignette direction</span><textarea id="fictionVignetteTesterDirection252500" rows="7" placeholder="Your direction is binding but need not be the ending."></textarea></label><div class="fiction-actions"><button class="primary" id="fictionVignetteTesterGenerate252500" type="button" disabled>Generate vignette</button><button class="secondary" id="fictionVignetteTesterLibrary252500" type="button">Open Wife Library</button></div><p class="status" id="fictionVignetteTesterStatus252500">Each vignette is saved immediately and after each stage and beat. Select its entry to resume.</p><div id="fictionVignetteTesterSaved252500" class="fiction-editor-subcard"></div><div id="fictionVignetteTesterOutput252500" class="fiction-editor-subcard" style="white-space:pre-wrap"></div></div></div>`;
  $('fictionVignetteTesterBack252500').onclick=()=>renderFictionSeries25229(series.id);
  $('fictionVignetteTesterLibrary252500').onclick=()=>openFictionWifeLibrary252216();
  const generate=$('fictionVignetteTesterGenerate252500'),status=$('fictionVignetteTesterStatus252500'),output=$('fictionVignetteTesterOutput252500');
  const saved=$('fictionVignetteTesterSaved252500');
+ let activeTestId=null, runningTestId=null;
+ let wifeNames={};
  const showTest=(t)=>{
   const parts=Array.isArray(t.beats)?t.beats:[],complete=t.status==='complete';
+  activeTestId=t.id;
   output.textContent=(t.plan?.title?'TITLE: '+t.plan.title+'\n\n':'')+parts.map(x=>x.text).join('\n\n');
   status.textContent=(complete?'Complete':'Saved checkpoint')+' · '+parts.length+'/12 beats · $'+Number(t.cost_usd||0).toFixed(3)+' recorded';
  };
  const runTest=async(test)=>{
+  if(runningTestId)return;
+  runningTestId=test.id;activeTestId=test.id;
   generate.disabled=true;
   try{
    if(!test.research){
@@ -3480,21 +3485,28 @@ async function openFictionAsunderVignetteTester252500(){
    }
    status.textContent='First draft complete and saved · 12/12 beats · $'+Number(test.cost_usd||0).toFixed(3)+' recorded';
   }catch(e){status.textContent='Paused: '+String(e.message||e)+' · Saved beats can be resumed.'}
-  finally{generate.disabled=false;await refreshSaved()}
+  finally{runningTestId=null;generate.disabled=false;await refreshSaved()}
  };
  const refreshSaved=async()=>{
   try{
    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-list',id:series.id});
    if(!$('fictionVignetteTesterSaved252500'))return;
-   saved.innerHTML='<h3>Saved vignette tests</h3>'+((rr.tests||[]).length?(rr.tests||[]).map(t=>`<button type="button" class="secondary" data-test-id="${escapeHtml(t.id)}">${escapeHtml(t.status)} · ${escapeHtml(t.character_key)} · ${new Date(t.created_at).toLocaleDateString()}</button>`).join(' '):'<p class="muted">No tests saved yet.</p>');
+   const tests=rr.tests||[];
+   saved.innerHTML='<h3>Loose vignettes ('+tests.length+')</h3>'+(tests.length?tests.map(t=>{
+    const name=wifeNames[t.character_key]||t.character_key;
+    const stage=t.status==='complete'?'Complete':t.status==='research_pending'?'Research pending':t.status==='planning'?'Planning':'Writing';
+    const selected=t.id===activeTestId?' primary':' secondary';
+    return '<button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+escapeHtml(name)+' · '+escapeHtml(stage)+' · '+new Date(t.created_at).toLocaleDateString()+' · $'+Number(t.cost_usd||0).toFixed(3)+'</button>';
+   }).join(' '):'<p class="muted">No vignettes yet. Generate one to create its own entry.</p>');
    saved.querySelectorAll('[data-test-id]').forEach(btn=>btn.onclick=async()=>{
     try{
      const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:btn.dataset.testId});
      showTest(rr.test);
-     if(rr.test.status!=='complete')await runTest(rr.test);
+     await refreshSaved();
+     if(rr.test.status!=='complete'&&runningTestId!==rr.test.id)await runTest(rr.test);
     }catch(e){status.textContent=String(e.message||e)}
    });
-  }catch(e){saved.textContent='Could not list saved tests: '+String(e.message||e)}
+  }catch(e){saved.textContent='Could not list saved vignettes: '+String(e.message||e)}
  };
  generate.onclick=async()=>{
   const character_key=$('fictionVignetteTesterWife252500').value,direction=$('fictionVignetteTesterDirection252500').value;
@@ -3502,6 +3514,7 @@ async function openFictionAsunderVignetteTester252500(){
   generate.disabled=true;
   try{
    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-create',id:series.id,character_key,direction});
+   showTest(rr.test);await refreshSaved();
    await runTest(rr.test);
   }catch(e){status.textContent='Could not start: '+String(e.message||e)}
   finally{generate.disabled=false}
@@ -3511,20 +3524,9 @@ async function openFictionAsunderVignetteTester252500(){
   if(fictionStudioActive25229?.id!==series.id||!$('fictionVignetteTesterWife252500'))return;
   const select=$('fictionVignetteTesterWife252500');
   select.innerHTML='<option value="">Select a wife…</option>'+wives.map(w=>`<option value="${escapeHtml(String(w.character_key||''))}">${escapeHtml(fictionWifeLibraryName252244(w))}</option>`).join('');
-  status.textContent='Stage 2 ready · '+wives.length+' profiles. Unsaved test: keep this page open.';
+  wifeNames=Object.fromEntries(wives.map(w=>[w.character_key,fictionWifeLibraryName252244(w)]));
+  status.textContent='Choose a saved vignette to view or resume it, or generate a new one.';
   generate.disabled=false;await refreshSaved();
-  // On reopening the tester, automatically resume the most recent incomplete run.
-  try{
-   const listing=await fictionStudioRequest25229({mode:'asunder-vignette-test-list',id:series.id});
-   const pending=(listing.tests||[]).find(t=>t.status!=='complete');
-   if(pending){
-    const loaded=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:pending.id});
-    if(loaded.test&&$('fictionVignetteTesterOutput252500')){
-     status.textContent='Resuming saved vignette automatically…';
-     await runTest(loaded.test);
-    }
-   }
-  }catch(e){status.textContent='Automatic resume unavailable: '+String(e.message||e)+' · Saved tests remain accessible.'}
  }catch(e){status.textContent='Could not load wife library: '+String(e.message||e)}
 }
 function renderFictionSeries25229(id){
