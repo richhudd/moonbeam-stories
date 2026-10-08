@@ -3496,7 +3496,7 @@ async function openFictionAsunderVignetteTester252500(){
     const name=wifeNames[t.character_key]||t.character_key;
     const stage=t.status==='complete'?'Complete':t.status==='research_pending'?'Research pending':t.status==='planning'?'Planning':'Writing';
     const selected=t.id===activeTestId?' primary':' secondary';
-    return '<button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+escapeHtml(name)+' · '+escapeHtml(stage)+' · '+new Date(t.created_at).toLocaleDateString()+' · $'+Number(t.cost_usd||0).toFixed(3)+'</button>';
+    return '<button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Resume · ')+escapeHtml(name)+' · '+escapeHtml(stage)+' · '+new Date(t.created_at).toLocaleDateString()+' · $'+Number(t.cost_usd||0).toFixed(3)+'</button>';
    }).join(' '):'<p class="muted">No vignettes yet. Generate one to create its own entry.</p>');
    saved.querySelectorAll('[data-test-id]').forEach(btn=>btn.onclick=async()=>{
     try{
