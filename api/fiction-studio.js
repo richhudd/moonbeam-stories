@@ -2311,7 +2311,17 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   const prose=String(rr.text||'').trim();
   const editorialLeak=/(?:^|\n)\s*(?:[-*]\s*)?(?:let me (?:review|check|assess|evaluate|adjust)|(?:prose quality|against the constraints|check (?:the|my) (?:prose|ending|constraints))|(?:\d+[.)]\s*[✓✔]|[-*]\s*(?:UK English|No formulaic|Avoid ['“]not X)))/im.test(prose) || /(?:^|\n)\s*---\s*\n\s*Let me /im.test(prose);
   if(!editorialLeak && prose.length>=120){
-   if(mode==='asunder-aion-volume-write-beat')return res.status(200).json({story_number:productionStoryNumber,beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:totalCost+Number(rr.cost_usd||0),checkpoint_required:true});
+   if(mode==='asunder-aion-volume-write-beat'){
+    const bookId=productionBook.id;
+    const latest=(await rest(`developer_fiction_books?select=generation_state&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];
+    if(!latest)return res.status(502).json({error:'Aion wrote the beat but the checkpoint volume could not be reloaded.',text:prose,cost_usd:totalCost+Number(rr.cost_usd||0)});
+    const state=latest.generation_state||{},saved=Array.isArray(state.aion_volume_beats?.[productionStoryNumber])?state.aion_volume_beats[productionStoryNumber]:[];
+    if(saved.length!==number-1||state.aion_volume_locked?.[productionStoryNumber])return res.status(409).json({error:'Checkpoint changed while Aion was writing. Beat returned for manual recovery; no overwrite performed.',text:prose,cost_usd:totalCost+Number(rr.cost_usd||0)});
+    const cost=totalCost+Number(rr.cost_usd||0),next={...(state.aion_volume_beats||{}),[productionStoryNumber]:[...saved,{number,text:prose,cost_usd:cost,saved_at:new Date().toISOString()}]};
+    const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_beats:next},updated_at:new Date().toISOString()})});
+    if(!rows?.length)return res.status(502).json({error:'Aion wrote the beat but automatic checkpoint saving failed. Preserve returned text.',text:prose,cost_usd:cost});
+    return res.status(200).json({story_number:productionStoryNumber,beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:cost,saved:true,completed:next[productionStoryNumber].length});
+   }
    return res.status(200).json({beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:totalCost+Number(rr.cost_usd||0)});
   }
   totalCost+=Number(rr.cost_usd)||0;
