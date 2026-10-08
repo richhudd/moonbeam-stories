@@ -3816,7 +3816,7 @@ if(mode==='asunder-aion-volume-preflight'){
  }
  const errors=[];
  if(cast.length!==volumeCount)errors.push('Exactly '+volumeCount+' canonical wives required');
- if(volumeCount===10)errors.push('Ten-vignette production remains locked until Stage 4 assembly and reader support are complete. No paid Aion calls permitted.');
+ if(volumeCount===10)errors.push('Ten-vignette production remains locked pending Stage 5 full pipeline and reader verification. No paid Aion calls permitted.');
  if(!stories.every(x=>x.ready))errors.push('One or more vignettes are missing a wife, individual direction or chapter assignment');
  return res.status(200).json({ready:!errors.length,book_id:bookId,series_id:id,engine:'aion_only_twelve_beats',concept_stage:false,editorial_stage:false,stories,errors,read_only:true,volume_count:volumeCount});
 }
