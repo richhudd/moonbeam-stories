@@ -2179,6 +2179,11 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
   if(existing.research)return res.status(409).json({error:'Research already saved.'});
   if(!body.research||!Array.isArray(body.research.sources)||!body.research.sources.length)return res.status(400).json({error:'Verified research required.'});
   payload.research=body.research;payload.status='planning';
+ }else if(phase==='concept'){
+  if(!existing.research||existing.plan)return res.status(409).json({error:'Concept checkpoint requires research and no existing plan.'});
+  const concept=body.concept;
+  if(!concept||!String(concept.title||'').trim()||!String(concept.premise||'').trim()||!String(concept.signature_element||'').trim())return res.status(400).json({error:'Complete concept required.'});
+  payload.concept=concept;payload.status='planning';payload.last_error=null;
  }else if(phase==='plan'){
   if(!existing.research)return res.status(409).json({error:'Research checkpoint missing.'});
   if(existing.plan)return res.status(409).json({error:'Plan already saved.'});
@@ -2192,8 +2197,8 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
   payload.last_error=null;payload.beats=[...current,{number,text:beatText}];payload.status=number===12?'complete':'writing';
  }else return res.status(400).json({error:'Unknown checkpoint phase.'});
  const extraCost=Number(body.cost_usd)||0;if(!Number.isFinite(extraCost)||extraCost<0||extraCost>100)return res.status(400).json({error:'Invalid stage cost.'});
- const costField=phase==='research'?'research_cost_usd':phase==='plan'||phase==='error'?'planning_cost_usd':'writing_cost_usd';
- const stageName=phase==='research'?'OpenAI backstage research':phase==='plan'?'Aion planning':phase==='error'?'Aion planning failed':'Aion beat '+Number(body.beat_number);
+ const costField=phase==='research'?'research_cost_usd':['concept','plan','error'].includes(phase)?'planning_cost_usd':'writing_cost_usd';
+ const stageName=phase==='research'?'OpenAI backstage research':phase==='concept'?'Aion concept development':phase==='plan'?'Aion planning':phase==='error'?'Aion planning failed':'Aion beat '+Number(body.beat_number);
  payload[costField]=Number(existing[costField]||0)+extraCost;
  const accounting=Array.isArray(existing.accounting)?existing.accounting:[];
  payload.accounting=[...accounting,{stage:stageName,model:phase==='research'?'gpt-6-luna':fictionXAionModel252166,cost_usd:extraCost,pricing_basis:String(body.pricing_basis||'provider reported / estimated'),recorded_at:new Date().toISOString()}];
@@ -2202,7 +2207,7 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  if(!updated?.length)return res.status(409).json({error:'Concurrent checkpoint update; reload saved test.'});
  return res.status(200).json({test:updated[0]});
 }
-if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'){
+if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-concept'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Vignette Tester is available only inside Asunder in Fiction X.'});
  const key=String(body.character_key||'').trim(),direction=String(body.direction||'').trim().slice(0,12000);
  if(!key)return res.status(400).json({error:'Select a canonical wife.'});
@@ -2225,12 +2230,29 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-pl
  const research=body.research;
  if(!research||!Array.isArray(research.sources)||!research.sources.length||!Array.isArray(research.name_candidates))return res.status(400).json({error:'Complete backstage naming and facts research before Aion planning or writing.'});
  const base=`ASUNDER VIGNETTE TESTER. Aion is the ONLY creative model. This is ONE self-contained vignette, not a four-story book. Use the existing series bible and canonical wife. The developer direction is binding and must appear, but need not be the ending. Asunder membership is OPEN, never invitation-only; married women join free and adult men and women pay premium access. Avoid formulaic politeness, implausibly cooperative dialogue, moral lessons and repetitive introspection. All characters are consenting adults aged 21 or older. UK English unless canonical setting demands otherwise. NO editorial, rewrite or revision stage.\nSERIES BIBLE: ${JSON.stringify(series.series_bible||{}).slice(0,42000)}\nCANONICAL WIFE: ${JSON.stringify(canon).slice(0,14000)}\nDEVELOPER DIRECTION: ${direction||'[None supplied; invent freely]'}\nBACKSTAGE VERIFIED FACTUAL PACKET (constraints only, NOT plot suggestions): ${JSON.stringify(research).slice(0,18000)}`;
+ if(mode==='asunder-vignette-tester-concept'){
+  const schema={type:'object',additionalProperties:false,required:['title','premise','signature_element','character_dynamics','dramatic_complications'],properties:{title:{type:'string'},premise:{type:'string'},signature_element:{type:'string'},character_dynamics:{type:'string'},dramatic_complications:{type:'array',items:{type:'string'}}}};
+  const prompt=base+'\nDevelop an original story CONCEPT only; do not write or number beats. Invent a specific, character-grounded source of transgression and an evolving dramatic premise, with imperfect personalities and consequences. Avoid reusing wedding-dress imagery or forcing a symbolic object. Preserve any user direction. Return all required JSON fields.';
+  let totalCost=0,lastError='',attempts=0;
+  for(let attempt=1;attempt<=2;attempt++){
+   attempts=attempt;
+   let rr;
+   try{rr=await fictionXAionCall252166({system:'You are Aion. Return only the requested structured story concept.',prompt,max_tokens:3500,temperature:.55,json_schema:schema,json_schema_name:'asunder_vignette_concept'});}
+   catch(e){lastError=String(e.message||e);break;}
+   totalCost+=Number(rr.cost_usd)||0;
+   try{const concept=fictionXStripJson252166(rr.text,'Vignette concept');if(concept&&String(concept.title||'').trim()&&String(concept.premise||'').trim()&&String(concept.signature_element||'').trim()&&Array.isArray(concept.dramatic_complications))return res.status(200).json({concept,cost_usd:totalCost,attempts});}
+   catch(e){lastError=String(e.message||e);}
+   if(!lastError)lastError='Concept response incomplete';
+  }
+  return res.status(502).json({error:'Concept development failed: '+lastError,cost_usd:totalCost,attempts});
+ }
  if(mode==='asunder-vignette-tester-plan'){
+  if(!body.concept||!String(body.concept.signature_element||'').trim())return res.status(400).json({error:'Save the Aion concept checkpoint before planning twelve beats.'});
   const schema={type:'object',additionalProperties:false,required:['title','premise','signature_element','beats'],properties:{
    title:{type:'string'},premise:{type:'string'},signature_element:{type:'string'},
    beats:{type:'array',items:{type:'object',additionalProperties:false,required:['number','heading','instructions'],properties:{number:{type:'integer'},heading:{type:'string'},instructions:{type:'string'}}}}
   }};
-  const planningPrompt=base+`\nCreate the vignette concept and exactly 12 sequential, distinct beats. Return JSON object with keys title (string), premise (string), beats (array of exactly 12 objects with number integer, heading string, instructions string). Every beat should create a concrete dramatic development, not merely another physical action or abstract theme. Independently devise a distinctive, character-specific source of narrative transgression grounded in this wife's marriage, history, social world, circumstances or personal contradictions. Report it in the signature_element field (one or two concrete sentences), and weave its setup and consequences into the twelve beats. Preserve every user-directed element first; add your own distinct idea only where it enriches rather than overrides the direction. Do not imitate earlier wedding-dress symbolism or force a symbolic object, anniversary, secret or revelation into every vignette. Transgression should be consequential to these particular characters, not a generic increase in physical extremity. Let its implications emerge from events rather than announcing or explaining them. Plan a lived-in story with distinctive, imperfect personalities, natural conversational friction, changing expectations, unplanned reactions and occasional mundane or surprising details. Vary pace and emotional temperature organically: allow pauses, humour, awkwardness, shifts of attention and consequential discoveries where they serve the scene, without a fixed quota or prescribed alternation. Do not make the sequence a relentless ladder of intensity or a mechanical checklist of the developer's direction. The required direction must occur, but the story may develop beyond it. Reveal character through choices, behaviour and specific exchanges, not explanatory interior monologues or repetitive interpretation. Avoid neat symbolism, tidy reconciliations and endings that announce their meaning. Never add consent check-ins, permission negotiations, reassurance rituals, safety lectures or discussions of the arrangement; do not turn those into dramatic beats. Do not divide work between writer roles: Aion alone plans and writes all twelve beats. The full vignette must remain cohesive and writable directly from this plan.`;
+  const planningPrompt=base+`\nAPPROVED STORY CONCEPT: ${JSON.stringify(body.concept||{}).slice(0,10000)}\nExpand the approved story concept into exactly 12 sequential, distinct beats. Return JSON object with keys title (string), premise (string), beats (array of exactly 12 objects with number integer, heading string, instructions string). Every beat should create a concrete dramatic development, not merely another physical action or abstract theme. Independently devise a distinctive, character-specific source of narrative transgression grounded in this wife's marriage, history, social world, circumstances or personal contradictions. Report it in the signature_element field (one or two concrete sentences), and weave its setup and consequences into the twelve beats. Preserve every user-directed element first; add your own distinct idea only where it enriches rather than overrides the direction. Do not imitate earlier wedding-dress symbolism or force a symbolic object, anniversary, secret or revelation into every vignette. Transgression should be consequential to these particular characters, not a generic increase in physical extremity. Let its implications emerge from events rather than announcing or explaining them. Plan a lived-in story with distinctive, imperfect personalities, natural conversational friction, changing expectations, unplanned reactions and occasional mundane or surprising details. Vary pace and emotional temperature organically: allow pauses, humour, awkwardness, shifts of attention and consequential discoveries where they serve the scene, without a fixed quota or prescribed alternation. Do not make the sequence a relentless ladder of intensity or a mechanical checklist of the developer's direction. The required direction must occur, but the story may develop beyond it. Reveal character through choices, behaviour and specific exchanges, not explanatory interior monologues or repetitive interpretation. Avoid neat symbolism, tidy reconciliations and endings that announce their meaning. Never add consent check-ins, permission negotiations, reassurance rituals, safety lectures or discussions of the arrangement; do not turn those into dramatic beats. Do not divide work between writer roles: Aion alone plans and writes all twelve beats. The full vignette must remain cohesive and writable directly from this plan.`;
   const valid=p=>p&&typeof p.title==='string'&&p.title.trim()&&typeof p.premise==='string'&&typeof p.signature_element==='string'&&p.signature_element.trim()&&Array.isArray(p.beats)&&p.beats.length===12&&p.beats.every((b,i)=>Number(b?.number)===i+1&&String(b?.heading||'').trim()&&String(b?.instructions||'').trim());
   let lastError='',totalCost=0,attempts=0;
   for(let attempt=1;attempt<=2;attempt++){
