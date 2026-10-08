@@ -3453,7 +3453,7 @@ async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
   for(let n=1;n<=4;n++){
    if(fictionAionVolumeRunner252500.stopped.has(key))return {paused:true,story_number:n};
    let sequence=await request({mode:'asunder-aion-volume-sequence',book_id:book});
-   if(sequence.completed)return {complete:true};
+   if(sequence.completed){onProgress({phase:'assembling'});return await request({mode:'asunder-aion-volume-assemble',book_id:book});}
    if(sequence.next_story!==n){
     if(sequence.next_story>n)continue;
     throw new Error('Sequential lock mismatch: expected vignette '+n+', next '+sequence.next_story);
@@ -3490,7 +3490,8 @@ async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
    await request({mode:'asunder-aion-volume-lock-story',book_id:book,story_number:n});
    onProgress({story:n,phase:'locked'});
   }
-  return {complete:true,assembly_pending:true};
+  onProgress({phase:'assembling'});
+  return await request({mode:'asunder-aion-volume-assemble',book_id:book});
  }finally{
   fictionAionVolumeRunner252500.running.delete(key);
   fictionAionVolumeRunner252500.stopped.delete(key);
