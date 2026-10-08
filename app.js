@@ -3469,19 +3469,17 @@ async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
     if(fictionAionVolumeRunner252500.stopped.has(key))return {paused:true,story_number:n,completed_beats:progress.completed};
     const beat=progress.next_beat;
     onProgress({story:n,phase:'writing',beat});
-    let lastError;
-    for(let attempt=1;attempt<=3;attempt++){
-     try{
-      await request({mode:'asunder-aion-volume-write-beat',book_id:book,story_number:n,beat_number:beat});
-      lastError=null;break;
-     }catch(e){
-      lastError=e;
-      const check=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
-      if(check.completed>=beat){lastError=null;break;}
-      if(!/timeout|network|fetch|502|503|504|429|temporar/i.test(String(e.message||e))||attempt===3)break;
+    try{
+     await request({mode:'asunder-aion-volume-write-beat',book_id:book,story_number:n,beat_number:beat});
+    }catch(e){
+     // A network failure can occur AFTER a paid model call succeeds. Never automatically
+     // submit the same beat again: first inspect the durable checkpoint, then pause.
+     let check;
+     try{check=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n})}catch{}
+     if(!check||check.completed<beat){
+      throw new Error('Beat '+beat+' did not return a confirmed saved checkpoint. Generation paused to prevent a duplicate paid Aion call. Inspect progress and use Start / Resume only after confirming the previous request has finished. Original error: '+String(e?.message||e));
      }
     }
-    if(lastError)throw lastError;
     const next=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
     if(next.completed<=progress.completed)throw new Error('Beat did not advance its durable checkpoint.');
     progress=next;
