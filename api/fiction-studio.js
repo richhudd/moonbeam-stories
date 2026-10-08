@@ -2105,7 +2105,7 @@ const fictionAsunderWifeLibrarySummary252216=(p)=>({
   appearance_spec:p?.appearance_spec||{},
   portrait_path:String(p?.portrait_path||''),
   nude_portrait_path:String(p?.profile_data?.nude_portrait_path||''),
-  portrait_gallery_paths:Array.isArray(p?.profile_data?.portrait_gallery_paths)?p.profile_data.portrait_gallery_paths.filter(Boolean):[p?.portrait_path].filter(Boolean),
+  portrait_gallery_paths:Array.isArray(p?.profile_data?.portrait_gallery_paths)?p.profile_data.portrait_gallery_paths.filter(path=>path&&path!==p.profile_data?.nude_portrait_path):[p?.portrait_path].filter(Boolean),
   can_undo_visual_edit:!!p?.profile_data?.last_visual_edit_undo,
   asunder_status:String(p?.profile_data?.asunder_case_state||''),
   asunder_case_history:Array.isArray(p?.profile_data?.asunder_case_history)?p.profile_data.asunder_case_history:[],
@@ -2381,7 +2381,7 @@ if(mode==='set-asunder-wife-primary-photo'){
  const rows=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`);
  const p=rows?.[0];if(!p)return res.status(404).json({error:'Wife not found.'});
  const paths=[p.portrait_path,...(Array.isArray(p.profile_data?.portrait_gallery_paths)?p.profile_data.portrait_gallery_paths:[])].filter(Boolean);
- if(!paths.includes(chosen))return res.status(400).json({error:'Photo is not in this wife’s gallery.'});
+ if(!paths.includes(chosen)||chosen===p.profile_data?.nude_portrait_path)return res.status(400).json({error:'Only an approved profile portrait can be selected.'});
  const updated=await rest(`developer_fiction_asunder_profiles?id=eq.${encodeURIComponent(p.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({portrait_path:chosen,profile_data:{...p.profile_data,portrait_gallery_paths:[...new Set(paths)],profile_photo_path:chosen},updated_at:new Date().toISOString()})});
  if(!updated?.[0])return res.status(502).json({error:'Photo update failed.'});
  return res.status(200).json({ok:true,portrait_path:chosen,portrait_url:await fictionAsunderStorageSignedUrl252197(chosen,604800)});
