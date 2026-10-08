@@ -3454,7 +3454,85 @@ async function openFictionAsunderVignetteTester252500(){
  const showTest=(t)=>{
   const parts=Array.isArray(t.beats)?t.beats:[],complete=t.status==='complete';
   output.textContent=(t.plan?.title?'TITLE: '+t.plan.title+'\n\n':'')+parts.map(x=>x.text).join('\n\n');
-  status.textContent=(complete?'Complete':'Saved checkpoint')+' · '+parts.length+'/12 beats · $'+Number(t.cost_usd||0).toFixed(3)+' recorded';
+  const money=v=>'
+ };
+ const runTest=async(test)=>{
+  generate.disabled=true;
+  try{
+   if(!test.research){
+    status.textContent='OpenAI: backstage names and facts research…';
+    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-research',id:series.id,character_key:test.character_key,direction:test.direction});
+    const savedResearch=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'research',research:rr.research,cost_usd:rr.cost_usd,pricing_basis:rr.pricing_basis});
+    test=savedResearch.test;
+   }
+   if(!test.plan){
+    status.textContent='Aion: planning twelve beats…';
+    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research});
+    const savedPlan=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'plan',plan:rr.plan,cost_usd:rr.cost_usd,pricing_basis:rr.cost_usd==null?'provider cost unavailable':'OpenRouter usage.cost'});
+    test=savedPlan.test;
+   }
+   showTest(test);
+   for(let n=(Array.isArray(test.beats)?test.beats.length:0)+1;n<=12;n++){
+    status.textContent='Aion: beat '+n+'/12 · saved after each beat…';
+    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-beat',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research,plan:test.plan,beat_number:n,prior_text:test.beats.map(x=>x.text).join('\n\n')});
+    const checkpoint=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'beat',beat_number:n,text:rr.text,cost_usd:rr.cost_usd,pricing_basis:rr.cost_usd==null?'provider cost unavailable':'OpenRouter usage.cost'});
+    test=checkpoint.test;showTest(test);
+   }
+   status.textContent='First draft complete and saved · 12/12 beats · $'+Number(test.cost_usd||0).toFixed(3)+' recorded';
+  }catch(e){status.textContent='Paused: '+String(e.message||e)+' · Saved beats can be resumed.'}
+  finally{generate.disabled=false;await refreshSaved()}
+ };
+ const refreshSaved=async()=>{
+  try{
+   const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-list',id:series.id});
+   if(!$('fictionVignetteTesterSaved252500'))return;
+   saved.innerHTML='<h3>Saved vignette tests</h3>'+((rr.tests||[]).length?(rr.tests||[]).map(t=>`<button type="button" class="secondary" data-test-id="${escapeHtml(t.id)}">${escapeHtml(t.status)} · ${escapeHtml(t.character_key)} · ${Number(t.cost_usd||0).toFixed(5)} · ${new Date(t.created_at).toLocaleDateString()}</button>`).join(' '):'<p class="muted">No tests saved yet.</p>');
+   saved.querySelectorAll('[data-test-id]').forEach(btn=>btn.onclick=async()=>{
+    try{
+     const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:btn.dataset.testId});
+     showTest(rr.test);
+     if(rr.test.status!=='complete')await runTest(rr.test);
+    }catch(e){status.textContent=String(e.message||e)}
+   });
+  }catch(e){saved.textContent='Could not list saved tests: '+String(e.message||e)}
+ };
+ generate.onclick=async()=>{
+  const character_key=$('fictionVignetteTesterWife252500').value,direction=$('fictionVignetteTesterDirection252500').value;
+  if(!character_key){status.textContent='Select a wife first.';return}
+  generate.disabled=true;
+  try{
+   const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-create',id:series.id,character_key,direction});
+   await runTest(rr.test);
+  }catch(e){status.textContent='Could not start: '+String(e.message||e)}
+  finally{generate.disabled=false}
+ };
+ try{
+  const wives=await fictionLoadWifeLibrary252216(true);
+  if(fictionStudioActive25229?.id!==series.id||!$('fictionVignetteTesterWife252500'))return;
+  const select=$('fictionVignetteTesterWife252500');
+  select.innerHTML='<option value="">Select a wife…</option>'+wives.map(w=>`<option value="${escapeHtml(String(w.character_key||''))}">${escapeHtml(fictionWifeLibraryName252244(w))}</option>`).join('');
+  status.textContent='Stage 2 ready · '+wives.length+' profiles. Unsaved test: keep this page open.';
+  generate.disabled=false;await refreshSaved();
+  // On reopening the tester, automatically resume the most recent incomplete run.
+  try{
+   const listing=await fictionStudioRequest25229({mode:'asunder-vignette-test-list',id:series.id});
+   const pending=(listing.tests||[]).find(t=>t.status!=='complete');
+   if(pending){
+    const loaded=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:pending.id});
+    if(loaded.test&&$('fictionVignetteTesterOutput252500')){
+     status.textContent='Resuming saved vignette automatically…';
+     await runTest(loaded.test);
+    }
+   }
+  }catch(e){status.textContent='Automatic resume unavailable: '+String(e.message||e)+' · Saved tests remain accessible.'}
+ }catch(e){status.textContent='Could not load wife library: '+String(e.message||e)}
+}
++Number(v||0).toFixed(5);
+  status.textContent=(complete?'Complete':'Saved checkpoint')+' · '+parts.length+'/12 beats · total '+money(t.cost_usd);
+  const existing=$('fictionVignetteTesterCosts252500');if(existing)existing.remove();
+  const costs=document.createElement('div');costs.id='fictionVignetteTesterCosts252500';costs.className='fiction-editor-subcard';
+  costs.textContent='VIGNETTE COSTS · OpenAI research '+money(t.research_cost_usd)+' · Aion planning '+money(t.planning_cost_usd)+' · Aion writing '+money(t.writing_cost_usd)+' · TOTAL '+money(t.cost_usd);
+  output.parentNode.insertBefore(costs,output);
  };
  const runTest=async(test)=>{
   generate.disabled=true;
