@@ -2203,12 +2203,14 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-pl
  if(mode==='asunder-vignette-tester-research'){
   const schema={type:'object',additionalProperties:false,properties:{setting_facts:{type:'array',items:{type:'string'}},name_candidates:{type:'array',items:{type:'string'}},name_checks:{type:'array',items:{type:'string'}},cultural_facts:{type:'array',items:{type:'string'}},uncertainties:{type:'array',items:{type:'string'}},sources:{type:'array',items:{type:'object',additionalProperties:false,properties:{url:{type:'string'},supports:{type:'string'}},required:['url','supports']}}},required:['setting_facts','name_candidates','name_checks','cultural_facts','uncertainties','sources']};
   const researchPrompt=`FACTUAL BACKSTAGE RESEARCH ONLY. You must not invent plot, story structure, scenes, character motivations or creative directions. Canonical profile: ${JSON.stringify(canon).slice(0,10000)}. Developer direction (research only the places, cultures, institutions or activities explicitly mentioned): ${direction||'[none]'}. Asunder series setting constraints: ${JSON.stringify(series.series_bible||{}).slice(0,16000)}. Find verifiable factual details for locations, cultural practices and realistic names appropriate to age, nationality and birth cohort. Check name candidates for obvious real-person collisions and avoid AI-default names such as Mara, Vale, Voss, Cal and Lena. Do not falsely claim exhaustive collision checking. Include source URLs for web-verifiable claims. When a fact is unverified, put it in uncertainties rather than presenting it as verified. Return only the structured factual research packet.`;
+  const researchStarted=Date.now();
   const rr=await fictionModelFetch252175({model:'gpt-6-luna',input:researchPrompt,tools:[{type:'web_search',external_web_access:true}],tool_choice:'required',max_output_tokens:5500,text:{format:{type:'json_schema',name:'asunder_vignette_facts',strict:true,schema}}});
   const raw=await rr.text();let data={};try{data=JSON.parse(raw)}catch{}
+  await meterFiction25243({seriesId:id,stage:'vignette_tester_research',substage:'backstage_names_facts',model:'gpt-6-luna',data,startedAt:researchStarted,httpStatus:rr.status,ok:rr.ok});
   if(!rr.ok)return res.status(502).json({error:'Backstage research failed: '+String(data?.error?.message||rr.status)});
   const packet=parseFictionStructured25238(data,'Vignette Tester backstage facts');
   if(!Array.isArray(packet.sources)||!packet.sources.length)return res.status(502).json({error:'Backstage research returned no verifiable sources. Aion planning blocked.'});
-  return res.status(200).json({research:packet,model:'gpt-6-luna',usage:data.usage||null});
+  return res.status(200).json({research:packet,model:'gpt-6-luna',usage:data.usage||null,research_cost_recorded_in_series_ledger:true});
  }
  const research=body.research;
  if(!research||!Array.isArray(research.sources)||!research.sources.length||!Array.isArray(research.name_candidates))return res.status(400).json({error:'Complete backstage naming and facts research before Aion planning or writing.'});
