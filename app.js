@@ -3480,7 +3480,22 @@ async function openFictionAsunderVignetteTester252500(){
    showTest(test);
    for(let n=(Array.isArray(test.beats)?test.beats.length:0)+1;n<=12;n++){
     status.textContent='Aion: beat '+n+'/12 · saved after each beat…';
-    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-beat',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research,plan:test.plan,beat_number:n,prior_text:test.beats.map(x=>x.text).join('\n\n')});
+    let rr,lastBeatError;
+    for(let attempt=1;attempt<=4;attempt++){
+     try{
+      rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-beat',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research,plan:test.plan,beat_number:n,prior_text:test.beats.map(x=>x.text).join('\n\n')});
+      if(!String(rr?.text||'').trim())throw new Error('Aion returned an empty response.');
+      break;
+     }catch(e){
+      lastBeatError=e;
+      const message=String(e.message||e);
+      const transient=/empty response|timeout|timed out|network|fetch failed|temporar|502|503|504|429/i.test(message);
+      if(!transient||attempt===4)throw e;
+      status.textContent='Aion: beat '+n+'/12 · temporary response failure · retry '+attempt+'/3 automatically…';
+      await new Promise(resolve=>setTimeout(resolve,Math.min(12000,2000*attempt*attempt)));
+      if(!$('fictionVignetteTesterOutput252500'))throw new Error('Generation page closed; saved beats remain available.');
+     }
+    }
     const checkpoint=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'beat',beat_number:n,text:rr.text,cost_usd:rr.cost_usd});
     test=checkpoint.test;showTest(test);
    }
