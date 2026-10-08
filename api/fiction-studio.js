@@ -2105,6 +2105,7 @@ const fictionAsunderWifeLibrarySummary252216=(p)=>({
   appearance_spec:p?.appearance_spec||{},
   portrait_path:String(p?.portrait_path||''),
   nude_portrait_path:String(p?.profile_data?.nude_portrait_path||''),
+  portrait_gallery_paths:Array.isArray(p?.profile_data?.portrait_gallery_paths)?p.profile_data.portrait_gallery_paths.filter(Boolean):[p?.portrait_path].filter(Boolean),
   can_undo_visual_edit:!!p?.profile_data?.last_visual_edit_undo,
   asunder_status:String(p?.profile_data?.asunder_case_state||''),
   asunder_case_history:Array.isArray(p?.profile_data?.asunder_case_history)?p.profile_data.asunder_case_history:[],
@@ -2406,7 +2407,7 @@ if(mode==='list-asunder-wife-library'){
     const nude_portrait_path=String(p?.profile_data?.nude_portrait_path||'').trim();
     const nude_portrait_url=nude_portrait_path?await fictionAsunderStorageSignedUrl252197(nude_portrait_path,604800):'';
     const app=appearances.get(String(p.character_key||''))||[],summary=fictionAsunderWifeLibrarySummary252216(p);
-    wives.push({...summary,asunder_status:'untried',asunder_case_history:[],portrait_url,nude_portrait_url,gallery_urls:[portrait_url,nude_portrait_url].filter(Boolean),appearances:[],created_at:p.created_at||null,updated_at:p.updated_at||null});
+    wives.push({...summary,asunder_status:'untried',asunder_case_history:[],portrait_url,nude_portrait_url,gallery_urls:[...(await Promise.all((summary.portrait_gallery_paths||[]).map(path=>fictionAsunderStorageSignedUrl252197(path,604800)))),nude_portrait_url].filter(Boolean),appearances:[],created_at:p.created_at||null,updated_at:p.updated_at||null});
   }
   const caseOrder252311={untried:0,open:1,partial:2,emergent:3,retain:4,unassessed:5,closed:9};
   wives.sort((a,b)=>(caseOrder252311[String(a.asunder_status||'untried').toLowerCase()]??5)-(caseOrder252311[String(b.asunder_status||'untried').toLowerCase()]??5)||String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')));
