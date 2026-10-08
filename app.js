@@ -3462,7 +3462,7 @@ async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
    if(sequence.next_step==='plan'){
     onProgress({story:n,phase:'planning'});
     const story=pre.stories[n-1];
-    await request({mode:'asunder-aion-volume-plan',book_id:book,story_number:n});
+    try{await request({mode:'asunder-aion-volume-plan',book_id:book,story_number:n});}catch(e){throw new Error('Planning request ended without confirmation. Check saved sequence before resuming; never start a second paid request while the first may still be running. '+String(e?.message||e));}
    }
    let progress=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
    while(progress.completed<12){
@@ -3485,7 +3485,7 @@ async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
     progress=next;
    }
    onProgress({story:n,phase:'stitching'});
-   await request({mode:'asunder-aion-volume-lock-story',book_id:book,story_number:n});
+   try{await request({mode:'asunder-aion-volume-lock-story',book_id:book,story_number:n});}catch(e){throw new Error('Stitch/lock confirmation failed. Inspect saved sequence before resuming. '+String(e?.message||e));}
    onProgress({story:n,phase:'locked'});
   }
   onProgress({phase:'assembling'});
@@ -3938,7 +3938,7 @@ async function openFictionBookDevelopment25231(sourceIndex){
  if(fictionAsunderSeriesIdentity252149(s)&&!fictionAsunder2Identity252286(s)){
   const position=sourceIndex+1,request=payload=>fictionStudioRequest25229({id:s.id,mode:'asunder-ten-cast-draft',position,...payload},{studio_section:'fiction_x'});
   let selected=[],existingFour=false,savedBookId='',castDirty=false;
-  body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionTenBack" type="button">← Series Bible</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">VOLUME ${position} · TEN-WIFE CAST</span><h2>Choose ten wives and their individual directions</h2><p>Each direction is mandatory. This stage saves the cast only; paid generation is disabled until the ten-vignette pipeline is ready.</p><div id="fictionTenSlots"></div><div class="fiction-actions"><button class="primary" id="fictionTenSave" type="button" disabled>Save ten-wife cast</button><button id="fictionTenStart" type="button" disabled>Start / Resume Aion</button><button id="fictionTenStop" type="button" disabled>Pause after current request</button><span class="status" id="fictionTenStatus">Loading…</span></div><div id="fictionTenGrid" class="fiction-wife-grid-252216"></div></div></div>`;
+  body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionTenBack" type="button">← Series Bible</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">VOLUME ${position} · TEN-WIFE CAST</span><h2>Choose ten wives and their individual directions</h2><p>Each direction is mandatory. Save the cast before starting Aion. Production runs one vignette at a time and can be paused after the current request.</p><div id="fictionTenSlots"></div><div class="fiction-actions"><button class="primary" id="fictionTenSave" type="button" disabled>Save ten-wife cast</button><button id="fictionTenStart" type="button" disabled>Start / Resume Aion</button><button id="fictionTenStop" type="button" disabled>Pause after current request</button><span class="status" id="fictionTenStatus">Loading…</span></div><div id="fictionTenGrid" class="fiction-wife-grid-252216"></div></div></div>`;
   $('fictionTenBack').onclick=()=>renderFictionSeries25229(s.id);
   const start=$('fictionTenStart'),stop=$('fictionTenStop'),status=$('fictionTenStatus');
   const updateStart=()=>{if(start)start.disabled=!savedBookId||existingFour||castDirty||selected.length!==10||selected.some(w=>!String(w.intimacy_direction||'').trim());};
