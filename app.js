@@ -3457,7 +3457,7 @@ async function openFictionAsunderVignetteTester252500(){
   const parts=Array.isArray(t.beats)?t.beats:[],complete=t.status==='complete';
   activeTestId=t.id;
   output.textContent=(t.plan?.title?'TITLE: '+t.plan.title+'\n\n':'')+parts.map(x=>x.text).join('\n\n');
-  status.textContent=(complete?'Complete':'Saved checkpoint')+' · '+parts.length+'/12 beats · $'+Number(t.cost_usd||0).toFixed(3)+' recorded';
+  status.textContent=(complete?'Complete':'Saved checkpoint')+' · '+(t.plan?'Plan saved':t.concept?'Concept saved':'Concept pending')+' · '+parts.length+'/12 beats · $'+Number(t.cost_usd||0).toFixed(3)+' recorded'+(t.last_error?' · Last error: '+t.last_error:'');
  };
  const runTest=async(test)=>{
   if(runningTestId)return;
@@ -3470,9 +3470,10 @@ async function openFictionAsunderVignetteTester252500(){
     const savedResearch=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'research',research:rr.research});
     test=savedResearch.test;
    }
+   if(!test.plan&&!test.concept){status.textContent='Aion: developing story concept…';const rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-concept',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research});const savedConcept=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'concept',concept:rr.concept,cost_usd:rr.cost_usd});test=savedConcept.test;}
    if(!test.plan){
     status.textContent='Aion: planning twelve beats…';
-    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research});
+    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research,concept:test.concept});
     const savedPlan=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'plan',plan:rr.plan,cost_usd:rr.cost_usd});
     test=savedPlan.test;
    }
