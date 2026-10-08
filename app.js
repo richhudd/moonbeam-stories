@@ -3937,7 +3937,7 @@ async function openFictionBookDevelopment25231(sourceIndex){
  }
  if(fictionAsunderSeriesIdentity252149(s)&&!fictionAsunder2Identity252286(s)){
   const position=sourceIndex+1,request=payload=>fictionStudioRequest25229({id:s.id,mode:'asunder-ten-cast-draft',position,...payload},{studio_section:'fiction_x'});
-  let selected=[],existingFour=false;
+  let selected=[],existingFour=false,savedBookId='';
   body.innerHTML=`<div class="fiction-editor"><button class="fiction-back" id="fictionTenBack" type="button">← Series Bible</button><div class="fiction-editor-card"><span class="fiction-studio-kicker">VOLUME ${position} · TEN-WIFE CAST</span><h2>Choose ten wives and their individual directions</h2><p>Each direction is mandatory. This stage saves the cast only; paid generation is disabled until the ten-vignette pipeline is ready.</p><div id="fictionTenSlots"></div><div class="fiction-actions"><button class="primary" id="fictionTenSave" type="button" disabled>Save ten-wife cast</button><span class="status" id="fictionTenStatus">Loading…</span></div><div id="fictionTenGrid" class="fiction-wife-grid-252216"></div></div></div>`;
   $('fictionTenBack').onclick=()=>renderFictionSeries25229(s.id);
   const render=()=>{
@@ -3948,9 +3948,10 @@ async function openFictionBookDevelopment25231(sourceIndex){
    grid?.querySelectorAll('[data-wife-select]').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.wifeSelect,at=selected.findIndex(w=>w.character_key===key);if(at>=0)selected.splice(at,1);else if(selected.length<10){const w=fictionWifeLibraryCache252216.find(x=>x.character_key===key);if(w)selected.push({...w,intimacy_direction:''})}render()});
    if(save)save.disabled=selected.length!==10||selected.some(w=>!String(w.intimacy_direction||'').trim())||existingFour;
   };
-  $('fictionTenSave').onclick=async()=>{const btn=$('fictionTenSave'),status=$('fictionTenStatus');btn.disabled=true;status.textContent='Saving cast…';try{const saved=await request({action:'save',character_keys:selected.map(w=>w.character_key),directions:selected.map(w=>w.intimacy_direction)});if(saved.saved){status.textContent='Ten-wife cast saved. Generation remains disabled until Stage 3.';fictionAsunderCastSelection252216.set(sourceIndex,selected)}}catch(e){status.textContent=String(e?.message||e)}finally{render()}};
+  $('fictionTenSave').onclick=async()=>{const btn=$('fictionTenSave'),status=$('fictionTenStatus');btn.disabled=true;status.textContent='Saving cast…';try{const saved=await request({action:'save',character_keys:selected.map(w=>w.character_key),directions:selected.map(w=>w.intimacy_direction)});if(saved.saved){savedBookId=String(saved.book_id||'');status.textContent='Ten-wife cast saved.';fictionAsunderCastSelection252216.set(sourceIndex,selected)}}catch(e){status.textContent=String(e?.message||e)}finally{render()}};
   try{
    const [loaded,library]=await Promise.all([request({action:'load'}),fictionLoadWifeLibrary252216(true)]);
+   savedBookId=String(loaded.book_id||'');
    fictionWifeLibraryCache252216=library;
    existingFour=loaded.count===4;
    if(existingFour){$('fictionTenStatus').textContent='This existing volume uses the original four-wife format. Open it through the existing volume reader.';$('fictionTenSave').disabled=true;return}
