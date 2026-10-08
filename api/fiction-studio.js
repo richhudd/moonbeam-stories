@@ -2254,6 +2254,14 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   const researchCost=fictionCost25243(fictionUsage25243(data),fictionModel25243('gpt-6-luna')).usd;
   return res.status(200).json({research:packet,model:'gpt-6-luna',usage:data.usage||null,cost_usd:researchCost,pricing_basis:'estimated from reported tokens',research_cost_recorded_in_series_ledger:true});
  }
+ const leaseOperation=productionBook?(mode==='asunder-aion-volume-plan'?'plan:'+productionStoryNumber:'beat:'+productionStoryNumber+':'+Number(body.beat_number)):null;
+ const leaseToken=leaseOperation?crypto.randomUUID():null;
+ const leaseRpc=async(name,payload)=>{const response=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify(payload)});if(!response.ok)throw new Error('Aion generation lease service unavailable ('+response.status+'). Generation blocked.');return await response.json();};
+ if(leaseOperation){
+  const acquired=await leaseRpc('fiction_aion_claim_lease',{p_book:productionBook.id,p_operation:leaseOperation,p_token:leaseToken,p_seconds:3600});
+  if(acquired!==true)return res.status(409).json({error:'This Aion operation is already running in another session. Do not start a duplicate paid request. Retry after it finishes.'});
+ }
+ try{
  const research=mode==='asunder-aion-volume-write-beat'?null:body.research;
  if(mode!=='asunder-aion-volume-write-beat'&&(!research||!Array.isArray(research.sources)||!research.sources.length||!Array.isArray(research.name_candidates)))return res.status(400).json({error:'Complete lightweight naming and geography checks before Aion planning.'});
  const base=`ASUNDER VIGNETTE TESTER. Aion is the ONLY creative model. This is ONE self-contained vignette, not a four-story book. Use the existing series bible and canonical wife. The developer direction is binding and must appear, but need not be the ending. Asunder membership is OPEN, never invitation-only; married women join free and adult men and women pay premium access. Avoid formulaic politeness, implausibly cooperative dialogue, moral lessons and repetitive introspection. All characters are consenting adults aged 21 or older. UK English unless canonical setting demands otherwise. NO editorial, rewrite or revision stage.\nSERIES BIBLE: ${JSON.stringify(series.series_bible||{}).slice(0,42000)}\nCANONICAL WIFE: ${JSON.stringify(canon).slice(0,14000)}\nDEVELOPER DIRECTION: ${direction||'[None supplied; invent freely]'}\n${research?'BACKSTAGE NAMING AND GEOGRAPHY CHECKS ONLY (never use as plot material): '+JSON.stringify({name_candidates:research.name_candidates,name_checks:research.name_checks,sources:research.sources}).slice(0,4500):''}`;
@@ -2328,6 +2336,9 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   lastFailure=editorialLeak?'Aion included editorial self-review':'Aion returned an empty or incomplete narrative';
  }
  return res.status(502).json({error:lastFailure+' after 3 attempts. No contaminated beat was saved. Resume this vignette to retry.',cost_usd:totalCost});
+ }finally{
+  if(leaseOperation){try{await leaseRpc('fiction_aion_release_lease',{p_book:productionBook.id,p_operation:leaseOperation,p_token:leaseToken})}catch(e){console.error('Aion lease release failed',e)}}
+ }
 }
 // Legacy profile conversion: preview first, preserve the same canonical row and portrait.
 if(mode==='preview-asunder-legacy-profile'||mode==='accept-asunder-legacy-profile'){
