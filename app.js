@@ -3472,7 +3472,7 @@ async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
    if(sequence.next_step==='plan'){
     onProgress({story:n,phase:'planning'});
     const story=pre.stories[n-1];
-    try{await request({mode:'asunder-aion-volume-plan',book_id:book,story_number:n});}catch(e){throw new Error('Planning request ended without confirmation. Check saved sequence before resuming; never start a second paid request while the first may still be running. '+String(e?.message||e));}
+    try{await request({mode:'asunder-aion-volume-plan',book_id:book,story_number:n});}catch(e){const check=await request({mode:'asunder-aion-volume-sequence',book_id:book}).catch(()=>null);if(!(check?.next_story===n&&check?.next_step!=='plan')&&!(check?.next_story>n))throw new Error('Planning request ended without a saved checkpoint. Do not restart while its generation lease may be active. '+String(e?.message||e));}
    }
    let progress=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
    while(progress.completed<12){
@@ -4361,6 +4361,7 @@ async function openSavedFictionBook25233(bookId){
    host.appendChild(panel);
    const run=$('fictionAionRun252500'),stop=$('fictionAionStop252500'),status=$('fictionAionStatus252500');
    const key=s.id+':'+b.id;
+   let planningWatch=null;
    const update=async()=>{
     try{
      const seq=await fictionStudioRequest25229({mode:'asunder-aion-volume-sequence',id:s.id,book_id:b.id});
@@ -4370,13 +4371,14 @@ async function openSavedFictionBook25233(bookId){
    run.onclick=async()=>{
     if(fictionAionVolumeRunner252500.running.has(key))return;
     run.disabled=true;
+    const startedAt=Date.now();planningWatch=setInterval(()=>{if(!status.isConnected){clearInterval(planningWatch);return}if(status.textContent.includes('planning')){const seconds=Math.floor((Date.now()-startedAt)/1000);status.textContent='Vignette 1 · planning · '+Math.floor(seconds/60)+'m '+String(seconds%60).padStart(2,'0')+'s'+(seconds>=90?' · Taking longer than expected; waiting for the server. Do not restart.':'')}},1000);
     try{
      const result=await runFictionAionVolume252500(s.id,b.id,({story,phase,beat})=>{
       if(status.isConnected)status.textContent='Vignette '+story+' · '+phase+(beat?' · beat '+beat+'/12':'');
      });
      if(status.isConnected)status.textContent=result.paused?'Paused at saved checkpoint.':result.complete?'All four vignettes locked · final assembly pending.':'Runner stopped.';
     }catch(e){if(status.isConnected)status.textContent='Paused: '+String(e.message||e)+' · Resume from saved checkpoint.'}
-    finally{run.disabled=false}
+    finally{clearInterval(planningWatch);planningWatch=null;run.disabled=false}
    };
    stop.onclick=()=>{stopFictionAionVolume252500(s.id,b.id);status.textContent='Stop requested · waiting for current request to finish…'};
    void update();
