@@ -2148,6 +2148,28 @@ Every story plan must use the wife assigned to that exact vignette number. Retur
 
 
 
+// Stage 2: isolated Aion-only creative endpoint for the Asunder Vignette Tester.
+// No database writes. Stage 3 will add durable checkpoints and cost ledger.
+if(mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'){
+ if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Vignette Tester is available only inside Asunder in Fiction X.'});
+ const key=String(body.character_key||'').trim(),direction=String(body.direction||'').trim().slice(0,12000);
+ if(!key)return res.status(400).json({error:'Select a canonical wife.'});
+ const rows=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`);
+ const wife=rows?.[0];if(!wife)return res.status(404).json({error:'Selected wife not found in this Asunder library.'});
+ const canon={character_key:wife.character_key,first_name:wife.first_name,full_name:wife.full_name,anglicised_first_name:wife.anglicised_first_name,age:wife.age,nationality:wife.nationality,relationship_status:wife.relationship_status,profile_data:wife.profile_data,canonical_background_packet:wife.canonical_background_packet,appearance_spec:wife.appearance_spec};
+ const base=`ASUNDER VIGNETTE TESTER. Aion is the ONLY creative model. This is ONE self-contained vignette, not a four-story book. Use the existing series bible and canonical wife. The developer direction is binding and must appear, but need not be the ending. Asunder membership is OPEN, never invitation-only; married women join free and adult men and women pay premium access. Avoid formulaic politeness, implausibly cooperative dialogue, moral lessons and repetitive introspection. All characters are consenting adults aged 21 or older. UK English unless canonical setting demands otherwise. NO editorial, rewrite or revision stage.\nSERIES BIBLE: ${JSON.stringify(series.series_bible||{}).slice(0,42000)}\nCANONICAL WIFE: ${JSON.stringify(canon).slice(0,14000)}\nDEVELOPER DIRECTION: ${direction||'[None supplied; invent freely]'}`;
+ if(mode==='asunder-vignette-tester-plan'){
+  const rr=await fictionXAionCall252166({system:'You are Aion, sole creative architect and writer of an adult fiction vignette. Return a single valid JSON object only.',prompt:base+`\nCreate the vignette concept and exactly 12 sequential, distinct beats. Return JSON object with keys title (string), premise (string), beats (array of exactly 12 objects with number integer, heading string, instructions string). Every beat should provide specific narrative action, not an abstract theme. The full vignette must be cohesive and should be writable directly from this plan.`,max_tokens:12000,json_mode:true});
+  const plan=fictionXStripJson252166(rr.text,'Vignette Tester plan');
+  if(!Array.isArray(plan.beats)||plan.beats.length!==12||plan.beats.some((b,i)=>Number(b?.number)!==i+1||!String(b?.instructions||'').trim()))return res.status(502).json({error:'Aion did not return exactly twelve numbered usable beats. Nothing was saved; retry planning.'});
+  return res.status(200).json({plan,model:rr.model,usage:rr.usage,cost_usd:rr.cost_usd});
+ }
+ const plan=body.plan,number=Number(body.beat_number);
+ if(!plan||!Array.isArray(plan.beats)||plan.beats.length!==12||!Number.isInteger(number)||number<1||number>12)return res.status(400).json({error:'Valid twelve-beat plan and beat number (1–12) required.'});
+ const prior=String(body.prior_text||'').slice(-26000);
+ const rr=await fictionXAionCall252166({system:'You are Aion, the sole prose writer for this Asunder vignette. Write only the requested first-draft narrative beat. Do not review, rewrite, or critique.',prompt:base+`\nAPPROVED VIGNETTE PLAN: ${JSON.stringify(plan).slice(0,28000)}\nWRITE BEAT NUMBER: ${number}\nPREVIOUSLY WRITTEN TEXT (continuity reference; do not repeat):\n${prior}\nWrite this beat as immersive continuous fiction, not an outline. Respect the complete story arc and canonical wife. Do not add headings, prefaces or notes.\nBEAT INSTRUCTIONS: ${String(plan.beats[number-1].instructions||'')}`,max_tokens:8500});
+ return res.status(200).json({beat_number:number,text:rr.text,model:rr.model,usage:rr.usage,cost_usd:rr.cost_usd});
+}
 if(mode==='list-asunder-wife-library'){
   if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Wife Library is available only for Asunder in Fiction Studio X.'});
   const [profiles,books]=await Promise.all([
