@@ -2150,6 +2150,49 @@ Every story plan must use the wife assigned to that exact vignette number. Retur
 
 // Stage 2: isolated Aion-only creative endpoint for the Asunder Vignette Tester.
 // No database writes. Stage 3 will add durable checkpoints and cost ledger.
+// Durable Vignette Tester checkpoints; owner- and series-scoped, separate from book production.
+if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignette-test-get','asunder-vignette-test-save'].includes(mode)){
+ if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Asunder Vignette Tester only.'});
+ const table='developer_fiction_vignette_tests',testId=String(body.test_id||'').trim();
+ if(mode==='asunder-vignette-test-list'){
+  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
+  return res.status(200).json({tests:rows||[]});
+ }
+ if(mode==='asunder-vignette-test-create'){
+  const key=String(body.character_key||'').trim(),direction=String(body.direction||'').slice(0,12000);
+  if(!key)return res.status(400).json({error:'Select a wife.'});
+  const wives=await rest(`developer_fiction_asunder_profiles?select=character_key&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`);
+  if(!wives?.length)return res.status(404).json({error:'Wife not found in this series.'});
+  const rows=await rest(table,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,character_key:key,direction,status:'research_pending'})});
+  return res.status(200).json({test:rows?.[0]});
+ }
+ if(!/^[0-9a-f-]{36}$/i.test(testId))return res.status(400).json({error:'Valid test ID required.'});
+ const url=`${table}?select=*&id=eq.${encodeURIComponent(testId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&limit=1`;
+ const existing=(await rest(url))?.[0];if(!existing)return res.status(404).json({error:'Test not found.'});
+ if(mode==='asunder-vignette-test-get')return res.status(200).json({test:existing});
+ const phase=String(body.phase||''),payload={},current=Array.isArray(existing.beats)?existing.beats:[];
+ if(phase==='research'){
+  if(existing.research)return res.status(409).json({error:'Research already saved.'});
+  if(!body.research||!Array.isArray(body.research.sources)||!body.research.sources.length)return res.status(400).json({error:'Verified research required.'});
+  payload.research=body.research;payload.status='planning';
+ }else if(phase==='plan'){
+  if(!existing.research)return res.status(409).json({error:'Research checkpoint missing.'});
+  if(existing.plan)return res.status(409).json({error:'Plan already saved.'});
+  if(!Array.isArray(body.plan?.beats)||body.plan.beats.length!==12)return res.status(400).json({error:'Twelve-beat plan required.'});
+  payload.plan=body.plan;payload.status='writing';
+ }else if(phase==='beat'){
+  if(!existing.plan)return res.status(409).json({error:'Plan checkpoint missing.'});
+  const number=Number(body.beat_number);
+  if(number!==current.length+1||number>12)return res.status(409).json({error:'Beat checkpoint out of sequence; reload saved test.'});
+  const beatText=String(body.text||'').trim();if(!beatText)return res.status(400).json({error:'Empty beat cannot be saved.'});
+  payload.beats=[...current,{number,text:beatText}];payload.status=number===12?'complete':'writing';
+ }else return res.status(400).json({error:'Unknown checkpoint phase.'});
+ const extraCost=Number(body.cost_usd)||0;if(extraCost<0||extraCost>100)return res.status(400).json({error:'Invalid stage cost.'});
+ payload.cost_usd=Number(existing.cost_usd||0)+extraCost;payload.updated_at=new Date().toISOString();
+ const updated=await rest(`${table}?id=eq.${encodeURIComponent(testId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&updated_at=eq.${encodeURIComponent(existing.updated_at)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
+ if(!updated?.length)return res.status(409).json({error:'Concurrent checkpoint update; reload saved test.'});
+ return res.status(200).json({test:updated[0]});
+}
 if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Vignette Tester is available only inside Asunder in Fiction X.'});
  const key=String(body.character_key||'').trim(),direction=String(body.direction||'').trim().slice(0,12000);
