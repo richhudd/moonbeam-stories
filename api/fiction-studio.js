@@ -3737,9 +3737,10 @@ if(mode==='asunder-aion-volume-assemble'){
 if(mode==='asunder-aion-volume-progress'||mode==='asunder-aion-volume-save-beat'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder Fiction X series required.'});
  const bookId=String(body.book_id||'').trim(),storyNumber=Number(body.story_number);
- if(!bookId||!Number.isInteger(storyNumber)||storyNumber<1||storyNumber>4)return res.status(400).json({error:'Volume and story number 1–4 required.'});
+ if(!bookId||!Number.isInteger(storyNumber)||storyNumber<1||storyNumber>10)return res.status(400).json({error:'Volume and story number 1–10 required.'});
  const url=`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`;
  const book=(await rest(url))?.[0];if(!book)return res.status(404).json({error:'Volume not found.'});
+ if(storyNumber>fictionAionVolumeCount252510(book))return res.status(400).json({error:'Story number exceeds this volume configuration.'});
  const state=book.generation_state||{},entry=state.aion_volume_plans?.[storyNumber];
  if(!entry?.plan||!Array.isArray(entry.plan.beats)||entry.plan.beats.length!==12)return res.status(409).json({error:'A saved twelve-beat production plan is required.'});
  if(storyNumber>1&&!state.aion_volume_locked?.[storyNumber-1])return res.status(409).json({error:'Previous vignette must be locked first.'});
@@ -3814,6 +3815,7 @@ if(mode==='asunder-aion-volume-preflight'){
  }
  const errors=[];
  if(cast.length!==volumeCount)errors.push('Exactly '+volumeCount+' canonical wives required');
+ if(volumeCount===10)errors.push('Ten-vignette production remains locked until Stage 4 assembly and reader support are complete. No paid Aion calls permitted.');
  if(!stories.every(x=>x.ready))errors.push('One or more vignettes are missing a wife, individual direction or chapter assignment');
  return res.status(200).json({ready:!errors.length,book_id:bookId,series_id:id,engine:'aion_only_twelve_beats',concept_stage:false,editorial_stage:false,stories,errors,read_only:true,volume_count:volumeCount});
 }
