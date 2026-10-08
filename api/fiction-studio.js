@@ -2234,6 +2234,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
    const saved=Array.isArray(state.aion_volume_beats?.[productionStoryNumber])?state.aion_volume_beats[productionStoryNumber]:[];
    if(Number(body.beat_number)!==saved.length+1||saved.length>=12)return res.status(409).json({error:'Beat is not next in sequence. Refresh production progress.'});
    body.plan=entry.plan;
+   body.research=entry.research;
    body.prior_text=saved.map(b=>String(b.text||'')).join('\\n\\n');
   }
  }
@@ -2292,7 +2293,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
    if(!valid(plan)){lastError='Aion returned an incomplete or incorrectly numbered twelve-beat plan';continue;}
    if(mode==='asunder-aion-volume-plan'){
     const state=productionBook.generation_state||{};
-    const plans={...(state.aion_volume_plans||{}),[productionStoryNumber]:{plan,character_key:key,direction,created_at:new Date().toISOString(),cost_usd:totalCost,attempts}};
+    const plans={...(state.aion_volume_plans||{}),[productionStoryNumber]:{plan,character_key:key,direction,research,created_at:new Date().toISOString(),cost_usd:totalCost,attempts}};
     const updated=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(productionBook.id)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_plans:plans},updated_at:new Date().toISOString()})});
     if(!updated?.length)return res.status(502).json({error:'Aion plan generated but volume checkpoint could not be saved. Do not retry generation until inspected.',cost_usd:totalCost});
     return res.status(200).json({plan,story_number:productionStoryNumber,saved:true,model:rr.model,usage:rr.usage,cost_usd:totalCost,attempts});
@@ -3679,6 +3680,33 @@ if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence
  const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_stitched:stitched,aion_volume_locked:newLocked},updated_at:new Date().toISOString()})});
  if(!rows?.length)return res.status(502).json({error:'Unable to persist stitched vignette.'});
  return res.status(200).json({story_number:n,locked:true,word_count:stitched[n].word_count,next_story:n<4?n+1:null});
+}
+// Deterministic, resumable assembly: only locked source text is published, never regenerated.
+if(mode==='asunder-aion-volume-assemble'){
+ if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder Fiction X series required.'});
+ const bookId=String(body.book_id||'').trim();
+ if(!bookId)return res.status(400).json({error:'Volume id required.'});
+ const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];
+ if(!book)return res.status(404).json({error:'Volume not found.'});
+ const state=book.generation_state||{},stitched=state.aion_volume_stitched||{},locked=state.aion_volume_locked||{};
+ if(![1,2,3,4].every(n=>locked[n]&&String(stitched[n]?.text||'').trim()))return res.status(409).json({error:'All four vignettes must be stitched and locked before assembly.'});
+ const url=`developer_fiction_chapters?select=*&book_id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}&order=chapter_number.asc`;
+ const existing=await rest(url);
+ if((existing||[]).some(ch=>Number(ch.chapter_number)<1||Number(ch.chapter_number)>4))return res.status(409).json({error:'Unexpected chapters in volume. Manual reconciliation required.'});
+ for(let n=1;n<=4;n++){
+  const text=String(stitched[n].text),found=(existing||[]).find(ch=>Number(ch.chapter_number)===n);
+  if(found){
+   if(String(found.manuscript||'')!==text)return res.status(409).json({error:'Saved chapter '+n+' differs from locked vignette. Manual reconciliation required; no overwrite performed.'});
+   continue;
+  }
+  const chapter={parent_id:user.id,series_id:id,book_id:bookId,chapter_number:n,chapter_title:String(stitched[n].title||'Vignette '+n),outline:JSON.stringify({source:'aion_volume_locked',character_key:stitched[n].character_key}),manuscript:text,continuity_delta:{source:'aion_volume_locked',word_count:stitched[n].word_count},status:'draft_locked'};
+  await rest('developer_fiction_chapters',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(chapter)});
+ }
+ const finalRows=await rest(url);
+ if(![1,2,3,4].every(n=>finalRows.filter(ch=>Number(ch.chapter_number)===n&&String(ch.manuscript||'')===String(stitched[n].text)).length===1))return res.status(409).json({error:'Assembly verification failed; saved chapters remain available for safe resume.'});
+ const updated=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_assembled_at:state.aion_volume_assembled_at||new Date().toISOString()},updated_at:new Date().toISOString()})});
+ if(!updated?.length)return res.status(502).json({error:'Chapters assembled but final checkpoint could not be saved. Resume assembly safely.'});
+ return res.status(200).json({complete:true,assembled:true,chapters:4});
 }
 // Stage 3: production checkpoint inspection and deterministic beat persistence.
 // Generation itself is deliberately not enabled until the writer route is wired safely.
