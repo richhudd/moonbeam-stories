@@ -3718,13 +3718,13 @@ if(mode==='asunder-aion-volume-preflight'){
   const matching=chapters.filter(c=>String(c.asunder_character_key||'').trim()===key);
   const errors=[];
   if(!key)errors.push('Canonical wife not selected');
-  if(!direction)errors.push('Manual vignette direction required');
+  // An empty direction is intentional: Aion invents the vignette direction.
   if(key&&!matching.length)errors.push('No planned chapters assigned to this wife');
   stories.push({number:n,character_key:key,direction,direction_present:!!direction,planned_chapters:matching.length,ready:!errors.length,errors});
  }
  const errors=[];
  if(cast.length!==4)errors.push('Exactly four canonical wives required');
- if(!stories.every(x=>x.ready))errors.push('One or more vignettes are missing a wife, direction or chapter assignment');
+ if(!stories.every(x=>x.ready))errors.push('One or more vignettes are missing a wife or chapter assignment');
  return res.status(200).json({ready:!errors.length,book_id:bookId,series_id:id,engine:'aion_only_twelve_beats',concept_stage:false,editorial_stage:false,stories,errors,read_only:true});
 }
 if(mode==='generate-chapter'){
