@@ -3519,6 +3519,8 @@ async function openFictionAsunderVignetteTester252500(){
   }catch(e){status.textContent='Could not start: '+String(e.message||e)}
   finally{generate.disabled=false}
  };
+ // Saved vignettes must load independently of the wife library request.
+ await refreshSaved();
  try{
   const wives=await fictionLoadWifeLibrary252216(true);
   if(fictionStudioActive25229?.id!==series.id||!$('fictionVignetteTesterWife252500'))return;
@@ -3526,7 +3528,7 @@ async function openFictionAsunderVignetteTester252500(){
   select.innerHTML='<option value="">Select a wife…</option>'+wives.map(w=>`<option value="${escapeHtml(String(w.character_key||''))}">${escapeHtml(fictionWifeLibraryName252244(w))}</option>`).join('');
   wifeNames=Object.fromEntries(wives.map(w=>[w.character_key,fictionWifeLibraryName252244(w)]));
   status.textContent='Choose a saved vignette to view or resume it, or generate a new one.';
-  generate.disabled=false;await refreshSaved();
+  generate.disabled=false;
  }catch(e){status.textContent='Could not load wife library: '+String(e.message||e)}
 }
 function renderFictionSeries25229(id){
