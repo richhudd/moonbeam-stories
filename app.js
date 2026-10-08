@@ -3499,12 +3499,19 @@ async function openFictionAsunderVignetteTester252500(){
     return '<button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+escapeHtml(name)+' · '+escapeHtml(stage)+' · '+new Date(t.created_at).toLocaleDateString()+' · $'+Number(t.cost_usd||0).toFixed(3)+'</button>';
    }).join(' '):'<p class="muted">No vignettes yet. Generate one to create its own entry.</p>');
    saved.querySelectorAll('[data-test-id]').forEach(btn=>btn.onclick=async()=>{
+    if(runningTestId){status.textContent='Generation already running. Please wait for the current beat to finish.';return;}
+    btn.disabled=true;
+    status.textContent='Loading saved vignette…';
     try{
      const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:btn.dataset.testId});
      showTest(rr.test);
+     if(rr.test.status!=='complete'){
+      status.textContent='Resuming saved vignette · '+(Array.isArray(rr.test.beats)?rr.test.beats.length:0)+'/12 beats saved…';
+      await runTest(rr.test);
+     }else status.textContent='Completed vignette loaded · 12/12 beats saved.';
      await refreshSaved();
-     if(rr.test.status!=='complete'&&runningTestId!==rr.test.id)await runTest(rr.test);
-    }catch(e){status.textContent=String(e.message||e)}
+    }catch(e){status.textContent='Could not resume: '+String(e.message||e)}
+    finally{btn.disabled=false}
    });
   }catch(e){saved.textContent='Could not list saved vignettes: '+String(e.message||e)}
  };
