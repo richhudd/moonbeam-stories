@@ -3609,6 +3609,33 @@ REMAINING CHAPTER PLAN: ${JSON.stringify(remaining)}`;
   const generation_state={...old,length_rebalances:[...history,entry].slice(-6),active_length_recovery:{checkpoint:trajectory.rebalance_checkpoint,directions},draft_trajectory:{...trajectory,rebalance_needed:false}};
   const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state,updated_at:new Date().toISOString()})});return res.status(200).json({skipped:false,trajectory,directions,book:rows?.[0]||{...book,generation_state}});
 }
+// Asunder Aion volume transplant, stage 1: zero-spend production readiness gate.
+// This endpoint is intentionally read-only. It never starts legacy Sol/Luna stages.
+if(mode==='asunder-aion-volume-preflight'){
+ if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series in Fiction X required.'});
+ const bookId=String(body.book_id||'').trim();
+ if(!bookId)return res.status(400).json({error:'Book id required.'});
+ const books=await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`);
+ const book=books?.[0];if(!book)return res.status(404).json({error:'Volume not found.'});
+ const cast=Array.isArray(book.development_state?.asunder_cast)?book.development_state.asunder_cast:[];
+ const chapters=Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters:[];
+ const stories=[];
+ for(let n=1;n<=4;n++){
+  const wife=cast[n-1]||{};
+  const key=String(wife.character_key||'').trim();
+  const direction=String(wife.intimacy_direction||'').trim();
+  const matching=chapters.filter(c=>String(c.asunder_character_key||'').trim()===key);
+  const errors=[];
+  if(!key)errors.push('Canonical wife not selected');
+  if(!direction)errors.push('Manual vignette direction required');
+  if(key&&!matching.length)errors.push('No planned chapters assigned to this wife');
+  stories.push({number:n,character_key:key,direction_present:!!direction,planned_chapters:matching.length,ready:!errors.length,errors});
+ }
+ const errors=[];
+ if(cast.length!==4)errors.push('Exactly four canonical wives required');
+ if(!stories.every(x=>x.ready))errors.push('One or more vignettes are missing a wife, direction or chapter assignment');
+ return res.status(200).json({ready:!errors.length,book_id:bookId,series_id:id,engine:'aion_only_twelve_beats',concept_stage:false,editorial_stage:false,stories,errors,read_only:true});
+}
 if(mode==='generate-chapter'){
   // V252.284 — restore the book lookup that was accidentally removed when the old generated-prologue block was deleted in V252.280.
   const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
