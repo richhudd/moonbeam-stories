@@ -3720,7 +3720,7 @@ if(mode==='asunder-aion-volume-preflight'){
   if(!key)errors.push('Canonical wife not selected');
   if(!direction)errors.push('Manual vignette direction required');
   if(key&&!matching.length)errors.push('No planned chapters assigned to this wife');
-  stories.push({number:n,character_key:key,direction_present:!!direction,planned_chapters:matching.length,ready:!errors.length,errors});
+  stories.push({number:n,character_key:key,direction,direction_present:!!direction,planned_chapters:matching.length,ready:!errors.length,errors});
  }
  const errors=[];
  if(cast.length!==4)errors.push('Exactly four canonical wives required');
