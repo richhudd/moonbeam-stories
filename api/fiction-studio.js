@@ -2155,7 +2155,7 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Asunder Vignette Tester only.'});
  const table='developer_fiction_vignette_tests',testId=String(body.test_id||'').trim();
  if(mode==='asunder-vignette-test-list'){
-  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,research_cost_usd,planning_cost_usd,writing_cost_usd,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
+  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,research_cost_usd,planning_cost_usd,writing_cost_usd,last_error,planning_attempts,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
   return res.status(200).json({tests:rows||[]});
  }
  if(mode==='asunder-vignette-test-create'){
@@ -2171,7 +2171,11 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  const existing=(await rest(url))?.[0];if(!existing)return res.status(404).json({error:'Test not found.'});
  if(mode==='asunder-vignette-test-get')return res.status(200).json({test:existing});
  const phase=String(body.phase||''),payload={},current=Array.isArray(existing.beats)?existing.beats:[];
- if(phase==='research'){
+ if(phase==='error'){
+  payload.last_error=String(body.error||'Unknown generation error').slice(0,1600);
+  payload.planning_attempts=Number(existing.planning_attempts||0)+Math.max(1,Math.min(2,Number(body.attempts)||1));
+  payload.status=existing.plan?'writing':'planning';
+ }else if(phase==='research'){
   if(existing.research)return res.status(409).json({error:'Research already saved.'});
   if(!body.research||!Array.isArray(body.research.sources)||!body.research.sources.length)return res.status(400).json({error:'Verified research required.'});
   payload.research=body.research;payload.status='planning';
@@ -2179,17 +2183,17 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
   if(!existing.research)return res.status(409).json({error:'Research checkpoint missing.'});
   if(existing.plan)return res.status(409).json({error:'Plan already saved.'});
   if(!Array.isArray(body.plan?.beats)||body.plan.beats.length!==12)return res.status(400).json({error:'Twelve-beat plan required.'});
-  payload.plan=body.plan;payload.status='writing';
+  payload.plan=body.plan;payload.status='writing';payload.last_error=null;payload.planning_attempts=Number(existing.planning_attempts||0)+Math.max(1,Math.min(2,Number(body.attempts)||1));
  }else if(phase==='beat'){
   if(!existing.plan)return res.status(409).json({error:'Plan checkpoint missing.'});
   const number=Number(body.beat_number);
   if(number!==current.length+1||number>12)return res.status(409).json({error:'Beat checkpoint out of sequence; reload saved test.'});
   const beatText=String(body.text||'').trim();if(!beatText)return res.status(400).json({error:'Empty beat cannot be saved.'});
-  payload.beats=[...current,{number,text:beatText}];payload.status=number===12?'complete':'writing';
+  payload.last_error=null;payload.beats=[...current,{number,text:beatText}];payload.status=number===12?'complete':'writing';
  }else return res.status(400).json({error:'Unknown checkpoint phase.'});
  const extraCost=Number(body.cost_usd)||0;if(!Number.isFinite(extraCost)||extraCost<0||extraCost>100)return res.status(400).json({error:'Invalid stage cost.'});
- const costField=phase==='research'?'research_cost_usd':phase==='plan'?'planning_cost_usd':'writing_cost_usd';
- const stageName=phase==='research'?'OpenAI backstage research':phase==='plan'?'Aion planning':'Aion beat '+Number(body.beat_number);
+ const costField=phase==='research'?'research_cost_usd':phase==='plan'||phase==='error'?'planning_cost_usd':'writing_cost_usd';
+ const stageName=phase==='research'?'OpenAI backstage research':phase==='plan'?'Aion planning':phase==='error'?'Aion planning failed':'Aion beat '+Number(body.beat_number);
  payload[costField]=Number(existing[costField]||0)+extraCost;
  const accounting=Array.isArray(existing.accounting)?existing.accounting:[];
  payload.accounting=[...accounting,{stage:stageName,model:phase==='research'?'gpt-6-luna':fictionXAionModel252166,cost_usd:extraCost,pricing_basis:String(body.pricing_basis||'provider reported / estimated'),recorded_at:new Date().toISOString()}];
@@ -2239,7 +2243,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-pl
    if(!valid(plan)){lastError='Aion returned an incomplete or incorrectly numbered twelve-beat plan';continue;}
    return res.status(200).json({plan,model:rr.model,usage:rr.usage,cost_usd:totalCost,attempts});
   }
-  return res.status(502).json({error:lastError+'. Planning failed after '+attempts+' attempts. Saved research and beats remain intact; resume the same test to retry.'});
+  return res.status(502).json({error:lastError+'. Planning failed after '+attempts+' attempts. Saved research and beats remain intact; resume the same test to retry.',cost_usd:totalCost,attempts});
  }
  const plan=body.plan,number=Number(body.beat_number);
  if(!plan||!Array.isArray(plan.beats)||plan.beats.length!==12||!Number.isInteger(number)||number<1||number>12)return res.status(400).json({error:'Valid twelve-beat plan and beat number (1–12) required.'});
