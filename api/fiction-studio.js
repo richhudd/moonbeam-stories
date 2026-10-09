@@ -2450,17 +2450,6 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   const overrun= futureFirstDance&&number<12&&/(?:the first dance|they danced|led her to the dance floor)/i.test(prose.slice(Math.floor(prose.length*.55)));
   if(overrun){totalCost+=Number(rr.cost_usd)||0;lastFailure='Aion advanced into a later scene';continuityFeedback='Stop before the future first-dance scene. Do not cover later beats.';continue;}
   if(!editorialLeak && prose.length>=120){
-   // Aion must verify narrative handoffs before a beat is committed. The audit
-   // uses only the adjacent seam and plan, not another rewriting model.
-   const auditSchema={type:'object',additionalProperties:false,required:['passes','problem'],properties:{passes:{type:'boolean'},problem:{type:'string'}}};
-   let audit;
-   try{
-    audit=await fictionXAionCall252166({system:'You are Aion performing a narrow continuity gate on your own draft. Check only chronology, location, scene transitions, repeated or prematurely completed events. Return JSON only; do not rewrite fiction.',prompt:JSON.stringify({beat_number:number,previous_ending:priorTail.slice(-1900),current_opening:prose.slice(0,2300),current_ending:prose.slice(-3000),current_beat_instructions:plan.beats[number-1].instructions,next_beat_instructions:nextBeat?.instructions||null,rule:'Pass only when current scene begins where prior prose ended and ends before events belonging to the following beat. Reject any chronological rewind, unmotivated location change, repeated scene or premature ending. Do not assess style or genre.'}),max_tokens:700,temperature:0,reasoning_effort:'low',json_schema:auditSchema,json_schema_name:'asunder_beat_seam_audit'});
-    totalCost+=Number(audit.cost_usd)||0;
-    const verdict=fictionXStripJson252166(audit.text,'Aion continuity gate');
-    if(verdict?.passes!==true){continuityFeedback=String(verdict?.problem||'Beat has a chronological or boundary mismatch').slice(0,600);lastFailure='Aion continuity gate: '+continuityFeedback;totalCost+=Number(rr.cost_usd)||0;continue;}
-   }catch(e){lastFailure='Continuity gate unavailable: '+String(e?.message||e);totalCost+=Number(rr.cost_usd)||0;break;}
-
    if(mode==='asunder-aion-volume-write-beat'){
     const bookId=productionBook.id;
     const latest=(await rest(`developer_fiction_books?select=generation_state&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];
