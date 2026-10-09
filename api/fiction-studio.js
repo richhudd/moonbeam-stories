@@ -2280,8 +2280,8 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
   if(existingReservation?.book_id)return res.status(409).json({error:'Already imported into a volume.'});
   const slot=Number(body.slot);
   if(!Number.isInteger(slot)||slot<1||slot>10)return res.status(400).json({error:'Choose a position from 1 to 10.'});
-  const beats=Array.isArray(existing.beats)?existing.beats:[];
-  if(existing.status!=='complete'||!existing.plan||beats.length!==12||beats.some((b,i)=>Number(b.number)!==i+1||String(b.text||'').trim().length<120))return res.status(409).json({error:'Only complete twelve-beat vignettes can be reserved.'});
+  // Reservation allocates a future position only; the actual manuscript import
+  // continues to require a complete, verified twelve-beat vignette.
   const latest=await rest(`developer_fiction_books?select=position&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=position.desc&limit=1`);
   const position=Math.max(1,Number(latest?.[0]?.position||0)+1);
   const reserved=await rest(`${table}?select=id,character_key,volume_reservation&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&volume_reservation=not.is.null&limit=200`);
