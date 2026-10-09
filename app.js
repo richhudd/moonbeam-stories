@@ -4843,14 +4843,14 @@ function addFictionExport252464(files,d,base=''){const root=base?`${base}/`:'';f
  // Export every durably locked Asunder vignette even while the volume is still generating.
  // The ordinary chapters table is only populated when final volume assembly completes.
  const stitched=d.book?.generation_state?.aion_volume_stitched||{};
- const entries=Object.entries(stitched).filter(([n,v])=>/^\\d+$/.test(n)&&typeof v?.text==='string'&&v.text.trim()).sort((a,b)=>Number(a[0])-Number(b[0]));
+ const entries=Object.entries(stitched).filter(([n,v])=>/^\d+$/.test(n)&&typeof v?.text==='string'&&v.text.trim()).sort((a,b)=>Number(a[0])-Number(b[0]));
  if(entries.length){
   let combined='';
   for(const [n,v] of entries){
    const title=String(v.title||v.subtitle||'Vignette '+n);
    const heading=n+'. '+title;
-   files[`${root}locked-vignettes/${String(n).padStart(2,'0')}-${fictionSafeName25233(title)}.txt`]=heading+'\\n\\n'+v.text;
-   combined+=heading+'\\n\\n'+v.text+'\\n\\n\\n';
+   files[`${root}locked-vignettes/${String(n).padStart(2,'0')}-${fictionSafeName25233(title)}.txt`]=heading+'\n\n'+v.text;
+   combined+=heading+'\n\n'+v.text+'\n\n\n';
   }
   files[`${root}locked-vignettes/full-available-manuscript.txt`]=combined;
   files[`${root}locked-vignettes/README.txt`]='These are all currently stitched and saved vignettes. An unfinished volume may contain fewer than the planned number. Unfinished beats are not represented as complete vignettes.';
