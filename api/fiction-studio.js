@@ -44,11 +44,28 @@ module.exports = async function handler(req,res){
     // the user's browser credentials nor Fiction X password are retained in jobs.
     let workerTrusted252700=false,workerRecord252700=null;
     if(req.headers['x-moonbeam-worker-token']){
+      // Retry transient Supabase REST failures before refusing a valid background worker.
+      // Log only status codes, never tokens, secrets or response bodies.
+      const readWorkerAuth=async(url,label)=>{
+        let lastStatus=0,lastError='';
+        for(let attempt=1;attempt<=3;attempt++){
+          try{
+            const reply=await fetch(url,{headers:adminHeaders(),signal:AbortSignal.timeout(12000)});
+            lastStatus=reply.status;
+            if(reply.ok)return reply;
+            lastError='HTTP '+reply.status;
+            if(reply.status<500&&reply.status!==429)break;
+          }catch(err){lastError=String(err?.name||'network error').slice(0,80);}
+          if(attempt<3)await new Promise(resolve=>setTimeout(resolve,250*attempt));
+        }
+        console.error('Fiction worker authentication lookup failed',{lookup:label,status:lastStatus,reason:lastError});
+        return {ok:false,status:lastStatus};
+      };
       const [secretResponse,jobResponse]=await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/developer_fiction_worker_configuration?select=worker_secret&singleton=eq.true&limit=1`,{headers:adminHeaders()}),
-        fetch(`${SUPABASE_URL}/rest/v1/developer_fiction_background_jobs?select=*&id=eq.${encodeURIComponent(String(req.headers['x-moonbeam-worker-job']||''))}&limit=1`,{headers:adminHeaders()})
+        readWorkerAuth(`${SUPABASE_URL}/rest/v1/developer_fiction_worker_configuration?select=worker_secret&singleton=eq.true&limit=1`,'configuration'),
+        readWorkerAuth(`${SUPABASE_URL}/rest/v1/developer_fiction_background_jobs?select=id,parent_id,series_id,target_id,kind,status,claim_token,lease_until&id=eq.${encodeURIComponent(String(req.headers['x-moonbeam-worker-job']||''))}&limit=1`,'job')
       ]);
-      if(!secretResponse.ok||!jobResponse.ok)return res.status(403).json({error:'Worker validation unavailable.'});
+      if(!secretResponse.ok||!jobResponse.ok)return res.status(503).json({error:'Worker validation temporarily unavailable.',lookup:!secretResponse.ok?'configuration':'job',upstream_status:!secretResponse.ok?secretResponse.status:jobResponse.status});
       const secret=(await secretResponse.json())?.[0]?.worker_secret||'',record=(await jobResponse.json())?.[0]||null;
       const equal=(a,b)=>{const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length>0&&x.length===y.length&&crypto.timingSafeEqual(x,y)};
       const allowed=['asunder-aion-volume-preflight','asunder-aion-volume-sequence','asunder-aion-volume-plan','asunder-aion-volume-write-beat','asunder-aion-volume-progress','asunder-aion-volume-lock-story','asunder-aion-volume-assemble','asunder-vignette-tester-research','asunder-vignette-tester-plan','asunder-vignette-tester-beat','asunder-vignette-test-get','asunder-vignette-test-save'];
