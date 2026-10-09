@@ -2157,7 +2157,7 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Asunder Vignette Tester only.'});
  const table='developer_fiction_vignette_tests',testId=String(body.test_id||'').trim();
  if(mode==='asunder-vignette-test-list'){
-  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,research_cost_usd,planning_cost_usd,writing_cost_usd,last_error,planning_attempts,volume_reservation,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
+  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,research_cost_usd,planning_cost_usd,writing_cost_usd,last_error,planning_attempts,plan,volume_reservation,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
   return res.status(200).json({tests:rows||[]});
  }
  if(mode==='asunder-vignette-test-create'){
@@ -2175,6 +2175,11 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  if(mode==='asunder-vignette-test-reserve'){
   if(!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Ten-vignette Asunder required.'});
   const existingReservation=existing.volume_reservation||null;
+  if(existingReservation){
+   const volumeRows=await rest(`developer_fiction_books?select=id,generation_state&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&position=eq.${Number(existingReservation.position)||0}&limit=1`);
+   const imported=volumeRows?.[0]?.generation_state?.aion_volume_imports?.[String(existingReservation.slot)];
+   if(imported?.test_id===testId)return res.status(409).json({error:'This vignette has already been imported and locked in Volume '+existingReservation.position+'. Its test copy remains saved.'});
+  }
   if(body.action==='remove'){
    if(!existingReservation)return res.status(200).json({test:existing});
    if(existingReservation.book_id)return res.status(409).json({error:'This vignette is already imported. Its volume copy is locked.'});
@@ -3805,7 +3810,7 @@ if(mode==='asunder-ten-cast-draft'){
  const keys=Array.isArray(body.character_keys)?body.character_keys.map(x=>String(x||'').trim()):[];
  const directions=Array.isArray(body.directions)?body.directions.map(x=>String(x||'').trim().slice(0,4000)):[];
  if(keys.length!==10||new Set(keys).size!==10||directions.length!==10||directions.some(x=>!x))return res.status(400).json({error:'Select ten distinct wives and provide a direction for each.'});
- if(book&&(book.generation_state?.aion_volume_plans||Object.keys(book.book_plan||{}).length))return res.status(409).json({error:'Volume development has already begun. Cast cannot be overwritten.'});
+ if(book&&((Object.keys(book.generation_state?.aion_volume_plans||{}).length>0)||Object.keys(book.book_plan||{}).length))return res.status(409).json({error:'Volume development has already begun. Cast cannot be overwritten.'});
  const importPlans={},importBeats={},importStitched={},importLocked={},imports={};
  for(const t of reserved){
   const n=Number(t.volume_reservation?.slot),i=n-1;
