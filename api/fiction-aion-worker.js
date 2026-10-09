@@ -47,6 +47,12 @@ module.exports=async function handler(req,res){
      if(seq.completed){
       step='assemble volume';const finished=await api('asunder-aion-volume-assemble');
       complete=!!finished.complete;
+     }else if(seq.next_step==='research'){
+      step='vignette '+story+' naming research';
+      const book=(await supa('developer_fiction_books?select=development_state&id=eq.'+encodeURIComponent(job.target_id)+'&limit=1'))?.[0];
+      const wife=book?.development_state?.asunder_cast?.[story-1];
+      if(!wife?.character_key||!wife?.intimacy_direction)throw new Error('Canonical wife or direction missing before naming research.');
+      await api('asunder-aion-volume-research',{story_number:story});
      }else if(seq.next_step==='plan'){
       step='vignette '+story+' planning';
       await api('asunder-aion-volume-plan',{story_number:story});
@@ -90,9 +96,10 @@ module.exports=async function handler(req,res){
       try{
         const book=(await supa('developer_fiction_books?select=generation_state&id=eq.'+encodeURIComponent(job.target_id)+'&limit=1'))?.[0];
         const state=book?.generation_state||{};
+        const naming=/^vignette (\d+) naming research$/.exec(step);
         const planned=/^vignette (\d+) planning$/.exec(step);
         const writing=/^vignette (\d+) beat (\d+)$/.exec(step);
-        const verified=planned?!!state.aion_volume_plans?.[planned[1]]:writing?Array.isArray(state.aion_volume_beats?.[writing[1]])&&state.aion_volume_beats[writing[1]].length>=Number(writing[2]):false;
+        const verified=naming?!!state.aion_volume_naming?.[naming[1]]:planned?!!state.aion_volume_plans?.[planned[1]]:writing?Array.isArray(state.aion_volume_beats?.[writing[1]])&&state.aion_volume_beats[writing[1]].length>=Number(writing[2]):false;
         if(verified){
           console.info('Aion step completed despite worker transport timeout; saved checkpoint verified',{kind:job.kind,target:job.target_id,step});
           lastError=null;
