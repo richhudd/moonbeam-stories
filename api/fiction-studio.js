@@ -659,6 +659,16 @@ Only interventions explicitly named above have crossed the threshold. If status 
 const fictionUsage25243=(data)=>{const u=data?.usage||{},id=u.input_tokens_details||{},od=u.output_tokens_details||{};return {input_tokens:+u.input_tokens||0,cached_input_tokens:+id.cached_tokens||+u.cached_input_tokens||0,cache_write_tokens:+id.cache_write_tokens||+id.cache_creation_tokens||+u.cache_write_tokens||0,output_tokens:+u.output_tokens||0,reasoning_tokens:+od.reasoning_tokens||0}};
 const fictionCost25243=(tokens,m)=>{const long=m.long_context===false?false:tokens.input_tokens>272000,mul=long?{input:2,cached_input:2,cache_write:2,output:1.5}:{input:1,cached_input:1,cache_write:1,output:1},r=m.rates,uncached=Math.max(0,tokens.input_tokens-tokens.cached_input_tokens-tokens.cache_write_tokens);return {usd:Number(((uncached*r.input*mul.input+tokens.cached_input_tokens*r.cached_input*mul.cached_input+tokens.cache_write_tokens*r.cache_write*mul.cache_write+tokens.output_tokens*r.output*mul.output)/1e6).toFixed(8)),long}};
 const meterFiction25243=async({seriesId=id,bookId=null,stage,substage=null,model,data,startedAt,httpStatus,ok,attempt=1})=>{const m=fictionModel25243(model),t=fictionUsage25243(data),estimated=fictionCost25243(t,m),provider=String(data?._provider||m.provider||'openai'),exactProviderCost=Number(data?._provider_cost_usd),hasExact=Number.isFinite(exactProviderCost)&&exactProviderCost>=0,c={usd:hasExact?Number(exactProviderCost.toFixed(8)):estimated.usd,long:estimated.long},now=new Date().toISOString(),snapshot=provider==='openrouter'?{currency:'USD',provider:'openrouter',per_million:m.rates,source:hasExact?'OpenRouter usage.cost returned by API':'OpenRouter Aion 3.0 list pricing verified 2026-10-04',exact_response_cost:hasExact}:{currency:'USD',provider:'openai',per_million:m.rates,long_context_threshold:272000,long_context_multiplier:{input:2,cached_input:2,cache_write:2,output:1.5},source:'OpenAI standard pricing verified 2026-09-29'};try{await rest('developer_fiction_usage_events',{method:'POST',body:JSON.stringify({parent_id:user.id,series_id:seriesId,book_id:bookId,stage,substage,model:m.id,response_id:data?.id||null,attempt,ok:!!ok,http_status:+httpStatus||null,started_at:new Date(startedAt).toISOString(),completed_at:now,duration_ms:Math.max(0,Date.now()-startedAt),...t,cost_usd:c.usd,pricing_snapshot:snapshot})})}catch(e){if(!String(e.message||'').toLowerCase().includes('duplicate'))throw e}return {tokens:t,cost:c}};
+
+// Aion sequential volume costs must enter the permanent fiction ledger as well as
+// remaining on the saved checkpoint. The deterministic response id makes replays safe.
+const fictionMeterAionVolumeCheckpoint252640=async({bookId,story,beat=0,cost,rr})=>{
+ const responseId='aion-volume:'+String(bookId)+':'+Number(story)+':'+Number(beat);
+ const u=rr?.usage||{};
+ const usage={input_tokens:Number(u.prompt_tokens||u.input_tokens||0),output_tokens:Number(u.completion_tokens||u.output_tokens||0),input_tokens_details:{cached_tokens:Number(u?.prompt_tokens_details?.cached_tokens||u.cached_tokens||0)},output_tokens_details:{reasoning_tokens:Number(u?.completion_tokens_details?.reasoning_tokens||u.reasoning_tokens||0)}};
+ const data={id:responseId,_provider:'openrouter',_provider_cost_usd:Math.max(0,Number(cost)||0),usage};
+ return meterFiction25243({bookId,stage:beat?'aion_volume_writing':'aion_volume_planning',substage:'vignette-'+Number(story)+(beat?'-beat-'+Number(beat):'-plan'),model:rr?.model||fictionXAionModel252166,data,startedAt:Date.now()-Math.max(0,Number(rr?.duration_ms)||0),httpStatus:200,ok:true});
+};
 // V252.102 — live backstage validation. Raw statistical/business/geographic exemplars are never
 // shown to creative models. The live checker validates candidates AFTER they are generated, so
 // plausibility data constrains canon without seeding ideas upstream.
@@ -2334,6 +2344,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
     const plans={...(state.aion_volume_plans||{}),[productionStoryNumber]:{plan,character_key:key,direction,research,created_at:new Date().toISOString(),cost_usd:totalCost,attempts}};
     const updated=await leaseRpc('fiction_aion_save_checkpoint',{p_book:productionBook.id,p_operation:leaseOperation,p_token:leaseToken,p_story:productionStoryNumber,p_beat:0,p_payload:plans[productionStoryNumber]});
     if(!updated)return res.status(502).json({error:'Aion plan generated but volume checkpoint could not be saved. Do not retry generation until inspected.',cost_usd:totalCost});
+    await fictionMeterAionVolumeCheckpoint252640({bookId:productionBook.id,story:productionStoryNumber,cost:totalCost,rr});
     return res.status(200).json({plan,story_number:productionStoryNumber,saved:true,model:rr.model,usage:rr.usage,cost_usd:totalCost,attempts});
    }
    return res.status(200).json({plan,model:rr.model,usage:rr.usage,cost_usd:totalCost,attempts});
@@ -2359,6 +2370,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
     const cost=totalCost+Number(rr.cost_usd||0),next={...(state.aion_volume_beats||{}),[productionStoryNumber]:[...saved,{number,text:prose,cost_usd:cost,saved_at:new Date().toISOString()}]};
     const rows=await leaseRpc('fiction_aion_save_checkpoint',{p_book:bookId,p_operation:leaseOperation,p_token:leaseToken,p_story:productionStoryNumber,p_beat:number,p_payload:next[productionStoryNumber][next[productionStoryNumber].length-1]});
     if(!rows)return res.status(502).json({error:'Aion wrote the beat but automatic checkpoint saving failed. Preserve returned text.',text:prose,cost_usd:cost});
+    await fictionMeterAionVolumeCheckpoint252640({bookId,story:productionStoryNumber,beat:number,cost,rr});
     return res.status(200).json({story_number:productionStoryNumber,beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:cost,saved:true,completed:next[productionStoryNumber].length});
    }
    return res.status(200).json({beat_number:number,text:prose,model:rr.model,usage:rr.usage,cost_usd:totalCost+Number(rr.cost_usd||0)});
