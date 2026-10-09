@@ -3457,66 +3457,8 @@ function fictionAsunder2Identity252286(seriesRecord){
  const identity=String(seriesRecord?.series_bible?.series_identity||seriesRecord?.series_bible?.identity||seriesRecord?.autopilot_state?.series_identity||'').trim().toLowerCase();
  return name==='asunder 2.0'||identity==='asunder_intervention_anthology_identity_v2';
 }
-// Aion production volume runner. Strictly sequential: plan, write 12, stitch, lock, repeat.
-// Called only by explicit user action; never starts automatically on page load.
-const fictionAionVolumeRunner252500={running:new Set(),stopped:new Set()};
-async function runFictionAionVolume252500(seriesId,bookId,onProgress=()=>{}){
- const id=String(seriesId||''),book=String(bookId||''),key=id+':'+book;
- if(!id||!book)throw new Error('Series and volume are required.');
- if(fictionAionVolumeRunner252500.running.has(key))throw new Error('This volume is already running in this tab.');
- fictionAionVolumeRunner252500.stopped.delete(key);fictionAionVolumeRunner252500.running.add(key);
- const request=payload=>fictionStudioRequest25229({id,...payload},{studio_section:'fiction_x'});
- try{
-  const pre=await request({mode:'asunder-aion-volume-preflight',book_id:book});
-  if(!pre.ready)throw new Error('Volume is not ready: '+(pre.errors||[]).join('; '));
-  const volumeCount=Number(pre.volume_count)===10?10:4;
-  for(let n=1;n<=volumeCount;n++){
-   if(fictionAionVolumeRunner252500.stopped.has(key))return {paused:true,story_number:n};
-   let sequence=await request({mode:'asunder-aion-volume-sequence',book_id:book});
-   if(sequence.completed){onProgress({phase:'assembling'});return await request({mode:'asunder-aion-volume-assemble',book_id:book});}
-   if(sequence.next_story!==n){
-    if(sequence.next_story>n)continue;
-    throw new Error('Sequential lock mismatch: expected vignette '+n+', next '+sequence.next_story);
-   }
-   if(sequence.next_step==='plan'){
-    onProgress({story:n,phase:'planning'});
-    const story=pre.stories[n-1];
-    try{await request({mode:'asunder-aion-volume-plan',book_id:book,story_number:n});}catch(e){const check=await request({mode:'asunder-aion-volume-sequence',book_id:book}).catch(()=>null);if(!(check?.next_story===n&&check?.next_step!=='plan')&&!(check?.next_story>n))throw new Error('Planning request ended without a saved checkpoint. Do not restart while its generation lease may be active. '+String(e?.message||e));}
-   }
-   let progress=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
-   while(progress.completed<12){
-    if(fictionAionVolumeRunner252500.stopped.has(key))return {paused:true,story_number:n,completed_beats:progress.completed};
-    const beat=progress.next_beat;
-    onProgress({story:n,phase:'writing',beat});
-    try{
-     await request({mode:'asunder-aion-volume-write-beat',book_id:book,story_number:n,beat_number:beat});
-    }catch(e){
-     // A network failure can occur AFTER a paid model call succeeds. Never automatically
-     // submit the same beat again: first inspect the durable checkpoint, then pause.
-     let check;
-     try{check=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n})}catch{}
-     if(!check||check.completed<beat){
-      throw new Error('Beat '+beat+' did not return a confirmed saved checkpoint. Generation paused to prevent a duplicate paid Aion call. Inspect progress and use Start / Resume only after confirming the previous request has finished. Original error: '+String(e?.message||e));
-     }
-    }
-    const next=await request({mode:'asunder-aion-volume-progress',book_id:book,story_number:n});
-    if(next.completed<=progress.completed)throw new Error('Beat did not advance its durable checkpoint.');
-    progress=next;
-   }
-   onProgress({story:n,phase:'stitching'});
-   try{await request({mode:'asunder-aion-volume-lock-story',book_id:book,story_number:n});}catch(e){throw new Error('Stitch/lock confirmation failed. Inspect saved sequence before resuming. '+String(e?.message||e));}
-   onProgress({story:n,phase:'locked'});
-  }
-  onProgress({phase:'assembling'});
-  return await request({mode:'asunder-aion-volume-assemble',book_id:book});
- }finally{
-  fictionAionVolumeRunner252500.running.delete(key);
-  fictionAionVolumeRunner252500.stopped.delete(key);
- }
-}
-function stopFictionAionVolume252500(seriesId,bookId){
- fictionAionVolumeRunner252500.stopped.add(String(seriesId)+':'+String(bookId));
-}
+// Generation is now driven only by the server-side background queue. The old
+// browser-owned Aion runner was retired so leaving the page cannot stop work.
 function fictionAsunderBeatCount252286(seriesRecord=fictionStudioActive25229){
  return fictionAsunderSeriesIdentity252149(seriesRecord)?12:10;
 }
@@ -3558,7 +3500,7 @@ async function openFictionAsunderVignetteTester252500(){
     status.textContent='Ebba / tester · '+state+' · '+String(job.step||'queued')+(job.last_error?' · '+job.last_error:'')+(state==='queued'||state==='running'?' · safe to leave this page':'');
     if(state==='queued'||state==='running'||state==='complete'){
      const testData=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:activeTestId});
-     if(testData?.test)showTest(testData.test);
+     if(testData?.test){showTest(testData.test);status.textContent='Vignette Tester · '+state+' · '+String(job.step||'queued')+(job.last_error?' · '+job.last_error:'')+(state==='queued'||state==='running'?' · safe to leave this page':'');}
     }
    }
   }catch(e){if(status.isConnected)status.textContent='Worker status unavailable: '+String(e.message||e)}
