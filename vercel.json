@@ -1,1 +1,27 @@
-{"rewrites":[{"source":"/shared/:token","destination":"/index.html"},{"source":"/instagram","destination":"/instagram.html"},{"source":"/api/health","destination":"/api/generate"}],"functions":{"api/resend-inbound.js":{"maxDuration":300},"api/fiction-studio.js":{"maxDuration":300}}}
+{
+  "rewrites": [
+    {
+      "source": "/shared/:token",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/instagram",
+      "destination": "/instagram.html"
+    },
+    {
+      "source": "/api/health",
+      "destination": "/api/generate"
+    }
+  ],
+  "functions": {
+    "api/resend-inbound.js": {
+      "maxDuration": 300
+    },
+    "api/fiction-studio.js": {
+      "maxDuration": 300
+    },
+    "api/fiction-aion-worker.js": {
+      "maxDuration": 300
+    }
+  }
+}
