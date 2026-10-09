@@ -2294,7 +2294,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   let lastError='',totalCost=0,attempts=0;
   for(let attempt=1;attempt<=1;attempt++){
    attempts=attempt;
-   const rr=await fictionXAionCall252166({system:'You are Aion, sole creative architect and writer of an adult fiction vignette. Return a single valid JSON object matching the supplied schema, without markdown.',prompt:planningPrompt+(attempt===2?'\nThe previous response was malformed or failed the twelve-beat validation. Return a complete JSON object with exactly twelve beats numbered 1 through 12.':''),max_tokens:9000,temperature:.25,json_schema:schema,json_schema_name:'asunder_vignette_twelve_beat_plan'});
+   const rr=await fictionXAionCall252166({system:'You are Aion, sole creative architect and writer of an adult fiction vignette. Return a single valid JSON object matching the supplied schema, without markdown.',prompt:planningPrompt+(attempt===2?'\nThe previous response was malformed or failed the twelve-beat validation. Return a complete JSON object with exactly twelve beats numbered 1 through 12.':''),max_tokens:16000,temperature:.25,reasoning_effort:'medium',json_schema:schema,json_schema_name:'asunder_vignette_twelve_beat_plan'});
    totalCost+=Number(rr.cost_usd)||0;
    if(rr.finish_reason==='length'){lastError='Aion planning exceeded its output budget; no plan saved. Inspect usage before retrying.';break;}
    let plan=null;
