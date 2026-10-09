@@ -680,7 +680,7 @@ const meterFiction25243=async({seriesId=id,bookId=null,stage,substage=null,model
 // Aion sequential volume costs must enter the permanent fiction ledger as well as
 // remaining on the saved checkpoint. The deterministic response id makes replays safe.
 const fictionMeterAionVolumeCheckpoint252640=async({bookId,story,beat=0,cost,rr})=>{
- const responseId='aion-volume:'+String(bookId)+':'+Number(story)+':'+Number(beat);
+ const responseId=rr?.generation_id?('openrouter:'+String(rr.generation_id)):'aion-volume-request:'+crypto.randomUUID();
  const u=rr?.usage||{};
  const usage={input_tokens:Number(u.prompt_tokens||u.input_tokens||0),output_tokens:Number(u.completion_tokens||u.output_tokens||0),input_tokens_details:{cached_tokens:Number(u?.prompt_tokens_details?.cached_tokens||u.cached_tokens||0)},output_tokens_details:{reasoning_tokens:Number(u?.completion_tokens_details?.reasoning_tokens||u.reasoning_tokens||0)}};
  const data={id:responseId,_provider:'openrouter',_provider_cost_usd:Math.max(0,Number(cost)||0),usage};
