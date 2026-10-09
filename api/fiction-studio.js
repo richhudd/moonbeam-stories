@@ -39,7 +39,24 @@ module.exports = async function handler(req,res){
   };
   try{
     const body=typeof req.body==='string'?JSON.parse(req.body):(req.body||{});
-    const user=await verifyMoonbeamUser(req);
+    // Background worker may call only a small, job-scoped subset of generation
+    // endpoints. Its secret and live claim token are checked server-side; neither
+    // the user's browser credentials nor Fiction X password are retained in jobs.
+    let workerTrusted252700=false,workerRecord252700=null;
+    if(req.headers['x-moonbeam-worker-token']){
+      const [secretResponse,jobResponse]=await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/developer_fiction_worker_configuration?select=worker_secret&singleton=eq.true&limit=1`,{headers:adminHeaders()}),
+        fetch(`${SUPABASE_URL}/rest/v1/developer_fiction_background_jobs?select=*&id=eq.${encodeURIComponent(String(req.headers['x-moonbeam-worker-job']||''))}&limit=1`,{headers:adminHeaders()})
+      ]);
+      if(!secretResponse.ok||!jobResponse.ok)return res.status(403).json({error:'Worker validation unavailable.'});
+      const secret=(await secretResponse.json())?.[0]?.worker_secret||'',record=(await jobResponse.json())?.[0]||null;
+      const equal=(a,b)=>{const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length>0&&x.length===y.length&&crypto.timingSafeEqual(x,y)};
+      const allowed=['asunder-aion-volume-preflight','asunder-aion-volume-sequence','asunder-aion-volume-plan','asunder-aion-volume-write-beat','asunder-aion-volume-progress','asunder-aion-volume-lock-story','asunder-aion-volume-assemble','asunder-vignette-tester-research','asunder-vignette-tester-plan','asunder-vignette-tester-beat','asunder-vignette-test-get','asunder-vignette-test-save'];
+      const action=String(body.mode||''),type=action.includes('aion-volume')?'volume':'tester',requestedId=String(type==='volume'?body.book_id:body.test_id);
+      if(!equal(secret,req.headers['x-moonbeam-worker-token'])||!record||!equal(record.claim_token,req.headers['x-moonbeam-worker-claim'])||record.status!=='running'||new Date(record.lease_until||0).getTime()<=Date.now()||!allowed.includes(action)||record.kind!==type||String(record.target_id)!==requestedId||String(record.series_id)!==String(body.id||''))return res.status(403).json({error:'Invalid background job credentials or scope.'});
+      workerTrusted252700=true;workerRecord252700=record;
+    }
+    const user=workerTrusted252700?{id:workerRecord252700.parent_id,email:String(process.env.MOONBEAM_DEVELOPER_EMAIL||'')}:await verifyMoonbeamUser(req);
 
 const developerEmail=String(process.env.MOONBEAM_DEVELOPER_EMAIL||'').trim().toLowerCase();
 if(!developerEmail||String(user.email||'').trim().toLowerCase()!==developerEmail)return res.status(403).json({error:'Developer access only.'});
@@ -92,7 +109,7 @@ if(mode==='x-lock'){
   return res.status(200).json({ok:true});
 }
 const fictionXPresented252322=body.x_access||fictionXCookieToken252322();
-if(fictionStudioSection252134==='fiction_x'&&!fictionXValid252134(fictionXPresented252322))return res.status(401).json({error:'Fiction Studio X is locked. Unlock it again from Fiction Studio.'});
+if(fictionStudioSection252134==='fiction_x'&&!workerTrusted252700&&!fictionXValid252134(fictionXPresented252322))return res.status(401).json({error:'Fiction Studio X is locked. Unlock it again from Fiction Studio.'});
 const fictionStudioSectionFilter252134=encodeURIComponent(fictionStudioSection252134);
 // V252.324 — Fiction Studio storage boundary is namespace-based rather than a brittle
 // per-table list. Any future Fiction Studio table must live under developer_fiction_*;
@@ -2162,6 +2179,38 @@ Every story plan must use the wife assigned to that exact vignette number. Retur
 
 // Stage 2: isolated Aion-only creative endpoint for the Asunder Vignette Tester.
 // No database writes. Stage 3 will add durable checkpoints and cost ledger.
+
+if(mode==='fiction-background-job-control'){
+ if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Background Aion jobs require the current Asunder Fiction X series.'});
+ const kind=String(body.kind||''),target=String(body.target_id||'');
+ if(!['volume','tester'].includes(kind)||!/^[0-9a-f-]{36}$/i.test(target))return res.status(400).json({error:'Valid volume or vignette target required.'});
+ const table=kind==='volume'?'developer_fiction_books':'developer_fiction_vignette_tests';
+ const targets=await rest(`${table}?select=*&id=eq.${encodeURIComponent(target)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&limit=1`);
+ const entry=targets?.[0];if(!entry)return res.status(404).json({error:'Generation target not found.'});
+ const jobs=await rest(`developer_fiction_background_jobs?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&kind=eq.${kind}&target_id=eq.${encodeURIComponent(target)}&order=created_at.desc&limit=3`);
+ const current=jobs?.find(j=>['queued','running'].includes(j.status))||jobs?.[0]||null;
+ const action=String(body.action||'status');
+ if(action==='status')return res.status(200).json({job:current});
+ if(action==='pause'){
+  if(!current||!['queued','running'].includes(current.status))return res.status(200).json({job:current,notice:'No active job.'});
+  const paused=await rest(`developer_fiction_background_jobs?id=eq.${encodeURIComponent(current.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({pause_requested:true,status:current.status==='queued'?'paused':'running',updated_at:new Date().toISOString()})});
+  return res.status(200).json({job:paused?.[0]||current,notice:'Stop requested. Current paid request is allowed to finish.'});
+ }
+ if(action!=='start')return res.status(400).json({error:'Invalid background job action.'});
+ if(kind==='volume'){
+  const cast=entry.development_state?.asunder_cast,expected=fictionAionVolumeCount252510(entry);
+  if(!Array.isArray(cast)||cast.length!==expected||cast.some(w=>!w?.character_key||!String(w.intimacy_direction||'').trim()))return res.status(409).json({error:'Save every selected wife and direction before starting the volume.'});
+ }else if(!entry.character_key||!String(entry.direction||'').trim())return res.status(409).json({error:'Tester wife and direction must be saved.'});
+ if(current&&['queued','running'].includes(current.status))return res.status(200).json({job:current,notice:'Already running server-side.'});
+ if(current?.status==='complete')return res.status(200).json({job:current,notice:'Completed. No paid generation started.'});
+ if(current?.status==='paused'){
+  if(current.lease_until&&new Date(current.lease_until).getTime()>Date.now())return res.status(409).json({error:'An earlier request may still be in flight. Wait for its lease to expire, then inspect checkpoints.'});
+  const updated=await rest(`developer_fiction_background_jobs?id=eq.${encodeURIComponent(current.id)}&parent_id=eq.${encodeURIComponent(user.id)}&status=eq.paused`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'queued',pause_requested:false,last_error:null,claim_token:null,lease_until:null,updated_at:new Date().toISOString()})});
+  return res.status(200).json({job:updated?.[0]||current,notice:'Resumed server-side from durable checkpoint.'});
+ }
+ const created=await rest('developer_fiction_background_jobs',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,kind,target_id:target,status:'queued'})});
+ return res.status(200).json({job:created?.[0],notice:'Queued independently of the browser. Server worker will advance it.'});
+}
 // Durable Vignette Tester checkpoints; owner- and series-scoped, separate from book production.
 if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignette-test-get','asunder-vignette-test-save','asunder-vignette-test-reserve'].includes(mode)){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Asunder Vignette Tester only.'});
