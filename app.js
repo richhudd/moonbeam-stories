@@ -3538,49 +3538,32 @@ async function openFictionAsunderVignetteTester252500(){
   output.textContent=(t.plan?.title?'TITLE: '+t.plan.title+'\n\n':'')+parts.map(x=>x.text).join('\n\n');
   status.textContent=(complete?'Complete':'Saved checkpoint')+' · '+(t.plan?'Plan saved':t.concept?'Concept saved':'Concept pending')+' · '+parts.length+'/12 beats · $'+Number(t.cost_usd||0).toFixed(3)+' recorded'+(t.last_error?' · Last error: '+t.last_error:'');
  };
+ const backgroundTestControl=async(testId,action='status')=>fictionStudioRequest25229({mode:'fiction-background-job-control',id:series.id,kind:'tester',target_id:testId,action});
  const runTest=async(test)=>{
   if(runningTestId)return;
-  runningTestId=test.id;activeTestId=test.id;
-  generate.disabled=true;
+  runningTestId=test.id;activeTestId=test.id;generate.disabled=true;
   try{
-   if(!test.research){
-    status.textContent='OpenAI: backstage names and facts research…';
-    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-research',id:series.id,character_key:test.character_key,direction:test.direction});
-    const savedResearch=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'research',research:rr.research});
-    test=savedResearch.test;
-   }
-   if(!test.plan){
-    status.textContent='Aion: planning twelve beats…';
-    let rr;try{rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-plan',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research});}catch(e){try{const failed=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'error',error:'Planning: '+String(e.message||e),cost_usd:Number(e.details?.cost_usd)||0,attempts:Number(e.details?.attempts)||1});test=failed.test;}catch{}throw e;}
-    const savedPlan=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'plan',plan:rr.plan,cost_usd:rr.cost_usd,attempts:rr.attempts});
-    test=savedPlan.test;
-   }
-   showTest(test);
-   for(let n=(Array.isArray(test.beats)?test.beats.length:0)+1;n<=12;n++){
-    status.textContent='Aion: beat '+n+'/12 · saved after each beat…';
-    let rr,lastBeatError;
-    for(let attempt=1;attempt<=4;attempt++){
-     try{
-      rr=await fictionStudioRequest25229({mode:'asunder-vignette-tester-beat',id:series.id,character_key:test.character_key,direction:test.direction,research:test.research,plan:test.plan,beat_number:n,prior_text:test.beats.map(x=>x.text).join('\n\n')});
-      if(!String(rr?.text||'').trim())throw new Error('Aion returned an empty response.');
-      break;
-     }catch(e){
-      lastBeatError=e;
-      const message=String(e.message||e);
-      const transient=/empty response|timeout|timed out|network|fetch failed|temporar|502|503|504|429/i.test(message);
-      if(!transient||attempt===4)throw e;
-      status.textContent='Aion: beat '+n+'/12 · temporary response failure · retry '+attempt+'/3 automatically…';
-      await new Promise(resolve=>setTimeout(resolve,Math.min(12000,2000*attempt*attempt)));
-      if(!$('fictionVignetteTesterOutput252500'))throw new Error('Generation page closed; saved beats remain available.');
-     }
-    }
-    const checkpoint=await fictionStudioRequest25229({mode:'asunder-vignette-test-save',id:series.id,test_id:test.id,phase:'beat',beat_number:n,text:rr.text,cost_usd:rr.cost_usd});
-    test=checkpoint.test;showTest(test);
-   }
-   status.textContent='First draft complete and saved · 12/12 beats · $'+Number(test.cost_usd||0).toFixed(3)+' recorded';
-  }catch(e){status.textContent='Paused: '+String(e.message||e)+' · Saved beats can be resumed.'}
+   const out=await backgroundTestControl(test.id,'start');
+   status.textContent=(out.notice||'Server-side generation queued.')+' You may close this page; the saved job continues independently.';
+  }catch(e){status.textContent='Cannot queue vignette: '+String(e.message||e)}
   finally{runningTestId=null;generate.disabled=false;await refreshSaved()}
  };
+ const monitorTesterJobs=async()=>{
+  if(!status.isConnected||!activeTestId)return;
+  try{
+   const out=await backgroundTestControl(activeTestId,'status');
+   const job=out.job;
+   if(job){
+    const state=String(job.status||'').toLowerCase();
+    status.textContent='Ebba / tester · '+state+' · '+String(job.step||'queued')+(job.last_error?' · '+job.last_error:'')+(state==='queued'||state==='running'?' · safe to leave this page':'');
+    if(state==='queued'||state==='running'||state==='complete'){
+     const testData=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:activeTestId});
+     if(testData?.test)showTest(testData.test);
+    }
+   }
+  }catch(e){if(status.isConnected)status.textContent='Worker status unavailable: '+String(e.message||e)}
+ };
+ const testerPoll=setInterval(()=>{if(!status.isConnected){clearInterval(testerPoll);return}void monitorTesterJobs()},15000);
  const refreshSaved=async()=>{
   try{
    const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-list',id:series.id});
@@ -3594,7 +3577,7 @@ async function openFictionAsunderVignetteTester252500(){
     const reservation=t.volume_reservation;
     const tag=reservation?' · Reserved Volume '+Number(reservation.position)+' / Vignette '+Number(reservation.slot):'';
     const label=escapeHtml(name)+(storyTitle?' — '+escapeHtml(storyTitle):'')+' · '+escapeHtml(stage)+tag+' · '+new Date(t.created_at).toLocaleDateString();
-    return '<div style="padding:8px 0;border-bottom:1px solid var(--border,#ccc)"><button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Resume · ')+label+'</button>'+(t.status==='complete'&&!fictionAsunder2Identity252286(series)?'<label style="display:inline-flex;align-items:center;gap:6px;margin:4px"><span>Position</span><select data-test-slot="'+escapeHtml(t.id)+'">'+Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'" '+(Number(reservation?.slot)===i+1?'selected':'')+'>'+(i+1)+'</option>').join('')+'</select></label><button type="button" class="secondary" data-reserve-test="'+escapeHtml(t.id)+'">'+(reservation?'Change position':'Reserve for next volume')+'</button>'+(reservation?'<button type="button" class="secondary" data-unreserve-test="'+escapeHtml(t.id)+'">Remove reservation</button>':''):'')+'</div>';
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border,#ccc)"><button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Open / Resume · ')+label+'</button>'+(t.status==='complete'&&!fictionAsunder2Identity252286(series)?'<label style="display:inline-flex;align-items:center;gap:6px;margin:4px"><span>Position</span><select data-test-slot="'+escapeHtml(t.id)+'">'+Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'" '+(Number(reservation?.slot)===i+1?'selected':'')+'>'+(i+1)+'</option>').join('')+'</select></label><button type="button" class="secondary" data-reserve-test="'+escapeHtml(t.id)+'">'+(reservation?'Change position':'Reserve for next volume')+'</button>'+(reservation?'<button type="button" class="secondary" data-unreserve-test="'+escapeHtml(t.id)+'">Remove reservation</button>':''):'')+'</div>';
    }).join(' '):'<p class="muted">No vignettes yet. Generate one to create its own entry.</p>');
    saved.querySelectorAll('[data-reserve-test]').forEach(btn=>btn.onclick=async()=>{
     btn.disabled=true;
@@ -4387,36 +4370,40 @@ async function openSavedFictionBook25233(bookId){
    const panel=document.createElement('section');
    panel.className='fiction-editor-subcard';
    panel.style.marginTop='18px';
-   panel.innerHTML='<h3>Aion · Sequential volume generator</h3><p>Each vignette is planned, written in twelve saved beats, stitched and locked before the next begins. Existing books are not automatically converted.</p><div class="fiction-actions"><button class="primary" id="fictionAionRun252500" type="button">Start / Resume Aion</button><button class="secondary" id="fictionAionStop252500" type="button">Stop after current request</button></div><p class="status" id="fictionAionStatus252500">Checking saved progress…</p>';
+   panel.innerHTML='<h3>Aion · Background volume generator</h3><p>Once started, the server schedules every vignette and beat independently of the browser. You can leave the page or run a separate loose Vignette Tester job at the same time. Each paid stage is checkpointed; uncertain failures pause rather than duplicate.</p><div class="fiction-actions"><button class="primary" id="fictionAionRun252500" type="button">Start / Resume Aion</button><button class="secondary" id="fictionAionStop252500" type="button">Stop after current request</button></div><p class="status" id="fictionAionStatus252500">Checking saved progress…</p>';
    host.appendChild(panel);
    const run=$('fictionAionRun252500'),stop=$('fictionAionStop252500'),status=$('fictionAionStatus252500');
-   const key=s.id+':'+b.id;
-   let planningWatch=null,activePlanningStory=null,planningStartedAt=null;
+   const backgroundVolumeControl=action=>fictionStudioRequest25229({mode:'fiction-background-job-control',id:s.id,kind:'volume',target_id:b.id,action});
    const update=async()=>{
     if(!status.isConnected)return;
-    let expiry;
     try{
-     const seq=await Promise.race([
-      fictionStudioRequest25229({mode:'asunder-aion-volume-sequence',id:s.id,book_id:b.id}),
-      new Promise((_,reject)=>{expiry=setTimeout(()=>reject(new Error('Checkpoint status timed out after 15 seconds. This is a read-only check; no paid generation was started.')),15000);})
+     const [jobResponse,seq]=await Promise.all([
+      backgroundVolumeControl('status'),
+      fictionStudioRequest25229({mode:'asunder-aion-volume-sequence',id:s.id,book_id:b.id})
      ]);
-     if(status.isConnected&&!fictionAionVolumeRunner252500.running.has(key))status.textContent=seq.completed?'All vignettes locked · select Start / Resume to verify final assembly.':'Next: Vignette '+seq.next_story+' · '+seq.next_step.replace(/_/g,' ');
-    }catch(e){if(status.isConnected)status.textContent='Unable to read Aion checkpoint: '+String(e.message||e)+' · You can retry this status check by reopening the book.'}
-    finally{if(expiry)clearTimeout(expiry)}
+     const job=jobResponse.job;
+     if(!status.isConnected)return;
+     if(job){
+      const running=['queued','running'].includes(job.status);
+      status.textContent='Server job '+job.status+' · '+String(job.step||'waiting')+(job.last_error?' · '+job.last_error:'')+' · '+(seq.completed?'All vignettes locked':seq.next_story?'Vignette '+seq.next_story+' · '+seq.next_step:'Ready')+(running?' · safe to leave this page':'');
+      run.textContent=running?'Generation running on server':'Start / Resume Aion';
+      run.disabled=running||job.status==='complete';
+     }else status.textContent=seq.completed?'All vignettes locked · ready for assembly':'Ready: Vignette '+seq.next_story+' · '+seq.next_step.replace(/_/g,' ');
+    }catch(e){if(status.isConnected)status.textContent='Status unavailable: '+String(e.message||e)}
    };
    run.onclick=async()=>{
-    if(fictionAionVolumeRunner252500.running.has(key))return;
     run.disabled=true;
-    planningWatch=setInterval(()=>{if(!status.isConnected){clearInterval(planningWatch);return}if(activePlanningStory!==null&&planningStartedAt!==null&&status.textContent.includes('planning')){const seconds=Math.floor((Date.now()-planningStartedAt)/1000);status.textContent='Vignette '+activePlanningStory+' · planning · '+Math.floor(seconds/60)+'m '+String(seconds%60).padStart(2,'0')+'s'+(seconds>=90?' · Taking longer than expected; waiting for the server. Do not restart.':'')}},1000);
-    try{
-     const result=await runFictionAionVolume252500(s.id,b.id,({story,phase,beat})=>{
-      if(phase==='planning'){if(activePlanningStory!==story){planningStartedAt=Date.now()}activePlanningStory=story}else{activePlanningStory=null;planningStartedAt=null}if(status.isConnected)status.textContent='Vignette '+story+' · '+phase+(beat?' · beat '+beat+'/12':'');
-     });
-     if(status.isConnected)status.textContent=result.paused?'Paused at saved checkpoint.':result.complete?'All vignettes locked · final assembly pending.':'Runner stopped.';
-    }catch(e){if(status.isConnected)status.textContent='Paused: '+String(e.message||e)+' · Resume from saved checkpoint.'}
-    finally{clearInterval(planningWatch);planningWatch=null;activePlanningStory=null;planningStartedAt=null;run.disabled=false}
+    try{const result=await backgroundVolumeControl('start');status.textContent=(result.notice||'Queued.')+' You can leave this page; generation continues on the server.'}
+    catch(e){status.textContent='Unable to queue: '+String(e.message||e)}
+    finally{await update().catch(()=>{});}
    };
-   stop.onclick=()=>{stopFictionAionVolume252500(s.id,b.id);status.textContent='Stop requested · waiting for current request to finish…'};
+   stop.onclick=async()=>{
+    stop.disabled=true;
+    try{const result=await backgroundVolumeControl('pause');status.textContent=result.notice||'Stop requested after the current request.'}
+    catch(e){status.textContent='Unable to stop: '+String(e.message||e)}
+    finally{stop.disabled=false;await update().catch(()=>{})}
+   };
+   const backgroundStatusTimer=setInterval(()=>{if(!status.isConnected){clearInterval(backgroundStatusTimer);return}void update()},12000);
    void update();
   }
  }
