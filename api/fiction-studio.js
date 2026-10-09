@@ -2212,7 +2212,7 @@ if(mode==='fiction-background-job-control'){
  return res.status(200).json({job:created?.[0],notice:'Queued independently of the browser. Server worker will advance it.'});
 }
 // Durable Vignette Tester checkpoints; owner- and series-scoped, separate from book production.
-if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignette-test-get','asunder-vignette-test-save','asunder-vignette-test-reserve'].includes(mode)){
+if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignette-test-get','asunder-vignette-test-save','asunder-vignette-test-reserve','asunder-vignette-test-update-direction'].includes(mode)){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Asunder Vignette Tester only.'});
  const table='developer_fiction_vignette_tests',testId=String(body.test_id||'').trim();
  if(mode==='asunder-vignette-test-list'){
@@ -2231,6 +2231,15 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  const url=`${table}?select=*&id=eq.${encodeURIComponent(testId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&limit=1`;
  const existing=(await rest(url))?.[0];if(!existing)return res.status(404).json({error:'Test not found.'});
  if(mode==='asunder-vignette-test-get')return res.status(200).json({test:existing});
+ if(mode==='asunder-vignette-test-update-direction'){
+  const direction=String(body.direction??'').slice(0,12000);
+  if(!direction.trim())return res.status(400).json({error:'Direction cannot be blank.'});
+  const active=await rest('developer_fiction_background_jobs?select=id,status&parent_id=eq.'+encodeURIComponent(user.id)+'&series_id=eq.'+encodeURIComponent(id)+'&kind=eq.tester&target_id=eq.'+encodeURIComponent(testId)+'&status=in.(queued,running)&limit=1');
+  if(active?.length)return res.status(409).json({error:'Pause generation and wait for the current request to finish before changing this direction.'});
+  const updated=await rest(table+'?id=eq.'+encodeURIComponent(testId)+'&parent_id=eq.'+encodeURIComponent(user.id)+'&series_id=eq.'+encodeURIComponent(id)+'&updated_at=eq.'+encodeURIComponent(existing.updated_at),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({direction,updated_at:new Date().toISOString()})});
+  return updated?.length?res.status(200).json({test:updated[0],notice:'Direction saved; existing research, plan and beats preserved.'}):res.status(409).json({error:'Vignette changed; reload before editing.'});
+ }
+ 
  if(mode==='asunder-vignette-test-reserve'){
   if(!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Ten-vignette Asunder required.'});
   const existingReservation=existing.volume_reservation||null;
