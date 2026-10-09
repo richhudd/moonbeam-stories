@@ -3966,18 +3966,35 @@ async function openFictionBookDevelopment25231(sourceIndex){
   $('fictionTenBack').onclick=()=>renderFictionSeries25229(s.id);
   const start=$('fictionTenStart'),stop=$('fictionTenStop'),status=$('fictionTenStatus');
   const updateStart=()=>{const chosen=selected.filter(Boolean),missing=selected.map((w,i)=>w&&!String(w.intimacy_direction||'').trim()?i+1:null).filter(Boolean),ready=chosen.length===10&&!missing.length;if(start)start.disabled=!savedBookId||existingFour||castDirty||!ready;const save=$('fictionTenSave');if(save)save.disabled=castLocked||existingFour||!ready;const hint=$('fictionTenHint');if(hint)hint.textContent=existingFour?'This legacy volume cannot be converted here.':chosen.length!==10?`Select ${10-chosen.length} more ${10-chosen.length===1?'wife':'wives'} to enable saving.`:missing.length?`Add a direction for vignette${missing.length>1?'s':''} ${missing.join(', ')} to enable saving.`:castDirty?'All ten directions are ready. Save the cast to enable generation.':savedBookId?'Cast saved. You can begin or resume volume generation.':'All ten directions are ready. Save the cast to enable generation.';};
+  const castVolumeJob=action=>fictionStudioRequest25229({mode:'fiction-background-job-control',id:s.id,kind:'volume',target_id:savedBookId,action});
   start.onclick=async()=>{
    if(!savedBookId||castDirty||selected.filter(Boolean).length!==10||selected.some(w=>w&&!String(w.intimacy_direction||'').trim()))return;
-   start.disabled=true;stop.disabled=false;
+   start.disabled=true;
    try{
-    const result=await runFictionAionVolume252500(s.id,savedBookId,progress=>{
-     status.textContent='Aion: '+(progress.story?'vignette '+progress.story+' · ':'')+String(progress.phase||'')+(progress.beat?' · beat '+progress.beat+'/12':'');
-    });
-    status.textContent=result?.paused?'Paused safely. Use Start / Resume to continue.':'Volume assembly complete.';
-   }catch(e){status.textContent='Paused: '+String(e?.message||e)}
-   finally{stop.disabled=true;updateStart()}
+    const result=await castVolumeJob('start');
+    status.textContent=(result.notice||'Generation queued on the server.')+' You can close the browser or open Vignette Tester: this job continues independently.';
+   }catch(e){status.textContent='Could not queue: '+String(e?.message||e)}
+   finally{updateStart()}
   };
-  stop.onclick=()=>{if(savedBookId){stopFictionAionVolume252500(s.id,savedBookId);status.textContent='Pause requested; current request will finish.'}};
+  stop.onclick=async()=>{
+   if(!savedBookId)return;
+   stop.disabled=true;
+   try{const result=await castVolumeJob('pause');status.textContent=result.notice||'Stop requested after current server request.'}
+   catch(e){status.textContent='Could not pause: '+String(e?.message||e)}
+  };
+  const castJobPoll=setInterval(async()=>{
+   if(!status.isConnected){clearInterval(castJobPoll);return}
+   if(!savedBookId)return;
+   try{
+    const result=await castVolumeJob('status'),job=result.job;
+    const active=job&&['queued','running'].includes(job.status);
+    stop.disabled=!active;
+    if(active){start.disabled=true;status.textContent='Server '+job.status+' · '+String(job.step||'waiting')+' · continuing independently of this page';}
+    else if(job?.status==='paused')status.textContent='Paused · '+String(job.last_error||job.step||'saved checkpoint')+' · Inspect, then resume when ready.';
+    else if(job?.status==='complete')status.textContent='Volume generation complete; all vignettes saved and assembled.';
+    else updateStart();
+   }catch(e){if(status.isConnected)status.textContent='Background status unavailable: '+String(e?.message||e)}
+  },15000);
 
   const render=()=>{
    const slots=$('fictionTenSlots'),grid=$('fictionTenGrid'),save=$('fictionTenSave');
