@@ -47,6 +47,9 @@ module.exports=async function handler(req,res){
      if(seq.completed){
       step='assemble volume';const finished=await api('asunder-aion-volume-assemble');
       complete=!!finished.complete;
+     }else if(seq.next_step==='cast_brief'){
+      step='vignette '+story+' cast brief';
+      await api('asunder-aion-volume-cast-brief',{story_number:story});
      }else if(seq.next_step==='research'){
       step='vignette '+story+' naming research';
       const book=(await supa('developer_fiction_books?select=development_state&id=eq.'+encodeURIComponent(job.target_id)+'&limit=1'))?.[0];
@@ -96,10 +99,11 @@ module.exports=async function handler(req,res){
       try{
         const book=(await supa('developer_fiction_books?select=generation_state&id=eq.'+encodeURIComponent(job.target_id)+'&limit=1'))?.[0];
         const state=book?.generation_state||{};
+        const castBrief=/^vignette (\d+) cast brief$/.exec(step);
         const naming=/^vignette (\d+) naming research$/.exec(step);
         const planned=/^vignette (\d+) planning$/.exec(step);
         const writing=/^vignette (\d+) beat (\d+)$/.exec(step);
-        const verified=naming?!!state.aion_volume_naming?.[naming[1]]:planned?!!state.aion_volume_plans?.[planned[1]]:writing?Array.isArray(state.aion_volume_beats?.[writing[1]])&&state.aion_volume_beats[writing[1]].length>=Number(writing[2]):false;
+        const verified=castBrief?!!state.aion_volume_cast_briefs?.[castBrief[1]]:naming?!!state.aion_volume_naming?.[naming[1]]:planned?!!state.aion_volume_plans?.[planned[1]]:writing?Array.isArray(state.aion_volume_beats?.[writing[1]])&&state.aion_volume_beats[writing[1]].length>=Number(writing[2]):false;
         if(verified){
           console.info('Aion step completed despite worker transport timeout; saved checkpoint verified',{kind:job.kind,target:job.target_id,step});
           lastError=null;
