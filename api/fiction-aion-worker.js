@@ -87,7 +87,7 @@ module.exports=async function handler(req,res){
     lastError=String(e?.message||e).slice(0,2000);
     // A network timeout can occur after fiction-studio has durably saved a
     // checkpoint. Reconcile against Supabase before scheduling a paid retry.
-    if(job.kind==='volume'&&/timeout|abort/i.test(lastError)){
+    if(job.kind==='volume'){
       try{
         const book=(await supa('developer_fiction_books?select=generation_state&id=eq.'+encodeURIComponent(job.target_id)+'&limit=1'))?.[0];
         const state=book?.generation_state||{};
