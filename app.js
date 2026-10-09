@@ -3588,10 +3588,27 @@ async function openFictionAsunderVignetteTester252500(){
    const tests=rr.tests||[];
    saved.innerHTML='<h3>Loose vignettes ('+tests.length+')</h3>'+(tests.length?tests.map(t=>{
     const name=wifeNames[t.character_key]||t.character_key;
+    const storyTitle=String(t.plan?.title||'').trim();
     const stage=t.status==='complete'?'Complete':t.status==='research_pending'?'Research pending':t.status==='planning'?'Planning':'Writing';
     const selected=t.id===activeTestId?' primary':' secondary';
-    return '<button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Resume · ')+escapeHtml(name)+' · '+escapeHtml(stage)+' · '+new Date(t.created_at).toLocaleDateString()+' · $'+Number(t.cost_usd||0).toFixed(3)+'</button>';
+    const reservation=t.volume_reservation;
+    const tag=reservation?' · Reserved Volume '+Number(reservation.position)+' / Vignette '+Number(reservation.slot):'';
+    const label=escapeHtml(name)+(storyTitle?' — '+escapeHtml(storyTitle):'')+' · '+escapeHtml(stage)+tag+' · '+new Date(t.created_at).toLocaleDateString();
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border,#ccc)"><button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Resume · ')+label+'</button>'+(t.status==='complete'?'<label style="display:inline-flex;align-items:center;gap:6px;margin:4px"><span>Position</span><select data-test-slot="'+escapeHtml(t.id)+'">'+Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'" '+(Number(reservation?.slot)===i+1?'selected':'')+'>'+(i+1)+'</option>').join('')+'</select></label><button type="button" class="secondary" data-reserve-test="'+escapeHtml(t.id)+'">'+(reservation?'Change position':'Reserve for next volume')+'</button>'+(reservation?'<button type="button" class="secondary" data-unreserve-test="'+escapeHtml(t.id)+'">Remove reservation</button>':''):'')+'</div>';
    }).join(' '):'<p class="muted">No vignettes yet. Generate one to create its own entry.</p>');
+   saved.querySelectorAll('[data-reserve-test]').forEach(btn=>btn.onclick=async()=>{
+    btn.disabled=true;
+    try{const slot=Number(saved.querySelector('[data-test-slot="'+btn.dataset.reserveTest+'"]')?.value);
+      const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-reserve',id:series.id,test_id:btn.dataset.reserveTest,action:'reserve',slot});
+      status.textContent='Reserved for Volume '+rr.test.volume_reservation.position+' · Vignette '+rr.test.volume_reservation.slot+'. No rewriting required.';
+      await refreshSaved();
+    }catch(e){status.textContent='Reservation failed: '+String(e.message||e);btn.disabled=false}
+   });
+   saved.querySelectorAll('[data-unreserve-test]').forEach(btn=>btn.onclick=async()=>{
+    btn.disabled=true;
+    try{await fictionStudioRequest25229({mode:'asunder-vignette-test-reserve',id:series.id,test_id:btn.dataset.unreserveTest,action:'remove'});status.textContent='Reservation removed; original test remains saved.';await refreshSaved()}
+    catch(e){status.textContent='Could not remove reservation: '+String(e.message||e);btn.disabled=false}
+   });
    saved.querySelectorAll('[data-test-id]').forEach(btn=>btn.onclick=async()=>{
     try{
      const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:btn.dataset.testId});
@@ -3620,7 +3637,8 @@ async function openFictionAsunderVignetteTester252500(){
   if(fictionStudioActive25229?.id!==series.id||!$('fictionVignetteTesterWife252500'))return;
   const select=$('fictionVignetteTesterWife252500');
   select.innerHTML='<option value="">Select a wife…</option>'+wives.map(w=>`<option value="${escapeHtml(String(w.character_key||''))}">${escapeHtml(fictionWifeLibraryName252244(w))}</option>`).join('');
-  wifeNames=Object.fromEntries(wives.map(w=>[w.character_key,fictionWifeLibraryName252244(w)]));
+  wifeNames=Object.fromEntries(wives.map(w=>[w.character_key,fictionWifeLibraryFirst252244(w)]));
+  await refreshSaved();
   status.textContent='Choose a saved vignette to view or resume it, or generate a new one.';
   generate.disabled=false;
  }catch(e){status.textContent='Could not load wife library: '+String(e.message||e)}
