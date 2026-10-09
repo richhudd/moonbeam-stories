@@ -34,7 +34,7 @@ module.exports=async function handler(req,res){
      },
      body:JSON.stringify({mode,studio_section:'fiction_x',id:job.series_id,
       ...(job.kind==='volume'?{book_id:job.target_id}:{test_id:job.target_id}),...payload}),
-     signal:AbortSignal.timeout(245000)
+     signal:AbortSignal.timeout(280000)
     }));
     return data;
    };
@@ -83,7 +83,7 @@ module.exports=async function handler(req,res){
       complete=beat===12;
      }
     }
-   }catch(e){lastError=String(e?.message||e).slice(0,2000);console.error('Asunder background job paused',{kind:job.kind,target:job.target_id,step,error:lastError});}
+   }catch(e){lastError=String(e?.message||e).slice(0,2000);console.error('Asunder background step failed',{kind:job.kind,target:job.target_id,step,error:lastError});}
    const persisted=await rpc('fiction_background_finish_step',{p_id:job.id,p_token:job.claim_token,p_step:step,p_error:lastError,p_complete:complete});
    if(persisted!==true)throw new Error('Job result could not be durably acknowledged. Inspect before resuming.');
    return {kind:job.kind,job_id:job.id,step,status:lastError?'paused':complete?'complete':'queued',error:lastError};
