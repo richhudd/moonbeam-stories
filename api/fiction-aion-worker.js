@@ -41,9 +41,8 @@ module.exports=async function handler(req,res){
    let step='start',complete=false,lastError=null;
    try{
     if(job.kind==='volume'){
-     const pre=await api('asunder-aion-volume-preflight');
+     const [pre,seq]=await Promise.all([api('asunder-aion-volume-preflight'),api('asunder-aion-volume-sequence')]);
      if(!pre.ready)throw new Error('Volume preflight failed: '+(pre.errors||[]).join('; '));
-     const seq=await api('asunder-aion-volume-sequence');
      const story=Number(seq.next_story);
      if(seq.completed){
       step='assemble volume';const finished=await api('asunder-aion-volume-assemble');
