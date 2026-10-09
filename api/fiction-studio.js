@@ -1498,27 +1498,26 @@ const fictionAsunderVectorText252259=(value,{centerX=800,top=0,cell=12,gap=12,fi
   chars.forEach((ch,i)=>{const rows=fictionAsunderVectorGlyphs252259[ch]||fictionAsunderVectorGlyphs252259[' '];rows.forEach((row,y)=>[...row].forEach((bit,x)=>{if(bit==='1')rects.push(`<rect x="${left+i*charW+x*cell}" y="${top+y*cell}" width="${Math.max(1,cell-2)}" height="${Math.max(1,cell-2)}" rx="${Math.max(1,Math.floor(cell/6))}" fill="${fill}"/>`)}))});
   return rects.join('');
 };
+// Fixed Asunder serif masthead. All editions share geometry, colour and text styling;
+// only the book position changes the VOLUME numeral. Text is rendered separately from art.
+const fictionAsunderSerifOverlay252660=(position=1)=>{
+ const n=Math.max(1,Math.trunc(Number(position)||1));
+ const W=1600,H=2560;
+ return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 1600 2560">
+ <g fill="none" stroke="#d7bc82" stroke-width="2" opacity=".86">
+  <path d="M60 94H1540"/><path d="M250 389H1350"/>
+ </g>
+ <g font-family="Times New Roman, Liberation Serif, Nimbus Roman, serif" text-anchor="middle">
+  <text x="800" y="365" font-size="285" textLength="1432" lengthAdjust="spacingAndGlyphs" fill="#f6dfb1">ASUNDER</text>
+  <text x="800" y="503" font-size="64" fill="#faf3e8">VOLUME ${n}</text>
+  <text x="800" y="2485" font-size="65" fill="#faf4ec">ANA ROJAS</text>
+ </g></svg>`);
+};
 const fictionAsunderComposeAftermathCover252202=async({book,art})=>{
-  const W=1600,H=2560;
-  const bg=await sharp(art).resize(W,H,{fit:'cover',position:'attention'}).toBuffer();
-  const vol=`VOLUME ${Math.max(1,Number(book.position)||1)}`;
-  const titleSvg=fictionAsunderVectorText252259('ASUNDER',{centerX:800,top:145,cell:34,gap:48,fill:'#f2dfb4'});
-  const volSvg=fictionAsunderVectorText252259(vol,{centerX:800,top:435,cell:10,gap:12,fill:'#f4ead5'});
-  const authorSvg=fictionAsunderVectorText252259('ANA ROJAS',{centerX:800,top:2375,cell:11,gap:13,fill:'#f4ead5'});
-  const svg=Buffer.from(`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="topFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050505" stop-opacity="0.80"/><stop offset="0.68" stop-color="#050505" stop-opacity="0.34"/><stop offset="1" stop-color="#050505" stop-opacity="0"/></linearGradient>
-      <linearGradient id="bottomFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050505" stop-opacity="0"/><stop offset="0.40" stop-color="#050505" stop-opacity="0.30"/><stop offset="1" stop-color="#050505" stop-opacity="0.78"/></linearGradient>
-    </defs>
-    <rect x="0" y="0" width="1600" height="570" fill="url(#topFade)"/>
-    <rect x="0" y="2190" width="1600" height="370" fill="url(#bottomFade)"/>
-    <line x1="60" y1="86" x2="1540" y2="86" stroke="#d6b978" stroke-width="2" opacity="0.86"/>
-    ${titleSvg}
-    <line x1="250" y1="388" x2="1350" y2="388" stroke="#d6b978" stroke-width="2" opacity="0.82"/>
-    ${volSvg}
-    ${authorSvg}
-  </svg>`);
-  return sharp(bg).composite([{input:svg,left:0,top:0}]).jpeg({quality:94,mozjpeg:true}).toBuffer();
+ const W=1600,H=2560;
+ const bg=await sharp(art).resize(W,H,{fit:'cover',position:'attention'}).toBuffer();
+ const overlay=fictionAsunderSerifOverlay252660(book.position);
+ return sharp(bg).composite([{input:overlay,left:0,top:0}]).jpeg({quality:94,mozjpeg:true}).toBuffer();
 };
 const fictionAsunderGenerateFinalCover252202=async({series,book,chapters})=>{
   if(!fictionAsunderSeedIdentity252146(series))throw Object.assign(new Error('Final Asunder cover generation is not enabled for this series.'),{status:400});
