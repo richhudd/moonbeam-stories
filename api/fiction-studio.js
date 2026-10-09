@@ -2392,7 +2392,9 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   if(!Array.isArray(packet.sources)||!packet.sources.length)return res.status(502).json({error:'Backstage research returned no verifiable sources. Aion planning blocked.'});
   const researchCost=fictionCost25243(fictionUsage25243(data),fictionModel25243('gpt-6-luna')).usd;
   if(mode==='asunder-aion-volume-research'){
-   const saved=await rest('rpc/fiction_aion_save_naming_research',{method:'POST',body:JSON.stringify({p_book:productionBook.id,p_story:productionStoryNumber,p_payload:packet})});
+   const saveResponse=await fetch(`${SUPABASE_URL}/rest/v1/rpc/fiction_aion_save_naming_research`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify({p_book:productionBook.id,p_story:productionStoryNumber,p_payload:packet})});
+   if(!saveResponse.ok)return res.status(502).json({error:'Backstage research completed but checkpoint save failed ('+saveResponse.status+'). Inspect before retrying paid research.'});
+   const saved=await saveResponse.json();
    if(saved!==true)return res.status(409).json({error:'Naming research checkpoint not saved; inspect before another paid research request.'});
   }
   return res.status(200).json({research:packet,model:'gpt-6-luna',usage:data.usage||null,cost_usd:researchCost,pricing_basis:'estimated from reported tokens',research_cost_recorded_in_series_ledger:true});
