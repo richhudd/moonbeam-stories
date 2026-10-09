@@ -2387,7 +2387,10 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   try{packet=fictionXStripJson252166(rr.text,'Aion cast requirements')}catch(e){console.error('Aion cast-brief invalid output',{finish_reason:rr.finish_reason,chars:rr.text.length,model:rr.model,generation_id:rr.generation_id});return res.status(502).json({error:'Aion cast brief was not valid JSON (finish reason: '+rr.finish_reason+', chars: '+rr.text.length+'). No checkpoint saved; inspect output before retrying.'});}
   // Normalise supported provider envelopes locally: never pay Aion again just to reshape JSON.
   const candidates=[packet?.roles,packet?.cast?.roles,packet?.cast_requirements?.roles,packet?.characters,packet?.supporting_characters,packet?.cast,packet?.data?.roles,packet?.result?.roles];
-  const rawRoles=candidates.find(Array.isArray);
+  const rawRoles=candidates.find(Array.isArray)
+   || (Array.isArray(packet)?packet:null)
+   || (packet?.roles && typeof packet.roles==='object'?Object.entries(packet.roles).map(([role,value])=>({role,...(typeof value==='object'&&value!==null?value:{count:value})})):null)
+   || (packet?.cast && typeof packet.cast==='object'&&!Array.isArray(packet.cast)?Object.entries(packet.cast).filter(([key])=>key!=='setting').map(([role,value])=>({role,...(typeof value==='object'&&value!==null?value:{count:value})})):null);
   if(!rawRoles){
    console.error('Aion cast-brief response lacked roles',{keys:Object.keys(packet||{}).slice(0,20),model:rr.model,generation_id:rr.generation_id,finish_reason:rr.finish_reason});
    return res.status(502).json({error:'Aion returned a cast brief without usable roles. No checkpoint saved; see logged response shape.'});
