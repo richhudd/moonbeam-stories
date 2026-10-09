@@ -568,8 +568,8 @@ const fictionPlanningPriority25291=`PLANNING PRIORITY: The Series Bible defines 
 // researches cohort/country/family-appropriate candidates, randomly selects from them, applies
 // the hidden AI-default guard, preserves family naming systems, and only then returns the final name.
 const fictionAIDefaultNameBan25284=[
-  'Mara','Maren','Maira','Maya','Mya','Mira','Myra','Elara','Elora','Elaria','Ellara','Alara','Liora','Liara','Lyra','Lira','Aria','Arya','Rhea','Juno','Cassia','Kaia','Kaira','Nova','Vesper','Vespera','Seraphina','Serafina','Seraphine','Rowan','Silas','Elias','Elian','Elior','Lucien','Lucian','Orion','Alaric','Kael','Cael','Valen','Vallen','Aurelia','Caspian','Soren','Søren','Evander','Dorian','Corin','Corwin','Aster','Astrid','Ember','Wren','Sage','Echo','Luna',
-  'Vale','Vail','Voss','Vosse','Vance','Mercer','Thorne','Thorn','Hale','Sterling','Rourke','Roarke','Hartwell','Hartwick','Hartley','Ashford','Ashcroft','Blackwood','Ravenwood','Westfall','Locke','Frost','Crowe','Cross','Stone','Reed','Reid','Wolfe','Wolf','Grey','Gray','Everett','Sinclair','Hawthorne','Holloway'
+  'Mara','Maren','Maira','Maya','Mya','Mira','Myra','Elara','Elora','Elaria','Ellara','Alara','Liora','Liara','Lyra','Lira','Aria','Arya','Rhea','Juno','Cassia','Kaia','Kaira','Nova','Vesper','Vespera','Seraphina','Serafina','Seraphine','Rowan','Silas','Elias','Elian','Elior','Lucien','Lucian','Orion','Alaric','Kael','Cael','Valen','Vallen','Aurelia','Caspian','Soren','Søren','Evander','Dorian','Corin','Corwin','Aster','Astrid','Ember','Wren','Luna',
+  'Vale','Vail','Voss','Vosse','Vance','Mercer','Thorne','Thorn','Hale','Sterling','Rourke','Roarke','Hartwell','Hartwick','Hartley','Ashford','Ashcroft','Blackwood','Ravenwood','Westfall','Locke','Crowe','Reid','Wolfe','Wolf','Gray','Everett','Sinclair','Hawthorne','Holloway'
 ];
 const fictionAIDefaultSet25284=new Set(fictionAIDefaultNameBan25284.map(x=>x.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase()));
 const fictionNormaliseName25284=(v)=>String(v||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^\p{L}\p{N}'’-]+/gu,' ').trim().toLocaleLowerCase();
