@@ -83,7 +83,25 @@ module.exports=async function handler(req,res){
       complete=beat===12;
      }
     }
-   }catch(e){lastError=String(e?.message||e).slice(0,2000);console.error('Asunder background step failed',{kind:job.kind,target:job.target_id,step,error:lastError});}
+   }catch(e){
+    lastError=String(e?.message||e).slice(0,2000);
+    // A network timeout can occur after fiction-studio has durably saved a
+    // checkpoint. Reconcile against Supabase before scheduling a paid retry.
+    if(job.kind==='volume'&&/timeout|abort/i.test(lastError)){
+      try{
+        const book=(await supa('developer_fiction_books?select=generation_state&id=eq.'+encodeURIComponent(job.target_id)+'&limit=1'))?.[0];
+        const state=book?.generation_state||{};
+        const planned=/^vignette (\\d+) planning$/.exec(step);
+        const writing=/^vignette (\\d+) beat (\\d+)$/.exec(step);
+        const verified=planned?!!state.aion_volume_plans?.[planned[1]]:writing?Array.isArray(state.aion_volume_beats?.[writing[1]])&&state.aion_volume_beats[writing[1]].length>=Number(writing[2]):false;
+        if(verified){
+          console.info('Aion step completed despite worker transport timeout; saved checkpoint verified',{kind:job.kind,target:job.target_id,step});
+          lastError=null;
+        }
+      }catch(checkErr){console.error('Aion timeout checkpoint reconciliation unavailable',{step,error:String(checkErr?.message||checkErr).slice(0,200)});}
+    }
+    if(lastError)console.error('Asunder background step failed',{kind:job.kind,target:job.target_id,step,error:lastError});
+   }
    const persisted=await rpc('fiction_background_finish_step',{p_id:job.id,p_token:job.claim_token,p_step:step,p_error:lastError,p_complete:complete});
    if(persisted!==true)throw new Error('Job result could not be durably acknowledged. Inspect before resuming.');
    return {kind:job.kind,job_id:job.id,step,status:lastError?'paused':complete?'complete':'queued',error:lastError};
