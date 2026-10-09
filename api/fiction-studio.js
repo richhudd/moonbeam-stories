@@ -68,7 +68,7 @@ module.exports = async function handler(req,res){
       if(!secretResponse.ok||!jobResponse.ok)return res.status(503).json({error:'Worker validation temporarily unavailable.',lookup:!secretResponse.ok?'configuration':'job',upstream_status:!secretResponse.ok?secretResponse.status:jobResponse.status});
       const secret=(await secretResponse.json())?.[0]?.worker_secret||'',record=(await jobResponse.json())?.[0]||null;
       const equal=(a,b)=>{const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length>0&&x.length===y.length&&crypto.timingSafeEqual(x,y)};
-      const allowed=['asunder-aion-volume-preflight','asunder-aion-volume-sequence','asunder-aion-volume-plan','asunder-aion-volume-write-beat','asunder-aion-volume-progress','asunder-aion-volume-lock-story','asunder-aion-volume-assemble','asunder-vignette-tester-research','asunder-vignette-tester-plan','asunder-vignette-tester-beat','asunder-vignette-test-get','asunder-vignette-test-save'];
+      const allowed=['asunder-aion-volume-preflight','asunder-aion-volume-sequence','asunder-aion-volume-research','asunder-aion-volume-plan','asunder-aion-volume-write-beat','asunder-aion-volume-progress','asunder-aion-volume-lock-story','asunder-aion-volume-assemble','asunder-vignette-tester-research','asunder-vignette-tester-plan','asunder-vignette-tester-beat','asunder-vignette-test-get','asunder-vignette-test-save'];
       const action=String(body.mode||''),type=action.includes('aion-volume')?'volume':'tester',requestedId=String(type==='volume'?body.book_id:body.test_id);
       if(!equal(secret,req.headers['x-moonbeam-worker-token'])||!record||!equal(record.claim_token,req.headers['x-moonbeam-worker-claim'])||record.status!=='running'||new Date(record.lease_until||0).getTime()<=Date.now()||!allowed.includes(action)||record.kind!==type||String(record.target_id)!==requestedId||String(record.series_id)!==String(body.id||''))return res.status(403).json({error:'Invalid background job credentials or scope.'});
       workerTrusted252700=true;workerRecord252700=record;
@@ -2346,11 +2346,11 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  if(!updated?.length)return res.status(409).json({error:'Concurrent checkpoint update; reload saved test.'});
  return res.status(200).json({test:updated[0]});
 }
-if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-concept'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'||mode==='asunder-aion-volume-plan'||mode==='asunder-aion-volume-write-beat'){
+if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-concept'||mode==='asunder-vignette-tester-plan'||mode==='asunder-vignette-tester-beat'||mode==='asunder-aion-volume-research'||mode==='asunder-aion-volume-plan'||mode==='asunder-aion-volume-write-beat'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Vignette Tester is available only inside Asunder in Fiction X.'});
  let key=String(body.character_key||'').trim(),direction=String(body.direction||'').trim().slice(0,12000);
  let productionBook=null,productionStoryNumber=0;
- if(mode==='asunder-aion-volume-plan'||mode==='asunder-aion-volume-write-beat'){
+ if(mode==='asunder-aion-volume-research'||mode==='asunder-aion-volume-plan'||mode==='asunder-aion-volume-write-beat'){
   if(!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series required.'});
   const bookId=String(body.book_id||'').trim();
   productionStoryNumber=Number(body.story_number);
@@ -2380,7 +2380,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
  const rows=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&character_key=eq.${encodeURIComponent(key)}&limit=1`);
  const wife=rows?.[0];if(!wife)return res.status(404).json({error:'Selected wife not found in this Asunder library.'});
  const canon={character_key:wife.character_key,first_name:wife.first_name,full_name:wife.full_name,anglicised_first_name:wife.anglicised_first_name,age:wife.age,nationality:wife.nationality,relationship_status:wife.relationship_status,profile_data:{personality:wife.profile_data?.personality||'',psychology:wife.profile_data?.psychology||'',relationship_context:wife.profile_data?.relationship_context||''},appearance_spec:wife.appearance_spec};
- if(mode==='asunder-vignette-tester-research'){
+ if(mode==='asunder-vignette-tester-research'||mode==='asunder-aion-volume-research'){
   const schema={type:'object',additionalProperties:false,properties:{setting_facts:{type:'array',items:{type:'string'}},name_candidates:{type:'array',items:{type:'string'}},name_checks:{type:'array',items:{type:'string'}},cultural_facts:{type:'array',items:{type:'string'}},uncertainties:{type:'array',items:{type:'string'}},sources:{type:'array',items:{type:'object',additionalProperties:false,properties:{url:{type:'string'},supports:{type:'string'}},required:['url','supports']}}},required:['setting_facts','name_candidates','name_checks','cultural_facts','uncertainties','sources']};
   const researchPrompt=`LIGHTWEIGHT NAME AND LOCATION VERIFICATION ONLY. Do not research occupations, trades, professional practices, institutions, hobbies, technical facts or biographical details. Do not create story ideas, plot, scenes or motivations. Wife identity: ${JSON.stringify({first_name:canon.first_name,age:canon.age,nationality:canon.nationality,relationship_status:canon.relationship_status})}. Developer direction (identify explicit locations only): ${direction||'[none]'}. Verify realistic names for the relevant nationality and birth cohort and basic geography or cultural naming conventions only. Check obvious real-person name collisions without claiming exhaustive checking. Avoid generic AI names such as Mara, Vale, Voss, Cal and Lena. Return concise structured results with source URLs; leave setting_facts and cultural_facts empty unless essential to naming or basic geography.`;
   const researchStarted=Date.now();
@@ -2391,6 +2391,10 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   const packet=parseFictionStructured25238(data,'Vignette Tester backstage facts');
   if(!Array.isArray(packet.sources)||!packet.sources.length)return res.status(502).json({error:'Backstage research returned no verifiable sources. Aion planning blocked.'});
   const researchCost=fictionCost25243(fictionUsage25243(data),fictionModel25243('gpt-6-luna')).usd;
+  if(mode==='asunder-aion-volume-research'){
+   const saved=await rest('rpc/fiction_aion_save_naming_research',{method:'POST',body:JSON.stringify({p_book:productionBook.id,p_story:productionStoryNumber,p_payload:packet})});
+   if(saved!==true)return res.status(409).json({error:'Naming research checkpoint not saved; inspect before another paid research request.'});
+  }
   return res.status(200).json({research:packet,model:'gpt-6-luna',usage:data.usage||null,cost_usd:researchCost,pricing_basis:'estimated from reported tokens',research_cost_recorded_in_series_ledger:true});
  }
  const leaseOperation=productionBook?(mode==='asunder-aion-volume-plan'?'plan:'+productionStoryNumber:'beat:'+productionStoryNumber+':'+Number(body.beat_number)):null;
@@ -2401,7 +2405,8 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   if(acquired!==true)return res.status(409).json({error:'This Aion operation is already running in another session. Do not start a duplicate paid request. Retry after it finishes.'});
  }
  try{
- const research=mode==='asunder-aion-volume-write-beat'?null:body.research;
+ const research=mode==='asunder-aion-volume-write-beat'?null:mode==='asunder-aion-volume-plan'?productionBook.generation_state?.aion_volume_naming?.[productionStoryNumber]:body.research;
+ if(mode==='asunder-aion-volume-plan'&&(!research||!Array.isArray(research.name_candidates)||!research.name_candidates.length||!Array.isArray(research.sources)||!research.sources.length))return res.status(409).json({error:'Backstage naming research must be saved before Aion planning.'});
  if(mode==='asunder-vignette-tester-plan'&&(!research||!Array.isArray(research.sources)||!research.sources.length||!Array.isArray(research.name_candidates)))return res.status(400).json({error:'Complete lightweight naming and geography checks before Aion planning.'});
  const base=`ASUNDER VIGNETTE TESTER. Aion is the ONLY creative model. This is ONE self-contained vignette, not a four-story book. Use the existing series bible and canonical wife. The developer direction is binding and must appear, but need not be the ending. Asunder membership is OPEN, never invitation-only; married women join free and adult men and women pay premium access. Avoid formulaic politeness, implausibly cooperative dialogue, moral lessons and repetitive introspection. All characters are consenting adults aged 21 or older. UK English unless canonical setting demands otherwise. NO editorial, rewrite or revision stage.\nSTYLE DIRECTIVE — ASUNDER: Write intense, explicit, arousing, dramatic, psychologically credible, transgressive erotica. These qualities are the primary genre promise, not optional accents. Sustain desire, erotic tension, emotional pressure and serious dramatic stakes throughout the story. The transgression must be integral to the characters' choices and consequences, while psychology is revealed through behaviour, conflicting motives and consequential action rather than repeated explanation. Make every scene serve the unfolding erotic and dramatic experience; do not dilute the premise with digression, moral instruction or detached commentary. Keep the individual developer direction binding, and allow the plot to evolve beyond it naturally.\nSERIES BIBLE: ${JSON.stringify(series.series_bible||{}).slice(0,42000)}\nCANONICAL WIFE: ${JSON.stringify(canon).slice(0,14000)}\nDEVELOPER DIRECTION: ${direction||'[None supplied; invent freely]'}\n${research?'BACKSTAGE NAMING AND GEOGRAPHY CHECKS ONLY (never use as plot material): '+JSON.stringify({name_candidates:research.name_candidates,name_checks:research.name_checks,sources:research.sources}).slice(0,4500):''}`;
  if(mode==='asunder-vignette-tester-concept'){
@@ -3844,7 +3849,7 @@ if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence
  const state=book.generation_state||{},locked=state.aion_volume_locked||{};
  const volumeCount=fictionAionVolumeCount252510(book);
  const next=Array.from({length:volumeCount},(_,i)=>i+1).find(n=>!locked[n])||null;
- if(mode==='asunder-aion-volume-sequence')return res.status(200).json({next_story:next,completed:next===null,locked_stories:Object.keys(locked).filter(n=>locked[n]).map(Number).sort((a,b)=>a-b),next_step:next===null?'assemble_volume':!state.aion_volume_plans?.[next]?'plan':(state.aion_volume_beats?.[next]?.length||0)<12?'write':'stitch_and_lock'});
+ if(mode==='asunder-aion-volume-sequence')return res.status(200).json({next_story:next,completed:next===null,locked_stories:Object.keys(locked).filter(n=>locked[n]).map(Number).sort((a,b)=>a-b),next_step:next===null?'assemble_volume':!state.aion_volume_plans?.[next]?(!state.aion_volume_naming?.[next]?'research':'plan'):(state.aion_volume_beats?.[next]?.length||0)<12?'write':'stitch_and_lock'});
  const n=Number(body.story_number);
  if(!Number.isInteger(n)||n!==next)return res.status(409).json({error:'Only the next unlocked vignette may be stitched and locked.'});
  const entry=state.aion_volume_plans?.[n],beats=state.aion_volume_beats?.[n];
