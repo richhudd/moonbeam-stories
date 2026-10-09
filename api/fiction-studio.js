@@ -2397,7 +2397,7 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
  const leaseToken=leaseOperation?crypto.randomUUID():null;
  const leaseRpc=async(name,payload)=>{const response=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`,{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify(payload)});if(!response.ok)throw new Error('Aion generation lease service unavailable ('+response.status+'). Generation blocked.');return await response.json();};
  if(leaseOperation){
-  const acquired=await leaseRpc('fiction_aion_claim_lease',{p_book:productionBook.id,p_operation:leaseOperation,p_token:leaseToken,p_seconds:3600});
+  const acquired=await leaseRpc('fiction_aion_claim_lease',{p_book:productionBook.id,p_operation:leaseOperation,p_token:leaseToken,p_seconds:420});
   if(acquired!==true)return res.status(409).json({error:'This Aion operation is already running in another session. Do not start a duplicate paid request. Retry after it finishes.'});
  }
  try{
