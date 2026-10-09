@@ -2385,9 +2385,23 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
   const rr=await fictionXAionCall252166({system:'Return exactly one valid JSON object matching the supplied JSON schema. Produce only a compact cast requirement specification, never story or prose. Do not invent names. Preserve established canonical names.',prompt:'CANONICAL PROFILE: '+JSON.stringify(canon).slice(0,13000)+'\\nFULL PROFILE DATA: '+JSON.stringify(wife.profile_data||{}).slice(0,12000)+'\\nDEVELOPER DIRECTION: '+direction+'\\nReturn the number and cultural/age context of named supporting roles needed for this vignette. Keep all established husband/partner names fixed. If unnamed, request a name for that role; do not invent one yourself. No plot or beats.',max_tokens:8000,temperature:0,json_schema:schema,json_schema_name:'asunder_cast_requirements'});
   let packet;
   try{packet=fictionXStripJson252166(rr.text,'Aion cast requirements')}catch(e){console.error('Aion cast-brief invalid output',{finish_reason:rr.finish_reason,chars:rr.text.length,model:rr.model,generation_id:rr.generation_id});return res.status(502).json({error:'Aion cast brief was not valid JSON (finish reason: '+rr.finish_reason+', chars: '+rr.text.length+'). No checkpoint saved; inspect output before retrying.'});}
+  // Normalise supported provider envelopes locally: never pay Aion again just to reshape JSON.
+  const candidates=[packet?.roles,packet?.cast?.roles,packet?.cast_requirements?.roles,packet?.characters,packet?.supporting_characters,packet?.cast,packet?.data?.roles,packet?.result?.roles];
+  const rawRoles=candidates.find(Array.isArray);
+  if(!rawRoles){
+   console.error('Aion cast-brief response lacked roles',{keys:Object.keys(packet||{}).slice(0,20),model:rr.model,generation_id:rr.generation_id,finish_reason:rr.finish_reason});
+   return res.status(502).json({error:'Aion returned a cast brief without usable roles. No checkpoint saved; see logged response shape.'});
+  }
+  packet={setting:String(packet.setting||packet.location||packet.cast?.setting||''),roles:rawRoles.map((role,i)=>({
+   role:String(role?.role||role?.type||role?.relationship||role?.description||('Supporting character '+(i+1))).trim(),
+   count:Math.max(1,Math.min(30,Number(role?.count||role?.number||role?.quantity||1)||1)),
+   nationality_or_region:String(role?.nationality_or_region||role?.nationality||role?.region||role?.culture||'To be researched'),
+   approximate_age:String(role?.approximate_age||role?.age||role?.age_range||'Adult'),
+   existing_name:String(role?.existing_name||role?.established_name||'')
+  }))};
   const canonicalHusband=String(canon.profile_data?.canonical_husband?.full_name||'').trim();
-  if(canonicalHusband&&Array.isArray(packet.roles))packet.roles=packet.roles.map(role=>/\b(husband|spouse)\b/i.test(String(role.role||''))?{...role,existing_name:canonicalHusband,count:1}:role);
-  if(!Array.isArray(packet.roles))return res.status(502).json({error:'Cast requirements missing roles. No checkpoint saved.'});
+  if(canonicalHusband)packet.roles=packet.roles.map(role=>/\b(husband|spouse)\b/i.test(role.role)?{...role,existing_name:canonicalHusband,count:1}:role);
+  if(packet.roles.length>30||packet.roles.some(role=>!role.role))return res.status(502).json({error:'Aion cast brief had invalid roles; nothing was saved.'});
   const sr=await fetch(SUPABASE_URL+'/rest/v1/rpc/fiction_aion_save_cast_brief',{method:'POST',headers:adminHeaders({'Content-Type':'application/json'}),body:JSON.stringify({p_book:productionBook.id,p_story:productionStoryNumber,p_payload:packet})});
   if(!sr.ok||await sr.json()!==true)return res.status(502).json({error:'Cast brief checkpoint not saved; inspect before retrying.'});
   await fictionMeterAionVolumeCheckpoint252640({bookId:productionBook.id,story:productionStoryNumber,cost:Number(rr.cost_usd)||0,rr});
