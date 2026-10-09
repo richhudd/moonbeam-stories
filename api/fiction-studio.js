@@ -3806,7 +3806,7 @@ if(mode==='asunder-ten-cast-draft'){
  if(count!==10)return res.status(409).json({error:'Existing four-vignette volumes retain their original cast.'});
  const queuedRows=await rest(`developer_fiction_vignette_tests?select=id,character_key,direction,status,plan,beats,volume_reservation,cost_usd&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&volume_reservation=not.is.null&limit=200`);
  const reserved=(queuedRows||[]).filter(t=>Number(t.volume_reservation?.position)===position);
- if(body.action==='load')return res.status(200).json({book_id:book?.id||null,count,cast:Array.isArray(book?.development_state?.asunder_cast)?book.development_state.asunder_cast:[],reservations:reserved.map(t=>({test_id:t.id,character_key:t.character_key,direction:t.direction,slot:Number(t.volume_reservation.slot),title:t.plan?.title||''}))});
+ if(body.action==='load')return res.status(200).json({book_id:book?.id||null,count,cast:Array.isArray(book?.development_state?.asunder_cast)?book.development_state.asunder_cast:[],reservations:reserved.map(t=>({test_id:t.id,character_key:t.character_key,direction:t.direction,slot:Number(t.volume_reservation.slot),title:t.plan?.title||''})),cast_locked:!!book&&Object.keys(book.generation_state?.aion_volume_plans||{}).length>0});
  const keys=Array.isArray(body.character_keys)?body.character_keys.map(x=>String(x||'').trim()):[];
  const directions=Array.isArray(body.directions)?body.directions.map(x=>String(x||'').trim().slice(0,4000)):[];
  if(keys.length!==10||new Set(keys).size!==10||directions.length!==10||directions.some(x=>!x))return res.status(400).json({error:'Select ten distinct wives and provide a direction for each.'});
