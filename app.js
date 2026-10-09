@@ -4223,7 +4223,7 @@ async function loadSavedFictionBooks25233(){
  const cards=[...body.querySelectorAll('[data-fiction-book-index]')];
  try{
   await refreshFictionBooks252462();
-  if(fictionAsunder2Identity252286(s)){
+  if(fictionAsunder2Identity252286(s)||(fictionAsunderSeriesIdentity252149(s)&&!fictionAsunder2Identity252286(s))){
    const maxExisting252319=Math.max(0,...fictionStudioBooks25231.map(x=>Number(x.position)||0)),wanted252319=Math.max(1,maxExisting252319+1);
    if(cards.length!==wanted252319){renderFictionSeries25229(s.id);return}
   }
