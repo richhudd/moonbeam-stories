@@ -2153,11 +2153,11 @@ Every story plan must use the wife assigned to that exact vignette number. Retur
 // Stage 2: isolated Aion-only creative endpoint for the Asunder Vignette Tester.
 // No database writes. Stage 3 will add durable checkpoints and cost ledger.
 // Durable Vignette Tester checkpoints; owner- and series-scoped, separate from book production.
-if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignette-test-get','asunder-vignette-test-save'].includes(mode)){
+if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignette-test-get','asunder-vignette-test-save','asunder-vignette-test-reserve'].includes(mode)){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Asunder Vignette Tester only.'});
  const table='developer_fiction_vignette_tests',testId=String(body.test_id||'').trim();
  if(mode==='asunder-vignette-test-list'){
-  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,research_cost_usd,planning_cost_usd,writing_cost_usd,last_error,planning_attempts,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
+  const rows=await rest(`${table}?select=id,character_key,direction,status,cost_usd,research_cost_usd,planning_cost_usd,writing_cost_usd,last_error,planning_attempts,volume_reservation,created_at,updated_at&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=created_at.desc&limit=30`);
   return res.status(200).json({tests:rows||[]});
  }
  if(mode==='asunder-vignette-test-create'){
@@ -2172,6 +2172,30 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  const url=`${table}?select=*&id=eq.${encodeURIComponent(testId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&limit=1`;
  const existing=(await rest(url))?.[0];if(!existing)return res.status(404).json({error:'Test not found.'});
  if(mode==='asunder-vignette-test-get')return res.status(200).json({test:existing});
+ if(mode==='asunder-vignette-test-reserve'){
+  if(!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Ten-vignette Asunder required.'});
+  const existingReservation=existing.volume_reservation||null;
+  if(body.action==='remove'){
+   if(!existingReservation)return res.status(200).json({test:existing});
+   if(existingReservation.book_id)return res.status(409).json({error:'This vignette is already imported. Its volume copy is locked.'});
+   const rows=await rest(`${table}?id=eq.${encodeURIComponent(testId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&updated_at=eq.${encodeURIComponent(existing.updated_at)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({volume_reservation:null,updated_at:new Date().toISOString()})});
+   return rows?.length?res.status(200).json({test:rows[0]}):res.status(409).json({error:'Reservation changed. Reload.'});
+  }
+  if(existingReservation?.book_id)return res.status(409).json({error:'Already imported into a volume.'});
+  const slot=Number(body.slot);
+  if(!Number.isInteger(slot)||slot<1||slot>10)return res.status(400).json({error:'Choose a position from 1 to 10.'});
+  const beats=Array.isArray(existing.beats)?existing.beats:[];
+  if(existing.status!=='complete'||!existing.plan||beats.length!==12||beats.some((b,i)=>Number(b.number)!==i+1||String(b.text||'').trim().length<120))return res.status(409).json({error:'Only complete twelve-beat vignettes can be reserved.'});
+  const latest=await rest(`developer_fiction_books?select=position&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&order=position.desc&limit=1`);
+  const position=Math.max(1,Number(latest?.[0]?.position||0)+1);
+  const reserved=await rest(`${table}?select=id,character_key,volume_reservation&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&volume_reservation=not.is.null&limit=200`);
+  const others=(reserved||[]).filter(x=>String(x.id)!==testId&&Number(x.volume_reservation?.position)===position);
+  if(others.some(x=>Number(x.volume_reservation?.slot)===slot))return res.status(409).json({error:'Position '+slot+' is reserved by another story.'});
+  if(others.some(x=>String(x.character_key)===String(existing.character_key)))return res.status(409).json({error:'This wife is already reserved for the next volume.'});
+  const rows=await rest(`${table}?id=eq.${encodeURIComponent(testId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&updated_at=eq.${encodeURIComponent(existing.updated_at)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({volume_reservation:{position,slot,queued_at:new Date().toISOString()},updated_at:new Date().toISOString()})});
+  return rows?.length?res.status(200).json({test:rows[0]}):res.status(409).json({error:'Reservation changed. Reload.'});
+ }
+
  const phase=String(body.phase||''),payload={},current=Array.isArray(existing.beats)?existing.beats:[];
  if(phase==='error'){
   payload.last_error=String(body.error||'Unknown generation error').slice(0,1600);
@@ -3775,25 +3799,40 @@ if(mode==='asunder-ten-cast-draft'){
  let book=(await rest(url))?.[0]||null;
  const count=Number(book?.development_state?.aion_volume_vignette_count||((book?.development_state?.asunder_cast?.length===4)?4:10));
  if(count!==10)return res.status(409).json({error:'Existing four-vignette volumes retain their original cast.'});
- if(body.action==='load')return res.status(200).json({book_id:book?.id||null,count:10,cast:Array.isArray(book?.development_state?.asunder_cast)?book.development_state.asunder_cast:[]});
+ const queuedRows=await rest(`developer_fiction_vignette_tests?select=id,character_key,direction,status,plan,beats,volume_reservation,cost_usd&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&volume_reservation=not.is.null&limit=200`);
+ const reserved=(queuedRows||[]).filter(t=>Number(t.volume_reservation?.position)===position);
+ if(body.action==='load')return res.status(200).json({book_id:book?.id||null,count,cast:Array.isArray(book?.development_state?.asunder_cast)?book.development_state.asunder_cast:[],reservations:reserved.map(t=>({test_id:t.id,character_key:t.character_key,direction:t.direction,slot:Number(t.volume_reservation.slot),title:t.plan?.title||''}))});
  const keys=Array.isArray(body.character_keys)?body.character_keys.map(x=>String(x||'').trim()):[];
  const directions=Array.isArray(body.directions)?body.directions.map(x=>String(x||'').trim().slice(0,4000)):[];
  if(keys.length!==10||new Set(keys).size!==10||directions.length!==10||directions.some(x=>!x))return res.status(400).json({error:'Select ten distinct wives and provide a direction for each.'});
  if(book&&(book.generation_state?.aion_volume_plans||Object.keys(book.book_plan||{}).length))return res.status(409).json({error:'Volume development has already begun. Cast cannot be overwritten.'});
+ const importPlans={},importBeats={},importStitched={},importLocked={},imports={};
+ for(const t of reserved){
+  const n=Number(t.volume_reservation?.slot),i=n-1;
+  if(!Number.isInteger(n)||n<1||n>10||imports[n])return res.status(409).json({error:'Conflicting reserved vignette positions.'});
+  if(t.status!=='complete'||!t.plan||!Array.isArray(t.beats)||t.beats.length!==12||t.beats.some((b,k)=>Number(b.number)!==k+1||String(b.text||'').trim().length<120))return res.status(409).json({error:'Reserved vignette '+n+' is incomplete.'});
+  if(keys[i]!==t.character_key||directions[i]!==String(t.direction||'').trim().slice(0,4000))return res.status(409).json({error:'Reserved vignette '+n+' must retain its wife and original direction.'});
+  const text=t.beats.map(b=>String(b.text).trim()).join('\n\n'),at=new Date().toISOString();
+  importPlans[n]={plan:t.plan,character_key:t.character_key,direction:t.direction,research:null,source_test_id:t.id,created_at:at,cost_usd:0,attempts:0};
+  importBeats[n]=t.beats.map(b=>({number:Number(b.number),text:String(b.text),cost_usd:0,source_test_id:t.id}));
+  importStitched[n]={text,character_key:t.character_key,title:String(t.plan.title||'').trim(),locked_at:at,word_count:text.trim().split(/\s+/).length,source_test_id:t.id};
+  importLocked[n]=true;imports[n]={test_id:t.id,character_key:t.character_key,original_test_cost_usd:Number(t.cost_usd)||0,imported_at:at};
+ }
+ const importedGenerationState={...(book?.generation_state||{}),aion_volume_plans:importPlans,aion_volume_beats:importBeats,aion_volume_stitched:importStitched,aion_volume_locked:importLocked,aion_volume_imports:imports};
  const profiles=await rest(`developer_fiction_asunder_profiles?select=*&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}`);
  const selected=keys.map(k=>(profiles||[]).find(p=>String(p.character_key||'')===k));
  if(selected.some(x=>!x))return res.status(409).json({error:'Wife Library changed. Reload and select again.'});
  const cast=selected.map((p,i)=>({...fictionAsunderWifeLibrarySummary252216(p),intimacy_direction:directions[i]}));
  const state={...(book?.development_state||{}),aion_volume_vignette_count:10,asunder_cast:cast,asunder_cast_locked_at:new Date().toISOString(),phase:'cast_draft'};
  if(book){
-  const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:state,updated_at:new Date().toISOString()})});
+  const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(book.id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({development_state:state,generation_state:importedGenerationState,updated_at:new Date().toISOString()})});
   book=rows?.[0];
  }else{
-  const rows=await rest('developer_fiction_books',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,position,working_title:`Asunder: Volume ${position}`,premise:'Ten individually directed Asunder vignettes.',book_plan:{},status:'planning',development_model:'gpt-6-luna',development_state:state})});
+  const rows=await rest('developer_fiction_books',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({parent_id:user.id,series_id:id,position,working_title:`Asunder: Volume ${position}`,premise:'Ten individually directed Asunder vignettes.',book_plan:{},status:'planning',development_model:'gpt-6-luna',development_state:state,generation_state:importedGenerationState})});
   book=rows?.[0];
  }
  if(!book)return res.status(502).json({error:'Could not persist ten-wife cast.'});
- return res.status(200).json({saved:true,book_id:book.id,count:10,cast});
+ return res.status(200).json({saved:true,book_id:book.id,count:10,cast,imported_slots:Object.keys(imports).map(Number)});
 }
 if(mode==='asunder-aion-volume-preflight'){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderLegacyIdentity252286(series)||fictionAsunder2Identity252286(series))return res.status(400).json({error:'Current Asunder series in Fiction X required.'});
