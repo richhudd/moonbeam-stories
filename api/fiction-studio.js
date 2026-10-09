@@ -2236,9 +2236,9 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
   if(linked?.book_id)return res.status(409).json({error:'This vignette is already imported into a volume and cannot be deleted here.'});
   const jobs=await rest('developer_fiction_background_jobs?select=id,status&parent_id=eq.'+encodeURIComponent(user.id)+'&series_id=eq.'+encodeURIComponent(id)+'&kind=eq.tester&target_id=eq.'+encodeURIComponent(testId)+'&limit=100');
   if(jobs?.some(j=>['queued','running'].includes(j.status)))return res.status(409).json({error:'Generation is active. Pause it and allow the current request to finish before deleting.'});
-  for(const j of jobs||[]){
-   await rest('developer_fiction_background_jobs?id=eq.'+encodeURIComponent(j.id)+'&parent_id=eq.'+encodeURIComponent(user.id)+'&status=in.(paused,complete)',{method:'DELETE'});
-  }
+  // Historical paused/completed job records are retained. They cannot run again
+  // without explicit requeue, and the replacement vignette receives a new test ID.
+  // The background-jobs table deliberately does not expose DELETE permissions.
   await rest(table+'?id=eq.'+encodeURIComponent(testId)+'&parent_id=eq.'+encodeURIComponent(user.id)+'&series_id=eq.'+encodeURIComponent(id)+'&updated_at=eq.'+encodeURIComponent(existing.updated_at),{method:'DELETE'});
   const check=await rest(url);
   if(check?.length)return res.status(409).json({error:'Vignette changed and was not deleted. Reload and retry.'});
