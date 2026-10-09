@@ -3543,7 +3543,7 @@ async function openFictionAsunderVignetteTester252500(){
     const reservation=t.volume_reservation;
     const tag=reservation?' · Reserved Volume '+Number(reservation.position)+' / Vignette '+Number(reservation.slot):'';
     const label=escapeHtml(name)+(storyTitle?' — '+escapeHtml(storyTitle):'')+' · '+escapeHtml(stage)+tag+' · '+new Date(t.created_at).toLocaleDateString();
-    return '<div style="padding:8px 0;border-bottom:1px solid var(--border,#ccc)"><button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Open / Resume · ')+label+'</button>'+(t.status==='complete'&&!fictionAsunder2Identity252286(series)?'<label style="display:inline-flex;align-items:center;gap:6px;margin:4px"><span>Position</span><select data-test-slot="'+escapeHtml(t.id)+'">'+Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'" '+(Number(reservation?.slot)===i+1?'selected':'')+'>'+(i+1)+'</option>').join('')+'</select></label><button type="button" class="secondary" data-reserve-test="'+escapeHtml(t.id)+'">'+(reservation?'Change position':'Reserve for next volume')+'</button>'+(reservation?'<button type="button" class="secondary" data-unreserve-test="'+escapeHtml(t.id)+'">Remove reservation</button>':''):'')+'</div>';
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border,#ccc)"><button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Open / Resume · ')+label+'</button><button type="button" class="secondary" data-delete-test="'+escapeHtml(t.id)+'" style="margin-left:8px">Delete</button>'+(t.status==='complete'&&!fictionAsunder2Identity252286(series)?'<label style="display:inline-flex;align-items:center;gap:6px;margin:4px"><span>Position</span><select data-test-slot="'+escapeHtml(t.id)+'">'+Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'" '+(Number(reservation?.slot)===i+1?'selected':'')+'>'+(i+1)+'</option>').join('')+'</select></label><button type="button" class="secondary" data-reserve-test="'+escapeHtml(t.id)+'">'+(reservation?'Change position':'Reserve for next volume')+'</button>'+(reservation?'<button type="button" class="secondary" data-unreserve-test="'+escapeHtml(t.id)+'">Remove reservation</button>':''):'')+'</div>';
    }).join(' '):'<p class="muted">No vignettes yet. Generate one to create its own entry.</p>');
    saved.querySelectorAll('[data-reserve-test]').forEach(btn=>btn.onclick=async()=>{
     btn.disabled=true;
@@ -3557,6 +3557,19 @@ async function openFictionAsunderVignetteTester252500(){
     btn.disabled=true;
     try{await fictionStudioRequest25229({mode:'asunder-vignette-test-reserve',id:series.id,test_id:btn.dataset.unreserveTest,action:'remove'});status.textContent='Reservation removed; original test remains saved.';await refreshSaved()}
     catch(e){status.textContent='Could not remove reservation: '+String(e.message||e);btn.disabled=false}
+   });
+   saved.querySelectorAll('[data-delete-test]').forEach(btn=>btn.onclick=async()=>{
+    const testId=btn.dataset.deleteTest;
+    const item=tests.find(t=>t.id===testId);
+    const name=wifeNames[item?.character_key]||'this vignette';
+    if(!confirm("Permanently delete "+name+"'s saved vignette, including its direction and story? The wife profile will remain in the library."))return;
+    btn.disabled=true;
+    try{
+     await fictionStudioRequest25229({mode:'asunder-vignette-test-delete',id:series.id,test_id:testId});
+     if(activeTestId===testId){activeTestId=null;output.textContent='';const panel=$('fictionTesterExistingDirectionEditor252500');if(panel)panel.style.display='none';}
+     status.textContent='Vignette deleted. Its wife remains available for a fresh generation.';
+     await refreshSaved();
+    }catch(e){status.textContent='Delete failed: '+String(e.message||e);btn.disabled=false}
    });
    saved.querySelectorAll('[data-test-id]').forEach(btn=>btn.onclick=async()=>{
     try{
