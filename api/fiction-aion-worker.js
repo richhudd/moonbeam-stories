@@ -18,8 +18,8 @@ module.exports=async function handler(req,res){
  if(req.method!=='POST')return res.status(405).json({error:'POST only'});
  try{
   const config=(await supa('developer_fiction_worker_configuration?select=worker_secret&singleton=eq.true&limit=1'))?.[0];
-  const presented=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
-  if(!config||!safeEqual(config.worker_secret,presented))return res.status(403).json({error:'Unauthorized worker invocation.',header_present:!!req.headers.authorization,provided_chars:presented.length,expected_chars:String(config?.worker_secret||'').length,scheme:String(req.headers.authorization||'').slice(0,6)});
+  const presented=String(req.headers['x-moonbeam-worker-key']||'');
+  if(!config||!safeEqual(config.worker_secret,presented))return res.status(403).json({error:'Unauthorized worker invocation.',header_present:!!req.headers['x-moonbeam-worker-key'],provided_chars:presented.length,expected_chars:String(config?.worker_secret||'').length});
   const work=async()=>{
    const job=(await rpc('fiction_background_claim_job',{}))?.[0];
    if(!job)return {idle:true};
