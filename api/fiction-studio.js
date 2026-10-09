@@ -2212,7 +2212,7 @@ if(mode==='fiction-background-job-control'){
  return res.status(200).json({job:created?.[0],notice:'Queued independently of the browser. Server worker will advance it.'});
 }
 // Durable Vignette Tester checkpoints; owner- and series-scoped, separate from book production.
-if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignette-test-get','asunder-vignette-test-save','asunder-vignette-test-reserve','asunder-vignette-test-update-direction'].includes(mode)){
+if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignette-test-get','asunder-vignette-test-save','asunder-vignette-test-reserve','asunder-vignette-test-update-direction','asunder-vignette-test-reset'].includes(mode)){
  if(fictionStudioSection252134!=='fiction_x'||!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Asunder Vignette Tester only.'});
  const table='developer_fiction_vignette_tests',testId=String(body.test_id||'').trim();
  if(mode==='asunder-vignette-test-list'){
@@ -2231,6 +2231,16 @@ if(['asunder-vignette-test-create','asunder-vignette-test-list','asunder-vignett
  const url=`${table}?select=*&id=eq.${encodeURIComponent(testId)}&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}&limit=1`;
  const existing=(await rest(url))?.[0];if(!existing)return res.status(404).json({error:'Test not found.'});
  if(mode==='asunder-vignette-test-get')return res.status(200).json({test:existing});
+ if(mode==='asunder-vignette-test-reset'){
+  const active=await rest('developer_fiction_background_jobs?select=id,status,lease_until&parent_id=eq.'+encodeURIComponent(user.id)+'&series_id=eq.'+encodeURIComponent(id)+'&kind=eq.tester&target_id=eq.'+encodeURIComponent(testId)+'&status=in.(queued,running)&limit=5');
+  if(active?.some(j=>j.status==='running'&&new Date(j.lease_until||0)>new Date()))return res.status(409).json({error:'An Aion request is still in flight. Pause the job and retry once its current request finishes; no draft will be deleted meanwhile.'});
+  if(active?.some(j=>j.status==='queued'))return res.status(409).json({error:'Pause the queued job before resetting.'});
+  const direction=String(body.direction??existing.direction??'').slice(0,12000);
+  if(!direction.trim())return res.status(400).json({error:'Direction cannot be blank.'});
+  const updated=await rest(table+'?id=eq.'+encodeURIComponent(testId)+'&parent_id=eq.'+encodeURIComponent(user.id)+'&series_id=eq.'+encodeURIComponent(id)+'&updated_at=eq.'+encodeURIComponent(existing.updated_at),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({direction,research:null,concept:null,plan:null,beats:[],status:'research_pending',last_error:null,planning_attempts:0,updated_at:new Date().toISOString()})});
+  if(!updated?.length)return res.status(409).json({error:'Vignette changed. Reload before resetting.'});
+  return res.status(200).json({test:updated[0],notice:'Draft and plan cleared; selected wife and revised direction retained. Historical costs preserved.'});
+ }
  if(mode==='asunder-vignette-test-update-direction'){
   const direction=String(body.direction??'').slice(0,12000);
   if(!direction.trim())return res.status(400).json({error:'Direction cannot be blank.'});
