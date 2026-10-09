@@ -91,8 +91,8 @@ module.exports=async function handler(req,res){
       try{
         const book=(await supa('developer_fiction_books?select=generation_state&id=eq.'+encodeURIComponent(job.target_id)+'&limit=1'))?.[0];
         const state=book?.generation_state||{};
-        const planned=/^vignette (\\d+) planning$/.exec(step);
-        const writing=/^vignette (\\d+) beat (\\d+)$/.exec(step);
+        const planned=/^vignette (\d+) planning$/.exec(step);
+        const writing=/^vignette (\d+) beat (\d+)$/.exec(step);
         const verified=planned?!!state.aion_volume_plans?.[planned[1]]:writing?Array.isArray(state.aion_volume_beats?.[writing[1]])&&state.aion_volume_beats[writing[1]].length>=Number(writing[2]):false;
         if(verified){
           console.info('Aion step completed despite worker transport timeout; saved checkpoint verified',{kind:job.kind,target:job.target_id,step});
