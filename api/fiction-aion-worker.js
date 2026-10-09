@@ -92,5 +92,5 @@ module.exports=async function handler(req,res){
   // advance in parallel. Each job has its own lease and persistent checkpoints.
   const settled=await Promise.allSettled([work(),work()]);
   return res.status(200).json({jobs:settled.map(x=>x.status==='fulfilled'?x.value:{error:String(x.reason?.message||x.reason)})});
- }catch(e){console.error('Asunder worker invocation rejected/failed',e);return res.status(500).json({error:'Background worker failed; inspect worker logs.'})}
+ }catch(e){console.error('Asunder worker invocation rejected/failed',e);return res.status(500).json({error:'Background worker failed',detail:String(e?.message||e).slice(0,350)})}
 };
