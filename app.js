@@ -4370,7 +4370,7 @@ async function openSavedFictionBook25233(bookId){
    host.appendChild(panel);
    const run=$('fictionAionRun252500'),stop=$('fictionAionStop252500'),status=$('fictionAionStatus252500');
    const key=s.id+':'+b.id;
-   let planningWatch=null;
+   let planningWatch=null,activePlanningStory=null,planningStartedAt=null;
    const update=async()=>{
     if(!status.isConnected)return;
     let expiry;
@@ -4386,14 +4386,14 @@ async function openSavedFictionBook25233(bookId){
    run.onclick=async()=>{
     if(fictionAionVolumeRunner252500.running.has(key))return;
     run.disabled=true;
-    const startedAt=Date.now();planningWatch=setInterval(()=>{if(!status.isConnected){clearInterval(planningWatch);return}if(status.textContent.includes('planning')){const seconds=Math.floor((Date.now()-startedAt)/1000);status.textContent='Vignette 1 · planning · '+Math.floor(seconds/60)+'m '+String(seconds%60).padStart(2,'0')+'s'+(seconds>=90?' · Taking longer than expected; waiting for the server. Do not restart.':'')}},1000);
+    planningWatch=setInterval(()=>{if(!status.isConnected){clearInterval(planningWatch);return}if(activePlanningStory!==null&&planningStartedAt!==null&&status.textContent.includes('planning')){const seconds=Math.floor((Date.now()-planningStartedAt)/1000);status.textContent='Vignette '+activePlanningStory+' · planning · '+Math.floor(seconds/60)+'m '+String(seconds%60).padStart(2,'0')+'s'+(seconds>=90?' · Taking longer than expected; waiting for the server. Do not restart.':'')}},1000);
     try{
      const result=await runFictionAionVolume252500(s.id,b.id,({story,phase,beat})=>{
-      if(status.isConnected)status.textContent='Vignette '+story+' · '+phase+(beat?' · beat '+beat+'/12':'');
+      if(phase==='planning'){if(activePlanningStory!==story){planningStartedAt=Date.now()}activePlanningStory=story}else{activePlanningStory=null;planningStartedAt=null}if(status.isConnected)status.textContent='Vignette '+story+' · '+phase+(beat?' · beat '+beat+'/12':'');
      });
      if(status.isConnected)status.textContent=result.paused?'Paused at saved checkpoint.':result.complete?'All vignettes locked · final assembly pending.':'Runner stopped.';
     }catch(e){if(status.isConnected)status.textContent='Paused: '+String(e.message||e)+' · Resume from saved checkpoint.'}
-    finally{clearInterval(planningWatch);planningWatch=null;run.disabled=false}
+    finally{clearInterval(planningWatch);planningWatch=null;activePlanningStory=null;planningStartedAt=null;run.disabled=false}
    };
    stop.onclick=()=>{stopFictionAionVolume252500(s.id,b.id);status.textContent='Stop requested · waiting for current request to finish…'};
    void update();
