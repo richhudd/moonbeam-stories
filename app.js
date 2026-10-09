@@ -4363,10 +4363,16 @@ async function openSavedFictionBook25233(bookId){
    const key=s.id+':'+b.id;
    let planningWatch=null;
    const update=async()=>{
+    if(!status.isConnected)return;
+    let expiry;
     try{
-     const seq=await fictionStudioRequest25229({mode:'asunder-aion-volume-sequence',id:s.id,book_id:b.id});
-     if(!fictionAionVolumeRunner252500.running.has(key))status.textContent=seq.completed?'All vignettes locked · select Start / Resume to verify final assembly.':'Next: Vignette '+seq.next_story+' · '+seq.next_step.replace(/_/g,' ');
-    }catch(e){status.textContent='Unable to read Aion checkpoint: '+String(e.message||e)}
+     const seq=await Promise.race([
+      fictionStudioRequest25229({mode:'asunder-aion-volume-sequence',id:s.id,book_id:b.id}),
+      new Promise((_,reject)=>{expiry=setTimeout(()=>reject(new Error('Checkpoint status timed out after 15 seconds. This is a read-only check; no paid generation was started.')),15000);})
+     ]);
+     if(status.isConnected&&!fictionAionVolumeRunner252500.running.has(key))status.textContent=seq.completed?'All vignettes locked · select Start / Resume to verify final assembly.':'Next: Vignette '+seq.next_story+' · '+seq.next_step.replace(/_/g,' ');
+    }catch(e){if(status.isConnected)status.textContent='Unable to read Aion checkpoint: '+String(e.message||e)+' · You can retry this status check by reopening the book.'}
+    finally{if(expiry)clearTimeout(expiry)}
    };
    run.onclick=async()=>{
     if(fictionAionVolumeRunner252500.running.has(key))return;
