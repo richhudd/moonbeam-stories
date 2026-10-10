@@ -4882,11 +4882,11 @@ async function downloadFictionNovelEpub252700(b){
   const d=await fictionStudioRequest25229({mode:'export-novel',id:fictionStudioActive25229.id,book_id:b.id});
   const chapters=(d.chapters||[]).filter(c=>String(c.manuscript||'').trim()).sort((a,z)=>Number(a.chapter_number)-Number(z.chapter_number));
   if(!chapters.length)throw new Error('This book has no saved manuscript chapters to export.');
-  const asunder=/^asunder(?: 2\\.0)?$/i.test(String(d.series?.series_name||'').trim());
+  const asunder=/^asunder(?: 2\.0)?$/i.test(String(d.series?.series_name||'').trim());
   const title=String(d.book?.working_title||'Untitled Book');
   const author=asunder?'Ana Rojas':String(d.series?.author_name||d.series?.author||'');
   const xml=kindleXml,html=(t,body)=>'<?xml version="1.0" encoding="utf-8"?>'+'<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><meta charset="utf-8"/><title>'+xml(t)+'</title><link rel="stylesheet" href="style.css"/></head><body>'+body+'</body></html>';
-  const prose=v=>String(v||'').replace(/\\r\\n?/g,'\\n').split(/\\n\\s*\\n/).filter(x=>x.trim()).map(x=>'<p>'+xml(x.trim()).replace(/\\n/g,'<br/>')+'</p>').join('');
+  const prose=v=>String(v||'').replace(/\r\n?/g,'\\n').split(/\n\s*\n/).filter(x=>x.trim()).map(x=>'<p>'+xml(x.trim()).replace(/\n/g,'<br/>')+'</p>').join('');
   const files=[{name:'mimetype',data:kindleTextBytes('application/epub+zip')},{name:'META-INF/container.xml',data:'<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>'},{name:'OEBPS/style.css',data:'body{font-family:serif;line-height:1.45}h1,h2{text-align:center}p{text-indent:1.2em;margin:.25em 0}nav li{margin:.6em 0}'}];
   const entries=[],manifest=['<item id="css" href="style.css" media-type="text/css"/>'],spine=[];
   const add=(id,label,content)=>{const href=id+'.xhtml';files.push({name:'OEBPS/'+href,data:html(label,content)});entries.push({href,label});manifest.push('<item id="'+id+'" href="'+href+'" media-type="application/xhtml+xml"/>');spine.push('<itemref idref="'+id+'"/>')};
@@ -4913,7 +4913,7 @@ async function downloadFictionNovelEpub252700(b){
       const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Image rendering is unavailable');
       const W=1200,H=1800,pd=p.profile_data||{},tags=Array.isArray(pd.tags)?pd.tags:[];
       const factRows=[['AGE',pd.age],['CURRENT CITY',pd.current_city],['BACKGROUND',pd.background],['RELATIONSHIP STATUS',pd.relationship_status],['MEMBER TYPE',pd.member_type],['MEMBER SINCE',pd.member_since],['AVAILABILITY',pd.availability],['TRAVEL WINDOWS',pd.travel_windows],['VERIFICATION',pd.verification||'Verified Member']];
-      const wrap=(value,maxWidth)=>{const words=String(value??'—').split(/\\s+/).filter(Boolean),lines=[];let line='';for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines.length?lines:['—']};
+      const wrap=(value,maxWidth)=>{const words=String(value??'—').split(/\s+/).filter(Boolean),lines=[];let line='';for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines.length?lines:['—']};
       const ink='#21232a',muted='#686b73',accent='#9b785b';
       const fill=(x,y,w,h,color)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
       const txt=(value,x,y,size=25,color=ink,bold=false)=>{ctx.fillStyle=color;ctx.font=(bold?'bold ':'')+size+'px Arial,sans-serif';ctx.textAlign='left';ctx.fillText(String(value),x,y)};
