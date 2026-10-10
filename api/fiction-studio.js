@@ -3926,7 +3926,24 @@ if(mode==='novel-status'||mode==='export-novel'){
     const compactBook={id:book.id,series_id:book.series_id,position:book.position,working_title:book.working_title,status:book.status,development_state:{phase:book.development_state?.phase||null,next_batch_start:book.development_state?.next_batch_start||null},book_plan:{chapters:Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters.map((c,i)=>({number:Number(c?.number||c?.chapter_number||i+1),title:String(c?.title||'')})):[]},generation_state:{publication_preflight:book.generation_state?.publication_preflight||null,asunder_auto_pipeline:book.generation_state?.asunder_auto_pipeline||null,asunder_chunk_draft:compactCurrentChunk252320,asunder_chunk_history:compactHistory252320,asunder_stabilized_stories:asunderStabilized252190,aion_volume_plans:Object.fromEntries(Object.entries(book.generation_state?.aion_volume_plans||{}).map(([n,e])=>[n,{plan:{beats:(e?.plan?.beats||[]).map(x=>({number:x.number,heading:x.heading,instructions:x.instructions}))}}])),aion_volume_beats:Object.fromEntries(Object.entries(book.generation_state?.aion_volume_beats||{}).map(([n,beats])=>[n,(Array.isArray(beats)?beats:[]).map(b=>({number:b.number}))])),aion_volume_locked:book.generation_state?.aion_volume_locked||{}},manuscript_model:book.manuscript_model||null,development_model:book.development_model||null};
     return res.status(200).json({book:compactBook,progress})
   }
-  return res.status(200).json({series,book,chapters:chapterRows,progress,continuity:ledgers?.[0]||{ledger:{},through_chapter:0},usage,usage_events:usageEvents,editorial,publication_check});
+  let epub_assets=null;
+  if(mode==='export-novel'&&fictionAsunderSeedIdentity252146(series)){
+    const profiles=await rest(`developer_fiction_asunder_profiles?select=id,character_key,first_name,full_name,portrait_path,profile_data&parent_id=eq.${encodeURIComponent(user.id)}&series_id=eq.${encodeURIComponent(id)}`);
+    const cast=Array.isArray(book.development_state?.asunder_cast)?book.development_state.asunder_cast:[];
+    const maps=Array.isArray(book.book_plan?.chapters)?book.book_plan.chapters:[];
+    const entries=[];
+    for(let n=1;n<=chapterRows.length;n++){
+      const m=cast[n-1]||maps[n-1]||{};
+      const key=String(m.character_key||m.asunder_character_key||'');
+      const p=(profiles||[]).find(x=>String(x.character_key)===key||String(x.id)===String(m.id||m.asunder_profile_id||''))||(profiles||[]).find(x=>String(x.first_name||'').toLowerCase()===String(chapterRows[n-1]?.chapter_title||'').toLowerCase());
+      if(!p)continue;
+      const path=p.portrait_path||p.profile_data?.profile_photo_path||'';
+      entries.push({chapter_number:n,first_name:p.first_name,full_name:p.full_name||p.profile_data?.anglicised_full_name||p.first_name,profile_data:p.profile_data||{},photo_url:path?await fictionAsunderStorageSignedUrl252197(path,3600):''});
+    }
+    const author=series.author_page||{},authorPath=author.photo_path||book.generation_state?.asunder_author_page?.photo_path||'';
+    epub_assets={profiles:entries,author_page:author,author_photo_url:authorPath?await fictionAsunderStorageSignedUrl252197(authorPath,3600):''};
+  }
+  return res.status(200).json({series,book,chapters:chapterRows,progress,continuity:ledgers?.[0]||{ledger:{},through_chapter:0},usage,usage_events:usageEvents,editorial,publication_check,epub_assets});
 }
 if(mode==='draft-rebalance'){
   const bookId=String(body.book_id||'').trim();if(!bookId)return res.status(400).json({error:'Book id is required.'});
