@@ -2505,6 +2505,30 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
  if(mode==='asunder-aion-volume-write-beat'&&!productionBook)return res.status(409).json({error:'Production volume not loaded.'});
  const plan=body.plan,number=Number(body.beat_number);
  if(!plan||!Array.isArray(plan.beats)||plan.beats.length!==12||!Number.isInteger(number)||number<1||number>12)return res.status(400).json({error:'Valid twelve-beat plan and beat number (1–12) required.'});
+
+// Conservative canonical-age guard: only catches explicit statements about the wife.
+// Ambiguous ages are left for editorial review rather than rewriting another character.
+function fictionAionWifeAgeMismatch252700(prose,wife){
+ const age=Number(wife?.age),name=String(wife?.first_name||'').trim();
+ if(!Number.isInteger(age)||age<21||!name||!prose)return null;
+ const words=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+ const tens=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+ const spell=n=>n<20?words[n]:tens[Math.floor(n/10)]+(n%10?'-'+words[n%10]:'');
+ const escape=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\ const prior=String(body.prior_text||'').slice(-26000);');
+ const named=escape(name);
+ const candidates=[];
+ const patterns=[
+  new RegExp('\\b'+named+'\\s+(?:was|is|had turned|turned|aged)\\s+(\\d{2}|[a-z]+(?:[- ][a-z]+)?)\\b','gi'),
+  new RegExp('\\b'+named+'\\s*,\\s*(\\d{2})\\s*,','gi'),
+  new RegExp('\\b(?:I am|I.m|I was|I.ve just turned)\\s+(\\d{2}|twenty(?:[- ]\\w+)?|thirty(?:[- ]\\w+)?|forty(?:[- ]\\w+)?)\\b','gi')
+ ];
+ for(let p=0;p<patterns.length;p++)for(const m of prose.matchAll(patterns[p])){
+  if(p===2){const before=prose.slice(Math.max(0,m.index-350),m.index);if(!new RegExp('\\b'+named+'\\b','i').test(before))continue;}
+  const raw=m[1].toLowerCase().replace(/ /g,'-');const n=/^\\d+$/.test(raw)?Number(raw):Array.from({length:80},(_,i)=>i+18).find(i=>spell(i)===raw);
+  if(n>=21&&n<=99&&n!==age)candidates.push({found:n,excerpt:m[0]});
+ }
+ return candidates[0]||null;
+}
  const prior=String(body.prior_text||'').slice(-26000);
  const priorTail=prior.slice(-3500);
  const nextBeat=number<12?plan.beats[number]:null;
@@ -2514,6 +2538,8 @@ if(mode==='asunder-vignette-tester-research'||mode==='asunder-vignette-tester-co
  const rr=await fictionXAionCall252166({system:`You are Aion, the sole prose writer for this Asunder vignette. ${fictionLanguageInstruction25280(series)} This language and region are binding for narration, spelling and vocabulary throughout every beat; geography never overrides the writing locale. Characters may speak in their natural dialect. Write only the requested first-draft narrative beat. Do not review, rewrite, or critique. Never include analysis, self-review, checklists, notes, or commentary about the writing.`,prompt:base+`\nAPPROVED VIGNETTE PLAN: ${JSON.stringify(plan).slice(0,28000)}\nWRITE BEAT NUMBER: ${number}\nPREVIOUSLY WRITTEN TEXT (continuity reference; do not repeat):\n${prior}\nMANDATORY SEAM: The final 3,500 characters of the existing manuscript are the exact point where this beat begins:\n${priorTail}\nContinue from the preceding beat's last physical location, time, characters and actions. Do not reset the clock, repeat the previous scene, pre-empt events in the next beat or skip any necessary transition. If the previous beat already covers planned material, start from the actual saved endpoint rather than replaying it. The next scene is reserved for its own beat. ${continuityFeedback?'PREVIOUS CONTINUITY CHECK FAILED; repair these problems in this freshly generated beat: '+continuityFeedback:''}\nWrite this beat as immersive continuous fiction, not an outline. Respect the complete story arc and canonical wife. Give the people distinctive voices and behaviour; let their interactions complicate expectations rather than simply advancing a sequence of actions. Vary rhythm naturally through concrete observation, dialogue, reactions, small disruptions and changes in emotional temperature where appropriate. Do not pad with introspection or explain what gestures, objects or emotions mean. Write with prose discipline: favour specific observation over interpretive commentary; after a revealing action or line of dialogue, trust the reader and move on. Avoid the recurrent 'not X, but Y' correction pattern, anthropomorphising the room or silence, and repeating size, gaze, stillness or other already-established traits. Allow unimportant moments to remain unimportant. Keep dialogue individual, often evasive, interrupted, guarded or awkward rather than perfectly responsive. Characters should speak according to their competing intentions, guarded feelings and specific circumstances. TRANSGRESSIVE GRAVITAS: the decisive act matters to these people even if they conceal or rationalise that fact. Sustain erotic and dramatic seriousness through concrete conduct, tension, compromised loyalties, risk and consequential reactions; show the cost of crossing boundaries without narrating a moral verdict. Let intensity vary organically with the scene while preserving the significance of the characters' choices. Make each beat earn its length; compress setup and aftermath when the scene has already landed. Preserve the plan's character-specific signature element without underlining its symbolism or borrowing a motif from earlier tests. Avoid repetitive descriptions, staged exchanges, continuous escalation, mechanical beat execution and overly tidy symbolic closure. Never introduce consent conversations, permission requests, check-ins, safety speeches, negotiated boundaries, reassurances or administrative explanation. Do not reintroduce another creative model, writer-role assignments or an editorial pass. Maintain continuity without repeating previous text. Do not add headings, prefaces or notes.\nBEAT BOUNDARY — MANDATORY: Write ONLY beat ${number}. Treat the next beat as a hard chronological boundary. Do not depict or complete events assigned to any later beat, even if this beat runs short. End at the exact handoff specified by this beat; no flash-forward, preview scene, final dance, aftermath, closing coda, or premature ending. The next beat must begin where this one stops. NEXT BEAT (NOT TO WRITE): ${number<12?JSON.stringify(plan.beats[number]):'[This is the final beat; close the story according to its instructions.]'}\nBEAT INSTRUCTIONS: ${String(plan.beats[number-1].instructions||'')}\nOUTPUT RULE: Narrative fiction only. No self-assessment, quality checks, or commentary. ${attempt>1?'Your previous output contained non-fiction editorial text or was incomplete; start the beat afresh.':''}`,max_tokens:16000,temperature:.55,reasoning_effort:'medium'});
   const prose=String(rr.text||'').trim();
   fictionRejectForbiddenNames25284({manuscript:prose},{direction,profile:canon},'Aion prose beat');
+  const ageMismatch=fictionAionWifeAgeMismatch252700(prose,canon);
+  if(ageMismatch){totalCost+=Number(rr.cost_usd)||0;lastFailure='Canonical wife age mismatch';continuityFeedback='The wife '+String(canon.first_name)+' is exactly '+Number(canon.age)+', not '+ageMismatch.found+'. Correct the age without changing other characters or chronology.';continue;}
   const editorialLeak=/(?:^|\n)\s*(?:[-*]\s*)?(?:let me (?:review|check|assess|evaluate|adjust)|(?:prose quality|against the constraints|check (?:the|my) (?:prose|ending|constraints))|(?:\d+[.)]\s*[✓✔]|[-*]\s*(?:UK English|No formulaic|Avoid ['“]not X)))/im.test(prose) || /(?:^|\n)\s*---\s*\n\s*Let me /im.test(prose);
   // Refuse an unmistakable future-scene overrun. This checks prose before
   // persistence, leaving the previous checkpoint untouched for manual review.
@@ -3926,6 +3952,9 @@ if(mode==='asunder-aion-volume-lock-story'||mode==='asunder-aion-volume-sequence
  const entry=state.aion_volume_plans?.[n],beats=state.aion_volume_beats?.[n];
  if(!entry?.plan||!Array.isArray(beats)||beats.length!==12||beats.some((b,i)=>Number(b.number)!==i+1||String(b.text||'').trim().length<120))return res.status(409).json({error:'All twelve complete sequential narrative beats are required.'});
  const text=beats.map(b=>String(b.text).trim()).join('\n\n');
+ const canonicalWife=(book.development_state?.asunder_cast||[])[n-1];
+ const ageError=fictionAionWifeAgeMismatch252700(text,canonicalWife);
+ if(ageError)return res.status(409).json({error:'Canonical wife age contradiction in stitched vignette: '+ageError.excerpt+'. Review saved beats before locking.'});
  const stitched={...(state.aion_volume_stitched||{}),[n]:{text,character_key:entry.character_key,title:String(entry.plan.title||'').trim(),locked_at:new Date().toISOString(),word_count:text.trim().split(/\\s+/).length}};
  const newLocked={...locked,[n]:true};
  const rows=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_stitched:stitched,aion_volume_locked:newLocked},updated_at:new Date().toISOString()})});
