@@ -4891,7 +4891,23 @@ async function downloadFictionNovelEpub252700(b){
   const entries=[],manifest=['<item id="css" href="style.css" media-type="text/css"/>'],spine=[];
   const add=(id,label,content)=>{const href=id+'.xhtml';files.push({name:'OEBPS/'+href,data:html(label,content)});entries.push({href,label});manifest.push('<item id="'+id+'" href="'+href+'" media-type="application/xhtml+xml"/>');spine.push('<itemref idref="'+id+'"/>')};
   add('title','Title page','<h1>'+xml(title)+'</h1>'+(author?'<h2>'+xml(author)+'</h2>':''));
-  if(asunder)add('quotation','Epigraph','<blockquote><p>What therefore God hath joined together, let not man put asunder.</p><p>— Matthew 19:6</p></blockquote>');
+  if(asunder){
+    // Fixed-layout epigraph: a single portrait page keeps the quotation centred
+    // regardless of the reading app's reflow, font size, or CSS support.
+    const epigraphCanvas=document.createElement('canvas');epigraphCanvas.width=1200;epigraphCanvas.height=1800;
+    const ec=epigraphCanvas.getContext('2d');if(!ec)throw new Error('Cannot render Asunder epigraph');
+    ec.fillStyle='#fff';ec.fillRect(0,0,1200,1800);
+    ec.fillStyle='#222';ec.textAlign='center';ec.textBaseline='middle';
+    ec.font='42px Georgia,serif';
+    ec.fillText('What therefore God hath joined',600,825);
+    ec.fillText('together, let not man put asunder.',600,885);
+    ec.font='34px Georgia,serif';ec.fillText('— Matthew 19:6',600,975);
+    const epigraphBlob=await new Promise((resolve,reject)=>epigraphCanvas.toBlob(b=>b?resolve(b):reject(new Error('Cannot encode epigraph')),'image/png'));
+    const epigraphHref='images/asunder-epigraph.png';
+    files.push({name:'OEBPS/'+epigraphHref,data:new Uint8Array(await epigraphBlob.arrayBuffer())});
+    manifest.push('<item id="asunder-epigraph-image" href="'+epigraphHref+'" media-type="image/png"/>');
+    add('quotation','Epigraph','<div style="margin:0;text-align:center;break-inside:avoid;page-break-inside:avoid"><img src="'+epigraphHref+'" alt="What therefore God hath joined together, let not man put asunder. — Matthew 19:6" style="display:block;width:100%;height:auto;max-height:98vh;object-fit:contain"/></div>');
+  }
   const assets=d.epub_assets||{},imageFiles=[];
   const embedImage=async(url,id)=>{if(!url)throw new Error('Missing image for '+id);const response=await fetch(url);if(!response.ok)throw new Error('Could not fetch '+id+' (HTTP '+response.status+')');const bytes=new Uint8Array(await response.arrayBuffer());if(!bytes.length)throw new Error('Empty image '+id);const type=response.headers.get('content-type')||'';const ext=/png/i.test(type)?'png':/webp/i.test(type)?'webp':'jpg',mime=ext==='png'?'image/png':ext==='webp'?'image/webp':'image/jpeg';const href='images/'+id+'.'+ext;files.push({name:'OEBPS/'+href,data:bytes});manifest.push('<item id="img-'+id+'" href="'+href+'" media-type="'+mime+'"/>');return href};
   const exportedProfileKeys=new Set(),exportedProfileImages=new Set();
