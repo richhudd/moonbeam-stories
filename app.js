@@ -4983,8 +4983,44 @@ async function downloadFictionNovelEpub252700(b){
   }
   const page=d.series?.author_page||d.book?.generation_state?.asunder_author_page||{};
   const bio=String(page.bio||page.biography||'').trim();
-  let authorImage='';if(asunder)authorImage=await embedImage(assets.author_photo_url,'author-photo');
-  if(asunder){const fallback='Ana Rojas was born in Spain in 1992. She writes under a pseudonym and has no intention of explaining who she really is.\\n\\nShe is interested in marriage, particularly the things married people do not tell each other. She suspects that most people are considerably less respectable than they appear, and finds that rather encouraging.\\n\\nHer first series, Obedience, explored the pleasures and complications of surrender. Asunder is her latest project.\\n\\nShe does not give interviews, but can be contacted at analunarojas@hotmail.com.';add('author','About the Author','<h1>About the Author</h1><h2>Ana Rojas</h2>'+(authorImage?'<figure><img src="'+authorImage+'" alt="Author portrait of Ana Rojas" style="display:block;width:auto;height:auto;max-width:48%;max-height:24vh;margin:0.6em auto 1em;object-fit:contain;"/></figure>':'')+prose(bio||fallback))}
+  if(asunder){
+    const fallback='Ana Rojas was born in Spain in 1992. She writes under a pseudonym and has no intention of explaining who she really is.\\n\\nShe is interested in marriage, particularly the things married people do not tell each other. She suspects that most people are considerably less respectable than they appear, and finds that rather encouraging.\\n\\nHer first series, Obedience, explored the pleasures and complications of surrender. Asunder is her latest project.\\n\\nShe does not give interviews, but can be contacted at analunarojas@hotmail.com.';
+    const authorBio=(bio||fallback).replace(/\\n/g,'\n');
+    const photoResponse=await fetch(assets.author_photo_url);
+    if(!photoResponse.ok)throw new Error('Cannot load author portrait for EPUB');
+    const photoBlob=await photoResponse.blob(),photoObjectUrl=URL.createObjectURL(photoBlob);
+    let portrait;
+    try{portrait=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('Cannot decode author portrait'));im.src=photoObjectUrl})}
+    finally{URL.revokeObjectURL(photoObjectUrl)}
+    const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1800;
+    const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Cannot render author page');
+    const W=1200,H=1800,margin=105;
+    const wrapText=(value,maxWidth,font)=>{ctx.font=font+'px Georgia,serif';const lines=[];let line='';for(const word of String(value).split(/\\s+/).filter(Boolean)){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
+    const paragraphs=authorBio.split(/\\n\\s*\\n/).map(x=>x.trim()).filter(Boolean);
+    const photoHeight=490,photoWidth=Math.min(680,photoHeight*portrait.naturalWidth/portrait.naturalHeight);
+    let font=33,layout;
+    while(font>=18){
+      const lines=paragraphs.map(p=>wrapText(p,W-2*margin,font));
+      const lineHeight=font*1.43;
+      const required=125+70+90+photoHeight+65+lines.reduce((n,a)=>n+a.length*lineHeight+font*.7,0);
+      if(required<=H-105){layout={lines,lineHeight};break}
+      font--;
+    }
+    if(!layout)throw new Error('Author biography is too long for a readable single EPUB page');
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#1d1d1d';ctx.textAlign='center';ctx.font='bold 58px Georgia,serif';ctx.fillText('About the Author',W/2,125);
+    ctx.font='bold 41px Georgia,serif';ctx.fillText('Ana Rojas',W/2,210);
+    const py=270,px=(W-photoWidth)/2;
+    ctx.drawImage(portrait,px,py,photoWidth,photoHeight);
+    ctx.textAlign='left';ctx.font=font+'px Georgia,serif';
+    let y=py+photoHeight+72;
+    for(const lines of layout.lines){for(const line of lines){ctx.fillText(line,margin,y);y+=layout.lineHeight}y+=font*.7}
+    const imageBlob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Cannot encode author page')),'image/png'));
+    const href='images/asunder-author-page.png';
+    files.push({name:'OEBPS/'+href,data:new Uint8Array(await imageBlob.arrayBuffer())});
+    manifest.push('<item id="asunder-author-page-image" href="'+href+'" media-type="image/png"/>');
+    add('author','About the Author','<div style="margin:0;text-align:center;break-inside:avoid;page-break-inside:avoid"><img src="'+href+'" alt="About the Author: Ana Rojas" style="display:block;width:100%;height:auto;max-height:98vh;object-fit:contain"/></div>');
+  }
   // A visible, clickable contents page is part of the reading spine, not only the Kindle navigation menu.
   const chapterLinks=chapters.map((c,i)=>({label:String(c.chapter_title||((asunder?'Vignette ':'Chapter ')+(i+1))),href:(asunder?'profile':'chapter')+(i+1)+'.xhtml'}));
   const contentsBody='<h1>Contents</h1><ol>'+chapterLinks.map(e=>'<li><a href="'+e.href+'">'+xml(e.label)+'</a></li>').join('')+'</ol>'+(asunder?'<p><a href="author.xhtml">About the Author</a></p>':'');
