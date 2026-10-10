@@ -4894,11 +4894,17 @@ async function downloadFictionNovelEpub252700(b){
   if(asunder)add('quotation','Epigraph','<blockquote><p>What therefore God hath joined together, let not man put asunder.</p><p>— Matthew 19:6</p></blockquote>');
   const assets=d.epub_assets||{},imageFiles=[];
   const embedImage=async(url,id)=>{if(!url)throw new Error('Missing image for '+id);const response=await fetch(url);if(!response.ok)throw new Error('Could not fetch '+id+' (HTTP '+response.status+')');const bytes=new Uint8Array(await response.arrayBuffer());if(!bytes.length)throw new Error('Empty image '+id);const type=response.headers.get('content-type')||'';const ext=/png/i.test(type)?'png':/webp/i.test(type)?'webp':'jpg',mime=ext==='png'?'image/png':ext==='webp'?'image/webp':'image/jpeg';const href='images/'+id+'.'+ext;files.push({name:'OEBPS/'+href,data:bytes});manifest.push('<item id="img-'+id+'" href="'+href+'" media-type="'+mime+'"/>');return href};
+  const exportedProfileKeys=new Set(),exportedProfileImages=new Set();
   for(let i=0;i<chapters.length;i++){
     const c=chapters[i],label=asunder?String(c.chapter_title||'Vignette '+(i+1)):String(c.chapter_title||'Chapter '+(i+1));
     if(asunder){
       const p=(assets.profiles||[]).find(x=>Number(x.chapter_number)===Number(c.chapter_number));
       if(!p)throw new Error('Missing canonical Asunder profile for vignette '+c.chapter_number);
+      const profileKey=String(p.character_key||'').trim();
+      if(!profileKey||exportedProfileKeys.has(profileKey))throw new Error('Missing or duplicate canonical EPUB profile for '+label);
+      exportedProfileKeys.add(profileKey);
+      const expectedName=String(c.chapter_title||'').trim().replace(/^\d+(?:\.\d+)?\s*[—–:-]\s*/,'').trim();
+      if(expectedName&&!expectedName.toLocaleLowerCase().includes(String(p.first_name||'').trim().toLocaleLowerCase()))throw new Error('EPUB profile mismatch for '+label+': '+p.first_name);
       const data=p.profile_data||{};
       const fields=[['Name',p.full_name||p.first_name],['Age',data.age],['Location',data.current_city||data.country],['Relationship',data.relationship_status],['About',data.bio],['Availability',data.availability]].filter(x=>String(x[1]??'').trim());
       const photoResponse=await fetch(p.photo_url);
@@ -4963,8 +4969,12 @@ async function downloadFictionNovelEpub252700(b){
       if(inkPixels<100)throw new Error('Profile text failed to render for '+label+'; EPUB not exported with blank profile');
       ctx.drawImage(lettering,0,0);
       const png=await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not flatten profile '+label)),'image/png'));
+      const pngBytes=new Uint8Array(await png.arrayBuffer());
+      const signature=kindleCrc32(pngBytes)+':'+pngBytes.length;
+      if(exportedProfileImages.has(signature))throw new Error('Duplicate EPUB profile image for '+label);
+      exportedProfileImages.add(signature);
       const href='images/profile-'+(i+1)+'.png';
-      files.push({name:'OEBPS/'+href,data:new Uint8Array(await png.arrayBuffer())});
+      files.push({name:'OEBPS/'+href,data:pngBytes});
       manifest.push('<item id="profile-image-'+(i+1)+'" href="'+href+'" media-type="image/png"/>');
       const profile='<div style="margin:0;text-align:center;page-break-inside:avoid;break-inside:avoid"><img src="'+href+'" alt="Asunder profile of '+xml(p.first_name||label)+'" style="display:block;width:100%;height:auto;max-height:98vh;object-fit:contain;"/></div>';
       add('profile'+(i+1),label+' — Profile',profile);
