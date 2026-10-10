@@ -3938,7 +3938,7 @@ if(mode==='novel-status'||mode==='export-novel'){
       const p=(profiles||[]).find(x=>String(x.character_key)===key||String(x.id)===String(m.id||m.asunder_profile_id||''))||(profiles||[]).find(x=>String(x.first_name||'').toLowerCase()===String(chapterRows[n-1]?.chapter_title||'').toLowerCase());
       if(!p)continue;
       const path=p.portrait_path||p.profile_data?.profile_photo_path||'';
-      entries.push({chapter_number:n,first_name:p.first_name,full_name:p.full_name||p.profile_data?.anglicised_full_name||p.first_name,profile_data:p.profile_data||{},photo_url:path?await fictionAsunderStorageSignedUrl252197(path,3600):''});
+      entries.push({chapter_number:n,character_key:p.character_key||'',profile_id:p.id,first_name:p.first_name,full_name:p.full_name||p.profile_data?.anglicised_full_name||p.first_name,profile_data:p.profile_data||{},photo_url:path?await fictionAsunderStorageSignedUrl252197(path,3600):''});
     }
     const author=series.author_page||{},authorPath=author.photo_path||book.generation_state?.asunder_author_page?.photo_path||'';
     epub_assets={profiles:entries,author_page:author,author_photo_url:authorPath?await fictionAsunderStorageSignedUrl252197(authorPath,3600):''};
