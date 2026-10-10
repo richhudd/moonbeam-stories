@@ -4910,6 +4910,13 @@ async function downloadFictionNovelEpub252700(b){
   const bio=String(page.bio||page.biography||'').trim();
   let authorImage='';if(asunder)authorImage=await embedImage(assets.author_photo_url,'author-photo');
   if(asunder){const fallback='Ana Rojas was born in Spain in 1992. She writes under a pseudonym and has no intention of explaining who she really is.\\n\\nShe is interested in marriage, particularly the things married people do not tell each other. She suspects that most people are considerably less respectable than they appear, and finds that rather encouraging.\\n\\nHer first series, Obedience, explored the pleasures and complications of surrender. Asunder is her latest project.\\n\\nShe does not give interviews, but can be contacted at analunarojas@hotmail.com.';add('author','About the Author','<h1>About the Author</h1><h2>Ana Rojas</h2>'+(authorImage?'<figure><img src="'+authorImage+'" alt="Author portrait of Ana Rojas" style="max-width:75%;max-height:65vh;"/></figure>':'')+prose(bio||fallback))}
+  // A visible, clickable contents page is part of the reading spine, not only the Kindle navigation menu.
+  const chapterLinks=chapters.map((c,i)=>({label:String(c.chapter_title||((asunder?'Vignette ':'Chapter ')+(i+1))),href:(asunder?'profile':'chapter')+(i+1)+'.xhtml'}));
+  const contentsBody='<h1>Contents</h1><ol>'+chapterLinks.map(e=>'<li><a href="'+e.href+'">'+xml(e.label)+'</a></li>').join('')+'</ol>'+(asunder?'<p><a href="author.xhtml">About the Author</a></p>':'');
+  files.push({name:'OEBPS/contents.xhtml',data:html('Contents',contentsBody)});
+  manifest.push('<item id="contents" href="contents.xhtml" media-type="application/xhtml+xml"/>');
+  spine.splice(1,0,'<itemref idref="contents"/>');
+  entries.splice(1,0,{href:'contents.xhtml',label:'Contents'});
   const nav='<nav xmlns:epub="http://www.idpf.org/2007/ops" epub:type="toc"><h1>Contents</h1><ol>'+entries.map(e=>'<li><a href="'+e.href+'">'+xml(e.label)+'</a></li>').join('')+'</ol></nav>';
   files.push({name:'OEBPS/nav.xhtml',data:'<?xml version="1.0" encoding="utf-8"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body>'+nav+'</body></html>'});
   manifest.push('<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>');
