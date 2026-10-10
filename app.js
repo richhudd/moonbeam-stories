@@ -4907,23 +4907,50 @@ async function downloadFictionNovelEpub252700(b){
       let picture;
       try{picture=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('Could not decode portrait for '+label));im.src=photoUrl})}
       finally{URL.revokeObjectURL(photoUrl)}
+      // Reproduce the Moonbeam Asunder v1 member profile: branded header, portrait,
+      // full facts, About Me, member tags and footer, flattened as one page.
       const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1800;
       const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Image rendering is unavailable');
-      ctx.fillStyle='#f9f7f1';ctx.fillRect(0,0,1200,1800);
-      ctx.fillStyle='#181818';ctx.textAlign='center';ctx.font='bold 68px Georgia,serif';ctx.fillText('ASUNDER',600,105);
-      ctx.font='38px Georgia,serif';ctx.fillText(String(p.first_name||label),600,163);
-      const maxW=670,maxH=770,scale=Math.min(maxW/picture.naturalWidth,maxH/picture.naturalHeight);
-      const w=picture.naturalWidth*scale,h=picture.naturalHeight*scale;
-      ctx.drawImage(picture,(1200-w)/2,205,w,h);
-      const photoBottom=205+h;
-      ctx.strokeStyle='#b7b2a8';ctx.beginPath();ctx.moveTo(110,photoBottom+35);ctx.lineTo(1090,photoBottom+35);ctx.stroke();
-      const wrap=(text,maxWidth)=>{const words=String(text).split(/\\s+/).filter(Boolean),lines=[];let line='';for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
-      // Shrink the entire text block as necessary, never crop or split a profile.
-      const usable=1690-(photoBottom+80);let font=34,layout=[];
-      for(;font>=19;font-=1){ctx.font=font+'px Georgia,serif';layout=fields.map(([k,v])=>({key:k,lines:wrap(k+': '+String(v),970)}));const needed=layout.reduce((sum,f)=>sum+(f.lines.length+0.4)*font*1.42,0);if(needed<=usable)break}
-      if(font<19)throw new Error('Profile is too long to fit on one page: '+label);
-      ctx.textAlign='left';ctx.fillStyle='#242424';ctx.font=font+'px Georgia,serif';let y=photoBottom+90;
-      for(const field of layout){for(const line of field.lines){ctx.fillText(line,115,y);y+=font*1.42}y+=font*.4}
+      const W=1200,H=1800,pd=p.profile_data||{},tags=Array.isArray(pd.tags)?pd.tags:[];
+      const factRows=[['AGE',pd.age],['CURRENT CITY',pd.current_city],['BACKGROUND',pd.background],['RELATIONSHIP STATUS',pd.relationship_status],['MEMBER TYPE',pd.member_type],['MEMBER SINCE',pd.member_since],['AVAILABILITY',pd.availability],['TRAVEL WINDOWS',pd.travel_windows],['VERIFICATION',pd.verification||'Verified Member']];
+      const wrap=(value,maxWidth)=>{const words=String(value??'—').split(/\\s+/).filter(Boolean),lines=[];let line='';for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines.length?lines:['—']};
+      const ink='#21232a',muted='#686b73',accent='#9b785b';
+      const fill=(x,y,w,h,color)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
+      const txt=(value,x,y,size=25,color=ink,bold=false)=>{ctx.fillStyle=color;ctx.font=(bold?'bold ':'')+size+'px Arial,sans-serif';ctx.textAlign='left';ctx.fillText(String(value),x,y)};
+      const line=(x,y,w)=>fill(x,y,w,2,'#e0dcd7');
+      // Scale the complete content as a unit, rather than clipping long fields.
+      const render=(font,paint)=>{
+        let y=0;
+        if(paint){fill(0,0,W,H,'#f7f5f1');fill(50,45,1100,1710,'#fff');}
+        y=120;
+        if(paint){txt('◇',92,y,55,accent);txt('ASUNDER',157,y,48,ink,true);txt('PRIVATE CONNECTIONS · EXTRAORDINARY EXPERIENCES.',157,y+35,17,muted);txt('VERIFIED MEMBER PROFILE',790,y,20,accent,true);line(88,192,1024)}
+        y=235;
+        const photoX=92,photoY=y,photoW=425,photoH=540;
+        if(paint){fill(photoX,photoY,photoW,photoH,'#eae5df');const scale=Math.max(photoW/picture.naturalWidth,photoH/picture.naturalHeight),srcW=photoW/scale,srcH=photoH/scale;ctx.drawImage(picture,(picture.naturalWidth-srcW)/2,(picture.naturalHeight-srcH)/2,srcW,srcH,photoX,photoY,photoW,photoH)}
+        const factsX=550,factsW=550;
+        if(paint)txt(p.first_name||label,factsX,y+51,49,ink,true);
+        let fy=y+95;
+        for(const [k,v] of factRows){
+          ctx.font=font+'px Arial,sans-serif';const lines=wrap(v, factsW-28);
+          if(paint){txt(k,factsX,fy,17,accent,true);for(let j=0;j<lines.length;j++)txt(lines[j],factsX,fy+font+6+j*(font+7),font,ink)}
+          fy+=(font+7)*lines.length+font+28;
+        }
+        y=Math.max(photoY+photoH,fy)+35;
+        if(paint){line(92,y,1016);txt('ABOUT ME',92,y+52,23,accent,true)}
+        y+=85;ctx.font=(font+2)+'px Arial,sans-serif';const about=wrap(pd.bio||'',990);
+        if(paint)for(let j=0;j<about.length;j++)txt(about[j],94,y+j*(font+10),font+2,ink);
+        y+=about.length*(font+10)+42;
+        if(paint){line(92,y,1016);txt('MEMBER TAGS',92,y+48,23,accent,true)}
+        y+=80;
+        ctx.font=font+'px Arial,sans-serif';const tagLines=wrap(tags.join('   ·   ')||'—',990);
+        if(paint)for(let j=0;j<tagLines.length;j++)txt(tagLines[j],94,y+j*(font+10),font,ink);
+        y+=tagLines.length*(font+10)+60;
+        if(paint){line(92,1690,1016);txt('◇',94,1730,30,accent);txt('DISCREET  |  CURATED  |  GLOBAL  |  LIKE-MINDED  |  EXTRAORDINARY',150,1720,16,muted);txt('ASUNDER ›',960,1720,21,accent,true)}
+        return y;
+      };
+      let font=24;while(font>13&&render(font,false)>1650)font--;
+      if(render(font,false)>1650)throw new Error('Asunder profile content exceeds a single page: '+label);
+      render(font,true);
       const png=await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not flatten profile '+label)),'image/png'));
       const href='images/profile-'+(i+1)+'.png';
       files.push({name:'OEBPS/'+href,data:new Uint8Array(await png.arrayBuffer())});
