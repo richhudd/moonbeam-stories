@@ -4933,7 +4933,7 @@ async function downloadFictionNovelEpub252700(b){
       // full facts, About Me, member tags and footer, flattened as one page.
       const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1800;
       const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Image rendering is unavailable');
-      const W=1200,H=1800,pd=p.profile_data||{},tags=Array.isArray(pd.tags)?pd.tags:[];
+      const W=1200,H=1800,pd=p.profile_data||{},tags=(Array.isArray(pd.tags)?pd.tags:[]).map(t=>String(t||'').trim()).filter(t=>t&&!/^(?:asunder\s*(?:wife\s*)?library|married|wife|girlfriend|sugarbaby)$/i.test(t));
       const factRows=[['AGE',pd.age],['CURRENT CITY',pd.current_city],['BACKGROUND',pd.background],['RELATIONSHIP STATUS',pd.relationship_status],['MEMBER TYPE',pd.member_type],['MEMBER SINCE',pd.member_since],['AVAILABILITY',pd.availability],['TRAVEL WINDOWS',pd.travel_windows],['VERIFICATION',pd.verification||'Verified Member']];
       const wrap=(value,maxWidth)=>{const words=String(value??'—').split(/\s+/).filter(Boolean),lines=[];let line='';for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines.length?lines:['—']};
       const ink='#21232a',muted='#686b73',accent='#9b785b';
@@ -4962,9 +4962,9 @@ async function downloadFictionNovelEpub252700(b){
         y+=85;ctx.font=(font+2)+'px Arial,sans-serif';const about=wrap(pd.bio||'',920);
         if(paint)for(let j=0;j<about.length;j++)txt(about[j],94,y+j*(font+10),font+2,ink);
         y+=about.length*(font+10)+42;
-        if(paint){line(92,y,1016);txt('MEMBER TAGS',92,y+48,23,accent,true)}
-        y+=80;
-        ctx.font=font+'px Arial,sans-serif';const tagLines=wrap(tags.join('   ·   ')||'—',920);
+        if(paint&&tags.length){line(92,y,1016);txt('MEMBER TAGS',92,y+48,23,accent,true)}
+        y+=tags.length?80:0;
+        ctx.font=font+'px Arial,sans-serif';const tagLines=tags.length?wrap(tags.join('   ·   '),920):[];
         if(paint)for(let j=0;j<tagLines.length;j++)txt(tagLines[j],94,y+j*(font+10),font,ink);
         y+=tagLines.length*(font+10)+60;
         if(paint){line(92,1690,1016);txt('◇',94,1730,30,accent);txt('DISCREET  |  CURATED  |  GLOBAL  |  LIKE-MINDED  |  EXTRAORDINARY',150,1720,16,muted);txt('ASUNDER ›',960,1720,21,accent,true)}
