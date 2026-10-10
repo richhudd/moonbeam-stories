@@ -4482,10 +4482,10 @@ function fictionAsunderHouseStyleHtml252194(text,chapterNumber,d,paragraphIndex)
  let out='',cursor=0;for(const sp of spans){const start=Math.max(cursor,Number(sp.start)||0),end=Math.min(plain.length,start+Math.max(0,Number(sp.length)||0));if(end<=start)continue;out+=escapeHtml(plain.slice(cursor,start))+`<em>${escapeHtml(plain.slice(start,end))}</em>`;cursor=end}out+=escapeHtml(plain.slice(cursor));return out;
 }
 
-const fictionAsunderFrontMatterText252280='“What therefore God hath joined together, let not man put asunder” (Matthew 19:6).\n\nYou will not find Asunder on the App Store';
+const fictionAsunderFrontMatterText252280='“What therefore God hath joined together, let not man put asunder” (Matthew 19:6).';
 function fictionIsAsunderVolume252280(d){return ['asunder','asunder 2.0'].includes(String(d?.series?.series_name||'').trim().toLowerCase())}
 function fictionAsunderFrontMatterHtml252280(){
- return `<div class="fiction-reader-asunder-front-matter-inner-252280"><p class="fiction-reader-asunder-scripture-252280">“What therefore God hath joined together, let not man put asunder” (Matthew 19:6).</p><p class="fiction-reader-asunder-appstore-252280">You will not find Asunder on the App Store</p></div>`
+ return `<div class="fiction-reader-asunder-front-matter-inner-252280"><p class="fiction-reader-asunder-scripture-252280">“What therefore God hath joined together, let not man put asunder” (Matthew 19:6).</p></div>`
 }
 
 function fictionReaderChunks25250(chapters,mobile=false,d=null){
