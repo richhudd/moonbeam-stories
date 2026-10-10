@@ -4916,7 +4916,7 @@ async function downloadFictionNovelEpub252700(b){
       const wrap=(value,maxWidth)=>{const words=String(value??'—').split(/\s+/).filter(Boolean),lines=[];let line='';for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines.length?lines:['—']};
       const ink='#21232a',muted='#686b73',accent='#9b785b';
       const fill=(x,y,w,h,color)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
-      const txt=(value,x,y,size=25,color=ink,bold=false)=>{ctx.fillStyle=color;ctx.font=(bold?'bold ':'')+size+'px Arial,sans-serif';ctx.textAlign='left';ctx.fillText(String(value),x,y)};
+      const textQueue=[];const txt=(value,x,y,size=25,color=ink,bold=false)=>{ctx.font=(bold?'bold ':'')+size+'px Arial,sans-serif';textQueue.push({value:String(value),x,y,size,color,bold})};
       const line=(x,y,w)=>fill(x,y,w,2,'#e0dcd7');
       // Scale the complete content as a unit, rather than clipping long fields.
       const render=(font,paint)=>{
@@ -4937,12 +4937,12 @@ async function downloadFictionNovelEpub252700(b){
         }
         y=Math.max(photoY+photoH,fy)+35;
         if(paint){line(92,y,1016);txt('ABOUT ME',92,y+52,23,accent,true)}
-        y+=85;ctx.font=(font+2)+'px Arial,sans-serif';const about=wrap(pd.bio||'',990);
+        y+=85;ctx.font=(font+2)+'px Arial,sans-serif';const about=wrap(pd.bio||'',920);
         if(paint)for(let j=0;j<about.length;j++)txt(about[j],94,y+j*(font+10),font+2,ink);
         y+=about.length*(font+10)+42;
         if(paint){line(92,y,1016);txt('MEMBER TAGS',92,y+48,23,accent,true)}
         y+=80;
-        ctx.font=font+'px Arial,sans-serif';const tagLines=wrap(tags.join('   ·   ')||'—',990);
+        ctx.font=font+'px Arial,sans-serif';const tagLines=wrap(tags.join('   ·   ')||'—',920);
         if(paint)for(let j=0;j<tagLines.length;j++)txt(tagLines[j],94,y+j*(font+10),font,ink);
         y+=tagLines.length*(font+10)+60;
         if(paint){line(92,1690,1016);txt('◇',94,1730,30,accent);txt('DISCREET  |  CURATED  |  GLOBAL  |  LIKE-MINDED  |  EXTRAORDINARY',150,1720,16,muted);txt('ASUNDER ›',960,1720,21,accent,true)}
@@ -4951,6 +4951,17 @@ async function downloadFictionNovelEpub252700(b){
       let font=24;while(font>13&&render(font,false)>1650)font--;
       if(render(font,false)>1650)throw new Error('Asunder profile content exceeds a single page: '+label);
       render(font,true);
+      // Draw text LAST, after every background/photo/line operation. A dedicated
+      // overlay avoids Safari canvas compositing dropping glyphs on later profiles.
+      const lettering=document.createElement('canvas');lettering.width=W;lettering.height=H;
+      const tc=lettering.getContext('2d',{willReadFrequently:true});
+      if(!tc)throw new Error('Cannot create profile lettering layer');
+      tc.textAlign='left';tc.textBaseline='alphabetic';
+      for(const t of textQueue){tc.fillStyle=t.color;tc.font=(t.bold?'bold ':'')+t.size+'px Arial,sans-serif';tc.fillText(t.value,t.x,t.y)}
+      const pixel=tc.getImageData(150,80,350,70).data;
+      let inkPixels=0;for(let z=3;z<pixel.length;z+=4)if(pixel[z]>30)inkPixels++;
+      if(inkPixels<100)throw new Error('Profile text failed to render for '+label+'; EPUB not exported with blank profile');
+      ctx.drawImage(lettering,0,0);
       const png=await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not flatten profile '+label)),'image/png'));
       const href='images/profile-'+(i+1)+'.png';
       files.push({name:'OEBPS/'+href,data:new Uint8Array(await png.arrayBuffer())});
