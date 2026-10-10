@@ -3932,7 +3932,7 @@ if(mode==='asunder-aion-volume-assemble'){
  }
  const finalRows=await rest(url);
  if(!Array.from({length:volumeCount},(_,i)=>i+1).every(n=>finalRows.filter(ch=>Number(ch.chapter_number)===n&&String(ch.manuscript||'')===String(stitched[n].text)).length===1))return res.status(409).json({error:'Assembly verification failed; saved chapters remain available for safe resume.'});
- const updated=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({generation_state:{...state,aion_volume_assembled_at:state.aion_volume_assembled_at||new Date().toISOString()},updated_at:new Date().toISOString()})});
+ const updated=await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status:'complete',generation_state:{...state,aion_volume_assembled_at:state.aion_volume_assembled_at||new Date().toISOString()},updated_at:new Date().toISOString()})});
  if(!updated?.length)return res.status(502).json({error:'Chapters assembled but final checkpoint could not be saved. Resume assembly safely.'});
  return res.status(200).json({complete:true,assembled:true,chapters:volumeCount});
 }
