@@ -2514,7 +2514,7 @@ function fictionAionWifeAgeMismatch252700(prose,wife){
  const words=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
  const tens=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
  const spell=n=>n<20?words[n]:tens[Math.floor(n/10)]+(n%10?'-'+words[n%10]:'');
- const escape=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\ const prior=String(body.prior_text||'').slice(-26000);');
+ const escape=x=>x.replace(/[^a-zA-Z0-9]/g, ch=>'\\'+ch);
  const named=escape(name);
  const candidates=[];
  const patterns=[
