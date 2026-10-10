@@ -3747,6 +3747,24 @@ if(mode==='asunder-cover-artwork'){
   const sourceKey=String(book.generation_state?.final_manuscript_run_id||book.generation_state?.final_manuscript_source||'draft'),cover_meta={...existing,template_id:fictionAsunderCoverTemplateId252202,artwork_path:artPath,story_number:`${Number(book.position)||1}.1`,character_key:profile.character_key,wife_first_name:profile.first_name,canonical_portrait_path:profile.portrait_path,brief,source_final_run_id:sourceKey,author:series.pen_name||'Ana Rojas',volume:Number(book.position)||1,provider:'venice'};
   return res.status(200).json({artwork_data_url:await fictionAsunderStorageDataUrl252147(artPath),cover_meta,reused:false});
 }
+if(mode==='upload-asunder-author-photo'){
+  const bookId=String(body.book_id||'').trim(),dataUrl=String(body.photo_data_url||'');
+  if(!bookId)return res.status(400).json({error:'Book id is required.'});
+  if(!fictionAsunderSeedIdentity252146(series))return res.status(400).json({error:'Author photo uploads are available for Asunder only.'});
+  const m=dataUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=]+)$/i);
+  if(!m)return res.status(400).json({error:'A JPEG, PNG or WebP author photograph is required.'});
+  const bytes=Buffer.from(m[2],'base64');
+  if(!bytes.length||bytes.length>8*1024*1024)return res.status(400).json({error:'Author photo must be under 8 MB.'});
+  const book=(await rest(`developer_fiction_books?select=*&id=eq.${encodeURIComponent(bookId)}&series_id=eq.${encodeURIComponent(id)}&parent_id=eq.${encodeURIComponent(user.id)}&limit=1`))?.[0];
+  if(!book)return res.status(404).json({error:'Fiction book not found.'});
+  const mime=m[1].toLowerCase()==='jpg'?'jpeg':m[1].toLowerCase();
+  const path=`fiction-studio/asunder-authors/${user.id}/${series.id}/ana-rojas.${mime==='jpeg'?'jpg':mime}`;
+  await fictionAsunderStorageUpload252147(path,bytes,`image/${mime}`);
+  const now=new Date().toISOString(),author={...(book.generation_state?.asunder_author_page||{}),name:'Ana Rojas',photo_path:path,photo_status:'uploaded',photo_uploaded_at:now};
+  const generation_state={...(book.generation_state||{}),asunder_author_page:author};
+  await rest(`developer_fiction_books?id=eq.${encodeURIComponent(bookId)}&parent_id=eq.${encodeURIComponent(user.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({generation_state,updated_at:now})});
+  return res.status(200).json({ok:true,author_page:author,photo_data_url:await fictionAsunderStorageDataUrl252147(path)});
+}
 if(mode==='save-asunder-browser-flat-cover'){
   const bookId=String(body.book_id||'').trim(),dataUrl=String(body.cover_data_url||'');if(!bookId)return res.status(400).json({error:'Book id is required.'});
   const m=dataUrl.match(/^data:image\/(jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$/);if(!m)return res.status(400).json({error:'A flattened JPEG or WebP cover is required.'});
