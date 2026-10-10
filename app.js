@@ -4892,10 +4892,24 @@ async function downloadFictionNovelEpub252700(b){
   const add=(id,label,content)=>{const href=id+'.xhtml';files.push({name:'OEBPS/'+href,data:html(label,content)});entries.push({href,label});manifest.push('<item id="'+id+'" href="'+href+'" media-type="application/xhtml+xml"/>');spine.push('<itemref idref="'+id+'"/>')};
   add('title','Title page','<h1>'+xml(title)+'</h1>'+(author?'<h2>'+xml(author)+'</h2>':''));
   if(asunder)add('quotation','Epigraph','<blockquote><p>What therefore God hath joined together, let not man put asunder.</p><p>— Matthew 19:6</p></blockquote>');
-  for(let i=0;i<chapters.length;i++){const c=chapters[i],label=asunder?String(c.chapter_title||'Vignette '+(i+1)):String(c.chapter_title||'Chapter '+(i+1));add('chapter'+(i+1),label,'<h1>'+xml(label)+'</h1>'+prose(c.manuscript))}
+  const assets=d.epub_assets||{},imageFiles=[];
+  const embedImage=async(url,id)=>{if(!url)throw new Error('Missing image for '+id);const response=await fetch(url);if(!response.ok)throw new Error('Could not fetch '+id+' (HTTP '+response.status+')');const bytes=new Uint8Array(await response.arrayBuffer());if(!bytes.length)throw new Error('Empty image '+id);const type=response.headers.get('content-type')||'';const ext=/png/i.test(type)?'png':/webp/i.test(type)?'webp':'jpg',mime=ext==='png'?'image/png':ext==='webp'?'image/webp':'image/jpeg';const href='images/'+id+'.'+ext;files.push({name:'OEBPS/'+href,data:bytes});manifest.push('<item id="img-'+id+'" href="'+href+'" media-type="'+mime+'"/>');return href};
+  for(let i=0;i<chapters.length;i++){
+    const c=chapters[i],label=asunder?String(c.chapter_title||'Vignette '+(i+1)):String(c.chapter_title||'Chapter '+(i+1));
+    if(asunder){
+      const p=(assets.profiles||[]).find(x=>Number(x.chapter_number)===Number(c.chapter_number));
+      if(!p)throw new Error('Missing canonical Asunder profile for vignette '+c.chapter_number);
+      const photo=await embedImage(p.photo_url,'wife-'+c.chapter_number),data=p.profile_data||{};
+      const fields=[['Name',p.full_name||p.first_name],['Age',data.age],['Location',data.current_city||data.country],['Relationship',data.relationship_status],['About',data.bio],['Availability',data.availability]].filter(x=>String(x[1]||'').trim());
+      const profile='<h1>ASUNDER</h1><h2>'+xml(p.first_name||label)+'</h2><figure><img src="'+photo+'" alt="Portrait of '+xml(p.first_name||label)+'" style="max-width:85%;max-height:65vh;"/></figure>'+fields.map(([k,v])=>'<p><strong>'+xml(k)+':</strong> '+xml(v)+'</p>').join('');
+      add('profile'+(i+1),label+' — Profile',profile);
+    }
+    add('chapter'+(i+1),label,'<h1>'+xml(label)+'</h1>'+prose(c.manuscript));
+  }
   const page=d.series?.author_page||d.book?.generation_state?.asunder_author_page||{};
   const bio=String(page.bio||page.biography||'').trim();
-  if(asunder){const fallback='Ana Rojas was born in Spain in 1992. She writes under a pseudonym and has no intention of explaining who she really is.\\n\\nShe is interested in marriage, particularly the things married people do not tell each other. She suspects that most people are considerably less respectable than they appear, and finds that rather encouraging.\\n\\nHer first series, Obedience, explored the pleasures and complications of surrender. Asunder is her latest project.\\n\\nShe does not give interviews, but can be contacted at analunarojas@hotmail.com.';add('author','About the Author','<h1>About the Author</h1><h2>Ana Rojas</h2>'+prose(bio||fallback))}
+  let authorImage='';if(asunder)authorImage=await embedImage(assets.author_photo_url,'author-photo');
+  if(asunder){const fallback='Ana Rojas was born in Spain in 1992. She writes under a pseudonym and has no intention of explaining who she really is.\\n\\nShe is interested in marriage, particularly the things married people do not tell each other. She suspects that most people are considerably less respectable than they appear, and finds that rather encouraging.\\n\\nHer first series, Obedience, explored the pleasures and complications of surrender. Asunder is her latest project.\\n\\nShe does not give interviews, but can be contacted at analunarojas@hotmail.com.';add('author','About the Author','<h1>About the Author</h1><h2>Ana Rojas</h2>'+(authorImage?'<figure><img src="'+authorImage+'" alt="Author portrait of Ana Rojas" style="max-width:75%;max-height:65vh;"/></figure>':'')+prose(bio||fallback))}
   const nav='<nav xmlns:epub="http://www.idpf.org/2007/ops" epub:type="toc"><h1>Contents</h1><ol>'+entries.map(e=>'<li><a href="'+e.href+'">'+xml(e.label)+'</a></li>').join('')+'</ol></nav>';
   files.push({name:'OEBPS/nav.xhtml',data:'<?xml version="1.0" encoding="utf-8"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body>'+nav+'</body></html>'});
   manifest.push('<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>');
