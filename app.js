@@ -4899,9 +4899,36 @@ async function downloadFictionNovelEpub252700(b){
     if(asunder){
       const p=(assets.profiles||[]).find(x=>Number(x.chapter_number)===Number(c.chapter_number));
       if(!p)throw new Error('Missing canonical Asunder profile for vignette '+c.chapter_number);
-      const photo=await embedImage(p.photo_url,'wife-'+c.chapter_number),data=p.profile_data||{};
-      const fields=[['Name',p.full_name||p.first_name],['Age',data.age],['Location',data.current_city||data.country],['Relationship',data.relationship_status],['About',data.bio],['Availability',data.availability]].filter(x=>String(x[1]||'').trim());
-      const profile='<h1>ASUNDER</h1><h2>'+xml(p.first_name||label)+'</h2><figure><img src="'+photo+'" alt="Portrait of '+xml(p.first_name||label)+'" style="max-width:85%;max-height:65vh;"/></figure>'+fields.map(([k,v])=>'<p><strong>'+xml(k)+':</strong> '+xml(v)+'</p>').join('');
+      const data=p.profile_data||{};
+      const fields=[['Name',p.full_name||p.first_name],['Age',data.age],['Location',data.current_city||data.country],['Relationship',data.relationship_status],['About',data.bio],['Availability',data.availability]].filter(x=>String(x[1]??'').trim());
+      const photoResponse=await fetch(p.photo_url);
+      if(!photoResponse.ok)throw new Error('Could not load canonical portrait for '+label);
+      const photoBlob=await photoResponse.blob(),photoUrl=URL.createObjectURL(photoBlob);
+      let picture;
+      try{picture=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('Could not decode portrait for '+label));im.src=photoUrl})}
+      finally{URL.revokeObjectURL(photoUrl)}
+      const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1800;
+      const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Image rendering is unavailable');
+      ctx.fillStyle='#f9f7f1';ctx.fillRect(0,0,1200,1800);
+      ctx.fillStyle='#181818';ctx.textAlign='center';ctx.font='bold 68px Georgia,serif';ctx.fillText('ASUNDER',600,105);
+      ctx.font='38px Georgia,serif';ctx.fillText(String(p.first_name||label),600,163);
+      const maxW=670,maxH=770,scale=Math.min(maxW/picture.naturalWidth,maxH/picture.naturalHeight);
+      const w=picture.naturalWidth*scale,h=picture.naturalHeight*scale;
+      ctx.drawImage(picture,(1200-w)/2,205,w,h);
+      const photoBottom=205+h;
+      ctx.strokeStyle='#b7b2a8';ctx.beginPath();ctx.moveTo(110,photoBottom+35);ctx.lineTo(1090,photoBottom+35);ctx.stroke();
+      const wrap=(text,maxWidth)=>{const words=String(text).split(/\\s+/).filter(Boolean),lines=[];let line='';for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
+      // Shrink the entire text block as necessary, never crop or split a profile.
+      const usable=1690-(photoBottom+80);let font=34,layout=[];
+      for(;font>=19;font-=1){ctx.font=font+'px Georgia,serif';layout=fields.map(([k,v])=>({key:k,lines:wrap(k+': '+String(v),970)}));const needed=layout.reduce((sum,f)=>sum+(f.lines.length+0.4)*font*1.42,0);if(needed<=usable)break}
+      if(font<19)throw new Error('Profile is too long to fit on one page: '+label);
+      ctx.textAlign='left';ctx.fillStyle='#242424';ctx.font=font+'px Georgia,serif';let y=photoBottom+90;
+      for(const field of layout){for(const line of field.lines){ctx.fillText(line,115,y);y+=font*1.42}y+=font*.4}
+      const png=await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not flatten profile '+label)),'image/png'));
+      const href='images/profile-'+(i+1)+'.png';
+      files.push({name:'OEBPS/'+href,data:new Uint8Array(await png.arrayBuffer())});
+      manifest.push('<item id="profile-image-'+(i+1)+'" href="'+href+'" media-type="image/png"/>');
+      const profile='<div style="margin:0;text-align:center;page-break-inside:avoid;break-inside:avoid"><img src="'+href+'" alt="Asunder profile of '+xml(p.first_name||label)+'" style="display:block;width:100%;height:auto;max-height:98vh;object-fit:contain;"/></div>';
       add('profile'+(i+1),label+' — Profile',profile);
     }
     add('chapter'+(i+1),label,'<h1>'+xml(label)+'</h1>'+prose(c.manuscript));
