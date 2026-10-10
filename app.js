@@ -5011,8 +5011,8 @@ async function downloadFictionNovelEpub252700(b){
     const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1800;
     const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Cannot render author page');
     const W=1200,H=1800,margin=105;
-    const wrapText=(value,maxWidth,font)=>{ctx.font=font+'px Georgia,serif';const lines=[];let line='';for(const word of String(value).split(/\\s+/).filter(Boolean)){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
-    const paragraphs=authorBio.split(/\\n\\s*\\n/).map(x=>x.trim()).filter(Boolean);
+    const wrapText=(value,maxWidth,font)=>{ctx.font=font+'px Georgia,serif';const lines=[];let line='';for(const word of String(value).split(/\s+/).filter(Boolean)){const next=line?line+' '+word:word;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
+    const paragraphs=authorBio.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
     const photoHeight=490,photoWidth=Math.min(680,photoHeight*portrait.naturalWidth/portrait.naturalHeight);
     let font=33,layout;
     while(font>=18){
