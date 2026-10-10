@@ -4916,7 +4916,7 @@ async function downloadFictionNovelEpub252700(b){
     if(asunder){
       const p=(assets.profiles||[]).find(x=>Number(x.chapter_number)===Number(c.chapter_number));
       if(!p)throw new Error('Missing canonical Asunder profile for vignette '+c.chapter_number);
-      const profileKey=String(p.character_key||'').trim();
+      const profileKey=String(p.character_key||p.profile_id||'').trim();
       if(!profileKey||exportedProfileKeys.has(profileKey))throw new Error('Missing or duplicate canonical EPUB profile for '+label);
       exportedProfileKeys.add(profileKey);
       const expectedName=String(c.chapter_title||'').trim().replace(/^\d+(?:\.\d+)?\s*[—–:-]\s*/,'').trim();
