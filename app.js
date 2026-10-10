@@ -4295,7 +4295,7 @@ function openFictionAsunderReplacement252209(b,storyNumber){
 const fictionAsunderApprovedCoverImportId252278='chatgpt-approved-cover-2026-10-05-v2';
 async function fictionImportApprovedAsunderBook1Cover252278(s,b){
  if(!s||!b)return false;
- if(String(s.id)!=='3d94046f-8162-44d0-b861-d955d8583cbb'||String(b.id)!=='513e2b71-4106-4ebd-83a4-36061a53e77f')return false;
+ if(String(s.id)!=='3d94046f-8162-44d0-b861-d955d8583cbb'||String(b.id)!=='8416cf58-3c50-4d83-9b67-825a2b095d5e')return false;
  const current=b?.generation_state?.asunder_cover||{};
  if(String(current.approved_import_id||'')===fictionAsunderApprovedCoverImportId252278)return false;
  const r=await fetch('/assets/asunder-book1-approved-cover-v252278.jpg',{cache:'no-store'});
@@ -4530,7 +4530,7 @@ function fictionReaderFitPages25256(el,pages,mobile,spreadEl,track){
 }
 async function openFictionReader25250(b,requestedRunId=null){
  let el=$('fictionReader25250');if(el)el.remove();document.body.classList.add('fiction-reader-open-25250');el=document.createElement('section');el.id='fictionReader25250';el.className='fiction-reader-25250';el.innerHTML='<div class="fiction-reader-loading-25250">Opening novel…</div>';document.body.appendChild(el);
- try{const d=await fictionStudioRequest25229({mode:'reader-book',id:fictionStudioActive25229.id,book_id:b.id,...(requestedRunId?{run_id:requestedRunId}:{})});renderFictionReader25250(b,d)}catch(e){el.innerHTML=`<div class="fiction-reader-error-25250"><button type="button" id="fictionReaderClose25250">← Back to Fiction Studio</button><p>${escapeHtml(e.message||String(e))}</p></div>`;$('fictionReaderClose25250').onclick=closeFictionReader25250}
+ try{await fictionImportApprovedAsunderBook1Cover252278(fictionStudioActive25229,b);const d=await fictionStudioRequest25229({mode:'reader-book',id:fictionStudioActive25229.id,book_id:b.id,...(requestedRunId?{run_id:requestedRunId}:{})});renderFictionReader25250(b,d)}catch(e){el.innerHTML=`<div class="fiction-reader-error-25250"><button type="button" id="fictionReaderClose25250">← Back to Fiction Studio</button><p>${escapeHtml(e.message||String(e))}</p></div>`;$('fictionReaderClose25250').onclick=closeFictionReader25250}
 }
 function fictionReaderMobileLongHtml25257(chapters,d=null){
  const coverHtml=d?.asunder_cover_data_url?`<div class="fiction-reader-asunder-mobile-cover-252152"><img src="${escapeHtml(d.asunder_cover_data_url)}" alt="Volume cover" style="width:100%;height:auto;display:block"></div>`:'';const frontMatterHtml=fictionIsAsunderVolume252280(d)?`<section class="fiction-reader-asunder-front-matter-mobile-252280">${fictionAsunderFrontMatterHtml252280()}</section>`:'';const body=coverHtml+frontMatterHtml+(chapters||[]).map(ch=>{const n=Number(ch.chapter_number)||0,title=String(ch.chapter_title||'').trim(),paras=String(ch.manuscript||'').replace(/\r/g,'').split(/\n\s*\n+/).map((x,i)=>({text:x.trim(),paragraph_index:i})).filter(x=>x.text),profile=fictionAsunderProfileForChapter252147(d,n),profileHtml=profile?`<div class="fiction-reader-asunder-mobile-252147">${fictionAsunderProfileScreenshot252147(profile,`${Number(d?.book?.position)||1}.${n}`)}</div>`:'';const heading=n&&!profile?`<div class="fiction-reader-chapter-25250"><span>Chapter ${n}</span>${title?`<h2>${escapeHtml(title)}</h2>`:''}</div>`:'';return `${profileHtml}<section class="fiction-reader-long-chapter-25257" data-reader-chapter="${n}">${heading}${paras.map(x=>`<p>${fictionAsunderHouseStyleHtml252194(x.text,n,d,x.paragraph_index)}</p>`).join('')}</section>`}).join('');
