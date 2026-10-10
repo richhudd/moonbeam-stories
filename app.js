@@ -4900,7 +4900,7 @@ async function downloadFictionNovelEpub252700(b){
   const author=asunder?'Ana Rojas':String(d.series?.author_name||d.series?.author||'');
   const xml=kindleXml,html=(t,body)=>'<?xml version="1.0" encoding="utf-8"?>'+'<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><meta charset="utf-8"/><title>'+xml(t)+'</title><link rel="stylesheet" href="style.css"/></head><body>'+body+'</body></html>';
   const prose=v=>String(v||'').replace(/\r\n?/g,'\\n').split(/\n\s*\n/).filter(x=>x.trim()).map(x=>'<p>'+xml(x.trim()).replace(/\n/g,'<br/>')+'</p>').join('');
-  const files=[{name:'mimetype',data:kindleTextBytes('application/epub+zip')},{name:'META-INF/container.xml',data:'<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>'},{name:'OEBPS/style.css',data:'body{font-family:serif;line-height:1.45}h1,h2{text-align:center}p{text-indent:1.2em;margin:.25em 0}nav li{margin:.6em 0}'}];
+  const files=[{name:'mimetype',data:kindleTextBytes('application/epub+zip')},{name:'META-INF/container.xml',data:'<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>'},{name:'OEBPS/style.css',data:'body{font-family:serif;line-height:1.45}h1,h2{text-align:center}p{text-indent:1.2em;margin:.25em 0}nav li{margin:.6em 0}.asunder-portrait-contents{text-align:center}.asunder-contents-entry{display:inline-block;vertical-align:top;width:43%;margin:1.5% 2%;page-break-inside:avoid;break-inside:avoid}.asunder-contents-entry a{display:block;text-decoration:none;color:inherit}.asunder-contents-entry img{display:block;width:100%;height:auto;max-height:14em;object-fit:cover}.asunder-contents-entry span{display:block;margin:.4em 0 1em;font-weight:bold}'}];
   const entries=[],manifest=['<item id="css" href="style.css" media-type="text/css"/>'],spine=[];
   const add=(id,label,content)=>{const href=id+'.xhtml';files.push({name:'OEBPS/'+href,data:html(label,content)});entries.push({href,label});manifest.push('<item id="'+id+'" href="'+href+'" media-type="application/xhtml+xml"/>');spine.push('<itemref idref="'+id+'"/>')};
   add('title','Title page','<h1>'+xml(title)+'</h1>'+(author?'<h2>'+xml(author)+'</h2>':''));
@@ -4923,6 +4923,7 @@ async function downloadFictionNovelEpub252700(b){
   }
   const assets=d.epub_assets||{},imageFiles=[];
   const embedImage=async(url,id)=>{if(!url)throw new Error('Missing image for '+id);const response=await fetch(url);if(!response.ok)throw new Error('Could not fetch '+id+' (HTTP '+response.status+')');const bytes=new Uint8Array(await response.arrayBuffer());if(!bytes.length)throw new Error('Empty image '+id);const type=response.headers.get('content-type')||'';const ext=/png/i.test(type)?'png':/webp/i.test(type)?'webp':'jpg',mime=ext==='png'?'image/png':ext==='webp'?'image/webp':'image/jpeg';const href='images/'+id+'.'+ext;files.push({name:'OEBPS/'+href,data:bytes});manifest.push('<item id="img-'+id+'" href="'+href+'" media-type="'+mime+'"/>');return href};
+  const contentsPortraits=[];
   const exportedProfileKeys=new Set(),exportedProfileImages=new Set();
   for(let i=0;i<chapters.length;i++){
     const c=chapters[i],label=asunder?String(c.chapter_title||'Vignette '+(i+1)):String(c.chapter_title||'Chapter '+(i+1));
@@ -5003,6 +5004,7 @@ async function downloadFictionNovelEpub252700(b){
       if(exportedProfileImages.has(signature))throw new Error('Duplicate EPUB profile image for '+label);
       exportedProfileImages.add(signature);
       const href='images/profile-'+(i+1)+'.png';
+      contentsPortraits[i]={href,firstName:String(p.first_name||label)};
       files.push({name:'OEBPS/'+href,data:pngBytes});
       manifest.push('<item id="profile-image-'+(i+1)+'" href="'+href+'" media-type="image/png"/>');
       const profile='<div style="margin:0;text-align:center;page-break-inside:avoid;break-inside:avoid"><img src="'+href+'" alt="Asunder profile of '+xml(p.first_name||label)+'" style="display:block;width:100%;height:auto;max-height:98vh;object-fit:contain;"/></div>';
@@ -5052,7 +5054,13 @@ async function downloadFictionNovelEpub252700(b){
   }
   // A visible, clickable contents page is part of the reading spine, not only the Kindle navigation menu.
   const chapterLinks=chapters.map((c,i)=>({label:String(c.chapter_title||((asunder?'Vignette ':'Chapter ')+(i+1))),href:(asunder?'profile':'chapter')+(i+1)+'.xhtml'}));
-  const contentsBody='<h1>Contents</h1><ol>'+chapterLinks.map(e=>'<li><a href="'+e.href+'">'+xml(e.label)+'</a></li>').join('')+'</ol>'+(asunder?'<p><a href="author.xhtml">About the Author</a></p>':'');
+  const contentsBody=asunder
+   ?'<h1>Contents</h1><div class="asunder-portrait-contents">'+chapterLinks.map((e,i)=>{
+     const portrait=contentsPortraits[i];
+     if(!portrait)throw new Error('Missing contents portrait for vignette '+(i+1));
+     return '<div class="asunder-contents-entry"><a href="'+e.href+'"><img src="'+portrait.href+'" alt="Portrait of '+xml(portrait.firstName)+'" /><span>'+(i+1)+'. '+xml(e.label)+'</span></a></div>';
+    }).join('')+'</div><p><a href="author.xhtml">About the Author</a></p>'
+   :'<h1>Contents</h1><ol>'+chapterLinks.map(e=>'<li><a href="'+e.href+'">'+xml(e.label)+'</a></li>').join('')+'</ol>';
   files.push({name:'OEBPS/contents.xhtml',data:html('Contents',contentsBody)});
   manifest.push('<item id="contents" href="contents.xhtml" media-type="application/xhtml+xml"/>');
   spine.splice(1,0,'<itemref idref="contents"/>');
