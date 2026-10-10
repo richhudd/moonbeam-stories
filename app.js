@@ -3550,7 +3550,7 @@ async function openFictionAsunderVignetteTester252500(){
     const reservation=t.volume_reservation;
     const tag=reservation?' · Reserved Volume '+Number(reservation.position)+' / Vignette '+Number(reservation.slot):'';
     const label=escapeHtml(name)+(storyTitle?' — '+escapeHtml(storyTitle):'')+' · '+escapeHtml(stage)+tag+' · '+new Date(t.created_at).toLocaleDateString();
-    return '<div style="padding:8px 0;border-bottom:1px solid var(--border,#ccc)"><button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Open / Resume · ')+label+'</button><button type="button" class="secondary" data-delete-test="'+escapeHtml(t.id)+'" style="margin-left:8px">Delete</button>'+(!fictionAsunder2Identity252286(series)?'<label style="display:inline-flex;align-items:center;gap:6px;margin:4px"><span>Position</span><select data-test-slot="'+escapeHtml(t.id)+'">'+Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'" '+(Number(reservation?.slot)===i+1?'selected':'')+'>'+(i+1)+'</option>').join('')+'</select></label><button type="button" class="secondary" data-reserve-test="'+escapeHtml(t.id)+'">'+(reservation?'Change position':'Reserve for next volume')+'</button>'+(reservation?'<button type="button" class="secondary" data-unreserve-test="'+escapeHtml(t.id)+'">Remove reservation</button>':''):'')+'</div>';
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border,#ccc)"><button type="button" class="'+selected+'" data-test-id="'+escapeHtml(t.id)+'">'+(t.status==='complete'?'Read · ':'Open / Resume · ')+label+'</button><button type="button" class="secondary" data-download-test="' +escapeHtml(t.id)+'" style="margin-left:8px">Download ZIP</button><button type="button" class="secondary" data-delete-test="'+escapeHtml(t.id)+'" style="margin-left:8px">Delete</button>'+(!fictionAsunder2Identity252286(series)?'<label style="display:inline-flex;align-items:center;gap:6px;margin:4px"><span>Position</span><select data-test-slot="'+escapeHtml(t.id)+'">'+Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'" '+(Number(reservation?.slot)===i+1?'selected':'')+'>'+(i+1)+'</option>').join('')+'</select></label><button type="button" class="secondary" data-reserve-test="'+escapeHtml(t.id)+'">'+(reservation?'Change position':'Reserve for next volume')+'</button>'+(reservation?'<button type="button" class="secondary" data-unreserve-test="'+escapeHtml(t.id)+'">Remove reservation</button>':''):'')+'</div>';
    }).join(' '):'<p class="muted">No vignettes yet. Generate one to create its own entry.</p>');
    saved.querySelectorAll('[data-reserve-test]').forEach(btn=>btn.onclick=async()=>{
     btn.disabled=true;
@@ -3577,6 +3577,19 @@ async function openFictionAsunderVignetteTester252500(){
      status.textContent='Vignette deleted. Its wife remains available for a fresh generation.';
      await refreshSaved();
     }catch(e){status.textContent='Delete failed: '+String(e.message||e);btn.disabled=false}
+   });
+   saved.querySelectorAll('[data-download-test]').forEach(btn=>btn.onclick=async()=>{
+    btn.disabled=true;
+    try{
+     const rr=await fictionStudioRequest25229({mode:'asunder-vignette-test-get',id:series.id,test_id:btn.dataset.downloadTest});
+     const t=rr.test;if(!t)throw new Error('Saved vignette not found');
+     const beats=Array.isArray(t.beats)?t.beats:[],title=String(t.plan?.title||wifeNames[t.character_key]||'Vignette');
+     const manuscript=(title+'\n\n'+beats.map(b=>String(b.text||'')).filter(Boolean).join('\n\n')).trim();
+     if(!beats.length)throw new Error('This vignette has no saved manuscript beats to download');
+     await makeReviewZip25233({'README.txt':'Asunder Vignette Tester export\nTitle: '+title+'\nStatus: '+String(t.status||'')+'\nSaved beats: '+beats.length+'\n', 'manuscript.txt':manuscript+'\n','vignette.json':t,'plan.json':t.plan||{},'direction.txt':String(t.direction||'')},fictionSafeName25233(title)+'_vignette_review.zip');
+     status.textContent='Downloaded '+title+' · '+beats.length+' saved beats.';
+    }catch(e){status.textContent='Vignette download failed: '+String(e.message||e)}
+    finally{btn.disabled=false}
    });
    saved.querySelectorAll('[data-test-id]').forEach(btn=>btn.onclick=async()=>{
     try{
